@@ -1,0 +1,6 @@
+[
+    {
+        "name": "Clang-Zero",
+        "toolchainFile": "../.vscode/cmake_toolchain_file.txt"
+    }
+]
