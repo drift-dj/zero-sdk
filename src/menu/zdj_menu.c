@@ -1,5 +1,5 @@
-#include "zdj_menu.h"
-#include "zdj_menu_parser.h"
+#include <zerodj/menu/zdj_menu.h>
+#include <zerodj/menu/zdj_menu_parser.h>
 
 char ** zdj_menu_name_map;
 zdj_menu_t ** zdj_menus;

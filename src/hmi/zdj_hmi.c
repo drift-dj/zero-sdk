@@ -1,6 +1,6 @@
-#include "zdj_hmi.h"
-#include "zdj_hmi_shared_state_model.h"
-#include "zdj_m7.h"
+#include <zerodj/hmi/zdj_hmi.h>
+#include <zerodj/hmi/zdj_hmi_shared_state_model.h>
+#include <zerodj/m7/zdj_m7.h>
 
 void zdj_hmi_activate( void ) {
     // Signal M7 core to begin scanning HMI muxes and collecting state data

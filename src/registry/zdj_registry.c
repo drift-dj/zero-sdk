@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "zdj_registry.h"
+#include <zerodj/registry/zdj_registry.h>
 
 
 // Create a new launch_req from params.

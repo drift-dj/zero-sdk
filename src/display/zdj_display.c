@@ -6,8 +6,8 @@
 
 #include <SDL2/SDL.h>
 
-#include "zdj_display.h"
-#include "zdj_m7.h"
+#include <zerodj/display/zdj_display.h>
+#include <zerodj/m7/zdj_m7.h>
 
 uint32_t * zdj_vid_buffer;
 

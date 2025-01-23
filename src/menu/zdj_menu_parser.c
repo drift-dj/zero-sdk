@@ -2,8 +2,8 @@
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 
-#include "zdj_menu_parser.h"
-#include "zdj_menu.h"
+#include <zerodj/menu/zdj_menu_parser.h>
+#include <zerodj/menu/zdj_menu.h>
 
 int _zdj_menu_count_names_in_node( xmlNode * node, char * name ) {
     int count = 0;

@@ -3,7 +3,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include "zdj_m7.h"
+#include <zerodj/m7/zdj_m7.h>
 
 int zdj_m7_fd;
 
