@@ -27,6 +27,7 @@ add_library(zerodj
     src/menu/zdj_menu.c
     src/menu/zdj_menu_parser.c
     src/registry/zdj_registry.c
+    src/ui/view_stack/zdj_view_stack.c
 )
 
 target_compile_definitions(
