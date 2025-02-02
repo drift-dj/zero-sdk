@@ -16,19 +16,22 @@ SDL_Surface* zdj_display_surface;
 SDL_Renderer* zdj_display_renderer;
 uint32_t * zdj_display_sdl_pixels;
 
-void zdj_display_init( void ) {
+int zdj_display_init( void ) {
     // Grab references to the shared (M7+A53) memory.
     // See zero kernel 'drift-a106.dtsi' reserved-memory section.
 	int mem_fd = open( "/dev/mem", O_RDWR );
 	zdj_vid_buffer = (uint32_t *)mmap(0, 0x20000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a11000);
 
-    printf( "pre-SDL_Init( )\n" );
     int stat = SDL_Init( SDL_INIT_VIDEO );
-    printf( "SDL_Init( ): %d, %s\n", stat, SDL_GetError( ) );
+    if( stat != 0 ) {
+        printf( "SDL_Init failed:: %d/%s\n", stat, SDL_GetError( ) );
+        return stat;
+    }
     zdj_display_surface = SDL_CreateRGBSurface( 0, ZDJ_SCREEN_WIDTH, ZDJ_SCREEN_HEIGHT, 32, 0, 0, 0, 0 );
     zdj_display_renderer = SDL_CreateSoftwareRenderer( zdj_display_surface );
     zdj_display_sdl_pixels = zdj_display_surface->pixels;
     printf( "post-SDL_Init( ): %p/%p/%p\n", zdj_display_surface, zdj_display_renderer, zdj_display_surface->pixels );
+    return 0;
 }
 
 void zdj_display_release( void ) {

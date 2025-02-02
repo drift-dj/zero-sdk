@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include <zerodj/ui/view_stack/zdj_view_stack.h>
 

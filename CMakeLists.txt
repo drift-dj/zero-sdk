@@ -64,4 +64,8 @@ target_link_libraries(
     zerodj
     PUBLIC
     stdc++
+    SDL2
+    SDL2_ttf
+    SDL2_image
+    SDL2_gfx
 )
