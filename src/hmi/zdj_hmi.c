@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdbool.h>
+
 #include <zerodj/hmi/zdj_hmi.h>
 #include <zerodj/hmi/zdj_hmi_shared_state_model.h>
 #include <zerodj/m7/zdj_m7.h>
