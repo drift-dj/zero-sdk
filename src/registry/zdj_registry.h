@@ -2,7 +2,6 @@
 #define ZDJ_REGISTRY_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 typedef enum {
     ZDJ_REGISTRY_HEALTH_OKAY, // Everything checked and known-good

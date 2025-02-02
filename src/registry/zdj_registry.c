@@ -1,10 +1,17 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef IS_REGISTRY_BUILDER
+// Used by main_registry_data.c in zero-boot repo to pre-compile
+// registry data for load into OS distro.
+#include "zdj_registry.h"
+#else
 #include <zerodj/registry/zdj_registry.h>
+#endif
 
 
 // Create a new launch_req from params.
