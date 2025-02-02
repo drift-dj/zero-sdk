@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Push Lib",
+            "type": "lldb",
+            "request": "custom",
+            "targetCreateCommands": [
+                "platform select remote-linux",
+                // "log enable gdb-remote all",
+                "settings set platform.module-cache-directory /Users/jaredwheeler/Documents/Drift/dev/lldb-cache",
+                "platform connect serial:///dev/cu.usbmodemd0053",
+                "platform put-file sysroot/usr/lib/libzerodj.a /usr/lib/libzerodj.a",
+                "platform shell /root/boot/term-lldb-delay.sh"
+                ],
+            "processCreateCommands": ["quit"]
+        }
+    ]
+}
