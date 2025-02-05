@@ -13,7 +13,7 @@
                 // "log enable gdb-remote all",
                 "settings set platform.module-cache-directory /Users/jaredwheeler/Documents/Drift/dev/lldb-cache",
                 "platform connect serial:///dev/cu.usbmodemd0053",
-                "platform put-file sysroot/usr/lib/libzerodj.a /usr/lib/libzerodj.a",
+                "platform put-file build/libzerodj.a /usr/lib/libzerodj.a",
                 "platform shell /root/boot/term-lldb-delay.sh"
                 ],
             "processCreateCommands": ["quit"]
