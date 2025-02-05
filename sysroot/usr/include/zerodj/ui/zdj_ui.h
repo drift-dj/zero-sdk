@@ -34,11 +34,17 @@ typedef struct {
 } zdj_ticker_str_t;
 
 typedef struct zdj_view_t {
+    int id;
     void ( *draw )( struct zdj_view_t *, zdj_rect_t * );
-    struct zdj_view_t * stack_up;
-    struct zdj_view_t * stack_down;
+    struct zdj_view_t * up;
+    struct zdj_view_t * down;
     int stack_index;
-    void ( *handle_hmi )( struct zdj_view_t * );
+    void ( *handle_hmi_event )( struct zdj_view_t *, void * );
+    void ( *deinit )( struct zdj_view_t * );
 } zdj_view_t;
+
+void zdj_view_stack_init( void );
+void zdj_view_stack_deinit( void );
+void zdj_view_stack_update( void );
 
 #endif
