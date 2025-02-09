@@ -12,6 +12,10 @@ add_library(zerodj
     src/menu/zdj_menu.c
     src/menu/zdj_menu_parser.c
     src/registry/zdj_registry.c
+    src/ui/zdj_ui.c
+    src/ui/zdj_ui_util.c
+    # src/ui/text/font/zdj_font.c
+    # src/ui/text/ticker_str/zdj_ticker_str.c
     src/ui/view_stack/zdj_view_stack.c
 )
 
