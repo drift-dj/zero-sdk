@@ -112,7 +112,7 @@ extern zdj_hmi_control_state_t ** zdj_hmi_control_states;
 void zdj_hmi_init( void );
 void zdj_hmi_activate( void );
 void zdj_hmi_deactivate( void );
-void zdj_hmi_create_events( bool should_flush );
+void zdj_hmi_pull_m7_events( bool should_flush );
 void zdj_hmi_clear_events( void );
 
 #endif

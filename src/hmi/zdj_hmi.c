@@ -25,7 +25,7 @@ void zdj_hmi_deactivate( void ) {
 // In that case, only one app should be sending the
 // flush_hmi message to m7, else one app will delete 
 // the hmi state before the other can read it.
-void zdj_hmi_create_events( bool should_flush ) {
+void zdj_hmi_pull_m7_events( bool should_flush ) {
     // Process M7's hmi input model from shared memory
     zdj_hmi_process_input( );
 
