@@ -3,7 +3,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/ui/zdj_ui.h>
-#include <zerodj/ui/text/font/zdj_font.h>
+#include <zerodj/ui/font/zdj_font.h>
 
 
 TTF_Font * zdj_font_6 = NULL;
