@@ -27,6 +27,7 @@ typedef struct {
     zdj_point_t screen;
     zdj_rect_t src;
     zdj_rect_t dst;
+    zdj_point_t scroll_offset;
 } zdj_view_clip_t;
 
 typedef enum {
