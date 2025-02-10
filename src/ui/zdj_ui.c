@@ -3,8 +3,8 @@
 #include <stdbool.h>
 
 #include <zerodj/ui/zdj_ui.h>
-#include <zerodj/ui/text/font/zdj_font.h>
-#include <zerodj/ui/view_stack/zdj_view_stack.h>
+#include <zerodj/ui/font/zdj_font.h>
+#include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/display/zdj_display.h>
 #include <zerodj/hmi/zdj_hmi.h>
 #include <zerodj/health/zdj_health_type.h>

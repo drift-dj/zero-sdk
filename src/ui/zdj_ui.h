@@ -5,9 +5,11 @@
 #include <SDL2/SDL.h>
 
 #define ZDJ_WHITE 0xFFFFFFFF
+#define ZDJ_SDL_WHITE (SDL_Color){255,255,255,255}
 #define ZDJ_MID_GRAY 0xFF999999
 #define ZDJ_DK_GRAY 0xFF330000
 #define ZDJ_BLACK 0xFF000000
+#define ZDJ_SDL_BLACK (SDL_Color){0,0,0,255}
 
 typedef struct {
     float x;
