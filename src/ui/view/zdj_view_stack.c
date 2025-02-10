@@ -19,7 +19,6 @@ static int zdj_view_stack_id = 0;
 static zdj_view_t * zdj_view_stack_root_view;
 zdj_view_t * _zdj_view_stack_top_subview_of( zdj_view_t * view );
 zdj_view_t * _zdj_view_stack_bottom_subview_of( zdj_view_t * view );
-void _zdj_view_stack_update_subview_clip( zdj_view_t * view, zdj_view_clip_t * metrics );
 
 zdj_view_t * zdj_view_stack_root( void ) {
     return zdj_view_stack_root_view;
@@ -93,7 +92,7 @@ zdj_view_t * zdj_view_stack_new_view( void ) {
     view->id = zdj_view_stack_id++;
     view->subview_clip = calloc( 1, sizeof( zdj_view_clip_t ) );
     // Default metrics update -- re-define in front-end layer to alter
-    view->update_subview_clip = &_zdj_view_stack_update_subview_clip;
+    view->update_subview_clip = &zdj_view_stack_update_subview_clip;
     return view;
 }
 
@@ -112,15 +111,15 @@ void zdj_view_add_subview( zdj_view_t * view, zdj_view_t * subview ) {
 //  - an offset from this view's origin to superview's origin
 //  - a rect clipped within superview's clipped rect
 //  - a rect of screen-space coords to draw view's pixels
-void _zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t * superview_clip ) {
+void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t * superview_clip ) {
     zdj_view_clip_t * subview_clip = subview->subview_clip;
 
     // Prep is_visible for view out-of-bounds state
     subview->is_visible = true;
     
     // Build screen x/y for subview's origin
-    subview_clip->screen.x = subview->frame->x + superview_clip->screen.x;
-    subview_clip->screen.y = subview->frame->y + superview_clip->screen.y;
+    subview_clip->screen.x = subview->frame->x + superview_clip->screen.x + superview_clip->scroll_offset.x;
+    subview_clip->screen.y = subview->frame->y + superview_clip->screen.y + superview_clip->scroll_offset.y;
 
     // Horizontal arithmetic
     // Clip left draw edge to furthest right pixel of subview/superview frame x.
@@ -149,7 +148,7 @@ void _zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t 
         // Make width clipped to superview screen rect
         if( sub_dst_lx > sup_dst_lx ) {
             // Subview left edge falls within superview screen rect
-            subview_clip->dst.w = (superview_clip->dst.w+superview_clip->src.x) - subview->frame->x;
+            subview_clip->dst.w = (superview_clip->dst.w+superview_clip->dst.x) - subview_clip->screen.x;
             subview_clip->src.w = subview_clip->dst.w;
         } else {
             // Subview left edge falls to left of superview screen rect
@@ -168,10 +167,10 @@ void _zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t 
     subview_clip->dst.y = (int)fmax( subview_clip->screen.y, superview_clip->dst.y );
     subview_clip->src.y = (int)fmax( 0, subview_clip->dst.y-subview_clip->screen.y );
     // Clip bottom draw edge to higher pixel val of subview/superview frame heights.
-    int sub_dst_ty = subview_clip->screen.y;
-    int sup_dst_ty = superview_clip->dst.y;
-    int sub_dst_by = subview_clip->screen.y+subview->frame->h;
-    int sup_dst_by = superview_clip->dst.y+superview_clip->dst.h;
+    int sub_dst_ty = subview_clip->screen.y; // screen y of top edge of subview's frame
+    int sup_dst_ty = superview_clip->dst.y; // screen y of top edge of superview's frame
+    int sub_dst_by = subview_clip->screen.y+subview->frame->h; // screen y of bottom edge of subview's frame
+    int sup_dst_by = superview_clip->dst.y+superview_clip->dst.h; // screen y of bottom edge of superview's frame
     if( (sub_dst_by <= sup_dst_by) && (sub_dst_by >= sup_dst_ty) ) { 
         // Subview to edge falls inside superview screen rect.
         if( sub_dst_ty > sup_dst_ty ) {
@@ -191,7 +190,8 @@ void _zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t 
         // Make height clipped to superview screen rect
         if( sub_dst_ty > sup_dst_ty ) {
             // Subview top edge falls within superview screen rect
-            subview_clip->dst.h = (superview_clip->dst.h+superview_clip->src.y) - subview->frame->y;
+            // subview_clip->dst.h = (superview_clip->dst.h+superview_clip->src.y) - subview->frame->y;
+            subview_clip->dst.h = (superview_clip->dst.h+superview_clip->dst.y) - subview_clip->screen.y;
             subview_clip->src.h = subview_clip->dst.h;
         } else {
             // Subview top edge falls above superview screen rect
