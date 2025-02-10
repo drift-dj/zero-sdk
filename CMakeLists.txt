@@ -17,6 +17,7 @@ add_library(zerodj
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
     src/ui/view/zdj_view_stack.c
+    src/ui/view/scroll_view/zdj_scroll_view.c
     src/ui/view/ticker_view/zdj_ticker_view.c
 )
 
