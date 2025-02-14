@@ -14,6 +14,7 @@
                 "settings set platform.module-cache-directory /Users/jaredwheeler/Documents/Drift/dev/lldb-cache",
                 "platform connect serial:///dev/cu.usbmodemd0053",
                 "platform put-file build/libzerodj.a /usr/lib/libzerodj.a",
+                "platform put-file build/zero_atlas-32bit.bmp /root/res/zero_atlas-32bit",
                 "platform shell /root/boot/term-lldb-delay.sh"
                 ],
             "processCreateCommands": ["quit"]

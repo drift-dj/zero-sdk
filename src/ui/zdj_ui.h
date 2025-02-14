@@ -24,6 +24,19 @@ typedef struct {
 } zdj_rect_t;
 
 typedef struct {
+    char * tag;
+    char * c_val;
+    int i_val;
+    float f_val;
+    bool b_val;
+} zdj_ui_data_t;
+
+typedef enum {
+    ZDJ_VERTICAL,
+    ZDJ_HORIZONTAL
+} zdj_ui_orient_t;
+
+typedef struct {
     zdj_point_t screen;
     zdj_rect_t src;
     zdj_rect_t dst;
@@ -51,21 +64,13 @@ typedef struct {
     uint8_t a;
 } zdj_color_t;
 
-typedef struct { 
-    zdj_rect_t * frame;
-    void ** items;
-    int item_count;
-    zdj_point_t * scroll_point;
-} zdj_scrollview_t;
-
 typedef enum {
-    ZDJ_SCROLLVIEW_MENU_ITEM,
-    ZDJ_SCROLLVIEW_MENU_HEADER,
-    ZDJ_SCROLLVIEW_LIBRARY_ITEM,
-    ZDJ_SCROLLVIEW_LIBRARY_HEADER,
-    ZDJ_SCROLLVIEW_DAW_CHANNEL_ITEM,
-    ZDJ_SCROLLVIEW_PERF_REPORT_ROW_ITEM
-} zdj_scrollview_item_type_t;
+    ZDJ_VIEW_UNKNOWN,
+    ZDJ_VIEW_BASE,
+    ZDJ_VIEW_SCROLL,
+    ZDJ_VIEW_MENU,
+    ZDJ_VIEW_MENU_ITEM
+} zdj_view_type_t;
 
 typedef enum {
     ZDJ_UI_OKAY,
@@ -75,11 +80,13 @@ typedef enum {
 // zdj_view
 typedef struct zdj_view_t {
     int id;
+    zdj_view_type_t type;
     void ( *init )( struct zdj_view_t * );
     void ( *deinit )( struct zdj_view_t * );
     void ( *draw )( struct zdj_view_t *, zdj_view_clip_t * );
     void ( *update_subview_clip )( struct zdj_view_t *, zdj_view_clip_t * );
     void ( *handle_hmi_event )( struct zdj_view_t *, void * );
+    void ( *update_data )( struct zdj_view_t *, void * );
     struct zdj_view_t * next;
     struct zdj_view_t * prev;
     struct zdj_view_t * subviews;
@@ -92,7 +99,9 @@ typedef struct zdj_view_t {
 
 extern uint32_t * zdj_ui_pixels;
 extern SDL_Renderer* zdj_display_renderer;
+extern zdj_rect_t * zdj_screen_rect_priv;
 SDL_Renderer * zdj_renderer( void );
+zdj_rect_t * zdj_screen_rect( void );
 bool zdj_ui_intersect( zdj_rect_t * rect1, zdj_rect_t * rect2 );
 SDL_Texture * zdj_ui_texture_from_bmp( char * filepath );
 
@@ -102,5 +111,9 @@ void zdj_ui_update( void );
 
 void zdj_ui_start_events( void );
 void zdj_ui_stop_events( void );
+
+zdj_view_t * zdj_new_view( zdj_rect_t * frame );
+void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview );
+zdj_view_t * zdj_root_view( void );
 
 #endif
