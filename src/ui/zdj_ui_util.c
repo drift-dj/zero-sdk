@@ -4,12 +4,23 @@
 
 #include <SDL2/SDL.h>
 
+#include <zerodj/display/zdj_display.h>
 #include <zerodj/ui/zdj_ui.h>
 
 SDL_Renderer* zdj_display_renderer;
+zdj_rect_t * zdj_screen_rect_priv;
 
 SDL_Renderer * zdj_renderer( void ) {
     return zdj_display_renderer;
+}
+
+zdj_rect_t * zdj_screen_rect( void ) {
+    if( !zdj_screen_rect_priv ) {
+        zdj_screen_rect_priv = calloc( 1, sizeof( zdj_rect_t ) );
+        zdj_screen_rect_priv->w = ZDJ_SCREEN_WIDTH;
+        zdj_screen_rect_priv->h = ZDJ_SCREEN_HEIGHT;
+    }
+    return zdj_screen_rect_priv;
 }
 
 bool zdj_ui_intersect( zdj_rect_t * rect1, zdj_rect_t * rect2 ) {

@@ -14,23 +14,13 @@
 zdj_view_t * zdj_view_stack_bottom;
 zdj_view_t * zdj_view_stack_top;
 zdj_rect_t view_stack_frame = {0,0,128,64};
-static int zdj_view_stack_id = 0;
 
-static zdj_view_t * zdj_view_stack_root_view;
-zdj_view_t * _zdj_view_stack_top_subview_of( zdj_view_t * view );
-zdj_view_t * _zdj_view_stack_bottom_subview_of( zdj_view_t * view );
-
-zdj_view_t * zdj_view_stack_root( void ) {
-    return zdj_view_stack_root_view;
-}
+zdj_view_t * zdj_view_stack_root_view;
 
 void zdj_view_stack_init( void ) {
-    zdj_view_stack_root_view = zdj_view_stack_new_view( );
-
-    zdj_view_clip_t * clip = calloc( 1, sizeof( zdj_view_clip_t ) );
-    clip->src.w = clip->dst.w = 128;
-    clip->src.h = clip->dst.h = 64;
-    zdj_view_stack_root_view->subview_clip = clip;
+    zdj_view_stack_root_view = zdj_new_view( &view_stack_frame );
+    zdj_view_stack_root_view->subview_clip->src.w = zdj_view_stack_root_view->subview_clip->dst.w = 128;
+    zdj_view_stack_root_view->subview_clip->src.h = zdj_view_stack_root_view->subview_clip->dst.h = 64;
 }
 
 void zdj_view_stack_deinit( void ) {
@@ -42,10 +32,10 @@ void zdj_view_stack_update( void ) {
     zdj_hmi_event_t * event;
 
     // Pass events into root view's subviews (top-down)
-    zdj_view_stack_handle_events( _zdj_view_stack_top_subview_of(zdj_view_stack_root( )) );
+    zdj_view_stack_handle_events( zdj_view_stack_top_subview_of(zdj_root_view( )) );
 
     // Draw root view's subviews (bottom-up)
-    zdj_view_stack_draw( _zdj_view_stack_bottom_subview_of(zdj_view_stack_root( )), zdj_view_stack_root( )->subview_clip );
+    zdj_view_stack_draw( zdj_view_stack_bottom_subview_of(zdj_root_view( )), zdj_root_view( )->subview_clip );
 }
 
 void zdj_view_stack_clear_screen( void ) {
@@ -60,7 +50,7 @@ void zdj_view_stack_handle_events( zdj_view_t * view ) {
         zdj_hmi_event_t * event = zdj_hmi_event_base;
         while( event ) {
             view->handle_hmi_event( view, event );
-            event = event->next;
+            event = (zdj_hmi_event_t *)event->next;
         }
     }
     if( view->prev ) {
@@ -75,7 +65,9 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     view->update_subview_clip( view, clip );
     // Draw this view's pixels
     if( view->is_visible ) {
-        view->draw( view, view->subview_clip );
+        if( view->draw ) {
+            view->draw( view, view->subview_clip );
+        }
         // Recurse into the view's subviews, passing clipped metrics.
         if( view->subviews ) {
             zdj_view_stack_draw( view->subviews, view->subview_clip );
@@ -84,25 +76,6 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Step up the view stack and continue drawing
     if( view->next ) {
         zdj_view_stack_draw( view->next, clip );
-    }
-}
-
-zdj_view_t * zdj_view_stack_new_view( void ) {
-    zdj_view_t * view = calloc( 1, sizeof( zdj_view_t ) );
-    view->id = zdj_view_stack_id++;
-    view->subview_clip = calloc( 1, sizeof( zdj_view_clip_t ) );
-    // Default metrics update -- re-define in front-end layer to alter
-    view->update_subview_clip = &zdj_view_stack_update_subview_clip;
-    return view;
-}
-
-void zdj_view_add_subview( zdj_view_t * view, zdj_view_t * subview ) {
-    if( view->subviews ) {
-        zdj_view_t * top_subview = _zdj_view_stack_top_subview_of( view );
-        top_subview->next = subview;
-        subview->prev = top_subview;
-    } else {
-        view->subviews = subview;
     }
 }
 
@@ -208,7 +181,7 @@ void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t *
 
 // Walk to end of linked subviews list and return the last view.
 // Return NULL if there are no subviews.
-zdj_view_t * _zdj_view_stack_top_subview_of( zdj_view_t * view ) {
+zdj_view_t * zdj_view_stack_top_subview_of( zdj_view_t * view ) {
     zdj_view_t * _view = view->subviews;
     while( _view ) {
         if( _view->next ) {
@@ -222,6 +195,6 @@ zdj_view_t * _zdj_view_stack_top_subview_of( zdj_view_t * view ) {
 
 // Return first subview in linked list.
 // Return NULL if there are no subviews.
-zdj_view_t * _zdj_view_stack_bottom_subview_of( zdj_view_t * view ) {
+zdj_view_t * zdj_view_stack_bottom_subview_of( zdj_view_t * view ) {
     return view->subviews;
 }

@@ -9,16 +9,19 @@ add_library(zerodj
     src/hmi/input/zdj_hmi_input.c
     src/hmi/input/zdj_hmi_sm_analog.c
     src/hmi/input/zdj_hmi_sm_digital.c
-    src/menu/zdj_menu.c
-    src/menu/zdj_menu_parser.c
     src/registry/zdj_registry.c
     src/ui/zdj_ui.c
     src/ui/zdj_ui_util.c
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
     src/ui/view/zdj_view_stack.c
+    src/ui/view/menu_view/zdj_menu_view.c
+    src/ui/view/menu_item_view/zdj_menu_item_view.c
+    src/ui/view/menu_item_view/zdj_menu_item_static_simple.c
+    src/ui/view/menu_section_view/zdj_menu_section_view.c
     src/ui/view/scroll_view/zdj_scroll_view.c
     src/ui/view/ticker_view/zdj_ticker_view.c
+    src/xml/zdj_xml.c
 )
 
 target_compile_definitions(
@@ -59,4 +62,5 @@ target_link_libraries(
     SDL2_ttf
     SDL2_image
     SDL2_gfx
+    xml2
 )

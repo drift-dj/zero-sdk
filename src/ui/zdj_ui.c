@@ -10,8 +10,8 @@
 #include <zerodj/health/zdj_health_type.h>
 
 SDL_Surface* zdj_display_surface;
-
 uint32_t * zdj_ui_pixels = NULL;
+static int zdj_view_stack_id = 0;
 
 void zdj_ui_init( void ) {
     // Grab the display memory
@@ -77,4 +77,37 @@ void zdj_ui_start_events( void ) {
 
 void zdj_ui_stop_events( void ) {
     zdj_hmi_deactivate( );
+}
+
+zdj_view_t * zdj_new_view( zdj_rect_t * frame ) {
+    zdj_view_t * view = calloc( 1, sizeof( zdj_view_t ) );
+    view->id = zdj_view_stack_id++;
+    
+    // Default metrics update -- re-define in front-end layer to alter
+    view->subview_clip = calloc( 1, sizeof( zdj_view_clip_t ) );
+    view->update_subview_clip = &zdj_view_stack_update_subview_clip;
+
+    // Use initializer frame if available
+    view->frame = calloc( 1, sizeof( zdj_rect_t ) );
+    if( frame ) {
+        view->frame->x = frame->x;
+        view->frame->y = frame->y;
+        view->frame->w = frame->w;
+        view->frame->h = frame->h;
+    }
+    return view;
+}
+
+void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview ) {
+    if( view->subviews ) {
+        zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+        top_subview->next = subview;
+        subview->prev = top_subview;
+    } else {
+        view->subviews = subview;
+    }
+}
+
+zdj_view_t * zdj_root_view( void ) {
+    return zdj_view_stack_root_view;
 }

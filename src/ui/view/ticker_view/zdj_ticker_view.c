@@ -9,11 +9,11 @@
 #include <zerodj/ui/font/zdj_font.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
-void draw_ticker_view( zdj_view_t * ticker_view, zdj_view_clip_t * clip );
+void _zdj_draw_ticker_view( zdj_view_t * ticker_view, zdj_view_clip_t * clip );
 
 // Ticker displays a single line of text, scrolling within a clipping frame.
 // If the text is shorter than the clipping frame, it does not scroll.
-zdj_view_t * new_ticker_view( 
+zdj_view_t * zdj_new_ticker_view( 
     char * str,
     zdj_font_t font,
     zdj_justify_t justify,
@@ -55,34 +55,30 @@ zdj_view_t * new_ticker_view(
     }
 
     // Build the ticker's view
-    zdj_view_t * ticker_view = zdj_view_stack_new_view( );
-    ticker_view->draw = &draw_ticker_view;
+    zdj_view_t * ticker_view = zdj_new_view( frame );
+    ticker_view->draw = &_zdj_draw_ticker_view;
     ticker_view->state = (void*)ticker_state;
 
-    // Build frame based on string texture metrics and input rect.
-    zdj_rect_t * f = calloc( 1, sizeof( zdj_rect_t ) );
-    ticker_view->frame = f;
     // Set vertical frame
-    f->h = ticker_state->tex_h;
-
+    ticker_view->frame->h = ticker_state->tex_h;
     // Set horizontal frame
     // We double the string on input to make scrolling work,
     // so we must cut it in half here.
     if( ticker_state->string_w > frame->w ) {
         // Only scroll if string is wider than frame
         ticker_state->is_scrolling = true;
-        f->w = frame->w;
+        ticker_view->frame->w = frame->w;
     } else {
         // A narrow string - we constrain the frame width to string width
         ticker_state->is_scrolling = false;
-        f->w = ticker_state->string_w;
+        ticker_view->frame->w = ticker_state->string_w;
     }
     
     return ticker_view;
 }
 
 
-void draw_ticker_view( zdj_view_t * ticker_view, zdj_view_clip_t * clip ) {
+void _zdj_draw_ticker_view( zdj_view_t * ticker_view, zdj_view_clip_t * clip ) {
     zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)ticker_view->state;
 
     SDL_Rect s;
@@ -114,11 +110,13 @@ void draw_ticker_view( zdj_view_t * ticker_view, zdj_view_clip_t * clip ) {
     // Dest rect comes directly from zdj_view clipping geometry
     SDL_Rect d = { clip->dst.x, clip->dst.y, clip->dst.w, clip->dst.h };
 
+    // Debug BG
+    // boxColor( zdj_renderer( ), d.x, d.y, d.x+d.w, d.y+d.h, ZDJ_MID_GRAY );
     // Draw the ticker
     SDL_RenderCopy( zdj_renderer( ), ticker_state->tex, &s, &d );
 }
 
-void free_ticker_view( zdj_view_t * ticker_view ) {
+void zdj_free_ticker_view( zdj_view_t * ticker_view ) {
     zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)ticker_view->state;
     free( ticker_state->str );
     SDL_DestroyTexture( ticker_state->tex );
