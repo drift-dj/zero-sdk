@@ -64,3 +64,18 @@ target_link_libraries(
     SDL2_gfx
     xml2
 )
+
+# add_custom_command(
+#     TARGET zerodj POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E echo "Copying libzerodj.a to sysroot/usr/lib"
+#     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:zerodj> ${CMAKE_BINARY_DIR}/sysroot/usr/lib/libzerodj.a
+
+#     COMMAND ${CMAKE_COMMAND} -E echo "Copying source directory to sysroot/usr/include/zerodj"
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/sysroot/usr/include/zerodj
+
+#     COMMAND ${CMAKE_COMMAND} -E echo "Removing .c files from sysroot/usr/include/zerodj"
+#     COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/sysroot/usr/include/zerodj/*.c
+
+#     COMMAND ${CMAKE_COMMAND} -E echo "Removing CMake files from sysroot/usr/include/zerodj"
+#     COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_BINARY_DIR}/sysroot/usr/include/zerodj/*CMake*
+# )
