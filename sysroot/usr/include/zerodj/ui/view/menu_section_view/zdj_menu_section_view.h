@@ -9,7 +9,7 @@ typedef enum {
 } zdj_menu_section_view_layout_t;
 
 typedef struct {
-    zdj_view_t * ticker;
+    zdj_view_t * title_ticker;
 } zdj_menu_section_view_state_t;
 
 zdj_view_t * zdj_new_menu_section( char * title );
