@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.23)
 project(zerodj VERSION 0.1.0 LANGUAGES C)
 
 add_library(zerodj 
-    src/anim/zdj_anim.c
     src/display/zdj_display.c
     src/m7/zdj_m7.c
     src/hmi/zdj_hmi.c
@@ -12,14 +11,21 @@ add_library(zerodj
     src/registry/zdj_registry.c
     src/ui/zdj_ui.c
     src/ui/zdj_ui_util.c
+    src/ui/anim/zdj_anim.c
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
     src/ui/view/zdj_view_stack.c
+    src/ui/view/label_view/zdj_label_view.c
     src/ui/view/menu_view/zdj_menu_view.c
+    src/ui/view/menu_header_view/zdj_menu_header_view.c
     src/ui/view/menu_item_view/zdj_menu_item_view.c
-    src/ui/view/menu_item_view/zdj_menu_item_static_simple.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_basic.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_data.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_slider.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_toggle.c
     src/ui/view/menu_section_view/zdj_menu_section_view.c
     src/ui/view/scroll_view/zdj_scroll_view.c
+    src/ui/view/texture_view/zdj_texture_view.c
     src/ui/view/ticker_view/zdj_ticker_view.c
     src/xml/zdj_xml.c
 )

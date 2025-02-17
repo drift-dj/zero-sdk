@@ -1,5 +1,5 @@
-#ifndef ZDJ_TICKER_STR_H
-#define ZDJ_TICKER_STR_H
+#ifndef ZDJ_TICKER_VIEW_H
+#define ZDJ_TICKER_VIEW_H
 
 #include <SDL2/SDL.h>
 
@@ -9,10 +9,11 @@ typedef struct {
     char * str;
     zdj_font_t font;
     zdj_justify_t justify;
-    SDL_Texture * tex;
-    int tex_w;
-    int tex_h;
-    int string_w;
+    zdj_view_t * texture_view;
+    int text_h;
+    int single_text_w;
+    int double_text_w;
+    int text_w; // For superviews which need to know final width of ticker
     bool is_scrolling;
     float scroll_rate;
     float scroll_offset;
@@ -22,9 +23,7 @@ zdj_view_t * zdj_new_ticker_view(
     char * str,
     zdj_font_t font,
     zdj_justify_t justify,
-    SDL_Color color,
-    zdj_rect_t * frame
+    SDL_Color color
 );
-void zdj_free_ticker_view( zdj_view_t * ticker_view );
 
 #endif
