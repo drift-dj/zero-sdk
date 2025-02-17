@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/font/zdj_font.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/display/zdj_display.h>
@@ -13,6 +14,8 @@ SDL_Surface* zdj_display_surface;
 uint32_t * zdj_ui_pixels = NULL;
 static int zdj_view_stack_id = 0;
 
+void _zdj_view_deinit( struct zdj_view_t * );
+
 void zdj_ui_init( void ) {
     // Grab the display memory
     zdj_display_init( );
@@ -20,7 +23,7 @@ void zdj_ui_init( void ) {
     // Init the HMI event system
     zdj_hmi_init( );
 
-    // Bringup SDL - crash on fail
+    // Bringup SDL - exit on fail
     int err = SDL_Init( SDL_INIT_VIDEO );
     if( err != 0 ) {
         printf( "Zero failed to init graphics lib... exiting\n" );
@@ -40,9 +43,15 @@ void zdj_ui_init( void ) {
         printf( "Zero failed to init system fonts... exiting\n" );
         exit( ZDJ_HEALTH_STATUS_MISSING_GFX_RESOURCE );
     }
-    
+
+    err = zdj_ui_asset_init( );
+    if( err != 0 ) {
+        printf( "Zero failed to init system assets... exiting\n" );
+        exit( ZDJ_HEALTH_STATUS_MISSING_GFX_RESOURCE );
+    }
+
     // Bringup the display stack
-    zdj_view_stack_init( );
+    zdj_view_stack_init( ); 
 }
 
 void zdj_ui_deinit( void ) {
@@ -82,6 +91,7 @@ void zdj_ui_stop_events( void ) {
 zdj_view_t * zdj_new_view( zdj_rect_t * frame ) {
     zdj_view_t * view = calloc( 1, sizeof( zdj_view_t ) );
     view->id = zdj_view_stack_id++;
+    view->deinit = &_zdj_view_deinit;
     
     // Default metrics update -- re-define in front-end layer to alter
     view->subview_clip = calloc( 1, sizeof( zdj_view_clip_t ) );
@@ -106,6 +116,44 @@ void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview ) {
     } else {
         view->subviews = subview;
     }
+}
+
+// Remove the top subview of a view
+void zdj_pop_subview_of( zdj_view_t * view ) {
+    if( view->subviews ) {
+        zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+        zdj_view_t * new_top_subview = top_subview->prev;
+        if( new_top_subview ) {
+            new_top_subview->next = NULL;
+        }
+        top_subview->deinit( top_subview );
+    }
+}
+
+void zdj_remove_subviews( zdj_view_t * view ) {
+    zdj_view_t * subview = view->subviews;
+    while( subview ) {
+        zdj_view_t * old_subview = subview;
+        subview = subview->next;
+        old_subview->deinit( old_subview );
+    }
+    view->subviews = NULL;
+}
+
+void _zdj_view_deinit( zdj_view_t * view ) {
+    // Deinit subviews
+    zdj_view_t * subview = view->subviews;
+    while( subview ) {
+        zdj_view_t * old_subview = subview;
+        subview = subview->next;
+        old_subview->deinit( old_subview );
+    }
+    if( view->deinit_state ) {
+        view->deinit_state( view );
+    }
+    free( view->subview_clip );
+    free( view->frame );
+    free( view );
 }
 
 zdj_view_t * zdj_root_view( void ) {

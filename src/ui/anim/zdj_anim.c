@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-#include <zerodj/anim/zdj_anim.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 
 int anim_id;
 zdj_anim_state_t * zdj_anim_head;

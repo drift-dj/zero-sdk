@@ -11,6 +11,10 @@
 #define ZDJ_BLACK 0xFF000000
 #define ZDJ_SDL_BLACK (SDL_Color){0,0,0,255}
 
+#define ZDJ_BLINK_LENGTH 20
+#define ZDJ_BLINK_PERIOD 7
+#define ZDJ_BLINK_DUTY 3
+
 typedef struct {
     float x;
     float y;
@@ -83,10 +87,10 @@ typedef struct zdj_view_t {
     zdj_view_type_t type;
     void ( *init )( struct zdj_view_t * );
     void ( *deinit )( struct zdj_view_t * );
+    void ( *deinit_state )( struct zdj_view_t * );
     void ( *draw )( struct zdj_view_t *, zdj_view_clip_t * );
     void ( *update_subview_clip )( struct zdj_view_t *, zdj_view_clip_t * );
     void ( *handle_hmi_event )( struct zdj_view_t *, void * );
-    void ( *update_data )( struct zdj_view_t *, void * );
     struct zdj_view_t * next;
     struct zdj_view_t * prev;
     struct zdj_view_t * subviews;
@@ -114,6 +118,8 @@ void zdj_ui_stop_events( void );
 
 zdj_view_t * zdj_new_view( zdj_rect_t * frame );
 void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview );
+void zdj_pop_subview_of( zdj_view_t * view );
+void zdj_remove_subviews( zdj_view_t * view ); // change to remove_subviews_of
 zdj_view_t * zdj_root_view( void );
 
 #endif

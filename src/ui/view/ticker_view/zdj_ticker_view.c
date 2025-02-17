@@ -5,11 +5,13 @@
 
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
+#include <zerodj/ui/view/texture_view/zdj_texture_view.h>
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 #include <zerodj/ui/font/zdj_font.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
-void _zdj_draw_ticker_view( zdj_view_t * ticker_view, zdj_view_clip_t * clip );
+void _zdj_ticker_view_draw( zdj_view_t * view, zdj_view_clip_t * clip );
+void _zdj_ticker_view_deinit_state( zdj_view_t * view );
 
 // Ticker displays a single line of text, scrolling within a clipping frame.
 // If the text is shorter than the clipping frame, it does not scroll.
@@ -17,15 +19,20 @@ zdj_view_t * zdj_new_ticker_view(
     char * str,
     zdj_font_t font,
     zdj_justify_t justify,
-    SDL_Color color,
-    zdj_rect_t * frame
+    SDL_Color color
 ) {
+    // Build the ticker's view
+    zdj_view_t * view = zdj_new_view( NULL );
+    view->draw = &_zdj_ticker_view_draw;
+    view->deinit_state = &_zdj_ticker_view_deinit_state;
+
     // Build the ticker_view state instance
-    zdj_ticker_state_t * ticker_state = malloc( sizeof( zdj_ticker_state_t ) );
-    ticker_state->scroll_offset = 0;
-    ticker_state->scroll_rate = 0.3;
-    ticker_state->str = strdup( str );
-    ticker_state->justify = justify;
+    zdj_ticker_state_t * state = calloc( 1, sizeof( zdj_ticker_state_t ) );
+    state->scroll_offset = 0;
+    state->scroll_rate = 0.3;
+    state->str = strdup( str );
+    state->justify = justify;
+    view->state = (void*)state;
 
     // Build type texture
     TTF_Font * ttf_font = zdj_font( font );
@@ -38,87 +45,67 @@ zdj_view_t * zdj_new_ticker_view(
             str,
             str
         );
+
         // Build the texture/text size from rendered string
         SDL_Surface *surface;
         surface = TTF_RenderText_Solid( ttf_font, double_str, color );
-        ticker_state->tex = SDL_CreateTextureFromSurface( zdj_renderer( ), surface );
-        ticker_state->tex_w = surface->w;
-        ticker_state->tex_h = surface->h;
+
         // Because we've duplicated the input string, we need to cut the width in half.
-        ticker_state->string_w = (ticker_state->tex_w / 2)+3;
+        state->single_text_w = (surface->w / 2)-3;
+        state->double_text_w = surface->w;
+        state->text_h = surface->h;
+        
+        // Add the text texture view
+        state->texture_view = zdj_new_texture_view( 
+            SDL_CreateTextureFromSurface( zdj_renderer( ), surface ),
+            surface->w,
+            surface->h
+        );
+        zdj_add_subview( view, state->texture_view );
+
         SDL_FreeSurface( surface );
     } else {
         // Missing font will draw in the error texture
-        ticker_state->tex = zdj_ui_asset_error_tex( );
-        ticker_state->tex_w = 4;
-        ticker_state->tex_h = 4;
+        // ticker_state->tex = zdj_ui_asset_error_tex( );
+        // ticker_state->tex_w = 4;
+        // ticker_state->tex_h = 4;
     }
 
-    // Build the ticker's view
-    zdj_view_t * ticker_view = zdj_new_view( frame );
-    ticker_view->draw = &_zdj_draw_ticker_view;
-    ticker_view->state = (void*)ticker_state;
-
-    // Set vertical frame
-    ticker_view->frame->h = ticker_state->tex_h;
-    // Set horizontal frame
-    // We double the string on input to make scrolling work,
-    // so we must cut it in half here.
-    if( ticker_state->string_w > frame->w ) {
-        // Only scroll if string is wider than frame
-        ticker_state->is_scrolling = true;
-        ticker_view->frame->w = frame->w;
-    } else {
-        // A narrow string - we constrain the frame width to string width
-        ticker_state->is_scrolling = false;
-        ticker_view->frame->w = ticker_state->string_w;
-    }
-    
-    return ticker_view;
+    return view;
 }
 
+void _zdj_ticker_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    zdj_ticker_state_t * state = (zdj_ticker_state_t*)view->state;
 
-void _zdj_draw_ticker_view( zdj_view_t * ticker_view, zdj_view_clip_t * clip ) {
-    zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)ticker_view->state;
+    // Figure out if we're scrolling - based on view width vs. width of string
+    bool is_scrolling = (view->frame->w < state->single_text_w);
 
-    SDL_Rect s;
-    if( ticker_state->is_scrolling ) {
-        // Update scroll offset based on scroll rate
-        ticker_state->scroll_offset += ticker_state->scroll_rate;
-        if( ticker_state->scroll_offset > ticker_state->string_w ) {
-            ticker_state->scroll_offset -= ticker_state->string_w;
+    if( is_scrolling ) {
+        state->texture_view->frame->w = state->double_text_w;
+        state->text_w = view->frame->w;
+
+        // Update scroll_offset
+        state->scroll_offset += state->scroll_rate;
+        if( state->scroll_offset > state->single_text_w ) {
+            state->scroll_offset -= state->single_text_w + 6;
         }
-        // If we are scrolling, we first need to clip into the text texture based
-        // on scroll offset.
-        s.x = ticker_state->scroll_offset;
-        s.y = 0;
-        s.w = ticker_view->frame->w;
-        s.h = ticker_view->frame->h;
-        // We then need to clip that clipping rect using clip->src.
-        s.x += clip->src.x;
-        s.y += clip->src.y;
-        s.w = clip->src.w;
-        s.h = clip->src.h;
+        state->texture_view->frame->x = state->scroll_offset * -1;
     } else {
-        // If we're not scrolling, just clip into the text texture based on clip->src.
-        s.x = clip->src.x;
-        s.y = clip->src.y;
-        s.w = clip->src.w;
-        s.h = clip->src.h;
+        state->text_w = state->single_text_w;
+
+        // Adjust texture_view frame within view's frame based on justify setting.
+        if( state->justify == ZDJ_JUSTIFY_LEFT ) {
+            state->texture_view->frame->x = 0;
+        } else if( state->justify == ZDJ_JUSTIFY_RIGHT ) {
+            state->texture_view->frame->x = view->frame->w - state->single_text_w;
+        }
+        state->texture_view->frame->w = state->single_text_w;
     }
-
-    // Dest rect comes directly from zdj_view clipping geometry
-    SDL_Rect d = { clip->dst.x, clip->dst.y, clip->dst.w, clip->dst.h };
-
-    // Debug BG
-    // boxColor( zdj_renderer( ), d.x, d.y, d.x+d.w, d.y+d.h, ZDJ_MID_GRAY );
-    // Draw the ticker
-    SDL_RenderCopy( zdj_renderer( ), ticker_state->tex, &s, &d );
 }
 
-void zdj_free_ticker_view( zdj_view_t * ticker_view ) {
-    zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)ticker_view->state;
-    free( ticker_state->str );
-    SDL_DestroyTexture( ticker_state->tex );
-    free( ticker_state );
+void _zdj_ticker_view_deinit_state( zdj_view_t * view ) {
+    zdj_ticker_state_t * state = (zdj_ticker_state_t*)view->state;
+    free( state->str );
+    free( state );
+    view->state = NULL;
 }
