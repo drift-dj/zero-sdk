@@ -1,5 +1,5 @@
 set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR arm)
+set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 # Use the system installed clang unless CUSTOM_CLANG_PATH is set
 if(CUSTOM_CLANG_PATH)

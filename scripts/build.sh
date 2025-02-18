@@ -18,11 +18,14 @@ if [ "$CLEAN_BUILD" = true ]; then
   rm -rf build
 fi
 
-# Get directory of this script
+# Get directory of the script (not the current working directory)
 DIR="$(cd "$(dirname "$0")" && pwd -P)"
+BUILD_DIR=$(realpath $DIR/../build)
+ROOT_DIR=$(realpath $DIR/..)
 
 # Cmake configure using the toolchain file
-cmake -G Ninja -S . -B build --toolchain $DIR/../cmake/toolchain.cmake
+echo "Running CMake configuration..."
+cmake -G Ninja -S $ROOT_DIR -B $BUILD_DIR --toolchain $DIR/../cmake/toolchain.cmake
 
 # Build local project
-cmake --build build --config Release
+cmake --build $BUILD_DIR --config Release
