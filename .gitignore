@@ -42,4 +42,8 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-*build/*
+# Build directory
+build/
+
+# SDK path file
+*sdk_path.cmake
