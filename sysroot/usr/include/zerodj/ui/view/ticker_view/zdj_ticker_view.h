@@ -26,4 +26,6 @@ zdj_view_t * zdj_new_ticker_view(
     SDL_Color color
 );
 
+int zdj_ticker_view_get_text_w( zdj_view_t * view );
+
 #endif
