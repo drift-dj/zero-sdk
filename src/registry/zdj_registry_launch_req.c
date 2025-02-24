@@ -5,7 +5,14 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef IS_REGISTRY_BUILDER
+// Used by main_registry_data.c in zero-boot repo to pre-compile
+// registry data for load into OS distro.
+#include "zdj_registry.h"
+#else
 #include <zerodj/registry/zdj_registry.h>
+#endif
+
 
 // Create a new launch_req from params.
 // This must be suitable for immediate use AND for 
@@ -68,7 +75,6 @@ zdj_launch_req_t * zdj_registry_process_new_launch_req( char * path ) {
 // then populate the reg_install pointers by loading
 // a matching persisted zdj_install_t from storage.
 zdj_launch_req_t * zdj_registry_load_launch_req( char * launch_req_path ) {
-    // printf( "zdj_registry_load_launch_req( %s )\n", launch_req_path );
     // Load the request from storage
     zdj_launch_req_t * req = malloc( sizeof( zdj_launch_req_t ) );
     zdj_registry_retrieve_launch_req_file( launch_req_path, req );
@@ -81,7 +87,6 @@ zdj_launch_req_t * zdj_registry_load_launch_req( char * launch_req_path ) {
 }
 
 void zdj_registry_retrieve_launch_req_file( char * path, zdj_launch_req_t * launch_req ) {
-    // printf( "zdj_registry_retrieve_launch_req_file( %s )\n", path );
     FILE * fp;
     if ( access( path, F_OK ) == 0 ) {
         fp = fopen( path, "r" );
@@ -99,7 +104,6 @@ void zdj_registry_retrieve_launch_req_file( char * path, zdj_launch_req_t * laun
 
 // Populate app/fallback install records of a launch_req from storage.
 void zdj_registry_load_launch_req_installs( zdj_launch_req_t * launch_req ) {
-    // printf( "zdj_registry_load_launch_req_installs( %p )\n", launch_req );
     // If we have a NULL app_install_name, we just tried
     // to switch to a non-existing fallback.
     // Declare the launch_req to be unhealthy and return.
@@ -110,7 +114,6 @@ void zdj_registry_load_launch_req_installs( zdj_launch_req_t * launch_req ) {
 
     // Load main app install record from storage
     launch_req->app_install = malloc( sizeof( zdj_install_t ) );
-    // printf( "%s\n", launch_req->app_install_name );
     zdj_registry_install_for_filename( launch_req->app_install_name, launch_req->app_install );
     if( launch_req->app_install->health > ZDJ_REGISTRY_HEALTH_UNKNOWN ) {
         launch_req->health = launch_req->app_install->health;
@@ -137,52 +140,4 @@ void zdj_registry_launch_req_switch_to_fallback( zdj_launch_req_t * launch_req )
     launch_req->fallback_install_name = NULL;
     // Attach installs from storage + set req health
     zdj_registry_load_launch_req_installs( launch_req );
-}
-
-
-
-
-
-// Create an install record from params
-zdj_install_t * zdj_registry_create_install( 
-    char * install_name,
-    char * display_name,
-    char * bin_path,
-    char * desc,
-    uint8_t v_maj,
-    uint8_t v_min,
-    uint8_t v_hf,
-    uint16_t v_b
-) {
-    // Make UUID
-    // Make version string
-    // Set initial health state
-    zdj_install_t * install = malloc( sizeof( zdj_install_t ) );
-    strcpy( install->install_name, install_name );
-    strcpy( install->display_name, display_name );
-    strcpy( install->bin_path, bin_path );
-    strcpy( install->version.desc, desc );
-    install->version.major = v_maj;
-    install->version.minor = v_min;
-    install->version.hotfix = v_hf;
-    install->version.build = v_b;
-    return install;
-}
-
-void zdj_registry_install_for_filename( char * name, zdj_install_t * install ) {
-    FILE * fp;
-    char install_path[ 1024 ];
-    snprintf( install_path, sizeof( install_path ), "/etc/registry/install/%s", name );
-    if ( access( install_path, F_OK ) == 0 ) {
-        fp = fopen( install_path, "r" );
-        int br = fread( install, sizeof( zdj_install_t ), 1, fp );
-        fclose( fp );
-        if( br == 1 ) {
-            install->health = ZDJ_REGISTRY_HEALTH_UNKNOWN;
-        } else {
-            install->health = ZDJ_REGISTRY_HEALTH_BAD_RECORD;
-        }
-    } else {
-        install->health = ZDJ_REGISTRY_HEALTH_NO_RECORD;
-    }
 }

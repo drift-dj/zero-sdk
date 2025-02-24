@@ -10,6 +10,7 @@ typedef enum {
 
 typedef struct {
     zdj_view_t * title_ticker;
+    zdj_view_t * divider;
 } zdj_menu_section_view_state_t;
 
 zdj_view_t * zdj_new_menu_section( char * title );

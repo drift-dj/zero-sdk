@@ -118,6 +118,46 @@ void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview ) {
     }
 }
 
+void zdj_remove_subview( zdj_view_t * view, zdj_view_t * subview ) {
+    // If this is the base subview, null subviews out
+    if( subview->next && subview->prev ) {
+        // If we're in the middle of a linked list, splice the subview out
+        subview->next->prev = subview->prev;
+        subview->prev->next = subview->next;
+    } else if( subview->next ) {
+        // If we're at the beginning of the linked list,
+        // subview.next becomes head of superview's subviews list.
+        subview->next->prev = NULL;
+        view->subviews = subview->next;
+    } else if( subview->prev ) {
+        // If we're at the end of the linked list, null out the new end.
+        subview->prev->next = NULL;
+    }
+    subview->deinit( subview );
+}
+
+void zdj_add_subview_below( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview ) {
+    if( target_subview->prev ) {
+        zdj_view_t * old_prev = target_subview->prev;
+        old_prev->next = new_subview;
+        target_subview->prev = new_subview;
+        new_subview->prev = old_prev;
+        new_subview->next = target_subview;
+    } else {
+        target_subview->prev = new_subview;
+        new_subview->next = target_subview;
+        view->subviews = new_subview;
+    }
+}
+
+void zdj_add_bottom_subview_to( zdj_view_t * view, zdj_view_t * new_subview ) {
+    if( view->subviews ) {
+        view->subviews->prev = new_subview;
+        new_subview->next = view->subviews;
+    }
+    view->subviews = new_subview;
+}
+
 // Remove the top subview of a view
 void zdj_pop_subview_of( zdj_view_t * view ) {
     if( view->subviews ) {
@@ -130,7 +170,7 @@ void zdj_pop_subview_of( zdj_view_t * view ) {
     }
 }
 
-void zdj_remove_subviews( zdj_view_t * view ) {
+void zdj_remove_subviews_of( zdj_view_t * view ) {
     zdj_view_t * subview = view->subviews;
     while( subview ) {
         zdj_view_t * old_subview = subview;
@@ -158,4 +198,14 @@ void _zdj_view_deinit( zdj_view_t * view ) {
 
 zdj_view_t * zdj_root_view( void ) {
     return zdj_view_stack_root_view;
+}
+
+void zdj_print_subviews_of( zdj_view_t * view ) {
+    printf( "Subviews of: %p\n", view );
+    zdj_view_t * subview = view->subviews;
+    while( subview ) {
+        printf( "  %p<%p>%p", subview->prev, subview, subview->next );
+        subview = subview->next;
+    }
+    printf( "\n" );
 }
