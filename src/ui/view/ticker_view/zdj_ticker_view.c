@@ -109,3 +109,15 @@ void _zdj_ticker_view_deinit_state( zdj_view_t * view ) {
     free( state );
     view->state = NULL;
 }
+
+// Calculate ticker's width based on frame size/scrolling size.
+// Ticker's frame size must be set before calling this.
+int zdj_ticker_view_get_text_w( zdj_view_t * view ) {
+    zdj_ticker_state_t * state = (zdj_ticker_state_t*)view->state;
+    bool is_scrolling = (view->frame->w < state->single_text_w);
+    if( is_scrolling ) {
+        return view->frame->w;
+    } else {
+        return state->single_text_w;
+    }
+}

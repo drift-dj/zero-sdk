@@ -7,6 +7,7 @@
 #define ZDJ_WHITE 0xFFFFFFFF
 #define ZDJ_SDL_WHITE (SDL_Color){255,255,255,255}
 #define ZDJ_MID_GRAY 0xFF999999
+#define ZDJ_SDL_MID_GRAY (SDL_Color){127,127,127,255}
 #define ZDJ_DK_GRAY 0xFF330000
 #define ZDJ_BLACK 0xFF000000
 #define ZDJ_SDL_BLACK (SDL_Color){0,0,0,255}
@@ -33,6 +34,7 @@ typedef struct {
     int i_val;
     float f_val;
     bool b_val;
+    void * ptr;
 } zdj_ui_data_t;
 
 typedef enum {
@@ -52,7 +54,9 @@ typedef enum {
     ZDJ_FONT_6_CAPS,
     ZDJ_FONT_6_BOLD,
     ZDJ_FONT_9,
-    ZDJ_FONT_9_BOLD
+    ZDJ_FONT_9_BOLD,
+    ZDJ_FONT_12,
+    ZDJ_FONT_12_CAPS
 } zdj_font_t;
 
 typedef enum {
@@ -106,6 +110,8 @@ extern SDL_Renderer* zdj_display_renderer;
 extern zdj_rect_t * zdj_screen_rect_priv;
 SDL_Renderer * zdj_renderer( void );
 zdj_rect_t * zdj_screen_rect( void );
+zdj_rect_t * zdj_modal_rect( void );
+zdj_rect_t * zdj_menu_rect( void );
 bool zdj_ui_intersect( zdj_rect_t * rect1, zdj_rect_t * rect2 );
 SDL_Texture * zdj_ui_texture_from_bmp( char * filepath );
 
@@ -118,8 +124,13 @@ void zdj_ui_stop_events( void );
 
 zdj_view_t * zdj_new_view( zdj_rect_t * frame );
 void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview );
+void zdj_remove_subview( zdj_view_t * view, zdj_view_t * subview );
 void zdj_pop_subview_of( zdj_view_t * view );
-void zdj_remove_subviews( zdj_view_t * view ); // change to remove_subviews_of
+void zdj_remove_subviews_of( zdj_view_t * view ); // change to remove_subviews_of
+void zdj_add_subview_below( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview );
+void zdj_add_bottom_subview_to( zdj_view_t * view, zdj_view_t * new_subview );
 zdj_view_t * zdj_root_view( void );
+
+void zdj_print_subviews_of( zdj_view_t * view );
 
 #endif

@@ -18,7 +18,8 @@ zdj_view_t * zdj_new_scroll_view(
     zdj_scroll_view_state_t * scroll_view_state = calloc( 1, sizeof( zdj_scroll_view_state_t ) );
 
     // Build the scroll view
-    zdj_view_t * scroll_view = zdj_new_view( frame );
+    zdj_rect_t rect = {0,0,frame->w,frame->h};
+    zdj_view_t * scroll_view = zdj_new_view( &(zdj_rect_t){0,0,frame->w,frame->h} );
     // scroll_view->draw = &_zdj_scroll_view_debug_draw;
     scroll_view->deinit_state = &_zdj_scroll_view_deinit_state;
     scroll_view->state = (void*)scroll_view_state;

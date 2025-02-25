@@ -3,24 +3,35 @@ project(zerodj VERSION 0.1.0 LANGUAGES C)
 
 add_library(zerodj 
     src/display/zdj_display.c
+    src/fs/zdj_fs.c
     src/m7/zdj_m7.c
     src/hmi/zdj_hmi.c
     src/hmi/input/zdj_hmi_input.c
     src/hmi/input/zdj_hmi_sm_analog.c
     src/hmi/input/zdj_hmi_sm_digital.c
+    src/installer/zdj_installer.c
     src/registry/zdj_registry.c
+    src/registry/zdj_registry_install.c
+    src/registry/zdj_registry_launch_req.c
+    src/sql/zdj_sql.c
     src/ui/zdj_ui.c
     src/ui/zdj_ui_util.c
     src/ui/anim/zdj_anim.c
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
     src/ui/view/zdj_view_stack.c
+    src/ui/view/asset_view/zdj_asset_view.c
+    src/ui/view/file_browser_view/zdj_file_browser_view.c
+    src/ui/view/file_browser_view/zdj_file_browser_devices_menu.c
+    src/ui/view/file_browser_view/zdj_file_browser_file_menu.c
     src/ui/view/label_view/zdj_label_view.c
     src/ui/view/menu_view/zdj_menu_view.c
     src/ui/view/menu_header_view/zdj_menu_header_view.c
     src/ui/view/menu_item_view/zdj_menu_item_view.c
     src/ui/view/menu_item_view/zdj_menu_item_view_basic.c
     src/ui/view/menu_item_view/zdj_menu_item_view_data.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_dir.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_nohilite.c
     src/ui/view/menu_item_view/zdj_menu_item_view_slider.c
     src/ui/view/menu_item_view/zdj_menu_item_view_toggle.c
     src/ui/view/menu_section_view/zdj_menu_section_view.c
@@ -68,6 +79,7 @@ target_link_libraries(
     SDL2_ttf
     SDL2_image
     SDL2_gfx
+    sqlite3
     xml2
 )
 

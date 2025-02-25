@@ -32,10 +32,12 @@ void zdj_view_stack_update( void ) {
     zdj_hmi_event_t * event;
 
     // Pass events into root view's subviews (top-down)
-    zdj_view_stack_handle_events( zdj_view_stack_top_subview_of(zdj_root_view( )) );
+    view = zdj_view_stack_top_subview_of(zdj_root_view( ));
+    if( view ) { zdj_view_stack_handle_events( view ); }
 
     // Draw root view's subviews (bottom-up)
-    zdj_view_stack_draw( zdj_view_stack_bottom_subview_of(zdj_root_view( )), zdj_root_view( )->subview_clip );
+    view = zdj_view_stack_bottom_subview_of(zdj_root_view( ));
+    if( view ) { zdj_view_stack_draw( view, zdj_root_view( )->subview_clip ); }
 }
 
 void zdj_view_stack_clear_screen( void ) {
@@ -45,16 +47,21 @@ void zdj_view_stack_clear_screen( void ) {
 // Walk backward thru a view's stack of siblings.
 // Note that this only walks siblings, it doesn't recurse into subviews.
 // This function must be called on the LAST view in the linked list of subviews.
+// SUPER IMPORTANT: view stack linkage can be mutated as a result of any event.
+// Never assume that a view will still exist after an event is handled.
 void zdj_view_stack_handle_events( zdj_view_t * view ) {
+    // Get a prev ref before processing view's events in case it gets deleted during processing.
+    zdj_view_t * view_prev = view->prev;
     if( view->handle_hmi_event ) {
         zdj_hmi_event_t * event = zdj_hmi_event_base;
         while( event ) {
-            view->handle_hmi_event( view, event );
+            // View/subviews can be deleted during handle_hmi_event()
+            if( view ) { view->handle_hmi_event( view, event ); }
             event = (zdj_hmi_event_t *)event->next;
         }
     }
-    if( view->prev ) {
-        zdj_view_stack_handle_events( view->prev );
+    if( view_prev ) {
+        zdj_view_stack_handle_events( view_prev );
     }
 }
 

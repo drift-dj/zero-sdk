@@ -50,7 +50,7 @@ void _zdj_label_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_label_state_t * label_state = (zdj_label_state_t*)view->state;
 
     // Debug BG
-    // boxColor( zdj_renderer( ), d.x, d.y, d.x+d.w, d.y+d.h, ZDJ_MID_GRAY );
+    // boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_MID_GRAY );
     
     // Draw the label
     SDL_Rect s = { clip->src.x, clip->src.y, clip->src.w, clip->src.h };

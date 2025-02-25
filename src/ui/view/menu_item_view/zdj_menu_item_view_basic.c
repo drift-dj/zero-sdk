@@ -4,105 +4,81 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/asset/zdj_ui_asset.h>
+#include <zerodj/ui/view/asset_view/zdj_asset_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 
-void _zdj_menu_item_view_basic_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_clip_t * clip, bool hilite );
-
-void zdj_menu_item_draw_basic_l( zdj_view_t * view, zdj_view_clip_t * clip ) {
+void zdj_menu_item_basic_l_update_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
-    if( !state->has_valid_display ) {
-        zdj_remove_subviews( view );
-        // Setup title ticker
-        state->title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-        zdj_add_subview( view, state->title_ticker );
-        state->title_ticker_hi = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
-        zdj_add_subview( view, state->title_ticker_hi );
-        state->has_valid_display = true;
-    }
-
-    if( state->is_blinking ) {
-        if( state->blink_timer++ > ZDJ_BLINK_LENGTH ) {
-            // exit blink state after time
-            state->is_blinking = false;
-            state->blink_timer = 0;
-            state->is_hilite = false;
-        } else {
-            // blink on a cycle
-            if( state->blink_timer % ZDJ_BLINK_PERIOD > ZDJ_BLINK_DUTY ) {
-                _zdj_menu_item_view_basic_set_hilite( state, clip, true );
-            } else {
-                _zdj_menu_item_view_basic_set_hilite( state, clip, false );
-            }
-        }
-    } else {
-        _zdj_menu_item_view_basic_set_hilite( state, clip, state->is_hilite );
-    }
+    // Clear out the normal/hilite views' subviews
+    zdj_remove_subviews_of( state->hilite_view );
+    zdj_remove_subviews_of( state->normal_view );
     
-    if( state->title_ticker ) {
-        state->title_ticker->frame->x = ZDJ_MENU_ITEM_MARGIN_L;
-        state->title_ticker->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_L;
-        state->title_ticker->frame->h = view->frame->h;
-    }
-    if( state->title_ticker_hi ) {
-        state->title_ticker_hi->frame->x = ZDJ_MENU_ITEM_MARGIN_L + 1;
-        state->title_ticker_hi->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_L;
-        state->title_ticker_hi->frame->h = view->frame->h;
-    }
+    state->normal_view->frame->w = view->frame->w;
+    state->normal_view->frame->h = view->frame->h;
+    state->hilite_view->frame->w = view->frame->w;
+    state->hilite_view->frame->h = view->frame->h;
+
+    // Setup normal view
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_add_subview( state->normal_view, title_ticker_norm );
+    title_ticker_norm->frame->x = ZDJ_MENU_ITEM_MARGIN_L;
+    title_ticker_norm->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_L - ZDJ_MENU_ITEM_MARGIN_R;
+    title_ticker_norm->frame->h = view->frame->h;
+    
+    // Setup hilite view
+    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    // Add hilite texture below ticker
+    zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)title_ticker_hilite->state;
+    zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ERROR_TEX ], NULL );
+    zdj_add_subview( state->hilite_view, hilite_bg );
+    hilite_bg->frame->w = ticker_state->text_w + 5;
+    hilite_bg->frame->h = view->frame->h;
+    zdj_add_subview( state->hilite_view, title_ticker_hilite );
+    title_ticker_hilite->frame->x = ZDJ_MENU_ITEM_MARGIN_L;
+    title_ticker_hilite->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_L - ZDJ_MENU_ITEM_MARGIN_R;
+    title_ticker_hilite->frame->h = view->frame->h;
+
+    state->has_valid_display = true;
 }
 
-void zdj_menu_item_draw_basic_r( zdj_view_t * view, zdj_view_clip_t * clip ) {
+void zdj_menu_item_basic_r_update_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
-    if( !state->has_valid_display ) {
-        zdj_remove_subviews( view );
-        // Setup title ticker
-        state->title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
-        zdj_add_subview( view, state->title_ticker );
-        state->title_ticker_hi = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
-        zdj_add_subview( view, state->title_ticker_hi );
-        state->has_valid_display = true;
-    }
-    
-    if( state->is_blinking ) {
-        if( state->blink_timer++ > ZDJ_BLINK_LENGTH ) {
-            // exit blink state after time
-            state->is_blinking = false;
-            state->blink_timer = 0;
-            state->is_hilite = false;
-        } else {
-            // blink on a cycle
-            if( state->blink_timer % ZDJ_BLINK_PERIOD > ZDJ_BLINK_DUTY ) {
-                _zdj_menu_item_view_basic_set_hilite( state, clip, true );
-            } else {
-                _zdj_menu_item_view_basic_set_hilite( state, clip, false );
-            }
-        }
-    } else {
-        _zdj_menu_item_view_basic_set_hilite( state, clip, state->is_hilite );
-    }
-    
-    if( state->title_ticker ) {
-        state->title_ticker->frame->x = 0;
-        state->title_ticker->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_R;
-        state->title_ticker->frame->h = view->frame->h;
-    }
-    if( state->title_ticker_hi ) {
-        state->title_ticker_hi->frame->x = 0;
-        state->title_ticker_hi->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_R - 1;
-        state->title_ticker_hi->frame->h = view->frame->h;
-    }
-}
+    // Clear out the normal/hilite views' subviews
+    zdj_remove_subviews_of( state->hilite_view );
+    zdj_remove_subviews_of( state->normal_view );
 
-void _zdj_menu_item_view_basic_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_clip_t * clip, bool hilite ) {
-    if( hilite ) {
-        boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFFFF0000 );
-        if( state->title_ticker ) { state->title_ticker->frame->y = -10; }
-        if( state->title_ticker_hi ) { state->title_ticker_hi->frame->y = 0; }
-    } else {
-        if( state->title_ticker ) { state->title_ticker->frame->y = 0; }
-        if( state->title_ticker_hi ) { state->title_ticker_hi->frame->y = -10; }
-    }
+    state->normal_view->frame->w = view->frame->w;
+    state->normal_view->frame->h = view->frame->h;
+    state->hilite_view->frame->w = view->frame->w;
+    state->hilite_view->frame->h = view->frame->h;
+    
+    // Setup normal view
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
+    zdj_add_subview( state->normal_view, title_ticker_norm );
+    title_ticker_norm->frame->x = ZDJ_MENU_ITEM_MARGIN_L;
+    title_ticker_norm->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_L - ZDJ_MENU_ITEM_MARGIN_R;
+    title_ticker_norm->frame->h = view->frame->h;
+    
+    // Setup hilite view
+    zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WHITE ], NULL );
+    zdj_add_subview( state->hilite_view, hilite_bg );
+
+    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
+    zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)title_ticker_hilite->state;
+    zdj_add_subview( state->hilite_view, title_ticker_hilite );
+    title_ticker_hilite->frame->x = ZDJ_MENU_ITEM_MARGIN_L;
+    title_ticker_hilite->frame->w = view->frame->w - ZDJ_MENU_ITEM_MARGIN_L - ZDJ_MENU_ITEM_MARGIN_R;
+    title_ticker_hilite->frame->h = view->frame->h;
+
+    // Adjust hilite frame based on ticker's frame
+    hilite_bg->frame->w = (int)fmin( view->frame->w, zdj_ticker_view_get_text_w( title_ticker_hilite )+2);
+    hilite_bg->frame->x = view->frame->w - hilite_bg->frame->w;
+    hilite_bg->frame->h = view->frame->h;
+
+    state->has_valid_display = true;
 }
