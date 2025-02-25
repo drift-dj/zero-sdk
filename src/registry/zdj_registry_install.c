@@ -86,6 +86,8 @@ zdj_install_t * zdj_registry_install_for_install_name( char * name ) {
     } else {
         install->health = ZDJ_REGISTRY_HEALTH_NO_RECORD;
     }
+    install->next = NULL;
+    install->prev = NULL;
     return install;
 }
 
@@ -104,6 +106,8 @@ zdj_install_t * zdj_registry_install_for_filepath( char * path ) {
     } else {
         install->health = ZDJ_REGISTRY_HEALTH_NO_RECORD;
     }
+    install->next = NULL;
+    install->prev = NULL;
     return install;
 }
 
