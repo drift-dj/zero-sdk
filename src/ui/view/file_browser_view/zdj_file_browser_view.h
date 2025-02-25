@@ -13,10 +13,13 @@ typedef enum {
 
 typedef struct {
     zdj_file_browser_exit_status_t status;
-    char * path;
+    char * dir;
+    char * filename;
+    char * filepath;
 } zdj_file_browser_exit_context_t;
 
 typedef struct {
+    char * path;
     zdj_view_t * header_view;
     zdj_view_t * menu_stack;
     void ( *handle_file_browser_exit )( zdj_view_t *, zdj_file_browser_exit_context_t * );

@@ -57,3 +57,12 @@ bool _zdj_fs_filename_match( char * filename, zdj_fs_scan_pattern_t * pattern ) 
 
     return false;
 }
+
+int zdj_fs_get_size( char * filepath ) {
+    // Get file length in bytes
+    FILE * fp = fopen( filepath, "r" );
+    fseek( fp, 0, SEEK_END );
+    int file_len = ftell( fp );
+    fclose( fp );
+    return file_len;
+}

@@ -34,6 +34,7 @@ zdj_view_t * zdj_new_file_browser_view(
 
     // Add a state instance
     zdj_file_browser_view_state_t * state = calloc( 1, sizeof( zdj_file_browser_view_state_t ) );
+    state->path = path;
     state->read_only = read_only;
     state->allow_nav = allow_nav;
     browser_view->state = state;
@@ -176,8 +177,13 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event ) {
             browser = item_state->data->ptr;
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
             if( browser_state->handle_file_browser_exit ) {
+                char * filename = strdup( item_state->link );
+                char * dir = strdup( browser_state->path );
+                char filepath[1024];
+                snprintf( filepath, sizeof( filepath ), "%s/%s", dir, filename );
+                // printf( "item_state->link: %s browser_state->path: %s\n", item_state->link, browser_state->path);
                 zdj_file_browser_exit_context_t exit_context = {
-                    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, item_state->link
+                    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, dir, filename, strdup( filepath )
                 };
                 browser_state->handle_file_browser_exit( browser, &exit_context );
             }

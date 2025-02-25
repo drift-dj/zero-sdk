@@ -13,5 +13,6 @@ void zdj_fs_scan_dir(
     zdj_fs_scan_pattern_t * pattern,
     zdj_fs_result_cb result_cb
 );
+int zdj_fs_get_size( char * filepath );
 
 #endif

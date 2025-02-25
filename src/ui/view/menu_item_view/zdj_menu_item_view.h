@@ -61,6 +61,8 @@ update_layout_t zdj_menu_item_update_for_layout( zdj_menu_item_view_layout_t lay
 
 void zdj_menu_item_basic_l_update_layout( zdj_view_t * view );
 void zdj_menu_item_basic_r_update_layout( zdj_view_t * view );
+void zdj_menu_item_nohilite_l_update_layout( zdj_view_t * view );
+void zdj_menu_item_nohilite_r_update_layout( zdj_view_t * view );
 void zdj_menu_item_data_l_update_layout( zdj_view_t * view );
 void zdj_menu_item_data_r_update_layout( zdj_view_t * view );
 void zdj_menu_item_dir_l_update_layout( zdj_view_t * view );

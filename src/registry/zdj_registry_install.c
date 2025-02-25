@@ -31,8 +31,7 @@ zdj_install_t * zdj_registry_installs_for_category( char * category ) {
     zdj_install_t * install = zdj_registry_installs( );
     while( install ) {
         if( !strcmp( install->category, category ) ) {
-            zdj_install_t * new_install = calloc( 1, sizeof( zdj_install_t ) );
-            zdj_registry_install_for_filename( install->install_name, new_install );
+            zdj_install_t * new_install = zdj_registry_install_for_install_name( install->install_name );
             new_install->next = NULL;
             new_install->prev = NULL;
             if( new_install->health <= ZDJ_REGISTRY_HEALTH_UNKNOWN ) {
@@ -70,10 +69,10 @@ zdj_install_t * zdj_registry_create_install(
     return install;
 }
 
-void zdj_registry_install_for_filename( char * name, zdj_install_t * install ) {
-    // printf( "zdj_registry_install_for_filename( %s, %p )\n", name, install );
+zdj_install_t * zdj_registry_install_for_install_name( char * name ) {
     FILE * fp;
     char install_path[ 1024 ];
+    zdj_install_t * install = calloc( 1, sizeof( zdj_install_t ) );
     snprintf( install_path, sizeof( install_path ), "/etc/registry/install/%s", name );
     if ( access( install_path, F_OK ) == 0 ) {
         fp = fopen( install_path, "r" );
@@ -87,10 +86,12 @@ void zdj_registry_install_for_filename( char * name, zdj_install_t * install ) {
     } else {
         install->health = ZDJ_REGISTRY_HEALTH_NO_RECORD;
     }
+    return install;
 }
 
-void zdj_registry_install_for_filepath( char * path, zdj_install_t * install ) {
+zdj_install_t * zdj_registry_install_for_filepath( char * path ) {
     FILE * fp;
+    zdj_install_t * install = calloc( 1, sizeof( zdj_install_t ) );
     if ( access( path, F_OK ) == 0 ) {
         fp = fopen( path, "r" );
         int br = fread( install, sizeof( zdj_install_t ), 1, fp );
@@ -103,12 +104,12 @@ void zdj_registry_install_for_filepath( char * path, zdj_install_t * install ) {
     } else {
         install->health = ZDJ_REGISTRY_HEALTH_NO_RECORD;
     }
+    return install;
 }
 
 void _zdj_registry_install_scan_cb( char * path ) {
     // Link in a new install item into the list of known installs
-    zdj_install_t * install = calloc( 1, sizeof( zdj_install_t ) );
-    zdj_registry_install_for_filepath( path, install );
+    zdj_install_t * install = zdj_registry_install_for_filepath( path );
     if( _zdj_registry_all_installs ) {
         // Slip the new install into the base of the stack.
         _zdj_registry_all_installs->prev = install;

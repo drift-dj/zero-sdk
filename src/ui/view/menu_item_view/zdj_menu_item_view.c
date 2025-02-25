@@ -32,7 +32,7 @@ zdj_view_t * zdj_new_menu_item( char * title ) {
     // Build state
     zdj_menu_item_view_state_t * state = calloc( 1, sizeof( zdj_menu_item_view_state_t ) );
     menu_item->state = (void*)state;
-    state->title = title;
+    state->title = strdup( title );
     state->data = calloc( 1, sizeof( zdj_ui_data_t ) );
     state->link = NULL;
     state->update_data = NULL;

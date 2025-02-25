@@ -13,6 +13,7 @@ add_library(zerodj
     src/registry/zdj_registry.c
     src/registry/zdj_registry_install.c
     src/registry/zdj_registry_launch_req.c
+    src/sql/zdj_sql.c
     src/ui/zdj_ui.c
     src/ui/zdj_ui_util.c
     src/ui/anim/zdj_anim.c
@@ -30,6 +31,7 @@ add_library(zerodj
     src/ui/view/menu_item_view/zdj_menu_item_view_basic.c
     src/ui/view/menu_item_view/zdj_menu_item_view_data.c
     src/ui/view/menu_item_view/zdj_menu_item_view_dir.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_nohilite.c
     src/ui/view/menu_item_view/zdj_menu_item_view_slider.c
     src/ui/view/menu_item_view/zdj_menu_item_view_toggle.c
     src/ui/view/menu_section_view/zdj_menu_section_view.c
@@ -77,6 +79,7 @@ target_link_libraries(
     SDL2_ttf
     SDL2_image
     SDL2_gfx
+    sqlite3
     xml2
 )
 

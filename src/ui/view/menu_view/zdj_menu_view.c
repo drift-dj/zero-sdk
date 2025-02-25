@@ -96,8 +96,10 @@ void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item ) {
     zdj_scroll_view_add_subview( menu_state->scroll_view, item );
 
     // Set scroll_index for new item
-    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
-    item_state->scroll_index = menu_state->item_count++;
+    if( item->type == ZDJ_VIEW_MENU_ITEM ) {
+        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+        item_state->scroll_index = menu_state->item_count++;
+    }
 }
 
 void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {

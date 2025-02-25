@@ -104,7 +104,7 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
 }
 
 void _zdj_file_browser_add_dir_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, char * dirname, char * path ) {
-    zdj_view_t * item = zdj_new_menu_item( dirname );
+    zdj_view_t * item = zdj_new_menu_item( strdup( dirname ) );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)item->state;
     item->handle_hmi_event = &zdj_file_browser_item_hmi_delegate;
     state->update_layout = zdj_menu_item_update_for_layout( ZDJ_MENU_ITEM_LAYOUT_DIR_R );
@@ -115,7 +115,7 @@ void _zdj_file_browser_add_dir_item_to_menu( zdj_view_t * browser, zdj_view_t * 
 }
 
 void _zdj_file_browser_add_file_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, char * filename ) {
-    zdj_view_t * item = zdj_new_menu_item( strdup(filename) );
+    zdj_view_t * item = zdj_new_menu_item( strdup( filename ) );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)item->state;
     item->handle_hmi_event = &zdj_file_browser_item_hmi_delegate;
     state->update_layout = zdj_menu_item_update_for_layout( ZDJ_MENU_ITEM_LAYOUT_BASIC_R );

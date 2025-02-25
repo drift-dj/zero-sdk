@@ -51,8 +51,8 @@ zdj_install_t * zdj_registry_create_install(
 );
 zdj_install_t * zdj_registry_installs( void );
 zdj_install_t * zdj_registry_installs_for_category( char * category );
-void zdj_registry_install_for_filename( char * name, zdj_install_t * install );
-void zdj_registry_install_for_filepath( char * path, zdj_install_t * install );
+zdj_install_t * zdj_registry_install_for_install_name( char * name );
+zdj_install_t * zdj_registry_install_for_filepath( char * path );
 void zdj_registry_commit_install( zdj_install_t * install );
 void zdj_registry_free_install( zdj_install_t * install );
 
