@@ -56,11 +56,12 @@ typedef enum {
 } zdj_menu_item_view_action_t;
 
 typedef void ( *update_layout_t )( zdj_view_t* );
+typedef void ( *update_data_t )( zdj_ui_data_t*, char* );
 
 typedef struct {
     char * title;
     zdj_ui_data_t * data;
-    void ( *update_data )( zdj_view_t * );
+    update_data_t update_data;
     int scroll_index;
     update_layout_t update_layout;
     zdj_menu_item_view_action_t action;
@@ -78,6 +79,8 @@ zdj_view_t * zdj_new_menu_item( char * title );
 zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index );
 
 update_layout_t zdj_menu_item_update_for_layout( zdj_menu_item_view_layout_t layout );
+
+bool zdj_menu_item_layout_is_dynamic( zdj_menu_item_view_layout_t layout );
 
 void zdj_menu_item_basic_l_update_layout( zdj_view_t * view );
 void zdj_menu_item_basic_r_update_layout( zdj_view_t * view );

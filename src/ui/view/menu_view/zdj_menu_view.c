@@ -257,6 +257,32 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
     } // Jog-wheel stuff
 }
 
+void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index ) {
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
+    zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state;
+    if( index < 0 && menu_state->has_back ) {
+        menu_state->scroll_index = -1;
+        if( menu_state->header_view && header_state ) {
+            header_state->show_back = true;
+            header_state->has_valid_display = false;
+        }
+    } else {
+        if( index >= menu_state->item_count ) {
+            menu_state->scroll_index = menu_state->item_count-1;
+        } else {
+            menu_state->scroll_index = index;
+        }
+        // Grab the new menu item + set is_hilite
+        zdj_view_t * menu_item = zdj_menu_item_for_scroll_index( 
+            menu_state->scroll_view, 
+            menu_state->scroll_index 
+        );
+        zdj_menu_item_view_state_t * menu_item_state = menu_item->state;
+        menu_item_state->is_hilite = true;
+        menu_item_state->has_valid_display = false;
+    }
+}
+
 void _zdj_menu_deinit_state( zdj_view_t * view ) {
     zdj_menu_view_state_t * state = (zdj_menu_view_state_t*)view->state;
     free( state );

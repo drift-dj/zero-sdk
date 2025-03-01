@@ -146,6 +146,7 @@ zdj_view_t * zdj_new_view( zdj_rect_t * frame );
 void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview );
 void zdj_remove_subview( zdj_view_t * view, zdj_view_t * subview );
 void zdj_pop_subview_of( zdj_view_t * view );
+void zdj_pop_subviews_of( zdj_view_t * view, int count );
 void zdj_remove_subviews_of( zdj_view_t * view ); // change to remove_subviews_of
 void zdj_add_subview_below( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview );
 void zdj_add_bottom_subview_to( zdj_view_t * view, zdj_view_t * new_subview );

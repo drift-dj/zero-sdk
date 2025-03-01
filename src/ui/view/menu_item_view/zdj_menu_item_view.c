@@ -26,7 +26,6 @@ zdj_view_t * zdj_new_menu_item( char * title ) {
     zdj_view_t * menu_item = zdj_new_view( NULL );
     menu_item->type = ZDJ_VIEW_MENU_ITEM;
     menu_item->draw = &_zdj_menu_item_draw;
-    menu_item->handle_hmi_event = &_zdj_menu_item_hmi_event;
     menu_item->deinit_state = &_zdj_menu_item_deinit_state;
 
     // Build state
@@ -73,7 +72,7 @@ void _zdj_menu_item_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
     if( state->update_data ) {
-        state->update_data( view );
+        state->update_data( state->data, state->link );
     }
 
     if( !state->has_valid_display && state->update_layout ) {
@@ -108,20 +107,6 @@ void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_cli
     }
 }
 
-void _zdj_menu_item_hmi_event( zdj_view_t * view, void * _event ) {
-    zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    switch ( state->action ) {
-        case ZDJ_MENU_ITEM_ACTION_VIEW:
-            // _zdj_menu_item_static_hmi_open_view( view, _event );
-            break;
-        case ZDJ_MENU_ITEM_ACTION_MENU:
-            // _zdj_menu_item_static_hmi_open_menu( view, _event );
-            break;
-        default:
-            break;
-    }
-}
-
 void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     if( state->data ) {
@@ -137,6 +122,14 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
     view->state = NULL;
 }
 
+bool zdj_menu_item_layout_is_dynamic( zdj_menu_item_view_layout_t layout ) {
+    if( layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L || layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L ) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 update_layout_t zdj_menu_item_update_for_layout( zdj_menu_item_view_layout_t layout ) {
     switch ( layout ) {
     case ZDJ_MENU_ITEM_LAYOUT_BASIC_L:
@@ -145,29 +138,32 @@ update_layout_t zdj_menu_item_update_for_layout( zdj_menu_item_view_layout_t lay
     case ZDJ_MENU_ITEM_LAYOUT_BASIC_R:
         return zdj_menu_item_basic_r_update_layout;
         break;
+    case ZDJ_MENU_ITEM_LAYOUT_DATA_L:
+        return zdj_menu_item_data_l_update_layout;
+        break;
+    case ZDJ_MENU_ITEM_LAYOUT_DATA_R:
+        return zdj_menu_item_data_r_update_layout;
+        break;
     case ZDJ_MENU_ITEM_LAYOUT_DIR_L:
         return zdj_menu_item_dir_l_update_layout;
         break;
     case ZDJ_MENU_ITEM_LAYOUT_DIR_R:
         return zdj_menu_item_dir_r_update_layout;
         break;
+    case ZDJ_MENU_ITEM_LAYOUT_SLIDER_L:
+        return zdj_menu_item_slider_l_update_layout;
+        break;
+    case ZDJ_MENU_ITEM_LAYOUT_SLIDER_R:
+        return zdj_menu_item_slider_r_update_layout;
+        break;
+    case ZDJ_MENU_ITEM_LAYOUT_TOGGLE_L:
+        return zdj_menu_item_toggle_l_update_layout;
+        break;
+    case ZDJ_MENU_ITEM_LAYOUT_TOGGLE_R:
+        return zdj_menu_item_toggle_r_update_layout;
+        break;
     default:
         break;
     }
 }
 
-void _zdj_menu_item_static_hmi_open_view( zdj_view_t * view, void * _event ) {
-
-}
-
-void _zdj_menu_item_static_hmi_open_menu( zdj_view_t * view, void * _event ) {
-
-}
-
-void _zdj_menu_item_static_hmi_toggle( zdj_view_t * view, void * _event ) {
-
-}
-
-void _zdj_menu_item_static_hmi_input( zdj_view_t * view, void * _event ) {
-
-}

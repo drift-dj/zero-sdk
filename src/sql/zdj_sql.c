@@ -26,8 +26,6 @@ int zdj_sql_exec( char * sql, sqlite3 * db ) {
     if ( rc != SQLITE_OK ) {
         printf( "rc: %d, SQL error: %s\n", rc, err_msg );
         printf( "sql: %s\n", sql );
-    } else { 
-        printf( "success\n" );
     }
     return rc;
 }
@@ -56,7 +54,6 @@ int zdj_sql_rows_in_table ( char * table, char * distinct, sqlite3 * db ) {
 
 sqlite3_stmt * zdj_sql_prep_row_stepper( char * sql, sqlite3 * db ) {
     sqlite3_stmt *stmt;
-    // printf( "prep row stepper: %s\n", sql );
     int res = sqlite3_prepare_v2( db, strdup( sql ), -1, &stmt, NULL );
     int result_number = 0;
     if ( res != SQLITE_OK ){ 

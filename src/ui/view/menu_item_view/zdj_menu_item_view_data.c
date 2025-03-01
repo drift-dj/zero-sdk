@@ -5,103 +5,72 @@
 
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
+#include <zerodj/ui/view/asset_view/zdj_asset_view.h>
+#include <zerodj/ui/view/label_view/zdj_label_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 
-// void _zdj_menu_item_data_make_tickers( zdj_view_t * view ) {
-//     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-//     // Setup title ticker
-//     state->title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE, &(zdj_rect_t){0, 0, 64, 8} );
-//     zdj_add_subview( view, state->title_ticker );
-//     // Setup data ticker
-//     state->data_ticker = zdj_new_ticker_view( state->data->c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE, &(zdj_rect_t){64, 0, 64, 8} );
-//     state->has_valid_display = true;
-//     zdj_add_subview( view, state->data_ticker );
-// }
+void zdj_menu_item_data_l_update_layout( zdj_view_t * view ) { }
 
-// void zdj_menu_item_draw_data_l( zdj_view_t * view, zdj_view_clip_t * clip ) {
-//     // zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-//     // if( !state->has_valid_display ) {
-//     //     zdj_remove_subviews( view );
-//     //     _zdj_menu_item_data_make_tickers( view );
-//     //     state->has_valid_display = true;
-//     // }
-//     // // Put down h-div
-//     // zdj_ui_asset_draw( ZDJ_UI_ASSET_WIDE_H_DIV, &(zdj_rect_t){0, 8, 128, 1} );
+void zdj_menu_item_data_r_update_layout( zdj_view_t * view ) {
+    zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
-//     // // Re-frame title/ticker based on view frame and length of strings
-//     // state->title_ticker->frame->x = 0;
-//     // state->title_ticker->frame->y = 0;
+    // Clear out the normal/hilite views' subviews
+    zdj_remove_subviews_of( state->hilite_view );
+    zdj_remove_subviews_of( state->normal_view );
 
-//     // state->data_ticker->frame->x = 64;
-//     // state->data_ticker->frame->y = 0;
-//     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    state->normal_view->frame->w = view->frame->w;
+    state->normal_view->frame->h = view->frame->h;
+    state->hilite_view->frame->w = view->frame->w;
+    state->hilite_view->frame->h = view->frame->h;
 
-//     if( !state->has_valid_display ) {
-//         zdj_remove_subviews( view );
-//         // Setup title ticker
-//         state->title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-//         zdj_add_subview( view, state->title_ticker );
-//         state->has_valid_display = true;
-//     }
+    // Pin title label to the left edge + margin
+    zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_add_subview( state->normal_view, title_label_norm );
+    title_label_norm->frame->x = 5;
+    title_label_norm->frame->y = 1;
 
-//     if( state->is_blinking ) {
-//         if( state->blink_timer++ > 20 ) {
-//             // exit blink state after time
-//             state->is_blinking = false;
-//             state->blink_timer = 0;
-//             state->is_hilite = false;
-//         } else {
-//             // blink on a cycle
-//             if( state->blink_timer % 7 > 3 ) {
-//                 boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFFFF0000 );
-//             }
-//         }
-//     } else if( state->is_hilite ) {
-//         boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFFFF0000 );
-//     }
+    // Get value from data instance
+    char * data_val = state->data->c_val;
+    if( !data_val ) {
+        data_val = "No Data";
+    }
+    zdj_view_t * data_label_norm = zdj_new_label_view( data_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_add_subview( state->normal_view, data_label_norm );
+    data_label_norm->frame->x = view->frame->w - data_label_norm->frame->w;
+    data_label_norm->frame->y = 1;
     
-//     if( state->title_ticker ) {
-//         state->title_ticker->frame->x = 0;
-//         state->title_ticker->frame->y = 0;
-//         state->title_ticker->frame->w = view->frame->w;
-//         state->title_ticker->frame->h = view->frame->h;
-//     }
-// }
+    // Add dots
+    zdj_view_t * divider = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WIDE_H_DIV ], NULL );
+    zdj_add_subview( state->normal_view, divider );
+    divider->frame->h = 1;
+    divider->frame->y = 5;
+    divider->frame->w = view->frame->w - title_label_norm->frame->w - data_label_norm->frame->w - 9;
+    divider->frame->x = title_label_norm->frame->x + title_label_norm->frame->w + 2;
 
-// void zdj_menu_item_draw_data_r( zdj_view_t * view, zdj_view_clip_t * clip ) {
-//     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    
+    // Setup hilite view
+    zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WHITE ], NULL );
+    zdj_add_subview( state->hilite_view, hilite_bg );
 
-//     if( !state->has_valid_display ) {
-//         zdj_remove_subviews( view );
-//         // Setup title ticker
-//         state->title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
-//         zdj_add_subview( view, state->title_ticker );
-//         state->has_valid_display = true;
-//     }
-    
-//     if( state->is_blinking ) {
-//         if( state->blink_timer++ > 20 ) {
-//             // exit blink state after time
-//             state->is_blinking = false;
-//             state->blink_timer = 0;
-//             state->is_hilite = false;
-//         } else {
-//             // blink on a cycle
-//             if( state->blink_timer % 7 > 3 ) {
-//                 boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFFFF0000 );
-//             }
-//         }
-//     } else if( state->is_hilite ) {
-//         boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFFFF0000 );
-//     }
-    
-//     if( state->title_ticker ) {
-//         state->title_ticker->frame->x = 0;
-//         state->title_ticker->frame->y = 0;
-//         state->title_ticker->frame->w = view->frame->w;
-//         state->title_ticker->frame->h = view->frame->h;
-//     }
-// }
+    // Pin title label to the left edge + margin
+    zdj_view_t * title_label_hi = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_add_subview( state->hilite_view, title_label_hi );
+    title_label_hi->frame->x = 5;
+    title_label_hi->frame->y = 1;
+
+    // Get value from data instance
+    zdj_view_t * data_label_hi = zdj_new_label_view( data_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_add_subview( state->hilite_view, data_label_hi );
+    data_label_hi->frame->x = view->frame->w - data_label_hi->frame->w;
+    data_label_hi->frame->y = 1;
+
+    // Adjust hilite frame based on ticker's frame
+    hilite_bg->frame->w = view->frame->w - 5;
+    hilite_bg->frame->x = view->frame->w - hilite_bg->frame->w;
+    hilite_bg->frame->h = view->frame->h;
+
+    state->has_valid_display = true;
+}
 

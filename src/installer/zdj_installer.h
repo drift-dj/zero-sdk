@@ -28,6 +28,7 @@
 
 #define ZDJ_INSTALLER_HEADER_START 4000 // Byte location of installer header in binary
 #define ZDJ_INSTALLER_EXTRACT_DIR "/etc/zero-sdk/installer"
+#define ZDJ_INSTALLER_ROLLBACK_DIR "/etc/zero-sdk/rollback"
 #define ZDJ_INSTALLER_MANIFEST_PATH "/etc/zero-sdk/installer/manifest_db"
 
 typedef struct {
@@ -42,14 +43,19 @@ typedef struct {
 typedef struct {
     zdj_install_t install;
     zdj_installer_offsets_t data_offsets;
+    char path[ 4096 ];
     void * fd;
     void * manifest_db;
+    bool valid;
+    zdj_health_status_t status;
     struct zdj_installer_t * next;
     struct zdj_installer_t * prev;
 } zdj_installer_t;
 
 typedef struct {
-    char filepath[ 4096 ];
+    char dest_path[ 4096 ];
+    char extract_path[ 4096 ];
+    char rollback_path[ 4096 ];
     int blob_start;
     int blob_length;
 } zdj_installer_manifest_item_t;

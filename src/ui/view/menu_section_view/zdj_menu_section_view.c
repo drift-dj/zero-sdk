@@ -23,7 +23,7 @@ zdj_view_t * zdj_new_menu_section( char * title ) {
     menu_section->state = (void*)state;
 
     // Build ticker
-    zdj_view_t * title_ticker = zdj_new_ticker_view( title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_ticker = zdj_new_ticker_view( title, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     state->title_ticker = title_ticker;
     zdj_add_subview( menu_section, title_ticker );
 

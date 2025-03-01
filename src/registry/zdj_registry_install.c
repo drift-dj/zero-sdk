@@ -31,10 +31,10 @@ zdj_install_t * zdj_registry_installs_for_category( char * category ) {
     zdj_install_t * install = zdj_registry_installs( );
     while( install ) {
         if( !strcmp( install->category, category ) ) {
-            zdj_install_t * new_install = zdj_registry_install_for_install_name( install->install_name );
+            zdj_install_t * new_install = zdj_registry_install_for_name( install->registry_name );
             new_install->next = NULL;
             new_install->prev = NULL;
-            if( new_install->health <= ZDJ_REGISTRY_HEALTH_UNKNOWN ) {
+            if( new_install->health <= ZDJ_HEALTH_STATUS_UNKNOWN ) {
                 if( res ) {
                     res->prev = new_install;
                     new_install->next = res; 
@@ -49,9 +49,9 @@ zdj_install_t * zdj_registry_installs_for_category( char * category ) {
 
 // Create an install record from params
 zdj_install_t * zdj_registry_create_install( 
-    char * install_name,
+    char * registry_name,
     char * display_name,
-    char * bin_path,
+    char * bin_dir,
     char * desc,
     uint8_t v_maj,
     uint8_t v_min,
@@ -61,15 +61,20 @@ zdj_install_t * zdj_registry_create_install(
     // Make UUID
     // Make version string
     // Set initial health state
-    zdj_install_t * install = calloc( 1, sizeof( zdj_install_t ) );
-    strcpy( install->install_name, install_name );
+    zdj_install_t * install = malloc( sizeof( zdj_install_t ) );
+    strcpy( install->registry_name, registry_name );
     strcpy( install->display_name, display_name );
-    strcpy( install->bin_path, bin_path );
-    
+    strcpy( install->bin_dir, bin_dir );
+    strcpy( install->version.desc, desc );
+    install->version.major = v_maj;
+    install->version.minor = v_min;
+    install->version.hotfix = v_hf;
+    install->version.build = v_b;
     return install;
 }
 
-zdj_install_t * zdj_registry_install_for_install_name( char * name ) {
+
+zdj_install_t * zdj_registry_install_for_name( char * name ) {
     FILE * fp;
     char install_path[ 1024 ];
     zdj_install_t * install = calloc( 1, sizeof( zdj_install_t ) );
@@ -79,12 +84,12 @@ zdj_install_t * zdj_registry_install_for_install_name( char * name ) {
         int br = fread( install, sizeof( zdj_install_t ), 1, fp );
         fclose( fp );
         if( br == 1 ) {
-            install->health = ZDJ_REGISTRY_HEALTH_UNKNOWN;
+            install->health = ZDJ_HEALTH_STATUS_UNKNOWN;
         } else {
-            install->health = ZDJ_REGISTRY_HEALTH_BAD_RECORD;
+            return NULL; 
         }
     } else {
-        install->health = ZDJ_REGISTRY_HEALTH_NO_RECORD;
+        return NULL;
     }
     install->next = NULL;
     install->prev = NULL;
@@ -99,12 +104,12 @@ zdj_install_t * zdj_registry_install_for_filepath( char * path ) {
         int br = fread( install, sizeof( zdj_install_t ), 1, fp );
         fclose( fp );
         if( br == 1 ) {
-            install->health = ZDJ_REGISTRY_HEALTH_UNKNOWN;
+            install->health = ZDJ_HEALTH_STATUS_UNKNOWN;
         } else {
-            install->health = ZDJ_REGISTRY_HEALTH_BAD_RECORD;
+            install->health = ZDJ_HEALTH_STATUS_BAD_REG_RECORD;
         }
     } else {
-        install->health = ZDJ_REGISTRY_HEALTH_NO_RECORD;
+        install->health = ZDJ_HEALTH_STATUS_NO_REG_RECORD;
     }
     install->next = NULL;
     install->prev = NULL;
@@ -120,4 +125,45 @@ void _zdj_registry_install_scan_cb( char * path ) {
         install->next = _zdj_registry_all_installs; 
     }
     _zdj_registry_all_installs = install;
+}
+
+// Update an existing install or create a new one
+void zdj_registry_commit_install( zdj_install_t * install ) {
+    zdj_registry_write_install( install );
+}
+
+int zdj_registry_write_install( zdj_install_t * install ) {
+    char path[ 2048 ];
+    snprintf( path, sizeof( path ), "%s/%s", "/etc/registry/install", install->registry_name );
+    FILE * fp = fopen( path, "w" );
+    int bw = 0;
+    if( fp ) {
+        bw = fwrite( install, sizeof( zdj_install_t ), 1, fp );
+        fclose( fp );
+    }
+    return bw;
+}
+
+// Remove an installed app
+void zdj_registry_remove_install( zdj_install_t * install ) {
+    // Don't delete protected system apps
+    if( install->protected ) { return; } 
+    
+    // Delete the app's directory
+    zdj_fs_remove_dir( install->bin_dir );
+    // Delete the registry record
+    char path[ 2048 ];
+    snprintf( path, sizeof( path ), "%s/%s", "/etc/registry/install", install->registry_name );
+    remove( path );
+    // If this is the normal_mode boot app, switch norm_mode req to fallback and persist
+    zdj_launch_req_t * normal_req = zdj_registry_load_launch_req( "/etc/registry/boot/normal_req" );
+    if( !strcmp( normal_req->app_install.registry_name, install->registry_name ) ) {
+        zdj_registry_launch_req_switch_to_fallback( normal_req );
+        zdj_registry_write_launch_req( "/etc/registry/boot/normal_req", normal_req );
+    }
+}
+
+// Release mem for an install instance
+void zdj_registry_free_install( zdj_install_t * install ) {
+
 }
