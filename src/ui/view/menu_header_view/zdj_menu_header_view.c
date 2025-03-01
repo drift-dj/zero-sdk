@@ -79,10 +79,6 @@ void _zdj_menu_header_update_layout( zdj_view_t * header, zdj_view_clip_t * clip
     // Remove all subviews
     zdj_remove_subviews_of( header ); 
 
-    // if( state->back_style > ZDJ_MENU_HEADER_BACK_STYLE_NONE ) {
-    //     state->has_back = true;
-    // }
-
     // Setup name label
     zdj_view_t * name_label = zdj_new_label_view( state->name, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     state->name_label = name_label;
@@ -98,8 +94,6 @@ void _zdj_menu_header_update_layout( zdj_view_t * header, zdj_view_clip_t * clip
     zdj_view_t * title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     state->title_ticker = title_ticker;
     zdj_add_subview( header, title_ticker );
-
-    // state->title_ticker->frame->w = view->frame->w - 27;
     state->title_ticker->frame->h = 10;
 
     // Setup back button if needed

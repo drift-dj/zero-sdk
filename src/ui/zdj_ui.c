@@ -26,7 +26,7 @@ void zdj_ui_init( void ) {
     // Bringup SDL - exit on fail
     int err = SDL_Init( SDL_INIT_VIDEO );
     if( err != 0 ) {
-        printf( "Zero failed to init graphics lib... exiting\n" );
+        printf( "Zero failed to init graphics lib: %s\n", SDL_GetError( ) );
         exit( ZDJ_HEALTH_STATUS_SDL_FAILED );
     }
 
@@ -167,6 +167,22 @@ void zdj_pop_subview_of( zdj_view_t * view ) {
             new_top_subview->next = NULL;
         }
         top_subview->deinit( top_subview );
+    }
+}
+
+// Remove the top n subviews of a view
+void zdj_pop_subviews_of( zdj_view_t * view, int count ) {
+    if( view->subviews ) {
+        for( int n=0; n<count; n++ ) {
+            zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+            if( top_subview ) {
+                zdj_view_t * new_top_subview = top_subview->prev;
+                if( new_top_subview ) {
+                    new_top_subview->next = NULL;
+                }
+                top_subview->deinit( top_subview );
+            }
+        }
     }
 }
 
