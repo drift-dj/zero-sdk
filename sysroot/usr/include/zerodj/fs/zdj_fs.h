@@ -21,11 +21,24 @@
 #ifndef ZDJ_FS_H
 #define ZDJ_FS_H
 
+#include <stdbool.h>
+#include <zerodj/health/zdj_health_type.h>
+
 typedef struct {
     char * substr;
 } zdj_fs_scan_pattern_t;
 
 typedef void ( *zdj_fs_result_cb )( char * );
+
+zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite );
+zdj_health_status_t zdj_fs_extract_file_from_binary( 
+    char * bin, 
+    char * dst, 
+    unsigned long long offset, 
+    unsigned long long len,
+    bool overwrite
+);
+
 
 void zdj_fs_scan_dir( 
     char * path,
@@ -33,6 +46,11 @@ void zdj_fs_scan_dir(
     zdj_fs_scan_pattern_t * pattern,
     zdj_fs_result_cb result_cb
 );
+int zdj_fs_mkdir_p( char * path );
+void zdj_fs_remove_dir( char * path );
 int zdj_fs_get_size( char * filepath );
+unsigned long long zdj_fs_sys_space( void );
+unsigned long long zdj_fs_media_space( void );
+char * zdj_fs_read_buffer( char * path, int limit );
 
 #endif
