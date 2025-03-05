@@ -23,42 +23,40 @@
 
 #include <stdbool.h>
 
+#include <zerodj/ui/zdj_ui.h>
+
 #define ZDJ_ANIM_LENGTH_MENU_IN 50
 #define ZDJ_ANIM_LENGTH_MENU_OUT 30
 #define ZDJ_ANIM_LENGTH_MENU_BLINK_LENGTH 7
 #define ZDJ_ANIM_LENGTH_MENU_BLINK_DELAY 30
 
-typedef enum {
-    ZDJ_ANIM_EASEOUT,
-    ZDJ_ANIM_EASEIN,
-    ZDJ_ANIM_EASEINOUT,
-    ZDJ_ANIM_LINEAR
-} zdj_anim_easing_t;
+zdj_anim_t * zdj_new_anim( zdj_anim_type_t type );
+void zdj_anim_deinit( zdj_anim_t * anim );
 
-typedef struct {
-    int id;
-    int frame;
-    int start_frame;
-    float start_val;
-    int end_frame;
-    float end_val;
-    float val;
-    zdj_anim_easing_t easing;
-    float ( *easing_fn )( float );
-    bool alive;
-    void * next;
-} zdj_anim_state_t;
-zdj_anim_state_t * zdj_anim_new_state( 
-    int start_frame, 
-    float start_val, 
-    int end_frame, 
-    float end_val, 
-    zdj_anim_easing_t easing 
-);
-bool zdj_anim_iscomplete( zdj_anim_state_t * state );
-void zdj_anim_delete( zdj_anim_state_t * state );
 
-void zdj_anim_init( void );
-void zdj_anim_update( void );
+void zdj_anim_init_view_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_view_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_view( zdj_anim_t * anim, zdj_view_t * view );
+void zdj_anim_deinit_view( zdj_anim_t * anim );
+
+void zdj_anim_init_menu_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_menu_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_menu( zdj_anim_t * anim, zdj_view_t * view );
+void zdj_anim_deinit_menu( zdj_anim_t * anim );
+
+void zdj_anim_init_menu_stack_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_menu_stack_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_menu_stack( zdj_anim_t * anim, zdj_view_t * view );
+void zdj_anim_deinit_menu_stack( zdj_anim_t * anim );
+
+void zdj_anim_init_modal_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_modal_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_modal( zdj_anim_t * anim, zdj_view_t * view );
+void zdj_anim_deinit_modal( zdj_anim_t * anim );
+
+void zdj_anim_init_header_activate( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_header_deactivate( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_header( zdj_anim_t * anim, zdj_view_t * view );
+void zdj_anim_deinit_header( zdj_anim_t * anim );
 
 #endif

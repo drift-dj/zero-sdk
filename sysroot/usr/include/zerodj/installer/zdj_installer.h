@@ -65,7 +65,7 @@ typedef void ( *zdj_installer_manifest_item_cb )( zdj_installer_manifest_item_t 
 zdj_installer_t * zdj_installer_for_filepath( char * filepath );
 int zdj_installer_file_count( zdj_installer_t * installer );
 bool zdj_installer_extract_manifest( zdj_installer_t * installer );
-void zdj_installer_iterate_manifest( zdj_installer_t * installer, zdj_installer_manifest_item_cb cb, void * data );
+void zdj_installer_iterate_manifest( zdj_installer_t * installer, zdj_installer_manifest_item_cb cb_fn, void * data );
 bool zdj_installer_extract_files( zdj_installer_t * installer );
 bool zdj_installer_validate_files( zdj_installer_t * installer );
 bool zdj_installer_commit( zdj_installer_t * installer );
