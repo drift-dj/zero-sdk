@@ -4,116 +4,94 @@
 
 #include <zerodj/ui/anim/zdj_anim.h>
 
-int anim_id;
-zdj_anim_state_t * zdj_anim_head;
-zdj_anim_state_t * zdj_anim_tip( void );
+float _zdj_ease_linear( float a, float b );
+float _zdj_ease_out_quart( float a, float b );
+float _zdj_ease_in_quart( float a, float b );
 
-float _zdj_ease_linear( float x );
-float _zdj_ease_out_quart( float x );
-float _zdj_ease_in_quart( float x );
+zdj_anim_t * zdj_new_anim( zdj_anim_type_t type ) {
+    if( type == ZDJ_ANIM_NONE ) { return NULL; }
 
-void zdj_anim_init( void ) {
-    zdj_anim_head = NULL;
-}
-
-void zdj_anim_update( void ) {
-    zdj_anim_state_t * st = zdj_anim_head;
-    while( st ) {
-        if( st->alive ) {
-            st->frame++;
-            if( st->end_frame == -1 ) {
-                st = st->next;
-                continue;
-            } else if( st->frame < st->start_frame ) {
-                st->val = st->start_val;
-            } else if( st->frame > st->end_frame ) {
-                st->val = st->end_val;
-                st->alive = false;
-            } else {
-                float coeff = ( float )( st->end_frame - st->frame ) / ( float )( st->end_frame - st->start_frame );
-                float eased = st->easing_fn( coeff );
-                st->val = st->end_val + ( ( st->start_val - st->end_val ) * eased );
-            }
-        }
-        st = st->next;
-    }
-}
-
-zdj_anim_state_t * zdj_anim_new_state( 
-    int start_frame, 
-    float start_val, 
-    int end_frame, 
-    float end_val, 
-    zdj_anim_easing_t easing 
-) {
-    zdj_anim_state_t * ret = malloc( sizeof( zdj_anim_state_t ) );
-    ret->id = anim_id++;
-    ret->start_frame = start_frame;
-    ret->start_val = start_val;
-    ret->end_frame = end_frame;
-    ret->end_val = end_val;
-    ret->easing = easing;
-
-    switch ( easing ) {
-        case ZDJ_ANIM_EASEIN:
-            ret->easing_fn = &_zdj_ease_in_quart;
+    zdj_anim_t * anim = calloc( 1, sizeof( zdj_anim_t ) );
+    anim->cb_fn = NULL;
+    anim->superview = NULL;
+    anim->view = NULL;
+    anim->frames = 10;
+    anim->ease = &_zdj_ease_out_quart;
+    anim->start_data = NULL;
+    anim->end_data = NULL;
+    switch ( type ) {
+        case ZDJ_ANIM_EMPTY:
+            anim->update_fn = NULL;
             break;
-        case ZDJ_ANIM_EASEOUT:
-            ret->easing_fn = &_zdj_ease_out_quart;
+        case ZDJ_ANIM_VIEW_SHOW:
+            anim->init_fn = &zdj_anim_init_view_show;
+            anim->update_fn = &zdj_anim_update_view;
+            anim->deinit_fn = &zdj_anim_deinit;
             break;
-        case ZDJ_ANIM_EASEINOUT:
-            ret->easing_fn = &_zdj_ease_out_quart;
-            break;    
-        case ZDJ_ANIM_LINEAR:
-            ret->easing_fn = &_zdj_ease_linear;
+        case ZDJ_ANIM_VIEW_HIDE:
+            anim->init_fn = &zdj_anim_init_view_hide;
+            anim->update_fn = &zdj_anim_update_view;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_MENU_SHOW:
+            anim->init_fn = &zdj_anim_init_menu_show;
+            anim->update_fn = &zdj_anim_update_menu;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_MENU_HIDE:
+            anim->init_fn = &zdj_anim_init_menu_hide;
+            anim->update_fn = &zdj_anim_update_menu;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_MENU_STACK_SHOW:
+            anim->init_fn = &zdj_anim_init_menu_stack_show;
+            anim->update_fn = &zdj_anim_update_menu_stack;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_MENU_STACK_HIDE:
+            anim->init_fn = &zdj_anim_init_menu_stack_hide;
+            anim->update_fn = &zdj_anim_update_menu_stack;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_MODAL_SHOW:
+            anim->init_fn = &zdj_anim_init_modal_show;
+            anim->update_fn = &zdj_anim_update_modal;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_MODAL_HIDE:
+            anim->init_fn = &zdj_anim_init_modal_hide;
+            anim->update_fn = &zdj_anim_update_modal;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_HEADER_ACTIVATE:
+            anim->init_fn = &zdj_anim_init_header_activate;
+            anim->update_fn = &zdj_anim_update_header;
+            anim->deinit_fn = &zdj_anim_deinit_header;
+            break;
+        case ZDJ_ANIM_HEADER_DEACTIVATE:
+            anim->init_fn = &zdj_anim_init_header_deactivate;
+            anim->update_fn = &zdj_anim_update_header;
+            anim->deinit_fn = &zdj_anim_deinit_header;
             break;
     }
-
-    if( zdj_anim_head ) {
-        zdj_anim_tip( )->next = ret;
-    } else {
-        zdj_anim_head = ret;
-    }
-
-    return ret;
+    return anim;
 }
 
-bool zdj_anim_iscomplete( zdj_anim_state_t * state ) {
-    return( state->frame >= state->end_frame );
+void zdj_anim_deinit( zdj_anim_t * anim ) { 
+    free( anim->start_data );
+    free( anim->end_data );
 }
 
-void zdj_anim_delete( zdj_anim_state_t * state ) {
-    // printf( "delete_anim_state: %p\n", state );
-    zdj_anim_state_t * st = zdj_anim_head;
-    zdj_anim_state_t * prev = zdj_anim_head;
-    while( st ) {
-        if( st == state ) {
-            if( prev )
-                prev->next = st->next;
-            free( st );
-            return;
-        }
-        prev = st;
-        st = st->next;
-    }
+float _zdj_ease_linear( float a, float b ) {
+    return a / b;
 }
 
-zdj_anim_state_t * zdj_anim_tip( void ) {
-    zdj_anim_state_t * st = zdj_anim_head;
-    while( st->next ) {
-        st = st->next;
-    }
-    return st;
-}
-
-float _zdj_ease_linear( float x ) {
-    return x;
-}
-
-float _zdj_ease_out_quart( float x ) {
+float _zdj_ease_out_quart( float a, float b ) {
+    float x = a / b;
     return x * x * x * x;
 }
 
-float _zdj_ease_in_quart( float x ) {
+float _zdj_ease_in_quart( float a, float b ) {
+    float x = a / b;
     return 1.0 - pow( 1.0 - x, 4 );
 }

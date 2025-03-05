@@ -83,7 +83,7 @@ void _zdj_menu_item_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         if( state->blink_timer++ > ZDJ_BLINK_LENGTH ) {
             state->is_blinking = false;
             state->blink_timer = 0;
-            state->is_hilite = false;
+            state->is_hilite = true;
         } else {
             // blink on a cycle
             if( state->blink_timer % ZDJ_BLINK_PERIOD > ZDJ_BLINK_DUTY ) {

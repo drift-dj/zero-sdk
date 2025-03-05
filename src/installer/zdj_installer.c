@@ -92,7 +92,7 @@ bool zdj_installer_extract_manifest( zdj_installer_t * installer ) {
 // Create a manifest_item for each row, and send it to the callback.
 void zdj_installer_iterate_manifest( 
     zdj_installer_t * installer, 
-    zdj_installer_manifest_item_cb cb, 
+    zdj_installer_manifest_item_cb cb_fn, 
     void * data 
 ) {
     // Iterate over rows in manifest table
@@ -116,7 +116,7 @@ void zdj_installer_iterate_manifest(
             item.blob_start = sqlite3_column_int( c_stmt, 1 );
             item.blob_length = sqlite3_column_int( c_stmt, 2 );
             // Invoke file_cb for each row
-            cb( &item, data );
+            cb_fn( &item, data );
         }
         sqlite3_finalize( c_stmt );
     }

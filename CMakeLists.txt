@@ -10,13 +10,17 @@ add_library(zerodj
     src/hmi/input/zdj_hmi_sm_analog.c
     src/hmi/input/zdj_hmi_sm_digital.c
     src/installer/zdj_installer.c
-    src/registry/zdj_registry.c
     src/registry/zdj_registry_install.c
     src/registry/zdj_registry_launch_req.c
     src/sql/zdj_sql.c
     src/ui/zdj_ui.c
     src/ui/zdj_ui_util.c
     src/ui/anim/zdj_anim.c
+    src/ui/anim/zdj_anim_header.c
+    src/ui/anim/zdj_anim_menu.c
+    src/ui/anim/zdj_anim_menu_stack.c
+    src/ui/anim/zdj_anim_modal.c
+    src/ui/anim/zdj_anim_view.c
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
     src/ui/view/zdj_view_stack.c
@@ -35,6 +39,8 @@ add_library(zerodj
     src/ui/view/menu_item_view/zdj_menu_item_view_slider.c
     src/ui/view/menu_item_view/zdj_menu_item_view_toggle.c
     src/ui/view/menu_section_view/zdj_menu_section_view.c
+    src/ui/view/menu_stack/zdj_menu_stack.c
+    src/ui/view/modal_view/zdj_modal_view.c
     src/ui/view/scroll_view/zdj_scroll_view.c
     src/ui/view/texture_view/zdj_texture_view.c
     src/ui/view/ticker_view/zdj_ticker_view.c

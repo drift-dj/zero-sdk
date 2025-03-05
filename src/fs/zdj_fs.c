@@ -295,3 +295,11 @@ char * zdj_fs_read_buffer( char * path, int limit ) {
     fclose( fp );
     return buffer;
 }
+
+int zdj_fs_write_buffer( char * path, char * buffer ) {
+    FILE * fp = fopen( path, "w" );
+    if( !fp ) { return 0; }
+    int bw = fwrite( buffer, sizeof( char ), strlen( buffer ), fp );
+    fclose( fp );
+    return bw;
+}

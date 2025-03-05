@@ -6,6 +6,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/display/zdj_display.h>
 #include <zerodj/hmi/zdj_hmi.h>
@@ -21,6 +22,7 @@ void zdj_view_stack_init( void ) {
     zdj_view_stack_root_view = zdj_new_view( &view_stack_frame );
     zdj_view_stack_root_view->subview_clip->src.w = zdj_view_stack_root_view->subview_clip->dst.w = 128;
     zdj_view_stack_root_view->subview_clip->src.h = zdj_view_stack_root_view->subview_clip->dst.h = 64;
+    zdj_delete_stack = NULL;
 }
 
 void zdj_view_stack_deinit( void ) {
@@ -38,6 +40,15 @@ void zdj_view_stack_update( void ) {
     // Draw root view's subviews (bottom-up)
     view = zdj_view_stack_bottom_subview_of(zdj_root_view( ));
     if( view ) { zdj_view_stack_draw( view, zdj_root_view( )->subview_clip ); }
+
+    // Delete everything in the delete stack
+    zdj_view_t * delete_view = zdj_delete_stack;
+    while( delete_view ) {
+        zdj_view_t * next_delete_view = delete_view->next;
+        delete_view->deinit( delete_view );
+        delete_view = next_delete_view;
+    }
+    zdj_delete_stack = NULL;
 }
 
 void zdj_view_stack_clear_screen( void ) {
@@ -47,15 +58,12 @@ void zdj_view_stack_clear_screen( void ) {
 // Walk backward thru a view's stack of siblings.
 // Note that this only walks siblings, it doesn't recurse into subviews.
 // This function must be called on the LAST view in the linked list of subviews.
-// SUPER IMPORTANT: view stack linkage can be mutated as a result of any event.
-// Never assume that a view will still exist after an event is handled.
 void zdj_view_stack_handle_events( zdj_view_t * view ) {
     // Get a prev ref before processing view's events in case it gets deleted during processing.
     zdj_view_t * view_prev = view->prev;
     if( view->handle_hmi_event ) {
         zdj_hmi_event_t * event = zdj_hmi_event_base;
         while( event ) {
-            // View/subviews can be deleted during handle_hmi_event()
             if( view ) { view->handle_hmi_event( view, event ); }
             event = (zdj_hmi_event_t *)event->next;
         }
@@ -68,6 +76,11 @@ void zdj_view_stack_handle_events( zdj_view_t * view ) {
 // This is a recursive draw, first getting a clip frame from the view's draw func,
 // then recursing into the view's subviews, finally moving to the next sibling view.
 void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // Update anim before updating subview clip
+    if( view->anim && view->anim->alive && view->anim->update_fn ){ 
+        ((anim_update_t)view->anim->update_fn)( view->anim, view ); 
+    } 
+
     // Update metrics passed to subviews based on that clipping.
     view->update_subview_clip( view, clip );
     // Draw this view's pixels
@@ -98,8 +111,8 @@ void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t *
     subview->is_visible = true;
     
     // Build screen x/y for subview's origin
-    subview_clip->screen.x = subview->frame->x + superview_clip->screen.x + superview_clip->scroll_offset.x;
-    subview_clip->screen.y = subview->frame->y + superview_clip->screen.y + superview_clip->scroll_offset.y;
+    subview_clip->screen.x = subview->frame->x + superview_clip->screen.x + superview_clip->scroll_offset.cur_x;
+    subview_clip->screen.y = subview->frame->y + superview_clip->screen.y + superview_clip->scroll_offset.cur_y;
 
     // Horizontal arithmetic
     // Clip left draw edge to furthest right pixel of subview/superview frame x.

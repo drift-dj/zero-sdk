@@ -52,6 +52,12 @@ zdj_view_t * zdj_new_file_browser_view(
     header->frame->w = browser_view->frame->w;
     header->frame->h = 10;
 
+    // Add the menu container view
+    zdj_rect_t container_frame = { 0, 10, frame->w, frame->h-10 };
+    zdj_view_t * menu_container = zdj_new_view( &container_frame );
+    state->menu_container = menu_container;
+    zdj_add_subview( browser_view, menu_container );
+
     // Add first menu to stack
     zdj_view_t * menu = zdj_new_file_browser_menu_for_path( 
         browser_view,
@@ -61,7 +67,7 @@ zdj_view_t * zdj_new_file_browser_view(
         allow_nav, 
         select_type 
     );
-    zdj_add_subview( browser_view, menu );
+    zdj_push_subview( menu_container, menu, false );
 
     return browser_view;
 }
@@ -78,7 +84,7 @@ void _zdj_file_browser_handle_hmi( zdj_view_t * browser, void * _event ) {
     // Handle all the jog-wheel stuff (scroll, mod scroll, press/long press, etc.)
     if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
         // Catch a jog-press when menu scroll_index == -1
-        zdj_view_t * top_menu = zdj_view_stack_top_subview_of( browser );
+        zdj_view_t * top_menu = zdj_view_stack_top_subview_of( browser_state->menu_container );
 
         if( top_menu ) {
             zdj_menu_view_state_t * top_menu_state = (zdj_menu_view_state_t*)top_menu->state;
@@ -87,10 +93,8 @@ void _zdj_file_browser_handle_hmi( zdj_view_t * browser, void * _event ) {
             zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)header_view->state;
             if( browser_state->header_view && top_menu_state->scroll_index == -1 ) {
                 header_state->show_back = true;
-                header_state->has_valid_display = false;
             } else {
                 header_state->hide_back = true;
-                header_state->has_valid_display = false;
             }
 
             // Handle a cancel button press - return immediately since we're being dismissed
@@ -134,13 +138,14 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event ) {
                 // already at the root of /media/internal
                 browser = item_state->data->ptr;
                 browser_state = (zdj_file_browser_view_state_t*)browser->state;
-                zdj_view_t * current_menu = zdj_view_stack_top_subview_of( browser );
-                if( current_menu->prev && current_menu->prev->type != ZDJ_VIEW_MENU ) { // cur menu has no previous menu
+
+                zdj_view_t * current_menu = zdj_view_stack_top_subview_of( browser_state->menu_container );
+                if( !current_menu->prev ) { // cur menu has no previous menu
                     if( !strcmp( "/media", item_state->link ) ) {
                         // Make a new device menu
                         zdj_view_t * new_menu = zdj_new_device_browser_menu( browser, &(zdj_rect_t){0, 10, browser->frame->w, browser->frame->h-10} );
                         // Insert it behind the current menu
-                        zdj_add_subview_below( browser, current_menu, new_menu );
+                        zdj_push_subview_behind( browser_state->menu_container, current_menu, new_menu, true );
                     } else {
                         // Make a new file menu
                         zdj_view_t * new_menu = zdj_new_file_browser_menu_for_path( 
@@ -151,12 +156,14 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event ) {
                             browser_state->allow_nav, 
                             browser_state->select_type 
                         );
+                        printf( "new broser menu: %s, %p, %p, %p\n", browser_state->path, browser_state->menu_container, current_menu, new_menu );
                         // Insert it behind the current menu
-                        zdj_add_subview_below( browser, current_menu, new_menu );
+                        zdj_push_subview_behind( browser_state->menu_container, current_menu, new_menu, true );
                     }
+                } else {
+                    // Pop to the menu below
+                    zdj_pop_subview_of( browser_state->menu_container, true );
                 }
-                // Pop to the menu below
-                zdj_pop_subview_of( browser );
             }
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_ENTER: // push menu w/path
@@ -170,7 +177,7 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event ) {
                 browser_state->allow_nav, 
                 browser_state->select_type 
             );
-            zdj_add_subview( browser, new_menu );
+            zdj_push_subview( browser_state->menu_container, new_menu, true );
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_SELECT: // exit browser w/dir path
         case ZDJ_MENU_ITEM_ACTION_FILE_SELECT: // exit browser w/file path
