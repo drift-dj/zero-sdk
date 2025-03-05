@@ -26,6 +26,7 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
+    int id;
     zdj_view_t * header_view;
     // has_back can be true even if menu doesn't have a header_view.
     // It can be used by an enclosing view as a header-less menu to determine
@@ -33,6 +34,7 @@ typedef struct {
     bool has_back;
     zdj_view_t * scroll_view;
     bool scroll_enabled;
+    bool scroll_animated;
     zdj_ui_orient_t scroll_dir;
     int scroll_index;
     int section_count;

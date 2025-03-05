@@ -35,7 +35,8 @@ SDL_Rect zdj_ui_assets[ ZDL_UI_ASSET_COUNT ] = {
     { 101,81,15,9 }, // ZDJ_UI_ASSET_ZERO_HI
     { 85,91,12,10 }, // ZDJ_UI_ASSET_DRIVE
     { 98,91,12,10 }, // ZDJ_UI_ASSET_DRIVE_HI
-    { 129,0,128,64 } // ZDJ_UI_ASSET_WHITE
+    { 129,0,128,64 }, // ZDJ_UI_ASSET_WHITE
+    { 257,0,128,64 } // ZDJ_UI_ASSET_BLACK
 };
 
 int zdj_ui_asset_init( void ) {

@@ -24,7 +24,7 @@ void zdj_display_m7_push( void ) {
     if( !zdj_ui_pixels ) { return; }
 
     // Pack SDL's pixels into shared video buffer
-    for( int i=0; i<(ZDJ_SCREEN_WIDTH*ZDJ_SCREEN_HEIGHT)/4; i++ ) {
+    for( int i=0; i<(ZDJ_DISPLAY_WIDTH*ZDJ_DISPLAY_HEIGHT)/4; i++ ) {
         zdj_vid_buffer[ i ] = ((zdj_ui_pixels[i*4]&0xFF) << 24) +
                           ((zdj_ui_pixels[i*4+1]&0xFF) << 16) +
                           ((zdj_ui_pixels[i*4+2]&0xFF) << 8) +

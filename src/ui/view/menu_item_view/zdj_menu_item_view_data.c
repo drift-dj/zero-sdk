@@ -17,8 +17,8 @@ void zdj_menu_item_data_r_update_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
     // Clear out the normal/hilite views' subviews
-    zdj_remove_subviews_of( state->hilite_view );
-    zdj_remove_subviews_of( state->normal_view );
+    zdj_remove_all_subviews_of( state->hilite_view );
+    zdj_remove_all_subviews_of( state->normal_view );
 
     state->normal_view->frame->w = view->frame->w;
     state->normal_view->frame->h = view->frame->h;

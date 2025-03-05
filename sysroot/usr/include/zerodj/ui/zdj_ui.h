@@ -32,9 +32,22 @@
 #define ZDJ_BLACK 0xFF000000
 #define ZDJ_SDL_BLACK (SDL_Color){0,0,0,255}
 
-#define ZDJ_BLINK_LENGTH 20
+#define ZDJ_BLINK_LENGTH 10
 #define ZDJ_BLINK_PERIOD 7
 #define ZDJ_BLINK_DUTY 3
+
+#define ZDJ_SCREEN_W 128
+#define ZDJ_SCREEN_H 64
+
+#define ZDJ_MODAL_X 4
+#define ZDJ_MODAL_Y 3
+#define ZDJ_MODAL_WIDTH 119
+#define ZDJ_MODAL_HEIGHT 58
+ 
+#define ZDJ_MENU_X 15
+#define ZDJ_MENU_Y 5
+#define ZDJ_MENU_WIDTH 112
+#define ZDJ_MENU_HEIGHT 59
 
 typedef struct {
     float x;
@@ -63,10 +76,17 @@ typedef enum {
 } zdj_ui_orient_t;
 
 typedef struct {
+    float cur_x;
+    float cur_y;
+    float set_x;
+    float set_y;
+} zdj_scroll_offset_t;
+
+typedef struct {
     zdj_point_t screen;
     zdj_rect_t src;
     zdj_rect_t dst;
-    zdj_point_t scroll_offset;
+    zdj_scroll_offset_t scroll_offset;
 } zdj_view_clip_t;
 
 typedef enum {
@@ -93,11 +113,52 @@ typedef struct {
 } zdj_color_t;
 
 typedef enum {
+    ZDJ_ANIM_EASEOUT,
+    ZDJ_ANIM_EASEIN,
+    ZDJ_ANIM_EASEINOUT,
+    ZDJ_ANIM_LINEAR
+} zdj_anim_easing_t;
+
+typedef enum {
+    ZDJ_ANIM_NONE,
+    ZDJ_ANIM_EMPTY,
+    ZDJ_ANIM_VIEW_SHOW,
+    ZDJ_ANIM_VIEW_HIDE,
+    ZDJ_ANIM_MENU_SHOW,
+    ZDJ_ANIM_MENU_HIDE,
+    ZDJ_ANIM_MENU_STACK_SHOW,
+    ZDJ_ANIM_MENU_STACK_HIDE,
+    ZDJ_ANIM_MODAL_SHOW,
+    ZDJ_ANIM_MODAL_HIDE,
+    ZDJ_ANIM_HEADER_ACTIVATE,
+    ZDJ_ANIM_HEADER_DEACTIVATE
+} zdj_anim_type_t;
+
+typedef struct {
+    int frame;
+    int frames;
+    float val;
+    void * start_data;
+    void * end_data;
+    bool alive;
+    zdj_anim_type_t type;
+    void * init_fn;
+    void * update_fn;
+    float ( *ease )( float, float );
+    void * deinit_fn;
+    struct zdj_view_t * superview;
+    struct zdj_view_t * view;
+    void * cb_fn;
+} zdj_anim_t;
+
+typedef enum {
     ZDJ_VIEW_UNKNOWN,
     ZDJ_VIEW_BASE,
     ZDJ_VIEW_SCROLL,
     ZDJ_VIEW_MENU,
-    ZDJ_VIEW_MENU_ITEM
+    ZDJ_VIEW_MENU_ITEM,
+    ZDJ_VIEW_MENU_SECTION,
+    ZDJ_VIEW_MENU_STACK
 } zdj_view_type_t;
 
 typedef enum {
@@ -107,7 +168,8 @@ typedef enum {
 
 // zdj_view
 typedef struct zdj_view_t {
-    int id;
+    int id; // runtime-unique id
+    int tag; // arbitrary tag (for front-end use)
     zdj_view_type_t type;
     void ( *init )( struct zdj_view_t * );
     void ( *deinit )( struct zdj_view_t * );
@@ -118,15 +180,24 @@ typedef struct zdj_view_t {
     struct zdj_view_t * next;
     struct zdj_view_t * prev;
     struct zdj_view_t * subviews;
-    int subview_index;
+    int subview_count;
     zdj_view_clip_t * subview_clip;
     zdj_rect_t * frame;
     bool is_visible;
+    zdj_anim_t * anim;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
     void * state;
 } zdj_view_t;
 
+typedef void ( *anim_init_t )( zdj_anim_t*, zdj_view_t* );
+typedef void ( *anim_deinit_t )( zdj_anim_t* );
+typedef void ( *anim_update_t )( zdj_anim_t*, zdj_view_t* );
+typedef void ( *anim_cb_t )( zdj_view_t*, zdj_view_t* );
+
 extern uint32_t * zdj_ui_pixels;
 extern SDL_Renderer* zdj_display_renderer;
+extern zdj_view_t * zdj_delete_stack;
 extern zdj_rect_t * zdj_screen_rect_priv;
 SDL_Renderer * zdj_renderer( void );
 zdj_rect_t * zdj_screen_rect( void );
@@ -144,12 +215,22 @@ void zdj_ui_stop_events( void );
 
 zdj_view_t * zdj_new_view( zdj_rect_t * frame );
 void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview );
-void zdj_remove_subview( zdj_view_t * view, zdj_view_t * subview );
-void zdj_pop_subview_of( zdj_view_t * view );
-void zdj_pop_subviews_of( zdj_view_t * view, int count );
-void zdj_remove_subviews_of( zdj_view_t * view ); // change to remove_subviews_of
-void zdj_add_subview_below( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview );
+void zdj_add_subview_behind( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview );
 void zdj_add_bottom_subview_to( zdj_view_t * view, zdj_view_t * new_subview );
+
+void zdj_remove_subview_of( zdj_view_t * view, zdj_view_t * subview );
+void zdj_remove_all_subviews_of( zdj_view_t * view );
+
+bool zdj_subview_exists_in( zdj_view_t * view, zdj_view_t * target_subview );
+
+void zdj_push_subview( zdj_view_t * view, zdj_view_t * subview, bool animated );
+void zdj_push_subview_behind( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview, bool animated );
+void zdj_pop_subview_of( zdj_view_t * view, bool animated );
+void zdj_pop_to_subview_of( zdj_view_t * view, zdj_view_t * target_subview, bool animated );
+void zdj_pop_n_subviews_of( zdj_view_t * view, int count, bool animated );
+
+void zdj_delete_view( zdj_view_t * view );
+
 zdj_view_t * zdj_root_view( void );
 
 void zdj_print_subviews_of( zdj_view_t * view );

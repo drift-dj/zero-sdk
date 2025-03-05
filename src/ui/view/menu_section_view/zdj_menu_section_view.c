@@ -42,7 +42,7 @@ void zdj_menu_section_static_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     // Update ticker's frame based on view's frame
     if( state->title_ticker ) {
-        state->title_ticker->frame->x = 0;
+        state->title_ticker->frame->x = 1;
         state->title_ticker->frame->y = 0;
         state->title_ticker->frame->w = view->frame->w-10;
         state->title_ticker->frame->h = view->frame->h;

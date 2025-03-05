@@ -18,34 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_MENU_VIEW_H
-#define ZDJ_MENU_VIEW_H
-
-#include <SDL2/SDL.h>
+#ifndef ZDJ_MENU_STACK_H
+#define ZDJ_MENU_STACK_H
 
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
     int id;
-    zdj_view_t * header_view;
-    // has_back can be true even if menu doesn't have a header_view.
-    // It can be used by an enclosing view as a header-less menu to determine
-    // the enclosing view's back button visibility.  See file browser, for ex.
-    bool has_back;
-    zdj_view_t * scroll_view;
-    bool scroll_enabled;
-    bool scroll_animated;
-    zdj_ui_orient_t scroll_dir;
-    int scroll_index;
-    int section_count;
-    int item_count;
-} zdj_menu_view_state_t;
+    zdj_view_t * menus;
+    bool is_deployed;
+} zdj_menu_stack_state_t;
 
-zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame );
-void zdj_menu_view_add_header( zdj_view_t * menu_view, zdj_view_t * header );
-void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section );
-void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item );
-void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index );
-
-
+zdj_view_t * zdj_new_menu_stack( zdj_rect_t * frame );
 #endif

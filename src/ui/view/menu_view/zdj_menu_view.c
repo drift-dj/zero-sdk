@@ -5,6 +5,7 @@
 
 #include <zerodj/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
@@ -24,6 +25,11 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
     menu_view->draw = &_zdj_menu_draw;
     menu_view->handle_hmi_event = _zdj_menu_handle_hmi;
     menu_view->deinit_state = &_zdj_menu_deinit_state;
+    menu_view->in_anim = zdj_new_anim( ZDJ_ANIM_MENU_SHOW );
+    menu_view->out_anim = zdj_new_anim( ZDJ_ANIM_MENU_HIDE );
+    
+    menu_view->frame->x = 0;
+    menu_view->frame->y = ZDJ_MENU_HEIGHT;
 
     // Add a scroll_view
     zdj_view_t * menu_scroll_view = zdj_new_scroll_view( frame );
@@ -33,6 +39,7 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
     zdj_menu_view_state_t * state = calloc( 1, sizeof( zdj_menu_view_state_t ) );
     state->scroll_view = menu_scroll_view;
     state->scroll_enabled = true;
+    state->scroll_animated = true;
     menu_view->state = state;
 
     return menu_view;
@@ -131,7 +138,6 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
                 menu_state->scroll_index = -1;
                 if( menu_state->header_view && menu_header_state ) {
                     menu_header_state->show_back = true;
-                    menu_header_state->has_valid_display = false;
                 }
                 return;
             }
@@ -163,7 +169,6 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
                 if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
                     if( menu_state->header_view ) {
                         menu_header_state->hide_back = true;
-                        menu_header_state->has_valid_display = false;
                     }
                 } else {
                     zdj_view_t * prev_menu_item = zdj_menu_item_for_scroll_index( 
@@ -212,7 +217,7 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
                     new_menu_item_state->scroll_index == menu_state->item_count-1 ) {
                         is_final_view = true;
                     }
-                zdj_scroll_view_to_view( menu_state->scroll_view, new_menu_item, scroll_dir, is_final_view );
+                zdj_scroll_view_to_view( menu_state->scroll_view, new_menu_item, scroll_dir, is_final_view, true );
             }        
         }
 

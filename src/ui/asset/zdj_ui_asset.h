@@ -53,6 +53,7 @@ typedef enum {
     ZDJ_UI_ASSET_DRIVE,
     ZDJ_UI_ASSET_DRIVE_HI,
     ZDJ_UI_ASSET_WHITE,
+    ZDJ_UI_ASSET_BLACK,
     ZDL_UI_ASSET_COUNT
 } zdj_ui_asset_t;
 

@@ -41,7 +41,7 @@ typedef struct {
 typedef struct {
     char * path;
     zdj_view_t * header_view;
-    zdj_view_t * menu_stack;
+    zdj_view_t * menu_container;
     void ( *handle_file_browser_exit )( zdj_view_t *, zdj_file_browser_exit_context_t * );
     bool ( *file_validator )( char * );
     bool read_only;
