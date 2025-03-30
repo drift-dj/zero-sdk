@@ -111,7 +111,7 @@ void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item ) {
 
 void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
     zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
-    
+
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
@@ -221,7 +221,6 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
             }        
         }
 
-
         // Release, mod-scroll, long-press, etc. should invoke hmi handler of menu_item @scroll_index
         if( e->type == ZDJ_HMI_EVENT_RELEASE ||
             e->type == ZDJ_HMI_EVENT_MOD_RELEASE ||
@@ -257,7 +256,6 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
                     menu_item->handle_hmi_event( menu_item, e );
                 }
             }
-            
         }
     } // Jog-wheel stuff
 }

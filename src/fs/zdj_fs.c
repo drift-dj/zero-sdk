@@ -90,6 +90,77 @@ zdj_health_status_t zdj_fs_extract_file_from_binary(
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
+char * zdj_fs_get_file_extension( char * filepath ) {
+    if( !filepath ) { return ""; }
+    char * filename = basename( filepath );
+    char * dot = strrchr( filename, '.' );
+    if( !dot || dot == filename ){ return ""; }
+    return dot + 1;
+}
+
+bool zdj_fs_path_is_dir( char * path ) {
+    DIR * dir = opendir( path );
+    if( errno == ENOENT || errno == ENOTDIR ) { 
+        closedir( dir ); 
+        return false; 
+    } else { 
+        closedir( dir ); 
+        return true;
+    }
+}
+
+bool zdj_fs_path_is_external_database( char * path ) {
+    // Get filename extension
+    char * ext = zdj_fs_get_file_extension( path );
+
+    // Check for recognized extension + header
+    return false;
+}
+
+bool zdj_fs_path_is_audio_filename( char * path ) {
+    // Get filename extension
+    char * ext = zdj_fs_get_file_extension( path );
+    printf( "found file extension: %s\n", ext );
+    // Check for recognized extension + header
+    if( !strcmp( ext, "mp3" ) || !strcmp( ext, "MP3" ) ) {
+        // Attempt to read mp3 header
+        return true;
+    } else if( !strcmp( ext, "wav" ) || !strcmp( ext, "WAV" ) ) {
+        // Attempt to read wav header
+        return true;
+    }
+    return false;
+}
+
+bool zdj_fs_path_is_media_partition( char * path ) {
+    if( !strncmp( "/media/internal", path, strlen( path ) ) ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool zdj_fs_path_is_attached_msd( char * path ) {
+    return false;
+}
+
+bool zdj_fs_path_is_dir_with_files( char * path ) {
+    int n = 0;
+    struct dirent * d;
+    DIR * dir = opendir( path );
+    if ( dir == NULL ) { return false; }
+    while ( ( d = readdir( dir ) ) != NULL ) {
+        if( ++n > 2 )
+        break;
+    }
+    closedir( dir );
+    if ( n <= 2 ) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 void zdj_fs_scan_dir( 
     char * path,
     bool recursive,

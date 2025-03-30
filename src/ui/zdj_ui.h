@@ -166,6 +166,8 @@ typedef enum {
     ZDJ_UI_NOT_A_VIEW
 } zdj_ui_err_t;
 
+typedef void ( *handle_hmi_event_t )( struct zdj_view_t *, void * );
+
 // zdj_view
 typedef struct zdj_view_t {
     int id; // runtime-unique id
@@ -176,7 +178,7 @@ typedef struct zdj_view_t {
     void ( *deinit_state )( struct zdj_view_t * );
     void ( *draw )( struct zdj_view_t *, zdj_view_clip_t * );
     void ( *update_subview_clip )( struct zdj_view_t *, zdj_view_clip_t * );
-    void ( *handle_hmi_event )( struct zdj_view_t *, void * );
+    handle_hmi_event_t handle_hmi_event;
     struct zdj_view_t * next;
     struct zdj_view_t * prev;
     struct zdj_view_t * subviews;

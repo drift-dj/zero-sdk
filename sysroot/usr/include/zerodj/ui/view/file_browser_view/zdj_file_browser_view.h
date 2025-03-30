@@ -23,7 +23,8 @@
 
 typedef enum {
     ZDJ_FILE_BROWSER_SELECT_TYPE_DIR,
-    ZDJ_FILE_BROWSER_SELECT_TYPE_FILE
+    ZDJ_FILE_BROWSER_SELECT_TYPE_FILE,
+    ZDJ_FILE_BROWSER_SELECT_TYPE_ANY,
 } zdj_file_browser_select_type_t;
 
 typedef enum {
@@ -47,6 +48,7 @@ typedef struct {
     bool read_only;
     bool allow_nav;
     zdj_file_browser_select_type_t select_type;
+    char * select_dir_title;
 } zdj_file_browser_view_state_t;
 
 zdj_view_t * zdj_new_file_browser_view( 
@@ -54,7 +56,8 @@ zdj_view_t * zdj_new_file_browser_view(
     char * path,
     bool read_only,
     bool allow_nav,
-    zdj_file_browser_select_type_t select_type 
+    zdj_file_browser_select_type_t select_type,
+    char * select_dir_title
 );
 
 void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event );
@@ -65,7 +68,8 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
     char * path, 
     bool read_only,
     bool allow_nav,
-    zdj_file_browser_select_type_t select_type 
+    zdj_file_browser_select_type_t select_type,
+    char * select_dir_title
 );
 zdj_view_t * zdj_new_device_browser_menu( zdj_view_t * browser, zdj_rect_t * frame );
 

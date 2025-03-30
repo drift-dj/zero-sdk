@@ -20,7 +20,7 @@ void _zdj_hmi_free_event( zdj_hmi_event_t * event );
 void zdj_hmi_init_input( void ) {
     // Grab a ref to the hmi model memory region used by the m7
     int mem_fd = open( "/dev/mem", O_RDWR );
-	zdj_hmi_m7_state_model = mmap(0, 0x20000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a31000);
+	zdj_hmi_m7_state_model = mmap(0, 0x20000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a11000);
 
     zdj_hmi_mod_bitmap = 0;
 

@@ -39,6 +39,14 @@ zdj_health_status_t zdj_fs_extract_file_from_binary(
     bool overwrite
 );
 
+char * zdj_fs_get_file_extension( char * filepath );
+
+bool zdj_fs_path_is_dir( char * path );
+bool zdj_fs_path_is_external_database( char * path );
+bool zdj_fs_path_is_audio_filename( char * path );
+bool zdj_fs_path_is_media_partition( char * path );
+bool zdj_fs_path_is_attached_msd( char * path );
+bool zdj_fs_path_is_dir_with_files( char * path );
 
 void zdj_fs_scan_dir( 
     char * path,

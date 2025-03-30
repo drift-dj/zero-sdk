@@ -18,11 +18,12 @@ zdj_view_t * zdj_new_modal_view( zdj_rect_t * frame ) {
     modal_view->draw = &_zdj_modal_view_draw;
     modal_view->handle_hmi_event = _zdj_modal_view_handle_hmi;
     modal_view->deinit_state = &_zdj_modal_view_deinit_state;
-    modal_view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
-    modal_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
-    
+
     modal_view->frame->x = ZDJ_MODAL_X;
     modal_view->frame->y = ZDJ_SCREEN_H;
+    
+    modal_view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
+    modal_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
 
     // Add a state instance
     zdj_modal_view_state_t * state = calloc( 1, sizeof( zdj_modal_view_state_t ) );

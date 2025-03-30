@@ -8,6 +8,7 @@
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
 #include <zerodj/ui/view/file_browser_view/zdj_file_browser_view.h>
+#include <zerodj/ui/view/label_view/zdj_label_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
@@ -28,7 +29,8 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
     char * path, 
     bool read_only,
     bool allow_nav,
-    zdj_file_browser_select_type_t select_type 
+    zdj_file_browser_select_type_t select_type,
+    char * select_dir_title
 ) {
     zdj_file_browser_view_state_t * browser_state = (zdj_file_browser_view_state_t *)browser->state;
 
@@ -64,15 +66,16 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
         zdj_menu_view_add_item( menu, nav_up );
  
         // Add a 'select this dir' item
-        if( select_type == ZDJ_FILE_BROWSER_SELECT_TYPE_DIR ) {
-            zdj_view_t * dir_select = zdj_new_menu_item( "Save here" );
+        if( ( select_type == ZDJ_FILE_BROWSER_SELECT_TYPE_DIR ||
+              select_type == ZDJ_FILE_BROWSER_SELECT_TYPE_ANY ) && select_dir_title ) {
+            zdj_view_t * dir_select = zdj_new_menu_item( select_dir_title );
             zdj_menu_item_view_state_t * dir_select_state = (zdj_menu_item_view_state_t*)dir_select->state;
-            dir_select_state->action = ZDJ_MENU_ITEM_ACTION_DIR_BACK;
+            dir_select_state->action = ZDJ_MENU_ITEM_ACTION_DIR_SELECT;
             dir_select_state->update_layout = &_zdj_file_browser_dir_select_layout;
+            dir_select_state->data->ptr = browser;
+            dir_select_state->link = strdup( path );
             dir_select->handle_hmi_event = &zdj_file_browser_item_hmi_delegate;
-            dir_select->frame->x = 67;
             dir_select->frame->y = 3;
-            dir_select->frame->w = 60;
             dir_select->frame->h = 12;
             zdj_menu_view_add_item( menu, dir_select );
         }
@@ -170,40 +173,41 @@ void _zdj_file_browser_dir_select_layout( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( state->hilite_view );
     zdj_remove_all_subviews_of( state->normal_view );
 
+    // Build the title label first so we have dimensions
+    zdj_view_t * title_label = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
+    title_label->frame->x = 1;
+    
+    view->frame->w = title_label->frame->w + zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT ].w + 4;
+    view->frame->x = ZDJ_MODAL_WIDTH - view->frame->w;
+
     state->normal_view->frame->w = view->frame->w;
     state->normal_view->frame->h = view->frame->h;
     state->hilite_view->frame->w = view->frame->w;
     state->hilite_view->frame->h = view->frame->h;
 
-    zdj_view_t * install_icon = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DIR_ADD ], NULL );
-    zdj_add_subview( state->normal_view, install_icon );
-    install_icon->frame->x = view->frame->w - 13;
-    install_icon->frame->y = 1;
-    install_icon->frame->w = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_ADD ].w;
-    install_icon->frame->h = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_ADD ].h;
+    zdj_view_t * dir_select_icon = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT ], NULL );
+    zdj_add_subview( state->normal_view, dir_select_icon );
+    dir_select_icon->frame->x = view->frame->w - zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT ].w - 2;
+    dir_select_icon->frame->y = 1;
+    dir_select_icon->frame->w = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT ].w;
+    dir_select_icon->frame->h = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT ].h;
     
     // // Setup hilite view
     zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WHITE ], NULL );
     zdj_add_subview( state->hilite_view, hilite_bg );
-
-    zdj_view_t * install_icon_hi = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DIR_ADD_HI ], NULL );
-    zdj_add_subview( state->hilite_view, install_icon_hi );
-    install_icon_hi->frame->x = view->frame->w - 13;
-    install_icon_hi->frame->y = 1;
-    install_icon_hi->frame->w = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_ADD_HI ].w;
-    install_icon_hi->frame->h = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_ADD_HI ].h;
-
-    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( "Save file here", ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
-    zdj_add_subview( state->hilite_view, title_ticker_hilite );
-    title_ticker_hilite->frame->x = 1;
-    title_ticker_hilite->frame->y = 0;
-    title_ticker_hilite->frame->w = view->frame->w - 15;
-    title_ticker_hilite->frame->h = view->frame->h;
-
-    // Adjust hilite frame based on ticker's frame
     hilite_bg->frame->w = view->frame->w;
     hilite_bg->frame->x = 0;
     hilite_bg->frame->h = 10;
+
+    zdj_view_t * dir_select_icon_hi = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT_HI ], NULL );
+    zdj_add_subview( state->hilite_view, dir_select_icon_hi );
+    dir_select_icon_hi->frame->x = view->frame->w - zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT_HI ].w - 2;
+    dir_select_icon_hi->frame->y = 1;
+    dir_select_icon_hi->frame->w = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT_HI ].w;
+    dir_select_icon_hi->frame->h = zdj_ui_assets[ ZDJ_UI_ASSET_DIR_SELECT_HI ].h;
+
+    // Add title after hilite
+    zdj_add_subview( state->hilite_view, title_label );
 
     state->has_valid_display = true;
 }

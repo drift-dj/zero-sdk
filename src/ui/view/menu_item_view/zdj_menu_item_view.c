@@ -15,11 +15,6 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view );
 
 void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_clip_t * clip, bool hilite );
 
-void _zdj_menu_item_static_hmi_open_view( zdj_view_t * view, void * _event );
-void _zdj_menu_item_static_hmi_open_menu( zdj_view_t * view, void * _event );
-void _zdj_menu_item_static_hmi_toggle( zdj_view_t * view, void * _event );
-void _zdj_menu_item_static_hmi_input( zdj_view_t * view, void * _event );
-
 // Parse a static XML node into a menu_item_view.
 zdj_view_t * zdj_new_menu_item( char * title ) {
     // Make view
@@ -123,7 +118,7 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
 }
 
 bool zdj_menu_item_layout_is_dynamic( zdj_menu_item_view_layout_t layout ) {
-    if( layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L || layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L ) {
+    if( layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L || layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) {
         return false;
     } else {
         return true;

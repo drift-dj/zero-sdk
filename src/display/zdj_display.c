@@ -16,7 +16,7 @@ void zdj_display_init( void ) {
     // Grab references to the shared (M7+A53) memory.
     // See zero kernel 'drift-a106.dtsi' reserved-memory section.
 	int mem_fd = open( "/dev/mem", O_RDWR );
-	zdj_vid_buffer = (uint32_t *)mmap(0, 0x20000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a11000);
+	zdj_vid_buffer = (uint32_t *)mmap(0, 0x8000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a31000);
 }
 
 void zdj_display_m7_push( void ) {
@@ -29,9 +29,12 @@ void zdj_display_m7_push( void ) {
                           ((zdj_ui_pixels[i*4+1]&0xFF) << 16) +
                           ((zdj_ui_pixels[i*4+2]&0xFF) << 8) +
                           (zdj_ui_pixels[i*4+3]&0xFF);
+        // zdj_vid_buffer[ i ] = ((zdj_ui_pixels[i*4]&0xFF) << 0) +
+        //                   ((zdj_ui_pixels[i*4+1]&0xFF) << 8) +
+        //                   ((zdj_ui_pixels[i*4+2]&0xFF) << 16) +
+        //                   ((zdj_ui_pixels[i*4+3]&0xFF) << 24 );
     }
     // Signal the M7 core to transfer pixel data to the screen (see zero-m7 repo).
-    // write( m7( ), "ud", strlen( "ud" )+1 );
     zdj_m7_msg( ZDJ_M7_UPDATE_DISPLAY );
 }
 

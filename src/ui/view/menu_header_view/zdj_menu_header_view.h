@@ -33,6 +33,8 @@ typedef enum {
     ZDJ_MENU_HEADER_BACK_STYLE_X
 } zdj_menu_view_header_back_style_t;
 
+typedef void ( *zdj_menu_view_header_back_btn_fn )( zdj_view_t * );
+
 typedef struct {
     zdj_menu_view_header_style_t style;
     char * name;
@@ -48,7 +50,8 @@ typedef struct {
     bool has_back;
     bool show_back;
     bool hide_back;
-    void ( *handle_back )( zdj_view_t * );
+    // void ( *handle_back )( zdj_view_t * );
+    zdj_menu_view_header_back_btn_fn handle_back;
     zdj_view_t * back_view;
 } zdj_menu_header_view_state_t;
 

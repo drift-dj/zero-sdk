@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
 #include <zerodj/ui/view/file_browser_view/zdj_file_browser_view.h>
@@ -25,18 +27,28 @@ zdj_view_t * zdj_new_file_browser_view(
     char * path,
     bool read_only,
     bool allow_nav,
-    zdj_file_browser_select_type_t select_type 
+    zdj_file_browser_select_type_t select_type,
+    char * select_dir_title
 ) {
+    // Check path and fail before we do anything
+    if( access( path, F_OK ) != 0 ) { return NULL; }
+
     zdj_view_t * browser_view = zdj_new_view( frame );
     browser_view->draw = &_zdj_file_browser_draw;
     browser_view->handle_hmi_event = _zdj_file_browser_handle_hmi;
     browser_view->deinit_state = &_zdj_file_browser_deinit_state;
+    browser_view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
+    browser_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
+
+    browser_view->frame->x = ZDJ_MODAL_X;
+    browser_view->frame->y = ZDJ_SCREEN_H;
 
     // Add a state instance
     zdj_file_browser_view_state_t * state = calloc( 1, sizeof( zdj_file_browser_view_state_t ) );
     state->path = path;
     state->read_only = read_only;
     state->allow_nav = allow_nav;
+    state->select_dir_title = select_dir_title;
     browser_view->state = state;
 
     // Add header view
@@ -65,7 +77,8 @@ zdj_view_t * zdj_new_file_browser_view(
         path, 
         read_only, 
         allow_nav, 
-        select_type 
+        select_type,
+        select_dir_title
     );
     zdj_push_subview( menu_container, menu, false );
 
@@ -154,9 +167,9 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event ) {
                             strdup( item_state->link ), 
                             browser_state->read_only, 
                             browser_state->allow_nav, 
-                            browser_state->select_type 
+                            browser_state->select_type,
+                            browser_state->select_dir_title
                         );
-                        printf( "new broser menu: %s, %p, %p, %p\n", browser_state->path, browser_state->menu_container, current_menu, new_menu );
                         // Insert it behind the current menu
                         zdj_push_subview_behind( browser_state->menu_container, current_menu, new_menu, true );
                     }
@@ -175,22 +188,41 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event ) {
                 strdup( item_state->link ), 
                 browser_state->read_only, 
                 browser_state->allow_nav, 
-                browser_state->select_type 
+                browser_state->select_type,
+                browser_state->select_dir_title
             );
             zdj_push_subview( browser_state->menu_container, new_menu, true );
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_SELECT: // exit browser w/dir path
+            browser = (zdj_view_t*)item_state->data->ptr;
+            if( !browser ){ break; }
+            browser_state = (zdj_file_browser_view_state_t*)browser->state;
+            if( browser_state->handle_file_browser_exit ) {
+                zdj_file_browser_exit_context_t exit_context = {
+                    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, 
+                    // strdup( browser_state->path ), 
+                    strdup( item_state->link ),
+                    NULL, 
+                    // strdup( browser_state->path )
+                    strdup( item_state->link )
+                };
+                browser_state->handle_file_browser_exit( browser, &exit_context );
+            }
+            break;
         case ZDJ_MENU_ITEM_ACTION_FILE_SELECT: // exit browser w/file path
-            browser = item_state->data->ptr;
+            browser = (zdj_view_t*)item_state->data->ptr;
+            if( !browser ){ break; }
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
             if( browser_state->handle_file_browser_exit ) {
                 char * filename = strdup( item_state->link );
                 char * dir = strdup( browser_state->path );
                 char filepath[1024];
                 snprintf( filepath, sizeof( filepath ), "%s/%s", dir, filename );
-                // printf( "item_state->link: %s browser_state->path: %s\n", item_state->link, browser_state->path);
                 zdj_file_browser_exit_context_t exit_context = {
-                    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, dir, filename, strdup( filepath )
+                    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, 
+                    dir, 
+                    filename, 
+                    strdup( filepath )
                 };
                 browser_state->handle_file_browser_exit( browser, &exit_context );
             }

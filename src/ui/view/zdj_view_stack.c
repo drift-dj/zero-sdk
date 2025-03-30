@@ -61,10 +61,10 @@ void zdj_view_stack_clear_screen( void ) {
 void zdj_view_stack_handle_events( zdj_view_t * view ) {
     // Get a prev ref before processing view's events in case it gets deleted during processing.
     zdj_view_t * view_prev = view->prev;
-    if( view->handle_hmi_event ) {
+    if( view && view->handle_hmi_event ) {
         zdj_hmi_event_t * event = zdj_hmi_event_base;
         while( event ) {
-            if( view ) { view->handle_hmi_event( view, event ); }
+            view->handle_hmi_event( view, event );
             event = (zdj_hmi_event_t *)event->next;
         }
     }

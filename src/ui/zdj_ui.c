@@ -261,9 +261,9 @@ void zdj_pop_to_subview_of( zdj_view_t * view, zdj_view_t * target_subview, bool
     // Count number of subviews to pop to reveal target subview
     zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
     while( subview ) {
-        printf( "subview: %p, targ: %p\n", subview, target_subview );
+        // printf( "subview: %p, targ: %p\n", subview, target_subview );
         if( subview == target_subview ) { 
-            printf( "found: %p\n", subview );
+            // printf( "found: %p\n", subview );
             target_found = true; 
             break; 
         }   
@@ -271,7 +271,7 @@ void zdj_pop_to_subview_of( zdj_view_t * view, zdj_view_t * target_subview, bool
         subview = subview->prev;
     }
     if( target_found ) { 
-        printf( "pop_to_subview: %d views\n", pop_count );
+        // printf( "pop_to_subview: %d views\n", pop_count );
         zdj_pop_n_subviews_of( view, pop_count, animated );
     }
 
@@ -279,17 +279,17 @@ void zdj_pop_to_subview_of( zdj_view_t * view, zdj_view_t * target_subview, bool
 
 // Remove the top n subviews of a view
 void zdj_pop_n_subviews_of( zdj_view_t * view, int count, bool animated ) {
-    printf( "zdj_pop_n_subviews_of: %d/%d\n", count, view->subview_count );
+    // printf( "zdj_pop_n_subviews_of: %d/%d\n", count, view->subview_count );
     // Confirm there are n subviews to hide + 1 to reveal
     if( view->subview_count < count ) { return; }
     
     // Animate out anything from top view down to n
     zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
-    printf( "subview: %p, %p\n", subview, subview->out_anim );
+    // printf( "subview: %p, %p\n", subview, subview->out_anim );
     for( int n=0; n<count; n++ ) {
         if( subview ) {
             if( subview->out_anim ) {
-                printf( "animating out: %p\n", subview );
+                // printf( "animating out: %p\n", subview );
                 ((anim_init_t)subview->out_anim->init_fn)( subview->out_anim, subview );
                 subview->out_anim->view = subview;
                 subview->out_anim->superview = view;
