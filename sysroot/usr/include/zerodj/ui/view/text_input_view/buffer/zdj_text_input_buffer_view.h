@@ -18,15 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_SQL_H
-#define ZDJ_SQL_H
+#ifndef ZDJ_TEXT_INPUT_BUFFER_VIEW_H
+#define ZDJ_TEXT_INPUT_BUFFER_VIEW_H
 
-#include <sqlite3.h>
+#include <zerodj/ui/zdj_ui.h>
 
-sqlite3 * zdj_sql_open( char * path );
-int zdj_sql_close( sqlite3 * db );
-int zdj_sql_exec( char * sql, sqlite3 * db );
-int zdj_sql_rows_in_table ( char * table, char * distinct, sqlite3 * db );
-sqlite3_stmt * zdj_sql_prep_row_stepper( char * sql, sqlite3 * db );
+typedef struct {
+    char * str;
+    int cursor_index;
+    zdj_view_t * left_label;
+    zdj_view_t * right_label;
+    zdj_view_t * cursor_label;
+    bool has_valid_layout;
+    int cursor_counter;
+    int cursor_char;
+} zdj_text_input_buffer_view_state_t;
+
+zdj_view_t * zdj_new_text_input_buffer_view( char * input_str );
+void zdj_text_input_buffer_backspace( zdj_view_t * input_buffer );
+void zdj_text_input_buffer_insert( zdj_view_t * input_buffer );
 
 #endif

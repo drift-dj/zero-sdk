@@ -45,7 +45,11 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
 void zdj_menu_view_add_header( zdj_view_t * menu_view, zdj_view_t * header );
 void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section );
 void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item );
+void zdj_menu_view_add_chrome_item( zdj_view_t * menu_view, zdj_view_t * item );
+void zdj_menu_view_insert_item( zdj_view_t * menu_view, zdj_view_t * item, int index );
+void zdj_menu_view_remove_all_items( zdj_view_t * menu_view );
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index );
+zdj_view_t * zdj_menu_view_item_at_scroll_index( zdj_view_t * menu_view, int index );
 
 
 #endif

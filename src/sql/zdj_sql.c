@@ -19,13 +19,22 @@ sqlite3 * zdj_sql_open( char * path ) {
     return db;
 }
 
+int zdj_sql_close( sqlite3 * db ) {
+    int rc = sqlite3_close( db );
+    if ( rc != SQLITE_OK ) {
+        fprintf( stderr, "Cannot close data_model database: %s\n", sqlite3_errmsg( db ) );
+        return 1;
+    }
+    return 0;
+}
+
 int zdj_sql_exec( char * sql, sqlite3 * db ) {
-    printf( "executing sql: %s\n", sql );
+    // printf( "executing sql: %s\n", sql );
     char * err_msg;
     int rc = sqlite3_exec( db, sql, NULL, NULL, &err_msg);
     if ( rc != SQLITE_OK ) {
-        printf( "rc: %d, SQL error: %s\n", rc, err_msg );
-        printf( "sql: %s\n", sql );
+        // printf( "rc: %d, SQL error: %s\n", rc, err_msg );
+        // printf( "sql: %s\n", sql );
     }
     return rc;
 }
@@ -57,7 +66,7 @@ sqlite3_stmt * zdj_sql_prep_row_stepper( char * sql, sqlite3 * db ) {
     int res = sqlite3_prepare_v2( db, strdup( sql ), -1, &stmt, NULL );
     int result_number = 0;
     if ( res != SQLITE_OK ){ 
-        printf( "prep row error: %s\n", sqlite3_errmsg( db ) ); 
+        // printf( "prep row error: %s\n", sqlite3_errmsg( db ) ); 
         return NULL;
     }
     return stmt;

@@ -18,6 +18,7 @@
 void _zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip );
 void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event );
 void _zdj_menu_deinit_state( zdj_view_t * view );
+void _zdj_menu_update_scroll( zdj_view_t * menu_view, int new_scroll );
 
 zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame ) {
     zdj_view_t * menu_view = zdj_new_view( frame );
@@ -33,11 +34,14 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
 
     // Add a scroll_view
     zdj_view_t * menu_scroll_view = zdj_new_scroll_view( frame );
+    zdj_scroll_view_state_t * scroll_view_state = (zdj_scroll_view_state_t*)menu_scroll_view->state;
+    scroll_view_state->scroll_dir = scroll_dir;
     zdj_add_subview( menu_view, menu_scroll_view );
 
     // Add a state instance
     zdj_menu_view_state_t * state = calloc( 1, sizeof( zdj_menu_view_state_t ) );
     state->scroll_view = menu_scroll_view;
+    state->scroll_dir = scroll_dir;
     state->scroll_enabled = true;
     state->scroll_animated = true;
     menu_view->state = state;
@@ -109,6 +113,67 @@ void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item ) {
     }
 }
 
+void zdj_menu_view_add_chrome_item( zdj_view_t * menu_view, zdj_view_t * item ) {
+    if( !item ) { return; }
+
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
+    zdj_add_subview( menu_view, item );
+
+    // Set scroll_index for new item
+    if( item->type == ZDJ_VIEW_MENU_ITEM ) {
+        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+        item_state->scroll_index = menu_state->item_count++;
+    }
+}
+
+void zdj_menu_view_insert_item( zdj_view_t * menu_view, zdj_view_t * item, int index ) {
+    // Get a menu_item at the given scroll_index
+
+    // Insert the view into the scroll_view
+
+    // Loop on all items after index 
+    
+        // Move x/y by inserted item's size or standard item size if not specified
+        // Increment scroll_index
+}
+
+void zdj_menu_view_remove_all_items( zdj_view_t * menu_view ) {
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t *)menu_view->state;
+
+    // Dump the current scroll_view
+    zdj_remove_subview_of( menu_view, menu_state->scroll_view );
+
+    // Add a new scroll_view
+    zdj_view_t * menu_scroll_view = zdj_new_scroll_view( menu_view->frame );
+    zdj_scroll_view_state_t * scroll_view_state = (zdj_scroll_view_state_t*)menu_scroll_view->state;
+    scroll_view_state->scroll_dir = menu_state->scroll_dir;
+    if( menu_state->header_view ) {
+        menu_scroll_view->frame->y = 10;
+        menu_scroll_view->frame->h = menu_view->frame->h - 10;
+    }
+    zdj_add_bottom_subview_to( menu_view, menu_scroll_view );
+    menu_state->scroll_view = menu_scroll_view;
+    menu_state->scroll_index = 0;
+    menu_state->section_count = 0;
+    menu_state->item_count = 0;
+}
+
+zdj_view_t * zdj_menu_view_item_at_scroll_index( zdj_view_t * menu_view, int index ) {
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t *)menu_view->state;
+    if( index >= menu_state->item_count ) { return NULL; }
+
+    // Iterate thru scroll_view's subviews, ignoring non-menu_items
+    zdj_view_t * scroll_view_subview = menu_state->scroll_view->subviews;
+    int item_count = 0;
+    while( scroll_view_subview ) {
+        if( scroll_view_subview->type == ZDJ_VIEW_MENU_ITEM ) {
+            if( item_count == index ) { return scroll_view_subview; }
+            item_count++;
+        }
+        scroll_view_subview = scroll_view_subview->next;
+    }
+}
+
 void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
     zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
 
@@ -122,26 +187,13 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
     if( menu_state->header_view ){ 
         menu_header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state; 
     }
-    zdj_menu_item_view_state_t * prev_menu_item_state;
-    zdj_menu_item_view_state_t * new_menu_item_state;
 
     // Handle all the jog-wheel stuff (scroll, mod scroll, press/long press, etc.)
     if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
         // Prevent views/menus below this one from getting jog wheel events
         e->blocked = true;
 
-        // Handle scroll - update scroll_index, scroll_view, back btns
-        zdj_scroll_view_state_t * scroll_state = (zdj_scroll_view_state_t*)menu_state->scroll_view->state;
         if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
-            // If there are no menu items, set the back btn if available and return
-            if( menu_state->item_count == 0 && menu_state->has_back ) {
-                menu_state->scroll_index = -1;
-                if( menu_state->header_view && menu_header_state ) {
-                    menu_header_state->show_back = true;
-                }
-                return;
-            }
-
             // Update scroll_index with new jog adjust event value.
             // Don't go above menu's item_count, and don't go below
             // 0, or -1 depending on presence of a back btn in menu.
@@ -158,67 +210,7 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
                     new_scroll = 0;
                 }
             }
-
-            // Check the new value against the previous value.
-            // Only start updating things if the value has changed.
-            if( new_scroll != menu_state->scroll_index ) {
-                // Clear hilite state of the previous selected item.
-                // If it was the header's back item, hide the header's back view.
-                // If it was a menu_item, clear menu_item->is_hilite and force
-                // it to update its layout to resize the hilite.
-                if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
-                    if( menu_state->header_view ) {
-                        menu_header_state->hide_back = true;
-                    }
-                } else {
-                    zdj_view_t * prev_menu_item = zdj_menu_item_for_scroll_index( 
-                        menu_state->scroll_view, 
-                        menu_state->scroll_index 
-                    );
-                    prev_menu_item_state = prev_menu_item->state;
-                    prev_menu_item_state->is_hilite = false;
-                }
-                
-                // Grab a scroll direction and update the scroll index
-                bool scroll_dir = new_scroll > menu_state->scroll_index;
-                menu_state->scroll_index = new_scroll;
-
-                // If this is a back btn, show header's back state and return early
-                if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
-                    if( menu_state->header_view ) {
-                        menu_header_state->show_back = true;
-                        menu_header_state->has_valid_display = false;
-                    }
-                    return;
-                }
-
-                // Grab the new menu item + set is_hilite
-                zdj_view_t * new_menu_item = zdj_menu_item_for_scroll_index( 
-                    menu_state->scroll_view, 
-                    menu_state->scroll_index 
-                );
-                new_menu_item_state = new_menu_item->state;
-                new_menu_item_state->is_hilite = true;
-
-                // If scrolling is disabled in menu, we're done.
-                if( !menu_state->scroll_enabled ){ return; }
-                
-                // Update the scroll_view's scroll_offset.
-                zdj_point_t scroll_point;
-                if( menu_state->scroll_dir == ZDJ_VERTICAL ) {
-                    scroll_point.x = 0;
-                    scroll_point.y = new_menu_item->frame->y;
-                } else if( menu_state->scroll_dir == ZDJ_HORIZONTAL ) {
-                    scroll_point.x = new_menu_item->frame->x;
-                    scroll_point.y = 0;
-                }
-                bool is_final_view;
-                if( new_menu_item_state->scroll_index == 0 ||
-                    new_menu_item_state->scroll_index == menu_state->item_count-1 ) {
-                        is_final_view = true;
-                    }
-                zdj_scroll_view_to_view( menu_state->scroll_view, new_menu_item, scroll_dir, is_final_view, true );
-            }        
+            _zdj_menu_update_scroll( view, new_scroll );      
         }
 
         // Release, mod-scroll, long-press, etc. should invoke hmi handler of menu_item @scroll_index
@@ -261,29 +253,109 @@ void _zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
 }
 
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index ) {
+    _zdj_menu_update_scroll( menu_view, index );
+}
+
+void _zdj_menu_update_scroll( zdj_view_t * menu_view, int new_scroll ) {
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
-    zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state;
-    if( index < 0 && menu_state->has_back ) {
+    zdj_scroll_view_state_t * scroll_state = (zdj_scroll_view_state_t*)menu_state->scroll_view->state;
+    zdj_menu_item_view_state_t * prev_menu_item_state;
+    zdj_menu_item_view_state_t * new_menu_item_state;
+    zdj_menu_header_view_state_t * menu_header_state;
+    if( menu_state->header_view ){ 
+        menu_header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state; 
+    }
+    
+    // If there are no menu items, set the back btn if available and return
+    if( menu_state->item_count == 0 && menu_state->has_back ) {
         menu_state->scroll_index = -1;
-        if( menu_state->header_view && header_state ) {
-            header_state->show_back = true;
-            header_state->has_valid_display = false;
+        if( menu_state->header_view && menu_header_state ) {
+            menu_header_state->show_back = true;
         }
-    } else {
-        if( index >= menu_state->item_count ) {
-            menu_state->scroll_index = menu_state->item_count-1;
+        return;
+    }
+
+    // Check the new value against the previous value.
+    // Only start updating things if the value has changed.
+    if( new_scroll != menu_state->scroll_index ) {
+        // Clear hilite state of the previous selected item.
+        // If it was the header's back item, hide the header's back view.
+        // If it was a menu_item, clear menu_item->is_hilite and force
+        // it to update its layout to resize the hilite.
+        if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
+            if( menu_state->header_view ) {
+                menu_header_state->hide_back = true;
+            }
         } else {
-            menu_state->scroll_index = index;
+            zdj_view_t * prev_menu_item = zdj_menu_item_for_scroll_index( 
+                menu_state->scroll_view, 
+                menu_state->scroll_index 
+            );
+            // If item isn't found in scroll_view, check menu view itself 
+            // (for non-scrolling chrome items).
+            if( !prev_menu_item ) {
+                prev_menu_item = zdj_menu_item_for_scroll_index( 
+                    menu_view, 
+                    menu_state->scroll_index 
+                );
+            }
+            prev_menu_item_state = prev_menu_item->state;
+            prev_menu_item_state->is_hilite = false;
         }
+        
+        // Grab a scroll direction and update the scroll index
+        bool scroll_dir = new_scroll > menu_state->scroll_index;
+        menu_state->scroll_index = new_scroll;
+
+        // If this is a back btn, show header's back state and return early
+        if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
+            if( menu_state->header_view ) {
+                menu_header_state->show_back = true;
+                menu_header_state->has_valid_display = false;
+            }
+            return;
+        }
+
         // Grab the new menu item + set is_hilite
-        zdj_view_t * menu_item = zdj_menu_item_for_scroll_index( 
+        zdj_view_t * new_menu_item = zdj_menu_item_for_scroll_index( 
             menu_state->scroll_view, 
             menu_state->scroll_index 
         );
-        zdj_menu_item_view_state_t * menu_item_state = menu_item->state;
-        menu_item_state->is_hilite = true;
-        menu_item_state->has_valid_display = false;
-    }
+        // If item isn't found in scroll_view, check menu view itself 
+        // (for non-scrolling chrome items).
+        bool new_menu_item_is_chrome = false;
+        if( !new_menu_item ) {
+            new_menu_item = zdj_menu_item_for_scroll_index( 
+                menu_view, 
+                menu_state->scroll_index 
+            );
+            new_menu_item_is_chrome = true;
+        }
+        new_menu_item_state = new_menu_item->state;
+        new_menu_item_state->is_hilite = true;
+
+        // If new_menu_item is chrome (not inside scroll view), we're done.
+        if( new_menu_item_is_chrome ){ return; }
+
+        // If scrolling is disabled in menu, we're done.
+        if( !menu_state->scroll_enabled ){ return; }
+        
+        // Update the scroll_view's scroll_offset.
+        zdj_point_t scroll_point;
+        if( menu_state->scroll_dir == ZDJ_VERTICAL ) {
+            scroll_point.x = 0;
+            scroll_point.y = new_menu_item->frame->y;
+        } else if( menu_state->scroll_dir == ZDJ_HORIZONTAL ) {
+            scroll_point.x = new_menu_item->frame->x;
+            scroll_point.y = 0;
+        }
+        bool is_final_view;
+        if( new_menu_item_state->scroll_index == 0 ||
+            new_menu_item_state->scroll_index == menu_state->item_count-1 ) {
+                is_final_view = true;
+            }
+        zdj_scroll_view_to_view( menu_state->scroll_view, new_menu_item, scroll_dir, is_final_view, true );
+    }        
 }
 
 void _zdj_menu_deinit_state( zdj_view_t * view ) {

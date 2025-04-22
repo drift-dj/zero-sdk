@@ -100,35 +100,77 @@ char * zdj_fs_get_file_extension( char * filepath ) {
 
 bool zdj_fs_path_is_dir( char * path ) {
     DIR * dir = opendir( path );
-    if( errno == ENOENT || errno == ENOTDIR ) { 
-        closedir( dir ); 
-        return false; 
-    } else { 
-        closedir( dir ); 
-        return true;
+    if( !dir ) {
+        return false;
     }
+    closedir( dir );
+    return true;
 }
 
-bool zdj_fs_path_is_external_database( char * path ) {
+bool zdj_fs_path_is_external_database_filename( char * path ) {
     // Get filename extension
     char * ext = zdj_fs_get_file_extension( path );
 
-    // Check for recognized extension + header
+    // Check for recognized extension
+    if( !strcmp( ext, "xml" ) || !strcmp( ext, "XML" ) ) {
+        return true;
+    } else if( !strcmp( ext, "json" ) || !strcmp( ext, "JSON" ) ) {
+        return true;
+    } else if( !strcmp( ext, "db" ) || !strcmp( ext, "DB" ) ) {
+        return true;
+    }
+    return false;
+}
+
+bool zdj_fs_path_is_external_database_dir( char * path ) {
+    if( !zdj_fs_path_is_dir( path ) ) { return false; }
+    // If path is dir, look for recognized lib filenames
     return false;
 }
 
 bool zdj_fs_path_is_audio_filename( char * path ) {
     // Get filename extension
     char * ext = zdj_fs_get_file_extension( path );
-    printf( "found file extension: %s\n", ext );
-    // Check for recognized extension + header
+    
+    // Check for recognized extension
     if( !strcmp( ext, "mp3" ) || !strcmp( ext, "MP3" ) ) {
-        // Attempt to read mp3 header
         return true;
     } else if( !strcmp( ext, "wav" ) || !strcmp( ext, "WAV" ) ) {
-        // Attempt to read wav header
         return true;
     }
+    return false;
+}
+
+bool zdj_fs_path_is_audio_dir( char * path ) {
+    if( !zdj_fs_path_is_dir( path ) ) { return false; }
+
+    // If path is dir, scan for any recognized audio filename
+    struct dirent * d;
+    DIR * dir = opendir( path );
+    struct dirent *entry;
+    if ( !( dir = opendir( path ) ) ) { return false; }
+
+    zdj_fs_scan_pattern_t pattern;
+    // Look at every entry in dir.
+    while ( ( entry = readdir( dir ) ) != NULL ) {
+        if ( entry->d_type != DT_DIR ) {
+            // Disregard invisible files
+            if( entry->d_name[ 0 ] == '.' ) continue;
+
+            // Get filename extension
+            char * ext = zdj_fs_get_file_extension( entry->d_name );
+            
+            printf( "checking filename: %s / %s\n", ext, entry->d_name );
+
+            // Check for recognized extension
+            if( !strcmp( ext, "mp3" ) || !strcmp( ext, "MP3" ) ) {
+                return true;
+            } else if( !strcmp( ext, "wav" ) || !strcmp( ext, "WAV" ) ) {
+                return true;
+            }
+        }
+    }
+    closedir( dir );
     return false;
 }
 
@@ -277,10 +319,9 @@ void zdj_fs_remove_dir( char * path ) {
 }
 
 bool _zdj_fs_filename_match( char * filename, zdj_fs_scan_pattern_t * pattern ) {
-    // No pattern means '*'
+    // pattern=NULL means '*'
     if( !pattern ) { return true; }
-
-    return false;
+    return (strstr( filename, pattern->substr )) ? true : false;
 }
 
 int zdj_fs_get_size( char * filepath ) {

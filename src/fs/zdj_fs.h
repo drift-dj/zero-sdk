@@ -25,7 +25,7 @@
 #include <zerodj/health/zdj_health_type.h>
 
 typedef struct {
-    char * substr;
+    char substr[ 512 ];
 } zdj_fs_scan_pattern_t;
 
 typedef void ( *zdj_fs_result_cb )( char * );
@@ -42,7 +42,9 @@ zdj_health_status_t zdj_fs_extract_file_from_binary(
 char * zdj_fs_get_file_extension( char * filepath );
 
 bool zdj_fs_path_is_dir( char * path );
-bool zdj_fs_path_is_external_database( char * path );
+bool zdj_fs_path_is_audio_dir( char * path );
+bool zdj_fs_path_is_external_database_filename( char * path );
+bool zdj_fs_path_is_external_database_dir( char * path );
 bool zdj_fs_path_is_audio_filename( char * path );
 bool zdj_fs_path_is_media_partition( char * path );
 bool zdj_fs_path_is_attached_msd( char * path );

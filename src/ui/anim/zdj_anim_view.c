@@ -57,8 +57,8 @@ void zdj_anim_update_view( zdj_anim_t * anim, zdj_view_t * view ) {
         } else {
             // During animation
             float coeff = anim->ease( (float)anim->frame, (float)anim->frames );
-            view->frame->x = end_point->x + ( ( start_point->x - end_point->x ) * coeff );
-            view->frame->y = end_point->y + ( ( start_point->y - end_point->y ) * coeff );
+            view->frame->x = start_point->x + ( ( end_point->x - start_point->x ) * coeff );
+            view->frame->y = start_point->y + ( ( end_point->y - start_point->y ) * coeff );
         }
     }
 }

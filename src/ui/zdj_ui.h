@@ -39,9 +39,9 @@
 #define ZDJ_SCREEN_W 128
 #define ZDJ_SCREEN_H 64
 
-#define ZDJ_MODAL_X 4
+#define ZDJ_MODAL_X 5
 #define ZDJ_MODAL_Y 3
-#define ZDJ_MODAL_WIDTH 119
+#define ZDJ_MODAL_WIDTH 118
 #define ZDJ_MODAL_HEIGHT 58
  
 #define ZDJ_MENU_X 15
@@ -96,7 +96,9 @@ typedef enum {
     ZDJ_FONT_9,
     ZDJ_FONT_9_BOLD,
     ZDJ_FONT_12,
-    ZDJ_FONT_12_CAPS
+    ZDJ_FONT_12_CAPS,
+    ZDJ_FONT_18,
+    ZDJ_FONT_18_CAPS
 } zdj_font_t;
 
 typedef enum {
@@ -158,7 +160,8 @@ typedef enum {
     ZDJ_VIEW_MENU,
     ZDJ_VIEW_MENU_ITEM,
     ZDJ_VIEW_MENU_SECTION,
-    ZDJ_VIEW_MENU_STACK
+    ZDJ_VIEW_MENU_STACK,
+    ZDJ_VIEW_TEXT_INPUT
 } zdj_view_type_t;
 
 typedef enum {

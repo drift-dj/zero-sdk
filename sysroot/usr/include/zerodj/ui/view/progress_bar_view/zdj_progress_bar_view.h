@@ -18,15 +18,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_SQL_H
-#define ZDJ_SQL_H
+#ifndef ZDJ_PROGRESS_BAR_VIEW_H
+#define ZDJ_PROGRESS_BAR_VIEW_H
 
-#include <sqlite3.h>
+#include <SDL2/SDL.h>
 
-sqlite3 * zdj_sql_open( char * path );
-int zdj_sql_close( sqlite3 * db );
-int zdj_sql_exec( char * sql, sqlite3 * db );
-int zdj_sql_rows_in_table ( char * table, char * distinct, sqlite3 * db );
-sqlite3_stmt * zdj_sql_prep_row_stepper( char * sql, sqlite3 * db );
+#include <zerodj/ui/zdj_ui.h>
+
+typedef enum {
+    ZDJ_PROGRESS_BAR_VIEW_NORMAL,
+    ZDJ_PROGRESS_BAR_VIEW_WAIT
+} zdj_progress_bar_view_type_t;
+
+typedef struct {
+    zdj_progress_bar_view_type_t type;
+    zdj_view_t * wait_crawl_view;
+    int crawl_anim_offset;
+    float val;
+    bool has_valid_display;
+} zdj_progress_bar_view_state_t;
+
+zdj_view_t * zdj_new_progress_bar_view( zdj_rect_t * frame, zdj_progress_bar_view_type_t type );
 
 #endif

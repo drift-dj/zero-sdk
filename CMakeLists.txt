@@ -10,6 +10,13 @@ add_library(zerodj
     src/hmi/input/zdj_hmi_sm_analog.c
     src/hmi/input/zdj_hmi_sm_digital.c
     src/installer/zdj_installer.c
+    src/library/zdj_library.c
+    src/library/api/zdj_library_api_library_config.c
+    src/library/api/zdj_library_api_library.c
+    src/library/api/zdj_library_api_playlist.c
+    src/library/api/zdj_library_api_setting.c
+    src/library/api/zdj_library_api_song.c
+    src/library/import/zdj_library_import.c
     src/registry/zdj_registry_install.c
     src/registry/zdj_registry_launch_req.c
     src/sql/zdj_sql.c
@@ -41,10 +48,15 @@ add_library(zerodj
     src/ui/view/menu_section_view/zdj_menu_section_view.c
     src/ui/view/menu_stack/zdj_menu_stack.c
     src/ui/view/modal_view/zdj_modal_view.c
+    src/ui/view/progress_bar_view/zdj_progress_bar_view.c
     src/ui/view/scroll_view/zdj_scroll_view.c
+    src/ui/view/text_input_view/zdj_text_input_view.c
+    src/ui/view/text_input_view/buffer/zdj_text_input_buffer_view.c
+    src/ui/view/text_input_view/keyboard/zdj_text_input_keyboard_view.c
     src/ui/view/texture_view/zdj_texture_view.c
     src/ui/view/ticker_view/zdj_ticker_view.c
     src/xml/zdj_xml.c
+    src/xml/zdj_xml_menu.c
 )
 
 target_compile_definitions(
