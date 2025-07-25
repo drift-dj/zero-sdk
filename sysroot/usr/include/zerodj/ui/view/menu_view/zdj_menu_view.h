@@ -25,6 +25,18 @@
 
 #include <zerodj/ui/zdj_ui.h>
 
+#define ZDJ_BACK_INDEX -1
+
+typedef struct {
+    float position;
+    float velocity;
+    float momentum;
+    float drag;
+    float jog_input;
+    float jog_force;
+    int out_index;
+} zdj_menu_view_scroll_filter_t;
+
 typedef struct {
     int id;
     zdj_view_t * header_view;
@@ -33,23 +45,37 @@ typedef struct {
     // the enclosing view's back button visibility.  See file browser, for ex.
     bool has_back;
     zdj_view_t * scroll_view;
+    zdj_rect_t scroll_view_frame;
     bool scroll_enabled;
     bool scroll_animated;
     zdj_ui_orient_t scroll_dir;
     int scroll_index;
     int section_count;
     int item_count;
+    zdj_menu_view_scroll_filter_t * scroll_filter;
 } zdj_menu_view_state_t;
 
 zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame );
+void zdj_menu_view_set_scrollview_frame( zdj_view_t * menu_view, zdj_rect_t * frame );
 void zdj_menu_view_add_header( zdj_view_t * menu_view, zdj_view_t * header );
 void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section );
 void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item );
 void zdj_menu_view_add_chrome_item( zdj_view_t * menu_view, zdj_view_t * item );
 void zdj_menu_view_insert_item( zdj_view_t * menu_view, zdj_view_t * item, int index );
 void zdj_menu_view_remove_all_items( zdj_view_t * menu_view );
+void zdj_menu_view_remove_item_at_scroll_index( zdj_view_t * menu_view, int index );
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index );
-zdj_view_t * zdj_menu_view_item_at_scroll_index( zdj_view_t * menu_view, int index );
+void zdj_menu_view_add_padding( zdj_view_t * menu_view, int size );
 
+zdj_view_t * zdj_menu_view_item_at_current_scroll_index( zdj_view_t * menu_view );
+zdj_view_t * zdj_menu_view_item_at_scroll_index( zdj_view_t * menu_view, int index );
+zdj_view_t * zdj_menu_view_get_item_for_data_ptr( zdj_view_t * menu_view, void * ptr );
+zdj_view_t * zdj_menu_view_get_item_for_data_c_val( zdj_view_t * menu_view, char * c_val );
+
+void zdj_menu_view_add_scroll_filter_input( zdj_view_t * view, int input );
+void zdj_menu_view_update_scroll_filter( zdj_view_t * view );
+
+void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip );
+void zdj_menu_handle_hmi( zdj_view_t * view, void * _event );
 
 #endif

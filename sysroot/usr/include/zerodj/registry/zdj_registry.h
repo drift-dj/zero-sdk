@@ -27,6 +27,7 @@
 #include <zerodj/health/zdj_health_type.h>
 
 #define ZDJ_REGISTRY_LAUNCH_REQ_PATH "/etc/registry/launch-req/launch_req"
+#define ZDJ_REGISTRY_PREV_LAUNCH_REQ_PATH "/etc/registry/launch-req/prev_launch_req"
 #define ZDJ_REGISTRY_NEW_LAUNCH_REQ_PATH "/etc/registry/launch-req/new_launch_req"
 
 typedef struct {
@@ -82,5 +83,9 @@ int zdj_registry_write_launch_req( char * path, zdj_launch_req_t * launch_req );
 
 void zdj_registry_free_launch_req( zdj_launch_req_t * launch_req );
 void zdj_registry_launch_req_switch_to_fallback( zdj_launch_req_t * launch_req );
+
+// Get/Set normal_req app
+bool zdj_registry_install_is_normal_req( zdj_install_t * install );
+zdj_health_status_t zdj_registry_set_normal_req( zdj_install_t * install );
 
 #endif

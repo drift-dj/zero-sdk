@@ -30,7 +30,8 @@ typedef enum {
     ZDJ_MENU_HEADER_BACK_STYLE_NONE,
     ZDJ_MENU_HEADER_BACK_STYLE_BACK,
     ZDJ_MENU_HEADER_BACK_STYLE_CANCEL,
-    ZDJ_MENU_HEADER_BACK_STYLE_X
+    ZDJ_MENU_HEADER_BACK_STYLE_X,
+    ZDJ_MENU_HEADER_BACK_STYLE_EXIT,
 } zdj_menu_view_header_back_style_t;
 
 typedef void ( *zdj_menu_view_header_back_btn_fn )( zdj_view_t * );
@@ -42,6 +43,7 @@ typedef struct {
     zdj_view_t * name_label;
     zdj_view_t * title_ticker;
     zdj_view_t * title_divider;
+    zdj_view_t * back_bg;
     bool has_valid_display;
     bool is_hilite;
     bool is_blinking;
@@ -50,7 +52,7 @@ typedef struct {
     bool has_back;
     bool show_back;
     bool hide_back;
-    // void ( *handle_back )( zdj_view_t * );
+    bool back_hidden;
     zdj_menu_view_header_back_btn_fn handle_back;
     zdj_view_t * back_view;
 } zdj_menu_header_view_state_t;

@@ -28,7 +28,7 @@ typedef struct {
     char substr[ 512 ];
 } zdj_fs_scan_pattern_t;
 
-typedef void ( *zdj_fs_result_cb )( char * );
+typedef void ( *zdj_fs_result_cb )( char *, void * );
 
 zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite );
 zdj_health_status_t zdj_fs_extract_file_from_binary( 
@@ -54,7 +54,8 @@ void zdj_fs_scan_dir(
     char * path,
     bool recursive,
     zdj_fs_scan_pattern_t * pattern,
-    zdj_fs_result_cb result_cb
+    zdj_fs_result_cb result_cb,
+    void * user_data
 );
 int zdj_fs_mkdir_p( char * path );
 void zdj_fs_remove_dir( char * path );
@@ -63,5 +64,7 @@ unsigned long long zdj_fs_sys_space( void );
 unsigned long long zdj_fs_media_space( void );
 char * zdj_fs_read_buffer( char * path, int limit );
 int zdj_fs_write_buffer( char * path, char * buffer );
+
+char * zdj_fs_get_popen( char * cmd );
 
 #endif

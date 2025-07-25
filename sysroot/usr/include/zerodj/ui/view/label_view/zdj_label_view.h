@@ -31,9 +31,17 @@ typedef struct {
     SDL_Texture * tex;
     int tex_w;
     int tex_h;
+    bool debug;
 } zdj_label_state_t;
 
 zdj_view_t * zdj_new_label_view( 
+    char * str,
+    zdj_font_t font,
+    zdj_justify_t justify,
+    SDL_Color color
+);
+
+zdj_view_t * zdj_new_label_vert_view( 
     char * str,
     zdj_font_t font,
     zdj_justify_t justify,

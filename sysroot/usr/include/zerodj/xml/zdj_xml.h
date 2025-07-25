@@ -34,7 +34,7 @@
 // on field values in the individual item's XML node.
 typedef zdj_menu_item_view_layout_t (*xml_layout_linkage)( char* );
 typedef zdj_menu_item_view_action_t (*xml_action_linkage)( char* );
-typedef update_data_t (*xml_update_linkage)( char* );
+typedef void (*xml_update_linkage)( char* );
 
 int zdj_xml_count_names_in_node( xmlNode * node, char * name );
 xmlNode * zdj_xml_child_node_named( xmlNode * node, char * child_node_name );

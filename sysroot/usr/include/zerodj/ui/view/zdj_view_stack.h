@@ -24,8 +24,14 @@
 #include <zerodj/ui/zdj_ui.h>
 
 extern zdj_view_t * zdj_view_stack_root_view;
+extern zdj_view_t * zdj_view_stack_widget_panel;
+extern zdj_view_t * zdj_view_stack_accessibility_panel;
+extern zdj_view_t * zdj_view_stack_debug_panel;
 
 zdj_view_t * zdj_root_view( void );
+zdj_view_t * zdj_widget_panel( void );
+zdj_view_t * zdj_accessibility_panel( void );
+zdj_view_t * zdj_debug_panel( void );
 
 void zdj_view_stack_init( void );
 void zdj_view_stack_deinit( void );
