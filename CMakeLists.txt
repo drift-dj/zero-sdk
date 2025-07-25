@@ -2,27 +2,61 @@ cmake_minimum_required(VERSION 3.23)
 project(zerodj VERSION 0.1.0 LANGUAGES C)
 
 add_library(zerodj 
+    src/boot/zdj_boot.c
+    src/controls/hmi/zdj_hmi.c
+    src/controls/hmi/zdj_hmi_input.c
+    src/controls/hmi/zdj_hmi_scan_thread.c
+    src/controls/hmi/zdj_hmi_sm_analog.c
+    src/controls/hmi/zdj_hmi_sm_digital.c
+    src/controls/playback/zdj_playback_control.c
+    src/debug/zdj_debug.c
     src/display/zdj_display.c
+    src/error/zdj_error.c
     src/fs/zdj_fs.c
     src/m7/zdj_m7.c
-    src/hmi/zdj_hmi.c
-    src/hmi/input/zdj_hmi_input.c
-    src/hmi/input/zdj_hmi_sm_analog.c
-    src/hmi/input/zdj_hmi_sm_digital.c
     src/installer/zdj_installer.c
     src/library/zdj_library.c
-    src/library/api/zdj_library_api_library_config.c
-    src/library/api/zdj_library_api_library.c
-    src/library/api/zdj_library_api_playlist.c
-    src/library/api/zdj_library_api_setting.c
-    src/library/api/zdj_library_api_song.c
-    src/library/import/zdj_library_import.c
+    src/library/api/library/zdj_library_api_library_config.c
+    src/library/api/library/zdj_library_api_library.c
+    src/library/api/library/query/zdj_library_api_query_artist.c
+    src/library/api/library/query/zdj_library_api_query_bpm.c
+    src/library/api/library/query/zdj_library_api_query_genre.c
+    src/library/api/library/query/zdj_library_api_query_playlist.c
+    src/library/api/library/query/zdj_library_api_query_year.c
+    src/library/api/curation/zdj_library_api_playlist.c
+    src/library/api/setting/zdj_library_api_setting.c
+    src/library/api/song/zdj_library_api_audio.c
+    src/library/api/song/zdj_library_api_catalog.c
+    src/library/api/song/zdj_library_api_curation.c
+    src/library/api/song/zdj_library_api_performance.c
+    src/library/api/song/zdj_library_api_song_graph.c
+    src/library/api/song/zdj_library_api_song.c
     src/registry/zdj_registry_install.c
     src/registry/zdj_registry_launch_req.c
+    src/signal/math/zdj_signal_math.c
+    src/signal/pipeline/zdj_pipeline.c
+    src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
+    src/signal/pipeline/node/analysis/meter/zdj_audio_meter_node.c
+    src/signal/pipeline/node/analysis/meter/zdj_clock_meter_node.c
+    src/signal/pipeline/node/analysis/meter/zdj_cv_meter_node.c
+    src/signal/pipeline/node/analysis/meter/zdj_midi_meter_node.c
+    src/signal/pipeline/node/analysis/waveform/zdj_waveform_comp_build_node.c
+    src/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.c
+    src/signal/pipeline/node/audio/decode/zdj_decode_node.c
+    src/signal/pipeline/node/audio/decode/zdj_decode_raw_node.c
+    src/signal/pipeline/node/audio/io/zdj_io_analog_node.c
+    src/signal/pipeline/node/audio/io/zdj_io_usb_node.c
+    src/signal/pipeline/node/file/zdj_file_read_node.c
+    src/signal/pipeline/node/file/zdj_file_write_node.c
+    src/soundcard/zdj_soundcard.c
+    src/soundcard/zdj_soundcard_dto.c
+    src/soundcard/zdj_soundcard_node.c
     src/sql/zdj_sql.c
     src/ui/zdj_ui.c
     src/ui/zdj_ui_util.c
     src/ui/anim/zdj_anim.c
+    src/ui/anim/zdj_anim_debug_panel.c
+    src/ui/anim/zdj_anim_dialog.c
     src/ui/anim/zdj_anim_header.c
     src/ui/anim/zdj_anim_menu.c
     src/ui/anim/zdj_anim_menu_stack.c
@@ -30,31 +64,65 @@ add_library(zerodj
     src/ui/anim/zdj_anim_view.c
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
+    src/ui/panel/accessibility/zdj_accessibility_panel.c
+    src/ui/panel/debug/zdj_debug_panel.c
+    src/ui/panel/widget/zdj_widget_panel.c
     src/ui/view/zdj_view_stack.c
     src/ui/view/asset_view/zdj_asset_view.c
+    src/ui/view/cue_point_view/zdj_cue_point_view.c
+    src/ui/view/dialog_view/zdj_dialog_view.c
     src/ui/view/file_browser_view/zdj_file_browser_view.c
     src/ui/view/file_browser_view/zdj_file_browser_devices_menu.c
     src/ui/view/file_browser_view/zdj_file_browser_file_menu.c
     src/ui/view/label_view/zdj_label_view.c
+    src/ui/view/log_view/zdj_log_view.c
     src/ui/view/menu_view/zdj_menu_view.c
+    src/ui/view/menu_view/zdj_menu_view_scroll_filter.c
     src/ui/view/menu_header_view/zdj_menu_header_view.c
     src/ui/view/menu_item_view/zdj_menu_item_view.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_asset.c
     src/ui/view/menu_item_view/zdj_menu_item_view_basic.c
     src/ui/view/menu_item_view/zdj_menu_item_view_data.c
     src/ui/view/menu_item_view/zdj_menu_item_view_dir.c
-    src/ui/view/menu_item_view/zdj_menu_item_view_nohilite.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_icon.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_inert.c
     src/ui/view/menu_item_view/zdj_menu_item_view_slider.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_song.c
     src/ui/view/menu_item_view/zdj_menu_item_view_toggle.c
     src/ui/view/menu_section_view/zdj_menu_section_view.c
     src/ui/view/menu_stack/zdj_menu_stack.c
     src/ui/view/modal_view/zdj_modal_view.c
     src/ui/view/progress_bar_view/zdj_progress_bar_view.c
     src/ui/view/scroll_view/zdj_scroll_view.c
+    src/ui/view/soundcard_view/zdj_soundcard_view.c
+    src/ui/view/soundcard_view/meters/zdj_soundcard_meter.c
+    src/ui/view/soundcard_view/meters/zdj_soundcard_audio_meter.c
+    src/ui/view/soundcard_view/meters/zdj_soundcard_clock_meter.c
+    src/ui/view/soundcard_view/meters/zdj_soundcard_cv_meter.c
+    src/ui/view/soundcard_view/meters/zdj_soundcard_midi_meter.c
+    src/ui/view/soundcard_view/meters/zdj_soundcard_usb_meter.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_audio_io.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_audio_bus.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_port_output.c
+    src/ui/view/soundcard_view/select_node/zdj_soundcard_select_node.c
     src/ui/view/text_input_view/zdj_text_input_view.c
     src/ui/view/text_input_view/buffer/zdj_text_input_buffer_view.c
     src/ui/view/text_input_view/keyboard/zdj_text_input_keyboard_view.c
     src/ui/view/texture_view/zdj_texture_view.c
     src/ui/view/ticker_view/zdj_ticker_view.c
+    src/ui/view/usb_drive_view/zdj_usb_drive_view.c
+    src/ui/view/usb_status_view/zdj_usb_status_view.c
+    src/ui/view/usb_status_view/zdj_usb_status_view_device.c
+    src/ui/view/usb_status_view/zdj_usb_status_view_host.c
+    src/ui/view/usb_status_view/zdj_usb_status_view_offline.c
+    src/ui/view/usb_status_view/zdj_usb_status_view_reboot.c
+    src/ui/view/waveform_view/zdj_waveform_lores_view.c
+    src/ui/view/waveform_view/zdj_waveform_view.c
+    src/usb/zdj_usb.c
+    src/usb/zdj_usb_device.c
+    src/usb/zdj_usb_msd_device.c
+    src/usb/zdj_usb_poll.c
     src/xml/zdj_xml.c
     src/xml/zdj_xml_menu.c
 )
@@ -99,6 +167,10 @@ target_link_libraries(
     SDL2_gfx
     sqlite3
     xml2
+    uuid
+    mpg123
+    mhash
+    m
 )
 
 # add_custom_command(

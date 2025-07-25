@@ -2,7 +2,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/hmi/zdj_hmi.h>
+#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
@@ -20,7 +20,7 @@ zdj_view_t * zdj_new_menu_stack( zdj_rect_t * frame ) {
     menu_stack->out_anim = zdj_new_anim( ZDJ_ANIM_MENU_STACK_HIDE );
 
     menu_stack->frame->x = ZDJ_MENU_X;
-    menu_stack->frame->y = ZDJ_SCREEN_H;
+    menu_stack->frame->y = ZDJ_SCREEN_H+2;
 
     // Add a state instance
     zdj_menu_stack_state_t * state = malloc( sizeof( zdj_menu_stack_state_t ) );

@@ -2,14 +2,16 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include <zerodj/display/zdj_display.h>
+#include <zerodj/error/zdj_error.h>
+#include <zerodj/controls/hmi/zdj_hmi.h>
+#include <zerodj/controls/playback/zdj_playback_control.h>
+#include <zerodj/health/zdj_health_type.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/font/zdj_font.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
-#include <zerodj/display/zdj_display.h>
-#include <zerodj/hmi/zdj_hmi.h>
-#include <zerodj/health/zdj_health_type.h>
 
 SDL_Surface* zdj_display_surface;
 uint32_t * zdj_ui_pixels = NULL;
@@ -17,14 +19,18 @@ static int zdj_view_stack_id = 0;
 zdj_view_t * zdj_delete_stack;
 
 void _zdj_view_deinit( struct zdj_view_t * view );
-void _zdj_view_update_transit_anim( struct zdj_view_t * view );
 
 void zdj_ui_init( void ) {
     // Grab the display memory
     zdj_display_init( );
  
-    // Init the HMI event system
+    // Init the onboard HMI event system
     zdj_hmi_init( );
+    // Init the USB HID event system
+    // Init the Midi event system
+    // Init the CV control event system
+
+    // Init the Control Map system
 
     // Bringup SDL - exit on fail
     int err = SDL_Init( SDL_INIT_VIDEO );
@@ -36,7 +42,7 @@ void zdj_ui_init( void ) {
     zdj_display_surface = SDL_CreateRGBSurface( 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, 32, 0, 0, 0, 0 );
     zdj_display_renderer = SDL_CreateSoftwareRenderer( zdj_display_surface );
     zdj_ui_pixels = zdj_display_surface->pixels;
-    if( !zdj_display_renderer ) {
+    if( !zdj_display_renderer || !zdj_ui_pixels ) {
         printf( "Zero failed to init renderer... exiting\n" );
         exit( ZDJ_HEALTH_STATUS_SDL_FAILED );
     }
@@ -62,14 +68,24 @@ void zdj_ui_deinit( void ) {
 }
 
 void zdj_ui_update( void ) {
-    // Get a fresh set of events from the M7 HMI system
+    // Get a set of HMI events from the onboard HMI system
     zdj_hmi_pull_m7_events( true );
+    // Get a set of playback/hmi events from the USB HID system
+    // zdj_usb_pull_hid_gadget_events( );
+    // Get a set of playback/hmi events from the Midi system
+    // zdj_usb_pull_midi_gadget_events( );
+    // Get a set of playback/hmi events from the CV control system
+    // zdj_cv_pull_control_events( );
 
     // Clear the screen
     zdj_view_stack_clear_screen( );
 
     // Update the view stack
+    // Some HMI events will be converted to playbac events here
     zdj_view_stack_update( );
+
+    // Push playback control events to the audio processing thread
+    zdj_playback_control_post_events( );
 
     // Push the output pixels to the M7 core's memory
     zdj_display_m7_push( );
@@ -95,6 +111,7 @@ zdj_view_t * zdj_new_view( zdj_rect_t * frame ) {
     zdj_view_t * view = calloc( 1, sizeof( zdj_view_t ) );
     view->id = zdj_view_stack_id++;
     view->deinit = &_zdj_view_deinit;
+    view->type = ZDJ_VIEW_BASE;
     
     // Default metrics update -- re-define in front-end layer to alter
     view->subview_clip = calloc( 1, sizeof( zdj_view_clip_t ) );
@@ -356,13 +373,9 @@ void _zdj_view_deinit( zdj_view_t * view ) {
         ((anim_deinit_t)view->out_anim->deinit_fn)( view->out_anim ); 
     }
 
-    free( view->in_anim );
-    free( view->out_anim );
+    if( view->in_anim ) { free( view->in_anim ); }
+    if( view->out_anim ) { free( view->out_anim ); }
     free( view );
-}
-
-zdj_view_t * zdj_root_view( void ) {
-    return zdj_view_stack_root_view;
 }
 
 void zdj_print_subviews_of( zdj_view_t * view ) {

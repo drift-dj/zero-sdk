@@ -2,7 +2,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/hmi/zdj_hmi.h>
+#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -15,6 +15,7 @@ static void _zdj_progress_bar_view_deinit_state( zdj_view_t * view );
 
 zdj_view_t * zdj_new_progress_bar_view( zdj_rect_t * frame, zdj_progress_bar_view_type_t type ) {
     zdj_view_t * progress_bar = zdj_new_view( frame );
+    progress_bar->type = ZDJ_VIEW_PROGRESS;
     progress_bar->draw = &_zdj_progress_bar_view_draw;
     progress_bar->deinit_state = &_zdj_progress_bar_view_deinit_state;
 
@@ -50,10 +51,12 @@ void _zdj_progress_bar_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     } else {
         if( !progress_state->has_valid_display ) {
             // Remove all subviews in case we're switching from wait > normal
-
+            zdj_remove_all_subviews_of( view );
         }
 
         // Draw the progress bar
+        float bar_w = progress_state->val * clip->dst.w;
+        boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y+2, clip->dst.x+bar_w, clip->dst.y+clip->dst.h-1, ZDJ_WHITE );
     }
 
     // Draw the border

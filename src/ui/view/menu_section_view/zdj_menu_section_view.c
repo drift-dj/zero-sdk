@@ -15,6 +15,7 @@ zdj_view_t * zdj_new_menu_section( char * title ) {
 
     // Make view
     zdj_view_t * menu_section = zdj_new_view( NULL );
+    menu_section->type = ZDJ_VIEW_MENU_SECTION;
     menu_section->draw = &zdj_menu_section_static_draw;
     menu_section->deinit_state = &_zdj_menu_section_deinit_state;
     
@@ -32,7 +33,7 @@ zdj_view_t * zdj_new_menu_section( char * title ) {
     state->divider = divider;
     zdj_add_subview( menu_section, divider );
     divider->frame->h = 1;
-    divider->frame->y = 5;
+    divider->frame->y = 4;
     
     return menu_section;
 }

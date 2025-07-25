@@ -43,11 +43,21 @@
 #define ZDJ_MODAL_Y 3
 #define ZDJ_MODAL_WIDTH 118
 #define ZDJ_MODAL_HEIGHT 58
+
+#define ZDJ_DIALOG_X 5
+#define ZDJ_DIALOG_Y 3
+#define ZDJ_DIALOG_W 118
+#define ZDJ_DIALOG_H 58
  
 #define ZDJ_MENU_X 15
 #define ZDJ_MENU_Y 5
 #define ZDJ_MENU_WIDTH 112
 #define ZDJ_MENU_HEIGHT 59
+
+#define ZDJ_DEBUG_PANEL_X 0
+#define ZDJ_DEBUG_PANEL_Y 0
+#define ZDJ_DEBUG_PANEL_WIDTH 100
+#define ZDJ_DEBUG_PANEL_HEIGHT 50
 
 typedef struct {
     float x;
@@ -133,7 +143,11 @@ typedef enum {
     ZDJ_ANIM_MODAL_SHOW,
     ZDJ_ANIM_MODAL_HIDE,
     ZDJ_ANIM_HEADER_ACTIVATE,
-    ZDJ_ANIM_HEADER_DEACTIVATE
+    ZDJ_ANIM_HEADER_DEACTIVATE,
+    ZDJ_ANIM_DIALOG_SHOW,
+    ZDJ_ANIM_DIALOG_HIDE,
+    ZDJ_ANIM_DEBUG_PANEL_SHOW,
+    ZDJ_ANIM_DEBUG_PANEL_HIDE
 } zdj_anim_type_t;
 
 typedef struct {
@@ -160,8 +174,18 @@ typedef enum {
     ZDJ_VIEW_MENU,
     ZDJ_VIEW_MENU_ITEM,
     ZDJ_VIEW_MENU_SECTION,
+    ZDJ_VIEW_MENU_HEADER,
     ZDJ_VIEW_MENU_STACK,
-    ZDJ_VIEW_TEXT_INPUT
+    ZDJ_VIEW_TEXT_INPUT,
+    ZDJ_VIEW_TICKER,
+    ZDJ_VIEW_LABEL,
+    ZDJ_VIEW_ASSET,
+    ZDJ_VIEW_SCROLLBAR,
+    ZDJ_VIEW_MODAL,
+    ZDJ_VIEW_BROWSER,
+    ZDJ_VIEW_SOUNDCARD,
+    ZDJ_VIEW_PROGRESS,
+    ZDJ_VIEW_DIALOG
 } zdj_view_type_t;
 
 typedef enum {
@@ -207,7 +231,9 @@ extern zdj_rect_t * zdj_screen_rect_priv;
 SDL_Renderer * zdj_renderer( void );
 zdj_rect_t * zdj_screen_rect( void );
 zdj_rect_t * zdj_modal_rect( void );
+zdj_rect_t * zdj_dialog_rect( void );
 zdj_rect_t * zdj_menu_rect( void );
+zdj_rect_t * zdj_debug_panel_rect( void );
 bool zdj_ui_intersect( zdj_rect_t * rect1, zdj_rect_t * rect2 );
 SDL_Texture * zdj_ui_texture_from_bmp( char * filepath );
 

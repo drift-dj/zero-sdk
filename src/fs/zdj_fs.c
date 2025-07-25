@@ -160,7 +160,7 @@ bool zdj_fs_path_is_audio_dir( char * path ) {
             // Get filename extension
             char * ext = zdj_fs_get_file_extension( entry->d_name );
             
-            printf( "checking filename: %s / %s\n", ext, entry->d_name );
+            // printf( "checking filename: %s / %s\n", ext, entry->d_name );
 
             // Check for recognized extension
             if( !strcmp( ext, "mp3" ) || !strcmp( ext, "MP3" ) ) {
@@ -168,6 +168,12 @@ bool zdj_fs_path_is_audio_dir( char * path ) {
             } else if( !strcmp( ext, "wav" ) || !strcmp( ext, "WAV" ) ) {
                 return true;
             }
+        } else {
+            // Skip this/parent refs
+            if ( !strcmp( entry->d_name, "." ) || !strcmp( entry->d_name, ".." ) ) { continue; }
+            
+            // Consider a dir w/subdirs a valid target for audio file scan
+            return true;
         }
     }
     closedir( dir );
@@ -207,7 +213,8 @@ void zdj_fs_scan_dir(
     char * path,
     bool recursive,
     zdj_fs_scan_pattern_t * pattern,
-    zdj_fs_result_cb result_cb
+    zdj_fs_result_cb result_cb,
+    void * user_data
 ) {
     DIR *dir;
     struct dirent *entry;
@@ -228,8 +235,8 @@ void zdj_fs_scan_dir(
             
             // Build a path string and recurse into dir.
             char new_path[ 2048 ];
-            snprintf( new_path, sizeof( new_path ), "%s%s", path, entry->d_name );
-            zdj_fs_scan_dir( new_path, recursive, pattern, result_cb );
+            snprintf( new_path, sizeof( new_path ), "%s/%s", path, entry->d_name );
+            zdj_fs_scan_dir( new_path, recursive, pattern, result_cb, user_data );
         } else {
             // Disregard invisible files
             if( entry->d_name[ 0 ] == '.' ) continue;
@@ -237,11 +244,12 @@ void zdj_fs_scan_dir(
             // Invoke CB for matches
             if( _zdj_fs_filename_match( entry->d_name, pattern ) ) {
                 char new_path[ 2048 ];
-                snprintf( new_path, sizeof( new_path ), "%s%s", path, entry->d_name );
-                result_cb( new_path );
+                snprintf( new_path, sizeof( new_path ), "%s/%s", path, entry->d_name );
+                result_cb( new_path, user_data );
             }            
         }
     }
+
     closedir( dir );
 }
 
@@ -414,4 +422,28 @@ int zdj_fs_write_buffer( char * path, char * buffer ) {
     int bw = fwrite( buffer, sizeof( char ), strlen( buffer ), fp );
     fclose( fp );
     return bw;
+}
+
+char * zdj_fs_get_popen( char * cmd ) {
+    FILE *fp;
+    char res[ 256 ];
+    // Open a pipe to execute the command
+    fp = popen( cmd, "r" );
+    if ( !fp ) {
+        perror( "zdj_fs_get_popen failed\n" );
+        return NULL;
+    }
+
+    // Read the output of the command
+    while ( fgets( res, sizeof( res ), fp ) != NULL ) {
+        // printf( "%s", res );
+    }
+
+    // Close the pipe
+    if ( pclose( fp ) == -1 ) {
+        perror( "zdj_fs_get_popen close failed" );
+        return NULL;
+    }
+
+    return strdup( &res[ 8 ] );
 }

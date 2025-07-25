@@ -10,7 +10,9 @@
 SDL_Renderer* zdj_display_renderer;
 static zdj_rect_t * _zdj_screen_rect_priv;
 static zdj_rect_t * _zdj_modal_rect_priv;
+static zdj_rect_t * _zdj_dialog_rect_priv;
 static zdj_rect_t * _zdj_menu_rect_priv;
+static zdj_rect_t * _zdj_debug_panel_rect_priv;
 
 SDL_Renderer * zdj_renderer( void ) {
     return zdj_display_renderer;
@@ -36,6 +38,17 @@ zdj_rect_t * zdj_modal_rect( void ) {
     return _zdj_modal_rect_priv;
 }
 
+zdj_rect_t * zdj_dialog_rect( void ) {
+    if( !_zdj_dialog_rect_priv ) {
+        _zdj_dialog_rect_priv = calloc( 1, sizeof( zdj_rect_t ) );
+        _zdj_dialog_rect_priv->x = 0;
+        _zdj_dialog_rect_priv->y = 0;
+        _zdj_dialog_rect_priv->w = ZDJ_DIALOG_W;
+        _zdj_dialog_rect_priv->h = ZDJ_DIALOG_H;
+    }
+    return _zdj_dialog_rect_priv;
+}
+
 zdj_rect_t * zdj_menu_rect( void ) {
     if( !_zdj_menu_rect_priv ) {
         _zdj_menu_rect_priv = calloc( 1, sizeof( zdj_rect_t ) );
@@ -45,6 +58,17 @@ zdj_rect_t * zdj_menu_rect( void ) {
         _zdj_menu_rect_priv->h = ZDJ_MENU_HEIGHT;
     }
     return _zdj_menu_rect_priv;
+}
+
+zdj_rect_t * zdj_debug_panel_rect( void ) {
+    if( !_zdj_debug_panel_rect_priv ) {
+        _zdj_debug_panel_rect_priv = calloc( 1, sizeof( zdj_rect_t ) );
+        _zdj_debug_panel_rect_priv->x = 0;
+        _zdj_debug_panel_rect_priv->y = 0;
+        _zdj_debug_panel_rect_priv->w = ZDJ_DEBUG_PANEL_WIDTH;
+        _zdj_debug_panel_rect_priv->h = ZDJ_DEBUG_PANEL_HEIGHT;
+    }
+    return _zdj_debug_panel_rect_priv;
 }
 
 bool zdj_ui_intersect( zdj_rect_t * rect1, zdj_rect_t * rect2 ) {

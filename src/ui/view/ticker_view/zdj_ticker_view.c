@@ -23,6 +23,7 @@ zdj_view_t * zdj_new_ticker_view(
 ) {
     // Build the ticker's view
     zdj_view_t * view = zdj_new_view( NULL );
+    view->type = ZDJ_VIEW_TICKER;
     view->draw = &_zdj_ticker_view_draw;
     view->deinit_state = &_zdj_ticker_view_deinit_state;
 

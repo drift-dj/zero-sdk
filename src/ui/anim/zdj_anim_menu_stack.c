@@ -27,7 +27,7 @@ void zdj_anim_init_menu_stack_hide( zdj_anim_t * anim, zdj_view_t * view, void *
     // Set up end data
     zdj_point_t * end_point = malloc( sizeof( zdj_point_t ) );
     end_point->x = ZDJ_MENU_X;
-    end_point->y = ZDJ_SCREEN_H;
+    end_point->y = ZDJ_SCREEN_H+1;
     anim->end_data = end_point;
     // Delay the out anim by a few frames to give the button flash time to happen.
     anim->frame = -5;

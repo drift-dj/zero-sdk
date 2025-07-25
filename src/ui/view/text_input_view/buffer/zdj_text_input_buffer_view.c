@@ -27,9 +27,10 @@ zdj_view_t * zdj_new_text_input_buffer_view( char * input_str ) {
     zdj_text_input_buffer_view_state_t * buffer_state = calloc( 1, sizeof( zdj_text_input_buffer_view_state_t ) );
     buffer_state->cursor_index = strlen( input_str );
     buffer_state->has_valid_layout = false;
-    buffer_state->str = input_str;
     buffer_state->cursor_counter = 0;
     buffer_view->state = buffer_state;
+    buffer_state->str = strdup( input_str );
+    // strcpy( buffer_state->str, input_str );
     return buffer_view;
 }
 

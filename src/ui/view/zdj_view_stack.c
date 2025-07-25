@@ -5,11 +5,16 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/debug/zdj_debug.h>
+#include <zerodj/error/zdj_error.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
+#include <zerodj/ui/panel/accessibility/zdj_accessibility_panel.h>
+#include <zerodj/ui/panel/debug/zdj_debug_panel.h>
+#include <zerodj/ui/panel/widget/zdj_widget_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/display/zdj_display.h>
-#include <zerodj/hmi/zdj_hmi.h>
+#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/health/zdj_health_type.h>
 
 zdj_view_t * zdj_view_stack_bottom;
@@ -17,11 +22,46 @@ zdj_view_t * zdj_view_stack_top;
 zdj_rect_t view_stack_frame = {0,0,128,64};
 
 zdj_view_t * zdj_view_stack_root_view;
+zdj_view_t * zdj_view_stack_widget_panel;
+zdj_view_t * zdj_view_stack_accessibility_panel;
+zdj_view_t * zdj_view_stack_debug_panel;
+
+static void _zdj_view_stack_handle_events( zdj_view_t * view );
+static void _zdj_view_stack_draw( zdj_view_t * view );
+
+zdj_view_t * zdj_root_view( void ) {
+    return zdj_view_stack_root_view;
+}
+
+zdj_view_t * zdj_widget_panel( void ) {
+    return zdj_view_stack_widget_panel;
+}
+
+zdj_view_t * zdj_accessibility_panel( void ) {
+    return zdj_view_stack_accessibility_panel;
+}
+
+zdj_view_t * zdj_debug_panel( void ) {
+    return zdj_view_stack_debug_panel;
+}
 
 void zdj_view_stack_init( void ) {
     zdj_view_stack_root_view = zdj_new_view( &view_stack_frame );
     zdj_view_stack_root_view->subview_clip->src.w = zdj_view_stack_root_view->subview_clip->dst.w = 128;
     zdj_view_stack_root_view->subview_clip->src.h = zdj_view_stack_root_view->subview_clip->dst.h = 64;
+
+    zdj_view_stack_widget_panel = zdj_new_widget_panel( );
+    zdj_view_stack_widget_panel->subview_clip->src.w = zdj_view_stack_widget_panel->subview_clip->dst.w = 128;
+    zdj_view_stack_widget_panel->subview_clip->src.h = zdj_view_stack_widget_panel->subview_clip->dst.h = 64;
+    
+    zdj_view_stack_accessibility_panel = zdj_new_accessibility_panel( );
+    zdj_view_stack_accessibility_panel->subview_clip->src.w = zdj_view_stack_accessibility_panel->subview_clip->dst.w = 128;
+    zdj_view_stack_accessibility_panel->subview_clip->src.h = zdj_view_stack_accessibility_panel->subview_clip->dst.h = 64;
+
+    zdj_view_stack_debug_panel = zdj_new_debug_panel( );
+    zdj_view_stack_debug_panel->subview_clip->src.w = zdj_view_stack_debug_panel->subview_clip->dst.w = 128;
+    zdj_view_stack_debug_panel->subview_clip->src.h = zdj_view_stack_debug_panel->subview_clip->dst.h = 64;
+    
     zdj_delete_stack = NULL;
 }
 
@@ -33,13 +73,17 @@ void zdj_view_stack_update( void ) {
     zdj_view_t * view;
     zdj_hmi_event_t * event;
 
-    // Pass events into root view's subviews (top-down)
-    view = zdj_view_stack_top_subview_of(zdj_root_view( ));
-    if( view ) { zdj_view_stack_handle_events( view ); }
+    // Pass events into views from highest to lowest.
+    _zdj_view_stack_handle_events( zdj_debug_panel( ) );
+    // _zdj_view_stack_handle_events( zdj_accessibility_panel( ) );
+    // _zdj_view_stack_handle_events( zdj_widget_panel( ) );
+    _zdj_view_stack_handle_events( zdj_root_view( ) );
 
-    // Draw root view's subviews (bottom-up)
-    view = zdj_view_stack_bottom_subview_of(zdj_root_view( ));
-    if( view ) { zdj_view_stack_draw( view, zdj_root_view( )->subview_clip ); }
+    // Draw views from lowest to highest.
+    _zdj_view_stack_draw( zdj_root_view( ) );
+    // _zdj_view_stack_draw( zdj_widget_panel( ) );
+    // _zdj_view_stack_draw( zdj_accessibility_panel( ) );
+    _zdj_view_stack_draw( zdj_debug_panel( ) );
 
     // Delete everything in the delete stack
     zdj_view_t * delete_view = zdj_delete_stack;
@@ -49,6 +93,18 @@ void zdj_view_stack_update( void ) {
         delete_view = next_delete_view;
     }
     zdj_delete_stack = NULL;
+}
+
+void _zdj_view_stack_handle_events( zdj_view_t * view ) {
+    // Pass events into view's subviews (top-down)
+    zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+    if( top_subview ) { zdj_view_stack_handle_events( top_subview ); }
+}
+
+void _zdj_view_stack_draw( zdj_view_t * view ) {
+    // Draw view's subviews (bottom-up)
+    zdj_view_t * bottom_subview = zdj_view_stack_bottom_subview_of( view );
+    if( bottom_subview ) { zdj_view_stack_draw( bottom_subview, view->subview_clip ); }
 }
 
 void zdj_view_stack_clear_screen( void ) {
@@ -61,8 +117,8 @@ void zdj_view_stack_clear_screen( void ) {
 void zdj_view_stack_handle_events( zdj_view_t * view ) {
     // Get a prev ref before processing view's events in case it gets deleted during processing.
     zdj_view_t * view_prev = view->prev;
-    if( view && view->handle_hmi_event ) {
-        zdj_hmi_event_t * event = zdj_hmi_event_base;
+    zdj_hmi_event_t * event = zdj_hmi_event_base;
+    if( view && view->handle_hmi_event && event ) {
         while( event ) {
             view->handle_hmi_event( view, event );
             event = (zdj_hmi_event_t *)event->next;
@@ -76,6 +132,9 @@ void zdj_view_stack_handle_events( zdj_view_t * view ) {
 // This is a recursive draw, first getting a clip frame from the view's draw func,
 // then recursing into the view's subviews, finally moving to the next sibling view.
 void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // Claim any errors for debugging.
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_VIEW_DRAW;
+
     // Update anim before updating subview clip
     if( view->anim && view->anim->alive && view->anim->update_fn ){ 
         ((anim_update_t)view->anim->update_fn)( view->anim, view ); 
@@ -88,15 +147,19 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         if( view->draw ) {
             view->draw( view, view->subview_clip );
         }
+
         // Recurse into the view's subviews, passing clipped metrics.
         if( view->subviews ) {
             zdj_view_stack_draw( view->subviews, view->subview_clip );
         }
     }
+
     // Step up the view stack and continue drawing
     if( view->next ) {
         zdj_view_stack_draw( view->next, clip );
     }
+
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
 }
 
 // Perform some arithmetic on clipping geometry of view's subviews.

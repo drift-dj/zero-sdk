@@ -13,14 +13,14 @@
 
 static zdj_install_t * _zdj_registry_all_installs = NULL;
 
-void _zdj_registry_install_scan_cb( char * path );
+void _zdj_registry_install_scan_cb( char * path, void * data );
 
 // Retrieve all installs in the registry
 zdj_install_t * zdj_registry_installs( void ) {
     if( !_zdj_registry_all_installs ) {
         // Do a non-recursive scan for '*' (pattern=NULL) in the reg install dir.
         // Invoke _zdj_registry_install_scan_cb for all hits.
-        zdj_fs_scan_dir( "/etc/registry/install/", false, NULL, &_zdj_registry_install_scan_cb );
+        zdj_fs_scan_dir( "/etc/registry/install/", false, NULL, &_zdj_registry_install_scan_cb, NULL );
     }
     return _zdj_registry_all_installs;
 }
@@ -116,7 +116,7 @@ zdj_install_t * zdj_registry_install_for_filepath( char * path ) {
     return install;
 }
 
-void _zdj_registry_install_scan_cb( char * path ) {
+void _zdj_registry_install_scan_cb( char * path, void * data ) {
     // Link in a new install item into the list of known installs
     zdj_install_t * install = zdj_registry_install_for_filepath( path );
     if( _zdj_registry_all_installs ) {

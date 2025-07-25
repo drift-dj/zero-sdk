@@ -59,4 +59,14 @@ void zdj_anim_init_header_deactivate( zdj_anim_t * anim, zdj_view_t * view, void
 void zdj_anim_update_header( zdj_anim_t * anim, zdj_view_t * view );
 void zdj_anim_deinit_header( zdj_anim_t * anim );
 
+void zdj_anim_init_dialog_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_dialog_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_dialog( zdj_anim_t * anim, zdj_view_t * view );
+void zdj_anim_deinit_dialog( zdj_anim_t * anim );
+
+void zdj_anim_init_debug_panel_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_debug_panel_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_debug_panel( zdj_anim_t * anim, zdj_view_t * view );
+void zdj_anim_deinit_debug_panel( zdj_anim_t * anim );
+
 #endif

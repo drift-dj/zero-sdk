@@ -4,6 +4,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
@@ -16,7 +17,7 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view );
 void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_clip_t * clip, bool hilite );
 
 // Parse a static XML node into a menu_item_view.
-zdj_view_t * zdj_new_menu_item( char * title ) {
+zdj_view_t * zdj_new_menu_item( char * title, zdj_menu_item_view_layout_t layout ) {
     // Make view
     zdj_view_t * menu_item = zdj_new_view( NULL );
     menu_item->type = ZDJ_VIEW_MENU_ITEM;
@@ -26,19 +27,61 @@ zdj_view_t * zdj_new_menu_item( char * title ) {
     // Build state
     zdj_menu_item_view_state_t * state = calloc( 1, sizeof( zdj_menu_item_view_state_t ) );
     menu_item->state = (void*)state;
-    state->title = strdup( title );
+    if( title ) { state->title = strdup( title ); } else { state->title = "Undefined"; }
+    state->layout = layout;
     state->data = calloc( 1, sizeof( zdj_ui_data_t ) );
     state->link = NULL;
-    state->update_data = NULL;
+    state->needs_layout_init = true;
+    state->init_layout = NULL;
+    state->needs_layout_update = false;
     state->update_layout = NULL;
     state->is_blinking = false;
     state->blink_timer = 0;
-    state->has_valid_display = false;
-    state->normal_view = zdj_new_view( NULL );
-    zdj_add_subview( menu_item, state->normal_view );
-    state->hilite_view = zdj_new_view( NULL );
-    zdj_add_subview( menu_item, state->hilite_view );
+    state->handles_hmi = false;
+    zdj_menu_item_set_layout( menu_item, state->layout );
 
+    return menu_item;
+}
+
+// Special init for icon+asset menu_items which set icon asset after creation.
+zdj_view_t * zdj_new_icon_menu_item( 
+    char * title, 
+    zdj_ui_asset_t icon,
+    zdj_ui_asset_t icon_hi 
+) {
+    zdj_view_t * menu_item = zdj_new_menu_item( title, ZDJ_MENU_ITEM_LAYOUT_ICON );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    item_state->icon = icon;
+    item_state->icon_hi = icon_hi;
+    return menu_item;
+}
+
+zdj_view_t * zdj_new_asset_menu_item( 
+    zdj_ui_asset_t icon,
+    zdj_ui_asset_t icon_hi,
+    bool hide_normal
+) {
+    zdj_view_t * menu_item = zdj_new_menu_item( " ", ZDJ_MENU_ITEM_LAYOUT_ASSET );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    if( !hide_normal ) { item_state->icon = icon; }
+    item_state->icon_hi = icon_hi;
+    return menu_item;
+}
+
+zdj_view_t * zdj_new_data_menu_item( 
+    char * title, 
+    zdj_menu_item_view_layout_t layout,
+    zdj_menu_item_data_display_type_t data_type,
+    char * prefix,
+    char * suffix
+) {
+    zdj_view_t * menu_item = zdj_new_menu_item( title, layout );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    item_state->data_type = data_type;
+    if( prefix ) { strcpy( item_state->data_prefix, prefix ); } 
+    else { item_state->data_prefix[ 0 ] = '\0'; }
+    if( suffix ) { strcpy( item_state->data_suffix, suffix ); } 
+    else { item_state->data_suffix[ 0 ] = '\0'; }
     return menu_item;
 }
 
@@ -66,13 +109,9 @@ void _zdj_menu_item_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF990000 );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
-    if( state->update_data ) {
-        state->update_data( state->data, state->link );
-    }
-
-    if( !state->has_valid_display && state->update_layout ) {
-        state->update_layout( view );
-    }
+    // if( state->update_data ) { state->update_data( state ); }
+    if( state->needs_layout_init && state->init_layout ) { state->init_layout( view ); }
+    if( state->needs_layout_update && state->update_layout ) { state->update_layout( view ); }
     
     if( state->is_blinking ) {
         if( state->blink_timer++ > ZDJ_BLINK_LENGTH ) {
@@ -88,17 +127,25 @@ void _zdj_menu_item_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
             }
         }
     } else {
-        _zdj_menu_item_set_hilite( state, clip, state->is_hilite );
+        if( state->handles_hmi ) {
+            _zdj_menu_item_set_hilite( state, clip, state->is_hilite );
+        }
     }
 }
 
 void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_clip_t * clip, bool hilite ) {
-    if( hilite ) {
-        state->normal_view->frame->y = -100;
-        state->hilite_view->frame->y = 0;
+    if( !state->normal_view || !state->hilite_view ) { 
+        // Fail silently if hilite views aren't set up properly
+        printf( "state hilite views bad\n" );
+        return;
     } else {
-        state->normal_view->frame->y = 0;
-        state->hilite_view->frame->y = -100;
+        if( hilite ) {
+            state->normal_view->frame->y = -100;
+            state->hilite_view->frame->y = 0;
+        } else {
+            state->normal_view->frame->y = 0;
+            state->hilite_view->frame->y = -100;
+        }
     }
 }
 
@@ -110,6 +157,9 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
         free( state->data );
         state->data = NULL;
     }
+    if( state->title ) {
+        free( state->title );
+    }
     if( state->link ) {
         free( state->link );
     }
@@ -117,48 +167,85 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
     view->state = NULL;
 }
 
-bool zdj_menu_item_layout_is_dynamic( zdj_menu_item_view_layout_t layout ) {
-    if( layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L || layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) {
-        return false;
-    } else {
-        return true;
-    }
-}
+// bool zdj_menu_item_layout_is_dynamic( zdj_menu_item_view_layout_t layout ) {
+//     if( layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L || layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) {
+//         return false;
+//     } else {
+//         return true;
+//     }
+// }
 
-update_layout_t zdj_menu_item_update_for_layout( zdj_menu_item_view_layout_t layout ) {
+
+void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout_t layout ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    
     switch ( layout ) {
-    case ZDJ_MENU_ITEM_LAYOUT_BASIC_L:
-        return zdj_menu_item_basic_l_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_BASIC_R:
-        return zdj_menu_item_basic_r_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_DATA_L:
-        return zdj_menu_item_data_l_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_DATA_R:
-        return zdj_menu_item_data_r_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_DIR_L:
-        return zdj_menu_item_dir_l_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_DIR_R:
-        return zdj_menu_item_dir_r_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_SLIDER_L:
-        return zdj_menu_item_slider_l_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_SLIDER_R:
-        return zdj_menu_item_slider_r_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_TOGGLE_L:
-        return zdj_menu_item_toggle_l_update_layout;
-        break;
-    case ZDJ_MENU_ITEM_LAYOUT_TOGGLE_R:
-        return zdj_menu_item_toggle_r_update_layout;
-        break;
-    default:
-        break;
+        case ZDJ_MENU_ITEM_LAYOUT_BASIC_L:
+            item_state->init_layout = zdj_menu_item_basic_l_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_BASIC_R:
+            item_state->init_layout = zdj_menu_item_basic_r_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_DATA_L:
+            item_state->init_layout = zdj_menu_item_data_l_init_layout;
+            item_state->update_layout = zdj_menu_item_data_l_update_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_DATA_R:
+            item_state->init_layout = zdj_menu_item_data_r_init_layout;
+            item_state->update_layout = zdj_menu_item_data_r_update_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_DIR:
+            item_state->init_layout = zdj_menu_item_dir_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_DIR_SELECT:
+            item_state->init_layout = zdj_menu_item_dir_select_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_DIR_UP:
+            item_state->init_layout = zdj_menu_item_dir_up_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_ICON:
+            item_state->init_layout = zdj_menu_item_icon_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_INERT:
+            item_state->init_layout = zdj_menu_item_inert_init_layout;
+            item_state->handles_hmi = false;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_INERT_DATA:
+            item_state->init_layout = zdj_menu_item_inert_data_init_layout;
+            item_state->update_layout = zdj_menu_item_inert_data_update_layout;
+            item_state->handles_hmi = false;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_INERT_STATUS:
+            item_state->init_layout = zdj_menu_item_inert_status_init_layout;
+            item_state->update_layout = zdj_menu_item_inert_status_update_layout;
+            item_state->handles_hmi = false;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_SLIDER:
+            item_state->init_layout = zdj_menu_item_slider_init_layout;
+            item_state->update_layout = zdj_menu_item_slider_update_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_SONG_IMPORT:
+            item_state->init_layout = zdj_menu_item_song_import_init_layout;
+            item_state->update_layout = zdj_menu_item_song_import_update_layout;
+            item_state->handles_hmi = false;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_TOGGLE:
+            item_state->init_layout = zdj_menu_item_toggle_init_layout;
+            item_state->update_layout = zdj_menu_item_toggle_update_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_ASSET:
+            item_state->init_layout = zdj_menu_item_asset_init_layout;
+            item_state->handles_hmi = true;
+            break;
     }
 }
-

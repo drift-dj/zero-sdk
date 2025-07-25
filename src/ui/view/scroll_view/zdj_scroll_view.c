@@ -109,7 +109,7 @@ void zdj_scroll_view_to_view( zdj_view_t * scroll_view, zdj_view_t * to_view, bo
 
             int win_right = (scroll_view->subview_clip->scroll_offset.set_x*-1) + scroll_view->frame->w;
             int to_view_right = to_view->frame->x + to_view->frame->w;
-
+            
             // If item right falls within [margin] pixels of window right
             if( (win_right - to_view_right) < ZDJ_SCROLL_VIEW_MARGIN_H ) {
                 // If view is last in list
@@ -175,8 +175,8 @@ void zdj_scroll_view_to_view( zdj_view_t * scroll_view, zdj_view_t * to_view, bo
 
 void zdj_scroll_view_to_point( zdj_view_t * scroll_view, zdj_point_t * point ) {
     zdj_scroll_view_state_t * scroll_view_state = (zdj_scroll_view_state_t*)scroll_view->state;
-    // scroll_view->subview_clip->scroll_offset.x = point->x * -1;
-    // scroll_view->subview_clip->scroll_offset.y = point->y * -1;
+    scroll_view->subview_clip->scroll_offset.set_x = point->x * -1;
+    scroll_view->subview_clip->scroll_offset.set_y = point->y * -1;
 }
 
 void zdj_scroll_view_to_ratio( zdj_view_t * scroll_view, zdj_point_t * ratio ) {
@@ -184,7 +184,31 @@ void zdj_scroll_view_to_ratio( zdj_view_t * scroll_view, zdj_point_t * ratio ) {
 }
 
 void zdj_scroll_view_by_point( zdj_view_t * scroll_view, zdj_point_t * point ) {
+    zdj_scroll_view_state_t * scroll_view_state = (zdj_scroll_view_state_t*)scroll_view->state;
 
+    // printf( "zdj_scroll_view_by_point: %1.1f/%1.1f\n", point->x, point->y );
+
+    scroll_view->subview_clip->scroll_offset.set_x += point->x *= -1;
+    // if( scroll_view->subview_clip->scroll_offset.set_x < 0 ) {
+    //     scroll_view->subview_clip->scroll_offset.set_x = 0;
+    // } else if( scroll_view->subview_clip->scroll_offset.set_x > scroll_view_state->scroll_size.x ) {
+    //     scroll_view->subview_clip->scroll_offset.set_x = scroll_view_state->scroll_size.x;
+    // }
+
+    scroll_view->subview_clip->scroll_offset.set_y += point->y * -1;
+    // if( scroll_view->subview_clip->scroll_offset.set_y < 0 ) {
+    //     scroll_view->subview_clip->scroll_offset.set_y = 0;
+    // } else if( scroll_view->subview_clip->scroll_offset.set_y > scroll_view_state->scroll_size.y ) {
+    //     scroll_view->subview_clip->scroll_offset.set_y = scroll_view_state->scroll_size.y;
+    // }
+
+    // printf( 
+    //     "%1.1f/%1.1f %1.1f/%1.1f\n", 
+    //     scroll_view->subview_clip->scroll_offset.set_x, 
+    //     scroll_view->subview_clip->scroll_offset.set_y,
+    //     scroll_view_state->scroll_size.x,
+    //     scroll_view_state->scroll_size.y
+    // );
 }
 
 void zdj_scroll_view_by_ratio( zdj_view_t * scroll_view, zdj_point_t * ratio ) {
@@ -196,6 +220,7 @@ void zdj_scroll_view_by_int( zdj_view_t * scroll_view, int val ) {
 }
 
 void _zdj_scroll_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK);
     float ease_x = ( view->subview_clip->scroll_offset.set_x - view->subview_clip->scroll_offset.cur_x ) * 0.2f;
     view->subview_clip->scroll_offset.cur_x += ease_x;
 

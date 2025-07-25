@@ -25,6 +25,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define ZDJ_SHARED_VIDEO_BUF_ADDR 0x55a31000
+
 #define ZDJ_DISPLAY_WIDTH 128
 #define ZDJ_DISPLAY_HEIGHT 64
 

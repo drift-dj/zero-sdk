@@ -3,7 +3,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/hmi/zdj_hmi.h>
+#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -24,14 +24,15 @@ static void _zdj_text_input_view_update_keyboard_char( zdj_view_t * view );
 static void _zdj_text_input_view_handle_key_release( zdj_view_t * view );
 
 zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input ) {
-    zdj_view_t * view = zdj_new_view( zdj_screen_rect( ) );
+    zdj_view_t * view = zdj_new_view( &(zdj_rect_t){0,0,ZDJ_MODAL_WIDTH+1,ZDJ_MODAL_HEIGHT} );
     view->type = ZDJ_VIEW_TEXT_INPUT;
     view->draw = &_zdj_text_input_view_draw;
     view->handle_hmi_event = _zdj_text_input_view_handle_hmi;
     view->deinit_state = &_zdj_text_input_view_deinit_state;
+    view->frame->x = ZDJ_MODAL_X+1;
     view->frame->y = ZDJ_SCREEN_H;
-    view->in_anim = zdj_new_anim( ZDJ_ANIM_VIEW_SHOW );
-    view->out_anim = zdj_new_anim( ZDJ_ANIM_VIEW_HIDE );
+    view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
+    view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
 
     zdj_text_input_view_state_t * view_state = calloc( 1, sizeof( zdj_text_input_view_state_t * ) );
     view_state->input_str = strdup( input );
@@ -46,6 +47,7 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
     zdj_view_t * keyboard_menu = zdj_new_text_input_keyboard_view( );
     view_state->keyboard_menu = keyboard_menu;
     zdj_add_subview( view, keyboard_menu );
+    
 
     // Add Input buffer view
     zdj_view_t * input_buffer = zdj_new_text_input_buffer_view( input );
@@ -79,7 +81,6 @@ void _zdj_text_input_view_handle_hmi( zdj_view_t * view, void * _event ) {
     if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
         // Scroll thru keyboard l->r + t->b -> cmd keys t->b.
         if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
-            printf( "jog adjust\n" );
             view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, _event );
             // Reset input buffer char to value in str if we're over menu chrome.
         }
@@ -93,59 +94,32 @@ void _zdj_text_input_view_handle_hmi( zdj_view_t * view, void * _event ) {
             e->type == ZDJ_HMI_EVENT_LONG_RELEASE 
         ) {
             _zdj_text_input_view_handle_key_release( view );
-
-            // Select char at cursor and move cursor to next char.
-            // input_buffer_state->str[ input_buffer_state->cursor_index ] = zdj_text_input_keyboard_get_current_char( view_state->keyboard_menu );
-            // _zdj_text_input_view_next_char( view );
-            
-            // view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, _event );
-            // _zdj_text_input_view_next_char( view );
         }
     } else if( e->id == ZDJ_HMI_ENCO_3_TONE_1 ) {
         if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
             printf( "tone 1 adjust\n" );
             // Scroll input cursor 1 char right/left.
-            // if( e->i_val > 0 ) {
-            //     _zdj_text_input_view_next_char( view );
-            // } else if( e->i_val < 0 ) {
-            //     _zdj_text_input_view_prev_char( view );
-            // }
-
-            // if( e->i_val > 0 ) {
-            //     zdj_text_input_keyboard_select_next_key_char( view_state->keyboard_menu );
-            // } else if( e->i_val < 0 ) {
-            //     zdj_text_input_keyboard_select_prev_key_char( view_state->keyboard_menu );
-            // }
+            if( e->i_val > 0 ) {
+                _zdj_text_input_view_next_char( view );
+            } else if( e->i_val < 0 ) {
+                _zdj_text_input_view_prev_char( view );
+            }
         } else if( e->type == ZDJ_HMI_EVENT_RELEASE ) {
             _zdj_text_input_view_handle_key_release( view );
-
-            // Select char at cursor and move cursor to next char.
-            // input_buffer_state->str[ input_buffer_state->cursor_index ] = zdj_text_input_keyboard_get_current_char( view_state->keyboard_menu );
-            // _zdj_text_input_view_next_char( view );
-
-            // view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, _event );
-            // _zdj_text_input_view_next_char( view );
         }
     } else if( e->id == ZDJ_HMI_ENCO_4_TONE_2 ) {
         if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
             printf( "tone 2 adjust\n" ); 
             // Scroll keyboard to next/prev key
             // Make a fake event to send into menu
-            // zdj_hmi_event_t * fake_e = calloc( 1, sizeof( zdj_hmi_event_t ) );
-            // fake_e->id = ZDJ_HMI_ENCO_2_JOG;
-            // fake_e->type = ZDJ_HMI_EVENT_ADJUST;
-            // fake_e->i_val = e->i_val;
-            // view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, fake_e );
-            // free( fake_e );
+            zdj_hmi_event_t * fake_e = calloc( 1, sizeof( zdj_hmi_event_t ) );
+            fake_e->id = ZDJ_HMI_ENCO_2_JOG;
+            fake_e->type = ZDJ_HMI_EVENT_ADJUST;
+            fake_e->i_val = e->i_val;
+            view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, fake_e );
+            free( fake_e );
         } else if( e->type == ZDJ_HMI_EVENT_RELEASE ) {
             _zdj_text_input_view_handle_key_release( view );
-
-            // Select char at cursor and move cursor to next char.
-            // input_buffer_state->str[ input_buffer_state->cursor_index ] = zdj_text_input_keyboard_get_current_char( view_state->keyboard_menu );
-            // _zdj_text_input_view_next_char( view );
-
-            // view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, _event );
-            // _zdj_text_input_view_next_char( view );
         }
     } else if( e->id == ZDJ_HMI_ENCO_5_TONE_3 ) {
         if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
@@ -171,13 +145,6 @@ void _zdj_text_input_view_handle_hmi( zdj_view_t * view, void * _event ) {
         } else if( e->id == ZDJ_HMI_PB_1_PLAY ) {
             printf( "play btn\n" ); 
             _zdj_text_input_view_handle_key_release( view );
-
-            // Select char at cursor and move cursor to next char.
-            // input_buffer_state->str[ input_buffer_state->cursor_index ] = zdj_text_input_keyboard_get_current_char( view_state->keyboard_menu );
-            // _zdj_text_input_view_next_char( view );
-
-            // view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, _event );
-            // _zdj_text_input_view_next_char( view );
 
         } else if( e->id == ZDJ_HMI_PB_2_FN_1 ) {
             printf( "fn 1 btn\n" );
@@ -218,7 +185,6 @@ static void _zdj_text_input_view_next_char( zdj_view_t * view ) {
     zdj_view_t * keyboard_menu = view_state->keyboard_menu;
 
     if( input_buffer_state->cursor_index < strlen( input_buffer_state->str ) ) {
-        printf( "advancing cursor\n" );
         // Move cursor 1 char forward in buffer.
         input_buffer_state->cursor_index++;
         input_buffer_state->has_valid_layout = false;
@@ -230,7 +196,7 @@ static void _zdj_text_input_view_next_char( zdj_view_t * view ) {
 static void _zdj_text_input_view_prev_char( zdj_view_t * view ) {
     zdj_text_input_view_state_t * view_state = (zdj_text_input_view_state_t*)view->state;
     zdj_text_input_buffer_view_state_t * input_buffer_state = (zdj_text_input_buffer_view_state_t*)view_state->input_buffer->state;
-    zdj_view_t * keyboard_menu = view_state->keyboard_menu;
+    // zdj_view_t * keyboard_menu = view_state->keyboard_menu;
 
     if( input_buffer_state->cursor_index > 0 ) {
         // Move cursor 1 char back in buffer.
@@ -259,7 +225,7 @@ static void _zdj_text_input_view_update_keyboard_char( zdj_view_t * view ) {
 void _zdj_text_input_view_handle_key_release( zdj_view_t * view ) {
     zdj_text_input_view_state_t * view_state = (zdj_text_input_view_state_t*)view->state;
     zdj_text_input_buffer_view_state_t * input_buffer_state = (zdj_text_input_buffer_view_state_t*)view_state->input_buffer->state;
-
+    
     int current_char = zdj_text_input_keyboard_get_current_char( 
         view_state->keyboard_menu
      );

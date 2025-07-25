@@ -1,34 +1,34 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
+
+#include <zerodj/boot/zdj_boot.h>
 #include <zerodj/m7/zdj_m7.h>
 
-int zdj_m7_fd;
+// int zdj_m7_fd;
+static volatile zdj_shared_msg_buffer_t * _zdj_shared_msg_buffer;
+// static volatile zdj_shared_audio_state_t * _zdj_shared_audio_state;
+// static bool _zdj_m7_shared_audio_init = false;
 
-// See zero-m7 repo for corresponding message defs.
-char * _zdj_m7_msg_str[] = {
-    "fh",
-    "ud",
-    "ah",
-    "dh",
-    "bs",
-    "de",
-    "tm",
-    "dr",
-    "er"
-};
-
-// Return a reference to the M7 core's rpmsg endpoint.
-int zdj_m7( void ) {
-    // Lazy-load the endpoint.
-    if( !zdj_m7_fd ) {
-        zdj_m7_fd = open( "/dev/rpmsg0", O_RDWR );
+volatile zdj_shared_msg_buffer_t * zdj_m7_shared_msg_buffer( void ) {
+    if( !_zdj_shared_msg_buffer ) {
+        int mem_fd = open( "/dev/mem", O_RDWR );
+        _zdj_shared_msg_buffer = mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_MSG_BUF_ADDR);
     }
-    return zdj_m7_fd;
+    return _zdj_shared_msg_buffer;
 }
 
-void zdj_m7_msg( zdj_m7_message_t msg ) {
-    write( zdj_m7( ), _zdj_m7_msg_str[ msg ], 3 );
-}
+// volatile zdj_shared_audio_state_t * zdj_m7_shared_audio_state( void ){
+//     if( !_zdj_m7_shared_audio_init ) {
+//         _zdj_m7_shared_audio_init = true;
+//         int mem_fd = open( "/dev/mem", O_RDWR );
+        
+//         _zdj_shared_audio_state = (zdj_shared_audio_state_t*)mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_AUDIO_STATE_ADDR);
+//     }
+//     return _zdj_shared_audio_state;
+// }

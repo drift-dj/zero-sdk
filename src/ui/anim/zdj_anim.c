@@ -73,6 +73,26 @@ zdj_anim_t * zdj_new_anim( zdj_anim_type_t type ) {
             anim->update_fn = &zdj_anim_update_header;
             anim->deinit_fn = &zdj_anim_deinit_header;
             break;
+        case ZDJ_ANIM_DIALOG_SHOW:
+            anim->init_fn = &zdj_anim_init_dialog_show;
+            anim->update_fn = &zdj_anim_update_dialog;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_DIALOG_HIDE:
+            anim->init_fn = &zdj_anim_init_dialog_hide;
+            anim->update_fn = &zdj_anim_update_dialog;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_DEBUG_PANEL_SHOW:
+            anim->init_fn = &zdj_anim_init_debug_panel_show;
+            anim->update_fn = &zdj_anim_update_debug_panel;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_DEBUG_PANEL_HIDE:
+            anim->init_fn = &zdj_anim_init_debug_panel_hide;
+            anim->update_fn = &zdj_anim_update_debug_panel;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
     }
     return anim;
 }

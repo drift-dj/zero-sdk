@@ -2,7 +2,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/hmi/zdj_hmi.h>
+#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -15,6 +15,7 @@ void _zdj_modal_view_deinit_state( zdj_view_t * modal_view );
 
 zdj_view_t * zdj_new_modal_view( zdj_rect_t * frame ) {
     zdj_view_t * modal_view = zdj_new_view( frame );
+    modal_view->type = ZDJ_VIEW_MODAL;
     modal_view->draw = &_zdj_modal_view_draw;
     modal_view->handle_hmi_event = _zdj_modal_view_handle_hmi;
     modal_view->deinit_state = &_zdj_modal_view_deinit_state;
@@ -34,8 +35,7 @@ zdj_view_t * zdj_new_modal_view( zdj_rect_t * frame ) {
 
 // Drop in a dotted BG to obscure the views below
 void _zdj_modal_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    // boxColor( zdj_renderer( ), 0, 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, ZDJ_BLACK );
-    // SDL_RenderCopy( zdj_renderer( ), zdj_asset_atlas( ), &zdj_ui_assets[ ZDJ_UI_ASSET_DOT_BG ], &(SDL_Rect){0,0,127,64} );
+    boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
 }
 
 void _zdj_modal_view_handle_hmi( zdj_view_t * modal_view, void * _event ) {

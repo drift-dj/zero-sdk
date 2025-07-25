@@ -12,6 +12,7 @@ void _zdj_asset_view_deinit_state( zdj_view_t * view );
 
 zdj_view_t * zdj_new_asset_view( SDL_Rect * rect, SDL_Texture * tex ) {
     zdj_view_t * view = zdj_new_view( &(zdj_rect_t){0,0,rect->w,rect->h} );
+    view->type = ZDJ_VIEW_ASSET;
     view->draw = _zdj_asset_view_draw;
     view->deinit_state = _zdj_asset_view_deinit_state;
 

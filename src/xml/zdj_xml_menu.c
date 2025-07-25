@@ -207,7 +207,7 @@ void _xml_menu_process_item_nodes(
             char * item_title = (char*)xmlGetProp( node, (const xmlChar *)"title" );
 
             // Static layout/hmi -- no front-end linkage
-            zdj_view_t * item = zdj_new_menu_item( item_title );
+            zdj_view_t * item = zdj_new_menu_item( item_title, ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
             zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)item->state;
             
             // Setup layout type
@@ -216,12 +216,12 @@ void _xml_menu_process_item_nodes(
                 char * layout_str = (char*)xmlGetProp( node, (const xmlChar *)"layout" );
                 layout = layout_linkage( layout_str );
                 if( layout ) {
-                    state->update_layout = zdj_menu_item_update_for_layout( layout );
+                    // state->update_layout = zdj_menu_item_update_for_layout( layout );
                     // Add linkage for data layout type
-                    if( zdj_menu_item_layout_is_dynamic( layout ) ) {
-                        // Set the update_data func
-                        state->update_data = update_linkage( state->link );
-                    }
+                    // if( zdj_menu_item_layout_is_dynamic( layout ) ) {
+                    //     // Set the update_data func
+                    //     state->update_data = update_linkage( state->link );
+                    // }
                 }
             }
             

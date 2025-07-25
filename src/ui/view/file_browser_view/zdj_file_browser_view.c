@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/hmi/zdj_hmi.h>
+#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -34,6 +34,7 @@ zdj_view_t * zdj_new_file_browser_view(
     if( access( path, F_OK ) != 0 ) { return NULL; }
 
     zdj_view_t * browser_view = zdj_new_view( frame );
+    browser_view->type = ZDJ_VIEW_BROWSER;
     browser_view->draw = &_zdj_file_browser_draw;
     browser_view->handle_hmi_event = _zdj_file_browser_handle_hmi;
     browser_view->deinit_state = &_zdj_file_browser_deinit_state;
@@ -41,7 +42,7 @@ zdj_view_t * zdj_new_file_browser_view(
     browser_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
 
     browser_view->frame->x = ZDJ_MODAL_X;
-    browser_view->frame->y = ZDJ_SCREEN_H;
+    browser_view->frame->y = ZDJ_SCREEN_H+1;
 
     // Add a state instance
     zdj_file_browser_view_state_t * state = calloc( 1, sizeof( zdj_file_browser_view_state_t ) );
@@ -62,10 +63,10 @@ zdj_view_t * zdj_new_file_browser_view(
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)header->state;
     zdj_add_subview( browser_view, header );
     header->frame->w = browser_view->frame->w;
-    header->frame->h = 10;
+    header->frame->h = 7;
 
     // Add the menu container view
-    zdj_rect_t container_frame = { 0, 10, frame->w, frame->h-10 };
+    zdj_rect_t container_frame = { 0, 9, frame->w, frame->h-9 };
     zdj_view_t * menu_container = zdj_new_view( &container_frame );
     state->menu_container = menu_container;
     zdj_add_subview( browser_view, menu_container );
@@ -73,7 +74,7 @@ zdj_view_t * zdj_new_file_browser_view(
     // Add first menu to stack
     zdj_view_t * menu = zdj_new_file_browser_menu_for_path( 
         browser_view,
-        &(zdj_rect_t){frame->x, frame->y+10, frame->w, frame->h-10}, 
+        &(zdj_rect_t){frame->x, frame->y+10, frame->w, frame->h-9}, 
         path, 
         read_only, 
         allow_nav, 
@@ -96,19 +97,10 @@ void _zdj_file_browser_handle_hmi( zdj_view_t * browser, void * _event ) {
     zdj_view_t * header_view = browser_state->header_view;
     // Handle all the jog-wheel stuff (scroll, mod scroll, press/long press, etc.)
     if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
-        // Catch a jog-press when menu scroll_index == -1
         zdj_view_t * top_menu = zdj_view_stack_top_subview_of( browser_state->menu_container );
 
         if( top_menu ) {
             zdj_menu_view_state_t * top_menu_state = (zdj_menu_view_state_t*)top_menu->state;
-            
-            // Show hide header's cancel button
-            zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)header_view->state;
-            if( browser_state->header_view && top_menu_state->scroll_index == -1 ) {
-                header_state->show_back = true;
-            } else {
-                header_state->hide_back = true;
-            }
 
             // Handle a cancel button press - return immediately since we're being dismissed
             if( top_menu_state->scroll_index == -1 && e->type == ZDJ_HMI_EVENT_RELEASE ) {
@@ -120,10 +112,32 @@ void _zdj_file_browser_handle_hmi( zdj_view_t * browser, void * _event ) {
                 return;
             }
 
+            // Grab a scroll_index pre- and post- hmi event handler.
+            // We'll use this to show/hide the browser back button.
+            int menu_scroll_index = top_menu_state->scroll_index;
+
             // Pass events down into the menu view stack.
             // Note that browser/subviews may be deleted during handle_hmi_event.
             // Be careful accessing them after this line.
             top_menu->handle_hmi_event( top_menu, _event );
+
+            // Show/hide header's cancel button
+            zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)header_view->state;
+            
+            if( e->type == ZDJ_HMI_EVENT_ADJUST &&
+                header_state
+            ) {
+                if( top_menu_state->scroll_index == -1 &&
+                    header_state->back_hidden
+                ) {
+                    header_state->show_back = true;
+                } else if( 
+                    top_menu_state->scroll_index == 0 &&
+                    !header_state->back_hidden 
+                ) {
+                    header_state->hide_back = true;
+                }
+            }
         }
         
         // Prevent views/menus below this one from getting jog wheel events
@@ -142,6 +156,9 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event ) {
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * browser;
     zdj_file_browser_view_state_t * browser_state;
+
+    // printf( "zdj_file_browser_item_hmi_delegate\n" );
+
     switch ( item_state->action ) {
         case ZDJ_MENU_ITEM_ACTION_DIR_BACK:
             // Note that the back button carries a pointer to the browser in its data struct
