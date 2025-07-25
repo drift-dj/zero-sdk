@@ -23,7 +23,7 @@
 
 #include <unistd.h>
 
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 
 typedef struct {
     char * filepath;

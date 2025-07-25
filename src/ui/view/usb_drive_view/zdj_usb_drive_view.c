@@ -16,7 +16,7 @@
 #include <zerodj/ui/view/modal_view/zdj_modal_view.h>
 #include <zerodj/ui/view/progress_bar_view/zdj_progress_bar_view.h>
 #include <zerodj/ui/view/usb_drive_view/zdj_usb_drive_view.h>
-#include <zerodj/usb/zdj_usb.h>
+#include <zerodj/system/usb/zdj_usb.h>
 
 static zdj_usb_drive_view_state_t * _zdj_usb_drive_view_state;
 

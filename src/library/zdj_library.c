@@ -5,10 +5,10 @@
 #include <unistd.h>
 #include <uuid.h>
 
-#include <zerodj/fs/zdj_fs.h>
+#include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
-#include <zerodj/sql/zdj_sql.h>
+#include <zerodj/system/sql/zdj_sql.h>
 
 sqlite3 * zdj_library_db;
 sqlite3 * zdj_library_import_db;

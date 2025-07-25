@@ -12,7 +12,7 @@
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
-#include <zerodj/sql/zdj_sql.h>
+#include <zerodj/system/sql/zdj_sql.h>
 
 zdj_library_audio_t * zdj_library_create_audio_dto( void ) {
     zdj_library_audio_t * audio = calloc( 1, sizeof( zdj_library_audio_t ) );

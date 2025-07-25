@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <zerodj/display/zdj_display.h>
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/display/zdj_display.h>
+#include <zerodj/system/error/zdj_error.h>
 #include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/controls/playback/zdj_playback_control.h>
 #include <zerodj/health/zdj_health_type.h>

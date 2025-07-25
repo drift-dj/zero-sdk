@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include <zerodj/m7/zdj_m7.h>
+#include <zerodj/system/m7/zdj_m7.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/io/zdj_io_node.h>
 

@@ -11,7 +11,7 @@
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
-#include <zerodj/sql/zdj_sql.h>
+#include <zerodj/system/sql/zdj_sql.h>
 
 
 zdj_library_song_t * zdj_library_create_song_dto( void ) {

@@ -5,15 +5,15 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/debug/zdj_debug.h>
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/debug/zdj_debug.h>
+#include <zerodj/system/error/zdj_error.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/panel/accessibility/zdj_accessibility_panel.h>
 #include <zerodj/ui/panel/debug/zdj_debug_panel.h>
 #include <zerodj/ui/panel/widget/zdj_widget_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
-#include <zerodj/display/zdj_display.h>
+#include <zerodj/system/display/zdj_display.h>
 #include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/health/zdj_health_type.h>
 

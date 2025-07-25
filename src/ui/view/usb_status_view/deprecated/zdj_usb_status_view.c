@@ -16,7 +16,7 @@
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 #include <zerodj/ui/view/usb_status_view/zdj_usb_status_view.h>
-#include <zerodj/usb/zdj_usb.h>
+#include <zerodj/system/usb/zdj_usb.h>
 
 static void _zdj_usb_status_view_draw( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _zdj_usb_status_view_update_layout( zdj_view_t * view );

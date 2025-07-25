@@ -7,7 +7,7 @@
 #include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/node/analysis/meter/zdj_meter_node.h>
-#include <zerodj/soundcard/zdj_soundcard.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/asset_view/zdj_asset_view.h>

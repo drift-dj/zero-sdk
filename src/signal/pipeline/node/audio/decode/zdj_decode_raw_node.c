@@ -10,7 +10,7 @@
 #include <libavutil/error.h>
 #include <libavcodec/codec_id.h>
 
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_raw_node.h>

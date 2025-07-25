@@ -21,7 +21,7 @@
 #ifndef ZDJ_SOUNDCARD_VIEW_H
 #define ZDJ_SOUNDCARD_VIEW_H
 
-#include <zerodj/soundcard/zdj_soundcard.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/view/soundcard_view/meters/zdj_soundcard_meter.h>
 
 typedef struct {

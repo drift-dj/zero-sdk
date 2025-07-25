@@ -11,7 +11,7 @@
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
-#include <zerodj/sql/zdj_sql.h>
+#include <zerodj/system/sql/zdj_sql.h>
 
 // Song graph population/persist routines.
 // A song DTO serves many use cases, each requiring a different subset

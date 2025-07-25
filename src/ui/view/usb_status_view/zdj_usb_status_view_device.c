@@ -17,7 +17,7 @@
 #include <zerodj/ui/view/progress_bar_view/zdj_progress_bar_view.h>
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 #include <zerodj/ui/view/usb_status_view/zdj_usb_status_view.h>
-#include <zerodj/usb/zdj_usb.h>
+#include <zerodj/system/usb/zdj_usb.h>
 
 static void _zdj_usb_status_view_device_update_layout( zdj_view_t * view );
 static void _zdj_usb_status_view_device_processing_update_layout( zdj_view_t * view );

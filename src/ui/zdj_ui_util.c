@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL.h>
 
-#include <zerodj/display/zdj_display.h>
+#include <zerodj/system/display/zdj_display.h>
 #include <zerodj/ui/zdj_ui.h>
 
 SDL_Renderer* zdj_display_renderer;

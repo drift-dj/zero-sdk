@@ -23,7 +23,7 @@
 
 #include <stdbool.h>
 
-#include <zerodj/usb/zdj_usb.h>
+#include <zerodj/system/usb/zdj_usb.h>
 
 typedef enum {
     ZDJ_USB_DRIVE_VIEW_MODE_ENABLE,

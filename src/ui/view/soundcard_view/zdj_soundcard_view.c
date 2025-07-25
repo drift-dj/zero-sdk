@@ -6,7 +6,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/controls/hmi/zdj_hmi.h>
-#include <zerodj/soundcard/zdj_soundcard.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -15,9 +15,7 @@
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/modal_view/zdj_modal_view.h>
-// #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 #include <zerodj/ui/view/soundcard_view/zdj_soundcard_view.h>
-#include <zerodj/ui/view/soundcard_view/bus_mixer/zdj_soundcard_bus_mixer.h>
 #include <zerodj/ui/view/soundcard_view/meters/zdj_soundcard_meter.h>
 #include <zerodj/ui/view/soundcard_view/options/zdj_soundcard_options.h>
 #include <zerodj/ui/view/text_input_view/zdj_text_input_view.h>

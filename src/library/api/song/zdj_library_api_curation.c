@@ -11,7 +11,7 @@
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
-#include <zerodj/sql/zdj_sql.h>
+#include <zerodj/system/sql/zdj_sql.h>
 
 zdj_library_curation_t * zdj_library_create_curation_dto( void ) {
     zdj_library_curation_t * curation = calloc( 1, sizeof( zdj_library_curation_t ) );

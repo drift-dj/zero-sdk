@@ -2,19 +2,12 @@ cmake_minimum_required(VERSION 3.23)
 project(zerodj VERSION 0.1.0 LANGUAGES C)
 
 add_library(zerodj 
-    src/boot/zdj_boot.c
     src/controls/hmi/zdj_hmi.c
     src/controls/hmi/zdj_hmi_input.c
     src/controls/hmi/zdj_hmi_scan_thread.c
     src/controls/hmi/zdj_hmi_sm_analog.c
     src/controls/hmi/zdj_hmi_sm_digital.c
     src/controls/playback/zdj_playback_control.c
-    src/debug/zdj_debug.c
-    src/display/zdj_display.c
-    src/error/zdj_error.c
-    src/fs/zdj_fs.c
-    src/m7/zdj_m7.c
-    src/installer/zdj_installer.c
     src/library/zdj_library.c
     src/library/api/library/zdj_library_api_library_config.c
     src/library/api/library/zdj_library_api_library.c
@@ -31,8 +24,6 @@ add_library(zerodj
     src/library/api/song/zdj_library_api_performance.c
     src/library/api/song/zdj_library_api_song_graph.c
     src/library/api/song/zdj_library_api_song.c
-    src/registry/zdj_registry_install.c
-    src/registry/zdj_registry_launch_req.c
     src/signal/math/zdj_signal_math.c
     src/signal/pipeline/zdj_pipeline.c
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
@@ -48,10 +39,25 @@ add_library(zerodj
     src/signal/pipeline/node/audio/io/zdj_io_usb_node.c
     src/signal/pipeline/node/file/zdj_file_read_node.c
     src/signal/pipeline/node/file/zdj_file_write_node.c
-    src/soundcard/zdj_soundcard.c
-    src/soundcard/zdj_soundcard_dto.c
-    src/soundcard/zdj_soundcard_node.c
-    src/sql/zdj_sql.c
+    src/signal/soundcard/zdj_soundcard.c
+    src/signal/soundcard/zdj_soundcard_dto.c
+    src/signal/soundcard/zdj_soundcard_node.c
+    src/system/boot/zdj_boot.c
+    src/system/debug/zdj_debug.c
+    src/system/display/zdj_display.c
+    src/system/error/zdj_error.c
+    src/system/fs/zdj_fs.c
+    src/system/m7/zdj_m7.c
+    src/system/installer/zdj_installer.c
+    src/system/registry/zdj_registry_install.c
+    src/system/registry/zdj_registry_launch_req.c
+    src/system/sql/zdj_sql.c
+    src/system/usb/zdj_usb.c
+    src/system/usb/zdj_usb_device.c
+    src/system/usb/zdj_usb_msd_device.c
+    src/system/usb/zdj_usb_poll.c
+    src/system/xml/zdj_xml.c
+    src/system/xml/zdj_xml_menu.c
     src/ui/zdj_ui.c
     src/ui/zdj_ui_util.c
     src/ui/anim/zdj_anim.c
@@ -119,12 +125,6 @@ add_library(zerodj
     src/ui/view/usb_status_view/zdj_usb_status_view_reboot.c
     src/ui/view/waveform_view/zdj_waveform_lores_view.c
     src/ui/view/waveform_view/zdj_waveform_view.c
-    src/usb/zdj_usb.c
-    src/usb/zdj_usb_device.c
-    src/usb/zdj_usb_msd_device.c
-    src/usb/zdj_usb_poll.c
-    src/xml/zdj_xml.c
-    src/xml/zdj_xml_menu.c
 )
 
 target_compile_definitions(

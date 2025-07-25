@@ -36,6 +36,7 @@ static zdj_pipeline_node_t * _zdj_raw_node_for_address(
     zdj_pipeline_node_t * decode_node, 
     uint32_t address
 );
+
 static zdj_error_type_t _zdj_add_raw_node_for_address( 
     zdj_pipeline_node_t * decode_node, 
     uint32_t address 
