@@ -21,7 +21,7 @@
 #ifndef ZDJ_SOUNDCARD_METER_H
 #define ZDJ_SOUNDCARD_METER_H
 
-#include <zerodj/soundcard/zdj_soundcard.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 
 // zdj_view_t * zdj_new_mute_stereo_meter_view ( 

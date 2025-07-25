@@ -25,9 +25,9 @@
 
 #include <sqlite3.h>
 
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
-#include <zerodj/soundcard/zdj_soundcard_dto.h>
+#include <zerodj/signal/soundcard/zdj_soundcard_dto.h>
 
 #define ZDJ_SOUNDCARD_DB_PATH "/etc/zero_data/soundcard.db"
 #define ZDJ_SOUNDCARD_DEFAULT_DJ "DJ_Default"

@@ -26,7 +26,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 
 #define ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE 2048
 

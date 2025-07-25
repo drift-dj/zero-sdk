@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <sqlite3.h>
 
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 #include <zerodj/health/zdj_health_type.h>
 
 #define ZDJ_LIBRARY_DB_PATH "/etc/zero_data/zero.db"

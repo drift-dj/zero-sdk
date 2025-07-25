@@ -24,7 +24,7 @@
 #define ZDJ_SHARED_MSG_BUF_ADDR 0x55a72000
 
 #include <stdint.h>
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 
 // Defined as shared memory region in drift-a106.dtsi device-tree.
 // Can be modified (at os-build, not at runtime), but Linux device-tree, 

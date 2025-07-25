@@ -18,9 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_SOUNDCARD_BUS_MIXER_H
-#define ZDJ_SOUNDCARD_BUS_MIXER_H
+#ifndef ZDJ_EXTERNAL_DECK_H
+#define ZDJ_EXTERNAL_DECK_H
 
-zdj_view_t * zdj_new_soundcard_bus_mixer( zdj_soundcard_t * soundcard );
+#include <stdbool.h>
+
+typedef struct {
+
+} zdj_external_deck_t;
 
 #endif

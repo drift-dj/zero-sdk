@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 #include <zerodj/zdj_data_type.h>
-#include <zerodj/registry/zdj_registry.h>
+#include <zerodj/system/registry/zdj_registry.h>
 
 #define ZDJ_INSTALLER_HEADER_START 4000 // Byte location of installer header in binary
 #define ZDJ_INSTALLER_EXTRACT_DIR "/etc/zero-sdk/installer"

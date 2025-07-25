@@ -22,7 +22,7 @@
 #define ZDJ_IO_NODE_H
 
 #include <zerodj/library/zdj_library.h>
-#include <zerodj/m7/zdj_m7.h>
+#include <zerodj/system/m7/zdj_m7.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
 typedef struct {

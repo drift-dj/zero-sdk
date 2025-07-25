@@ -26,7 +26,7 @@
 
 #include <sqlite3.h>
 
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 
 #define ZDJ_USB_REQUEST_PATH "/etc/zero_data/usb_request"
 #define ZDJ_USB_STATUS_PATH "/etc/zero_data/usb_status"

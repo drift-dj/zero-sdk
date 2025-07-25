@@ -21,7 +21,7 @@
 #ifndef ZDJ_SIGNAL_MATH_H
 #define ZDJ_SIGNAL_MATH_H
 
-#include <zerodj/error/zdj_error.h>
+#include <zerodj/system/error/zdj_error.h>
 
 typedef struct {
     double sigma;
