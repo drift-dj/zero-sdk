@@ -26,8 +26,11 @@
 #include <sqlite3.h>
 
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/soundcard/zdj_soundcard_dto.h>
+
+#define ZDJ_SOUNDCARD_BUF_LEN 64
 
 #define ZDJ_SOUNDCARD_DB_PATH "/etc/zero_data/soundcard.db"
 #define ZDJ_SOUNDCARD_DEFAULT_DJ "DJ_Default"
@@ -184,6 +187,18 @@ typedef enum {
     ZDJ_SOUNDCARD_CV_SOURCE_SYNTH
 } zdj_soundcard_cv_source_t;
 
+typedef struct {
+    int source_channel_count;
+    int source_channel_stride;
+    int source_channel_offset;
+    int source_data_size;
+    int source_pan;
+    int dest_channel_count;
+    int dest_channel_stride;
+    int dest_channel_offset;
+    int dest_data_size;
+} zdj_soundcard_accumulate_map_t;
+
 typedef struct  {
     zdj_soundcard_node_name_t name;
     struct zdj_soundcard_node_t * next;
@@ -197,21 +212,24 @@ typedef struct  {
     int source;
     int val;
     int invert;
-    zdj_pipeline_node_t * buffer;
+    zdj_pipeline_node_t * data_pipe;
+    zdj_pipeline_node_t * meter_pipe;
+    void ( *get_edge_data )( zdj_pipeline_node_t * );
     zdj_soundcard_link_bitmap_t link_map;
-    int link_count;
-    zdj_soundcard_link_t links[ 8 ]; // 8 should be enough for anybody...
-    bool has_push;
-    void ( *push_buffer )( struct zdj_soundcard_node_t * ); // Send this node's buffer to all links
+    int input_link_count;
+    zdj_soundcard_link_t input_links[ 8 ];
+    int output_link_count;
+    zdj_soundcard_link_t output_links[ 8 ];
+    bool mix_complete;
+    void ( *dsp )( struct zdj_soundcard_node_t * );
 } zdj_soundcard_node_t;
 
 typedef struct {
     char name[ 128 ];
-    int buffer_len;
     zdj_soundcard_dto_t dto;
     zdj_soundcard_node_t * nodes;
-    zdj_pipeline_node_t *analog_io_node;
-    zdj_pipeline_node_t *usb_io_node;
+    zdj_pipeline_node_t * analog_io_node;
+    zdj_pipeline_node_t * usb_io_node;
     bool has_edits;
 } zdj_soundcard_t;
 
@@ -222,46 +240,68 @@ zdj_error_type_t zdj_soundcard_load( zdj_soundcard_t * soundcard, char * entity_
 zdj_error_type_t zdj_soundcard_save( zdj_soundcard_t * soundcard, char * entity_id );
 zdj_error_type_t zdj_soundcard_save_temp( zdj_soundcard_t * soundcard );
 
+// Transport
+zdj_error_type_t zdj_soundcard_start( zdj_soundcard_t * soundcard );
+zdj_error_type_t zdj_soundcard_stop( zdj_soundcard_t * soundcard );
+
+// Perf
+zdj_error_type_t zdj_soundcard_enable_perf( zdj_soundcard_t * soundcard, uint32_t tag_count );
+zdj_error_type_t zdj_soundcard_disable_perf( zdj_soundcard_t * soundcard );
+zdj_error_type_t zdj_soundcard_reset_perf( zdj_soundcard_t * soundcard );
+zdj_pipeline_perf_report_t * zdj_soundcard_make_fast_cycle_perf_report(zdj_soundcard_t * soundcard );
+
+// Mixing/DSP
+zdj_error_type_t zdj_soundcard_mix_input( 
+    zdj_soundcard_t * soundcard, 
+    zdj_soundcard_node_t * node 
+);
+zdj_error_type_t zdj_soundcard_accumulate_node(
+    zdj_soundcard_t * soundcard, 
+    zdj_soundcard_node_t * input_node,
+    zdj_soundcard_node_t * node
+);
+
+// Decks
+zdj_error_type_t zdj_soundcard_link_deck( 
+    zdj_soundcard_t * soundcard, 
+    zdj_deck_t * deck 
+);
+
+// Node
 zdj_soundcard_node_t * zdj_soundcard_create_node( zdj_soundcard_node_name_t name );
 zdj_error_type_t zdj_soundcard_install_node( 
     zdj_soundcard_t * soundcard, 
     zdj_soundcard_node_t * node 
 );
-
 zdj_error_type_t zdj_soundcard_remove_node( 
     zdj_soundcard_t * soundcard, 
     zdj_soundcard_node_t * node 
 );
-
 zdj_error_type_t zdj_soundcard_remove_all_nodes( zdj_soundcard_t * soundcard );
-
-zdj_error_type_t zdj_soundcard_unlink_all_nodes_from_node( 
-    zdj_soundcard_t * soundcard,
-    zdj_soundcard_node_t * node 
-);
-
-zdj_error_type_t zdj_soundcard_link_source_node_to_dest_node( 
-    zdj_soundcard_t * soundcard,
-    zdj_soundcard_node_t * source_node,
-    zdj_soundcard_node_t * dest_node
-);
-
-zdj_error_type_t zdj_soundcard_unlink_source_node_from_dest_node( 
-    zdj_soundcard_t * soundcard,
-    zdj_soundcard_node_t * source_node,
-    zdj_soundcard_node_t * dest_node
-);
-
-zdj_error_type_t zdj_soundcard_pull_node_links_from_dto( 
-    zdj_soundcard_t * soundcard,
-    zdj_soundcard_node_t * node
-);
-
 zdj_soundcard_node_t * zdj_soundcard_get_node_for_name( 
     zdj_soundcard_t * soundcard, 
     zdj_soundcard_node_name_t name 
 );
 
+// Node Linkage
+zdj_error_type_t zdj_soundcard_unlink_all_nodes_from_node( 
+    zdj_soundcard_t * soundcard,
+    zdj_soundcard_node_t * node 
+);
+zdj_error_type_t zdj_soundcard_link_source_node_to_dest_node( 
+    zdj_soundcard_t * soundcard,
+    zdj_soundcard_node_t * source_node,
+    zdj_soundcard_node_t * dest_node
+);
+zdj_error_type_t zdj_soundcard_unlink_source_node_from_dest_node( 
+    zdj_soundcard_t * soundcard,
+    zdj_soundcard_node_t * source_node,
+    zdj_soundcard_node_t * dest_node
+);
+zdj_error_type_t zdj_soundcard_pull_node_links_from_dto( 
+    zdj_soundcard_t * soundcard,
+    zdj_soundcard_node_t * node
+);
 int zdj_soundcard_count_input_nodes_to_node_name( 
     zdj_soundcard_dto_t * dto,
     zdj_soundcard_node_name_t name 
@@ -274,29 +314,36 @@ int zdj_soundcard_count_output_nodes_from_link_map(
     zdj_soundcard_link_bitmap_t link_map
 );
 
+// Node Getters/Setters
 void zdj_soundcard_set_mute_for_node( zdj_soundcard_node_t * node, bool stereo );
 void zdj_soundcard_set_stereo_for_node( zdj_soundcard_node_t * node, bool stereo );
 zdj_soundcard_node_t * zdj_soundcard_node_get_stereo_partner_node( zdj_soundcard_node_t * node );
+zdj_error_type_t zdj_soundcard_get_port_title_with_stereo( 
+    zdj_soundcard_t * soundcard,
+    zdj_soundcard_node_name_t name, 
+    char * str 
+);
 zdj_error_type_t zdj_soundcard_cycle_pad_for_io_node(
     zdj_soundcard_t * soundcard, zdj_soundcard_node_t * node
 );
-
-bool zdj_soundcard_can_add_aux_bus( zdj_soundcard_t * soundcard );
-bool zdj_soundcard_can_add_clock_bus( zdj_soundcard_t * soundcard );
-bool zdj_soundcard_can_add_cv_bus( zdj_soundcard_t * soundcard );
-bool zdj_soundcard_can_add_midi_bus( zdj_soundcard_t * soundcard );
 zdj_soundcard_node_t * zdj_soundcard_get_available_aux_bus_node( zdj_soundcard_t * soundcard );
 zdj_soundcard_node_t * zdj_soundcard_get_available_clock_bus_node( zdj_soundcard_t * soundcard );
 zdj_soundcard_node_t * zdj_soundcard_get_available_cv_bus_node( zdj_soundcard_t * soundcard );
 zdj_soundcard_node_t * zdj_soundcard_get_available_midi_bus_node( zdj_soundcard_t * soundcard );
 
-bool zdj_soundcard_node_name_has_buffer( zdj_soundcard_node_name_t name );
-
+// Node Calculated Properties
+bool zdj_soundcard_can_add_aux_bus( zdj_soundcard_t * soundcard );
+bool zdj_soundcard_can_add_clock_bus( zdj_soundcard_t * soundcard );
+bool zdj_soundcard_can_add_cv_bus( zdj_soundcard_t * soundcard );
+bool zdj_soundcard_can_add_midi_bus( zdj_soundcard_t * soundcard );
 bool zdj_soundcard_node_name_show_in_mixer( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_io( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_input( zdj_soundcard_node_name_t name );
+bool zdj_soundcard_node_name_is_analog_input( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_output( zdj_soundcard_node_name_t name );
+bool zdj_soundcard_node_name_is_analog_output( zdj_soundcard_node_name_t name );
+bool zdj_soundcard_node_name_is_internal_bus( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_aux_bus( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_physical_port( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_clock( zdj_soundcard_node_name_t name );

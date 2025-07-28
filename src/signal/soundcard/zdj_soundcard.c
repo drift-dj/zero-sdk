@@ -12,9 +12,20 @@
 
 zdj_soundcard_t * zdj_soundcard;
 
+void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node );
+
 zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     // printf( "zdj_soundcard_init: %s\n", entity_id );
     zdj_soundcard_t * soundcard = calloc( 1, sizeof( zdj_soundcard_t ) );
+    soundcard->has_edits = false;
+    zdj_soundcard = soundcard;
+
+    // Bring up the M7's soundcard + shared buffers.
+    soundcard->analog_io_node = zdj_new_io_analog_node( );
+    zdj_io_analog_node_state_t * io_node_state = (zdj_io_analog_node_state_t*)
+    soundcard->analog_io_node->state;
+    soundcard->analog_io_node->update_cb = &_zdj_soundcard_io_fast_cycle_cb;
+    zdj_io_analog_configure( soundcard->analog_io_node );
 
     if( entity_id ) {
         // If explicitly asked, bring up a specific record from the soundcard db.
@@ -23,20 +34,21 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
         // Else bring up the sound card with the last saved state of the __temp__ record.
         zdj_soundcard_fetch_dto( "__temp__", &soundcard->dto );
     }
-    
-    soundcard->has_edits = false;
 
-    // Bring up the M7's soundcard + shared buffers.
-    soundcard->analog_io_node = zdj_new_io_analog_node( );
-    zdj_io_analog_node_state_t * io_node_state = (zdj_io_analog_node_state_t*)soundcard->analog_io_node->state;
-
-    zdj_soundcard = soundcard;
-    
     // Create nodes for everything
     for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
         zdj_soundcard_node_t * node = zdj_soundcard_create_node( i );
         zdj_soundcard_install_node( soundcard, node );
     }
+
+    // Link analog_io pipeline node to io soundcard nodes
+    io_node_state->out_1_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 )->data_pipe;
+    io_node_state->out_2_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 )->data_pipe;
+    io_node_state->in_1_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 )->data_pipe;
+    io_node_state->in_2_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 )->data_pipe;
+
+    // Start the transport pipeline
+    zdj_soundcard_start( soundcard );
 
     return ZDJ_ERROR_OKAY;
 }
@@ -67,318 +79,81 @@ zdj_error_type_t zdj_soundcard_save_temp( zdj_soundcard_t * soundcard ) {
     zdj_soundcard_save( soundcard, "__temp__" );
 }
 
-void zdj_soundcard_set_stereo_for_node( zdj_soundcard_node_t * node, bool stereo ) {
-    zdj_soundcard_node_t * stereo_partner_node = zdj_soundcard_node_get_stereo_partner_node( node );
-    node->stereo = stereo;
-    // zdj_soundcard_dto_set_stereo_for_node_name( node )
-    if( stereo_partner_node ) { 
-        // Link stereo
-        stereo_partner_node->stereo = stereo; 
-        // zdj_soundcard_dto_set_stereo_for_node_name( partner )
+// Signal M7 soundcard to start DAC/ADC transport cycle.
+// Begin polling for 'cycle_ready' messages from M7 soundcard.
+zdj_error_type_t zdj_soundcard_start( zdj_soundcard_t * soundcard ) {
+    zdj_io_analog_run( soundcard->analog_io_node );
+}
 
-        // If stereo, join up the signals
-        if( stereo ) { 
-            stereo_partner_node->signal_type = node->signal_type;
-            // zdj_soundcard_dto_set_sig_type_for_node_name( partner )
-            stereo_partner_node->mute = node->mute;
-            // zdj_soundcard_dto_set_mute_for_node_name( partner )
-        }
+// Signal M7 soundcard to stop DAC/ADC transport cycle.
+zdj_error_type_t zdj_soundcard_stop( zdj_soundcard_t * soundcard ) {
+    zdj_io_analog_stop( soundcard->analog_io_node );
+}
+
+zdj_error_type_t zdj_soundcard_enable_perf( zdj_soundcard_t * soundcard, uint32_t tag_count ) {
+    zdj_pipeline_enable_perf( soundcard->analog_io_node, tag_count );
+    // Add slow-cycle domain nodes to perf here
+}
+
+zdj_error_type_t zdj_soundcard_disable_perf( zdj_soundcard_t * soundcard ) {
+    zdj_pipeline_disable_perf( soundcard->analog_io_node );
+}
+
+zdj_error_type_t zdj_soundcard_reset_perf( zdj_soundcard_t * soundcard ) {
+    zdj_pipeline_reset_perf( soundcard->analog_io_node );
+}
+
+zdj_pipeline_perf_report_t * zdj_soundcard_make_fast_cycle_perf_report(zdj_soundcard_t * soundcard ) {
+    zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t*)soundcard->analog_io_node->state;
+    zdj_pipeline_perf_report_t * report = zdj_pipeline_new_perf_report( );
+    if( soundcard->analog_io_node->perf ) {
+        zdj_pipeline_perf_report_add_tags( report, soundcard->analog_io_node->perf );
     }
+    report->cycle_count = state->shared_audio_state->cycle_count;
+    report->miss_count = state->shared_audio_state->miss_count;
+    return report;
 }
 
-void zdj_soundcard_set_mute_for_node( zdj_soundcard_node_t * node, bool mute ) {
-    node->mute = mute;
-    // zdj_soundcard_dto_set_mute_for_node_name( node )
-    if( node->stereo ) {
-        zdj_soundcard_node_t * stereo_partner_node = zdj_soundcard_node_get_stereo_partner_node( node );
-        if( stereo_partner_node ) { 
-            stereo_partner_node->mute = mute;
-            // zdj_soundcard_dto_set_mute_for_node_name( partner )
-        }
+
+// M7 soundcard has signaled that there is a new cycle of buffers available for processing.
+// This CB sets the cadence for Soundcard's fast-cycle - finish before next cycle or we stutter.
+void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
+    // Note this is currently running as a 'single-buffered' op.
+    // New cycle's data isn't available until after full soundcard has been mixed + DSP'd.
+    // If we get into underrun trouble, go to 'double-buffered' model, immediately
+    // copying last cycle's outut to shared M7 buffer before processing next cycle.
+
+    // Transform input samples from shared M7 buffer to io_node's input float buffers
+    zdj_analog_io_pull_samples( zdj_soundcard->analog_io_node );
+
+    // Reset all node mix_complete flags for this cycle
+    for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
+        zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, i );
+        node->mix_complete = false;
     }
-}
 
+    // mix_inputs will recursively walk the graph of input nodes for a single node.
+    // How to deal with stereo output channels? - do we need to?
+    zdj_soundcard_node_t * ana_out_0 = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 );
+    zdj_soundcard_node_t * ana_out_1 = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1 );
+    zdj_soundcard_mix_input( zdj_soundcard, ana_out_0 );
+    if( !ana_out_0->stereo ) { zdj_soundcard_mix_input( zdj_soundcard, ana_out_1 ); }
 
-bool zdj_soundcard_can_add_aux_bus( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 )->link_count 
-    ) {
-        return true;
-    } else {
-        return false;
-    }
-}
+    zdj_soundcard_node_t * ana_out_2 = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 );
+    zdj_soundcard_node_t * ana_out_3 = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
+    zdj_soundcard_mix_input( zdj_soundcard, ana_out_2 );
+    if( !ana_out_3->stereo ) { zdj_soundcard_mix_input( zdj_soundcard, ana_out_3 ); }
 
-bool zdj_soundcard_can_add_clock_bus( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 )->link_count 
-    ) {
-        return true;
-    } else {
-        return false;
-    }
-}
+    // zdj_soundcard_mix_inputs( zdj_soundcard_get_node_for_name( 
+    //     zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT
+    // ) );
 
-bool zdj_soundcard_can_add_cv_bus( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_0 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_1 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_2 )->link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_3 )->link_count 
-    ) {
-        return true;
-    } else {
-        return false;
-    }
-}
+    // Transform output samples from io_node's output float buffers to shared M7 buffers
+    zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
 
-bool zdj_soundcard_can_add_midi_bus( zdj_soundcard_t * soundcard ) {
-    // if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 )->link_count ||
-    //     !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 )->link_count ||
-    //     !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 )->link_count ||
-    //     !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 )->link_count 
-    // ) {
-    //     return true;
-    // } else {
-        return false;
-    // }
-}
-
-zdj_soundcard_node_t * zdj_soundcard_get_available_aux_bus_node( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 );
-    }
-}
-
-zdj_soundcard_node_t * zdj_soundcard_get_available_clock_bus_node( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 );
-    }
-}
-
-zdj_soundcard_node_t * zdj_soundcard_get_available_cv_bus_node( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_0 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_0 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_1 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_1 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_2 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_2 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_3 )->link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_3 );
-    }
-}
-
-zdj_soundcard_node_t * zdj_soundcard_get_available_midi_bus_node( zdj_soundcard_t * soundcard ) {
-    return NULL;
-}
-
-
-
-// Step to next sig type for node.
-zdj_error_type_t zdj_soundcard_cycle_pad_for_io_node(
-    zdj_soundcard_t * soundcard,
-    zdj_soundcard_node_t * node
-) {
-    if( zdj_soundcard_node_name_is_io( node->name ) ) {
-        zdj_soundcard_signal_type_t sig_type = zdj_soundcard_dto_get_sigtype_for_node_name( 
-            &soundcard->dto, node->name 
-        );
-        switch ( sig_type ){
-            case ZDJ_SOUNDCARD_SIGNAL_CON_0_DBV:
-                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_PRO_PLUS_4_DBU;
-                break;
-            case ZDJ_SOUNDCARD_SIGNAL_PRO_PLUS_4_DBU:
-                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_EURO_AUDIO;
-                break;
-            case ZDJ_SOUNDCARD_SIGNAL_EURO_AUDIO:
-                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_CON_0_DBV;
-                break;
-        } 
-        zdj_soundcard_dto_set_sigtype_for_node_name( 
-            &soundcard->dto, node->name, node->signal_type 
-        );
-    }
-}
-
-bool zdj_soundcard_node_name_show_in_mixer( zdj_soundcard_node_name_t name ) {
-    return true;
-}
-
-bool zdj_soundcard_node_name_has_buffer( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return false;
-        default: return true;
-    }
-}
-
-bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3:
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_io( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_physical_port( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_input( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_output( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_aux_bus( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_clock( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_cv( zdj_soundcard_node_name_t name ) {
-    switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_CV_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_CV_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_CV_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_CV_3: return true;
-        default: return false;
-    }
-}
-
-bool zdj_soundcard_node_name_is_muted( zdj_soundcard_node_name_t name ) {
-    return false;
-}
-
-bool zdj_soundcard_node_name_is_midi( zdj_soundcard_node_name_t name ) {
-    return false;
-}
-
-bool zdj_soundcard_node_name_is_usb( zdj_soundcard_node_name_t name ) {
-    return false;
+    // Record bus needs special multi-channel mix fn.
+    // zdj_soundcard_mix_inputs( zdj_soundcard_get_node_for_name( 
+    //     zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS 
+    // ) );
 }
 

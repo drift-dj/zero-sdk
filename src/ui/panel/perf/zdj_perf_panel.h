@@ -18,13 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_EXTERNAL_DECK_H
-#define ZDJ_EXTERNAL_DECK_H
+#ifndef ZDJ_PERF_PANEL_H
+#define ZDJ_PERF_PANEL_H
 
-#include <stdbool.h>
+#include <zerodj/signal/pipeline/perf/zdj_pipeline_perf.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 
 typedef struct {
+    bool deployed;
+    bool event_capture;
+    zdj_view_t * log_view;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
+} zdj_perf_panel_state_t;
 
-} zdj_external_deck_t;
+zdj_view_t * zdj_new_perf_panel( void );
 
 #endif

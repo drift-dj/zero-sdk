@@ -31,6 +31,8 @@ typedef struct {
     void * main_view_state;
     void ( *options_view_cb )( void* );
     void * options_view_state;
+    bool node_selection_is_edit;
+    zdj_soundcard_node_name_t edit_name;
     zdj_soundcard_node_t * new_node_selection; // Will be set during node selection page
     zdj_soundcard_node_t * remove_node_selection; // Will be set during node selection page
     int meter_status_counter;

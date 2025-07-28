@@ -24,13 +24,11 @@ add_library(zerodj
     src/library/api/song/zdj_library_api_performance.c
     src/library/api/song/zdj_library_api_song_graph.c
     src/library/api/song/zdj_library_api_song.c
+    src/signal/deck/zdj_deck.c
     src/signal/math/zdj_signal_math.c
     src/signal/pipeline/zdj_pipeline.c
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
-    src/signal/pipeline/node/analysis/meter/zdj_audio_meter_node.c
-    src/signal/pipeline/node/analysis/meter/zdj_clock_meter_node.c
-    src/signal/pipeline/node/analysis/meter/zdj_cv_meter_node.c
-    src/signal/pipeline/node/analysis/meter/zdj_midi_meter_node.c
+    src/signal/pipeline/node/analysis/meter/zdj_meter_node.c
     src/signal/pipeline/node/analysis/waveform/zdj_waveform_comp_build_node.c
     src/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.c
     src/signal/pipeline/node/audio/decode/zdj_decode_node.c
@@ -39,8 +37,11 @@ add_library(zerodj
     src/signal/pipeline/node/audio/io/zdj_io_usb_node.c
     src/signal/pipeline/node/file/zdj_file_read_node.c
     src/signal/pipeline/node/file/zdj_file_write_node.c
+    src/signal/pipeline/perf/zdj_pipeline_perf.c
     src/signal/soundcard/zdj_soundcard.c
+    src/signal/soundcard/zdj_soundcard_deck.c
     src/signal/soundcard/zdj_soundcard_dto.c
+    src/signal/soundcard/zdj_soundcard_mix.c
     src/signal/soundcard/zdj_soundcard_node.c
     src/system/boot/zdj_boot.c
     src/system/debug/zdj_debug.c
@@ -72,6 +73,7 @@ add_library(zerodj
     src/ui/font/zdj_font.c
     src/ui/panel/accessibility/zdj_accessibility_panel.c
     src/ui/panel/debug/zdj_debug_panel.c
+    src/ui/panel/perf/zdj_perf_panel.c
     src/ui/panel/widget/zdj_widget_panel.c
     src/ui/view/zdj_view_stack.c
     src/ui/view/asset_view/zdj_asset_view.c
@@ -108,8 +110,8 @@ add_library(zerodj
     src/ui/view/soundcard_view/meters/zdj_soundcard_midi_meter.c
     src/ui/view/soundcard_view/meters/zdj_soundcard_usb_meter.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options.c
-    src/ui/view/soundcard_view/options/zdj_soundcard_options_audio_io.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_audio_bus.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_port_input.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_port_output.c
     src/ui/view/soundcard_view/select_node/zdj_soundcard_select_node.c
     src/ui/view/text_input_view/zdj_text_input_view.c

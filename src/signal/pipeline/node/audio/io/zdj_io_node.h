@@ -22,13 +22,19 @@
 #define ZDJ_IO_NODE_H
 
 #include <zerodj/library/zdj_library.h>
-#include <zerodj/system/m7/zdj_m7.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
+#include <zerodj/signal/pipeline/perf/zdj_pipeline_perf.h>
+#include <zerodj/system/m7/zdj_m7.h>
 
 typedef struct {
     zdj_shared_audio_state_t * shared_audio_state;
     int32_t * shared_dac_buffer;
     volatile int32_t * shared_adc_buffer;
+    zdj_pipeline_node_t * out_1_buffer;
+    zdj_pipeline_node_t * out_2_buffer;
+    zdj_pipeline_node_t * in_1_buffer;
+    zdj_pipeline_node_t * in_2_buffer;
+    bool running;
 } zdj_io_analog_node_state_t;
 
 zdj_pipeline_node_t * zdj_new_io_analog_node( void );
@@ -38,5 +44,8 @@ zdj_error_type_t zdj_io_analog_stop( zdj_pipeline_node_t * node );
 
 zdj_pipeline_node_t * zdj_new_io_usb_node( );
 zdj_error_type_t zdj_io_update_usb_config( zdj_pipeline_node_t * node );
+
+zdj_error_type_t zdj_analog_io_push_samples( zdj_pipeline_node_t * node );
+zdj_error_type_t zdj_analog_io_pull_samples( zdj_pipeline_node_t * node );
 
 #endif

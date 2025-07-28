@@ -175,7 +175,9 @@ void zdj_menu_view_add_padding( zdj_view_t * menu_view, int size ) {
 }
 
 void zdj_menu_view_remove_all_items( zdj_view_t * menu_view ) {
+    if( !menu_view ) { return; }
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t *)menu_view->state;
+    if( menu_state->item_count == 0 ) { return; }
 
     // Dump the current scroll_view
     zdj_remove_subview_of( menu_view, menu_state->scroll_view );

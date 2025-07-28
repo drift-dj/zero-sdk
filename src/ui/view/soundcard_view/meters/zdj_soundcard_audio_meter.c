@@ -171,6 +171,7 @@ zdj_view_t * zdj_new_audio_mono_meter_view(
 void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_soundcard_meter_state_t * state = (zdj_soundcard_meter_state_t*)view->state;
     zdj_soundcard_node_config_context_t * config = state->config_context;
+
     if( state->is_hilite ) {
         state->fader->frame->w = 12;
         state->detail->frame->w = 7;
@@ -194,7 +195,6 @@ void _zdj_audio_meter_handle_hmi( zdj_view_t * view, void * _event ) {
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)context->options_view_state;
     
     if(e->id == ZDJ_HMI_ENCO_2_JOG && e->type == ZDJ_HMI_EVENT_RELEASE ) {
-        printf( "show detail\n" );
         zdj_push_subview( zdj_root_view( ), zdj_new_soundcard_options( context ), true );
     }
 

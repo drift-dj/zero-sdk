@@ -18,35 +18,60 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_PLAYBACK_DECK_H
-#define ZDJ_PLAYBACK_DECK_H
+#ifndef ZDJ_DECK_H
+#define ZDJ_DECK_H
 
 #include <stdbool.h>
 #include <pthread.h>
 
+#include <zerodj/signal/pipeline/zdj_pipeline.h>
+
+typedef enum {
+    ZDJ_DECK_TYPE_PLAYBACK,
+    ZDJ_DECK_TYPE_EXTERNAL,
+    ZDJ_DECK_TYPE_TEST
+} zdj_deck_type_t;
+
+typedef enum {
+    ZDJ_DECK_NUM_1,
+    ZDJ_DECK_NUM_2,
+    ZDJ_DECK_NUM_EXT
+} zdj_deck_num_t;
+
 typedef struct {
-
-} zdj_playback_transport_t;
+    pthread_t * control_sim_thread;
+} zdj_deck_transport_t;
 
 typedef struct {
-    // Links into the soundcard graph
-    zdj_pipeline_node_t * input_link;
-    zdj_pipeline_node_t * prefade_link;
-    zdj_pipeline_node_t * bus_link;
+    zdj_deck_type_t type;
+    zdj_deck_num_t num;
 
-    // Internal audio pipeline
+    // Link into the soundcard graph's fast-cycle mix flow.
+    void ( *get_edge_data )( zdj_pipeline_node_t * );
+
+    // internal state
+    void * state;
+    zdj_deck_transport_t transport;
+} zdj_deck_t;
+
+typedef struct {
+    zdj_pipeline_node_t * tone_node;
+} zdj_test_deck_state_t;
+
+typedef struct {
+     // Internal audio pipeline
     zdj_pipeline_node_t * dsp_node;
     zdj_pipeline_node_t * tsm_node;
     zdj_pipeline_node_t * decode_node;
     zdj_pipeline_node_t * file_node;
+} zdj_playback_deck_state_t;
 
-    pthread_t * control_sim_thread;
+typedef struct {
 
-    zdj_playback_transport_t transport;
-} zdj_playback_deck_t;
+} zdj_external_deck_state_t;
 
-zdj_playback_deck_t * zdj_new_playback_deck( void );
-zdj_error_type_t zdj_deinit_playback_deck( zdj_playback_deck_t * deck );
+zdj_deck_t * zdj_new_deck( zdj_deck_type_t type, zdj_deck_num_t num );
+zdj_error_type_t zdj_deinit_deck( zdj_deck_t * deck );
 
 // One entry point for handling control inputs
 // One update cycle for running the control simulation

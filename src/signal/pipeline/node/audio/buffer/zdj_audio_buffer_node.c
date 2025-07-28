@@ -8,10 +8,12 @@
 #include <zerodj/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.h>
 
 
+static float * _adj_audio_buffer_node_get_data( zdj_pipeline_node_t * node );
 static void _zdj_audio_buffer_node_deinit_state( zdj_pipeline_node_t * node );
 
 zdj_pipeline_node_t * zdj_new_audio_buffer_node( int buffer_sample_count, zdj_audio_buffer_stereo_mode_t stereo_mode ) {
     zdj_pipeline_node_t * node = zdj_new_pipeline_node( );
+    node->get_data = &_adj_audio_buffer_node_get_data;
     node->deinit_state = &_zdj_audio_buffer_node_deinit_state;
 
     // Set up state.
@@ -22,6 +24,11 @@ zdj_pipeline_node_t * zdj_new_audio_buffer_node( int buffer_sample_count, zdj_au
     state->buffer = calloc( buffer_sample_count * stereo_mode, sizeof( float ) );
 
     return node;
+}
+
+float * _adj_audio_buffer_node_get_data( zdj_pipeline_node_t * node ) {
+    zdj_audio_buffer_node_state_t * state = (zdj_audio_buffer_node_state_t*)node->state;
+    return state->buffer;
 }
 
 void _zdj_audio_buffer_node_deinit_state( zdj_pipeline_node_t * node ) {

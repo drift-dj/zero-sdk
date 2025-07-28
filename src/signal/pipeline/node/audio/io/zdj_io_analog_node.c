@@ -9,11 +9,13 @@
 
 #include <zerodj/system/m7/zdj_m7.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
+#include <zerodj/signal/pipeline/perf/zdj_pipeline_perf.h>
+#include <zerodj/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.h>
 #include <zerodj/signal/pipeline/node/audio/io/zdj_io_node.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 static void _zdj_io_analog_node_deinit_state( zdj_pipeline_node_t * node );
-void * _zdj_io_analog_thread_main( void * arg );
-
+void * _zdj_io_analog_fast_cycle_thread_main( void * arg );
 
 zdj_pipeline_node_t * zdj_new_io_analog_node( void ) {
     // Make node
@@ -28,15 +30,28 @@ zdj_pipeline_node_t * zdj_new_io_analog_node( void ) {
     state->shared_adc_buffer = (volatile int32_t*)mmap(0, 0x8000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_ADC_BUF);
     state->shared_dac_buffer = (int32_t*)mmap(0, 0x8000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_DAC_BUF);
     close( mem_fd );
+
+    state->in_1_buffer = zdj_new_audio_buffer_node( 
+        ZDJ_SOUNDCARD_BUF_LEN, ZDJ_AUDIO_BUFFER_STEREO 
+    );
+    state->in_2_buffer = zdj_new_audio_buffer_node( 
+        ZDJ_SOUNDCARD_BUF_LEN, ZDJ_AUDIO_BUFFER_STEREO 
+    );
+    state->out_1_buffer = zdj_new_audio_buffer_node( 
+        ZDJ_SOUNDCARD_BUF_LEN, ZDJ_AUDIO_BUFFER_STEREO 
+    );
+    state->out_2_buffer = zdj_new_audio_buffer_node( 
+        ZDJ_SOUNDCARD_BUF_LEN, ZDJ_AUDIO_BUFFER_STEREO 
+    );
     
     return node;
 }
 
 zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node ) {
     zdj_io_analog_node_state_t * node_state = (zdj_io_analog_node_state_t*)node->state;
-    // printf( "zdj_io_analog_configure\n" );
+    printf( "zdj_io_analog_configure\n" );
     // Write inputs to shared buffer_state struct
-    node_state->shared_audio_state->buffer_len = 256;
+    node_state->shared_audio_state->buffer_len = ZDJ_SOUNDCARD_BUF_LEN;
 
     node_state->shared_audio_state->dac_cfg_gain_boost_0 = 0;
     node_state->shared_audio_state->dac_cfg_gain_boost_1 = 0;
@@ -46,15 +61,6 @@ zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node ) {
     node_state->shared_audio_state->dac_cfg_volume_1 = 0x30;
     node_state->shared_audio_state->dac_cfg_volume_2 = 0x30;
     node_state->shared_audio_state->dac_cfg_volume_3 = 0x30;
-
-    // printf( "shared audio state: %d %d %lu %u %d %d\n",
-    //     node_state->shared_audio_state->cycle_ready,
-    //     node_state->shared_audio_state->buffer_len,
-    //     node_state->shared_audio_state->cycle_count,
-    //     node_state->shared_audio_state->miss_count,
-    //     node_state->shared_audio_state->dac_cfg_gain_boost_0,
-    //     node_state->shared_audio_state->dac_cfg_gain_boost_1
-    // );
 
     // Write cfg_dac request to shared buffer_state struct
     zdj_m7_shared_msg_buffer( )->update_audio_cfg_req = true;
@@ -71,20 +77,57 @@ zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node ) {
 
 zdj_error_type_t zdj_io_analog_run( zdj_pipeline_node_t * node ) {
     zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t *)node->state;
-
-    printf( "zdj_io_analog_run\n" );
+    state->running = true;
     zdj_m7_shared_msg_buffer( )->activate_audio_req = true;
 
     // Start update thread
     node->thread = malloc( sizeof( pthread_t ) );
-    pthread_create( node->thread, NULL, _zdj_io_analog_thread_main, node );
+    pthread_create( node->thread, NULL, _zdj_io_analog_fast_cycle_thread_main, node );
 }
 
 zdj_error_type_t zdj_io_analog_stop( zdj_pipeline_node_t * node ) {
     zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t *)node->state;
-
-    printf( "zdj_io_analog_stop\n" );
+    state->running = false;
     zdj_m7_shared_msg_buffer( )->deactivate_audio_req = true;
+}
+
+// Transform samples from soundcard audio buffers to shared M7 buffer
+zdj_error_type_t zdj_analog_io_push_samples( zdj_pipeline_node_t * node ) {
+    zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t *)node->state;
+    zdj_audio_buffer_node_state_t * out_1_state = (zdj_audio_buffer_node_state_t*)state->out_1_buffer->state;
+    zdj_audio_buffer_node_state_t * out_2_state = (zdj_audio_buffer_node_state_t*)state->out_2_buffer->state;
+
+    double xfrm = 0;
+    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+        xfrm = (double)out_1_state->buffer[ i*2+0 ] * INT32_MAX + INT16_MAX;
+        state->shared_dac_buffer[ i*4+0 ] = (uint32_t)xfrm;
+        xfrm = (double)out_1_state->buffer[ i*2+1 ] * INT32_MAX + INT16_MAX;
+        state->shared_dac_buffer[ i*4+1 ] = (uint32_t)xfrm;
+        xfrm = (double)out_2_state->buffer[ i*2+0 ] * INT32_MAX + INT16_MAX;
+        state->shared_dac_buffer[ i*4+2 ] = (uint32_t)xfrm;
+        xfrm = (double)out_2_state->buffer[ i*2+1 ] * INT32_MAX + INT16_MAX;
+        state->shared_dac_buffer[ i*4+3 ] = (uint32_t)xfrm;
+    }
+}
+
+// Transform samples from shared M7 buffer to soundcard audio buffers
+zdj_error_type_t zdj_analog_io_pull_samples( zdj_pipeline_node_t * node ) {
+    zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t *)node->state;
+    zdj_audio_buffer_node_state_t * in_1_state = (zdj_audio_buffer_node_state_t*)state->in_1_buffer->state;
+    zdj_audio_buffer_node_state_t * in_2_state = (zdj_audio_buffer_node_state_t*)state->in_2_buffer->state;
+
+    double UINT24_MAX = 16777215;
+    double xfrm = 0;
+    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+        xfrm = ((double)(state->shared_adc_buffer[ i*8+1 ] >> 8) / UINT24_MAX - 0.5f) * 2;
+        in_1_state->buffer[ i*2+0 ] = (float)xfrm;
+        xfrm = ((double)(state->shared_adc_buffer[ i*8+2 ] >> 8) / UINT24_MAX - 0.5f) * 2;
+        in_1_state->buffer[ i*2+1 ] = (float)xfrm;
+        xfrm = ((double)(state->shared_adc_buffer[ i*8+3 ] >> 8) / UINT24_MAX - 0.5f) * 2;
+        in_2_state->buffer[ i*2+0 ] = (float)xfrm;
+        xfrm = ((double)(state->shared_adc_buffer[ i*8+4 ] >> 8) / UINT24_MAX - 0.5f) * 2;
+        in_2_state->buffer[ i*2+1 ] = (float)xfrm;
+    }
 }
 
 void _zdj_io_analog_node_deinit_state( zdj_pipeline_node_t * node ) {
@@ -97,11 +140,14 @@ void _zdj_io_analog_node_deinit_state( zdj_pipeline_node_t * node ) {
 
 // Ensure that you check cycle_ready often enough that you can fill
 // the shared ADC/DAC back buffers before the M7 core needs them.
-void * _zdj_io_analog_thread_main( void * arg ) {
+void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
     zdj_pipeline_node_t * node = (zdj_pipeline_node_t *)arg;
-    // printf( "_zdj_io_analog_thread_main: %p\n", node );
+    // printf( "_zdj_io_analog_fast_cycle_thread_main: %p\n", node );
     zdj_io_analog_node_state_t * node_state = (zdj_io_analog_node_state_t *)node->state;
 
+    // int mem_fd = open( "/dev/mem", O_RDWR );
+    // zdj_shared_audio_state_t * shared_audio_state = (zdj_shared_audio_state_t*)mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_AUDIO_STATE_ADDR);
+    // close( mem_fd );
 
     float cycle_sec = (float)(node_state->shared_audio_state->buffer_len) / 44100.0f;
     long cycle_nano = (long)(cycle_sec * 1000000000);
@@ -110,6 +156,8 @@ void * _zdj_io_analog_thread_main( void * arg ) {
     // Note that this is async w/M7 core so actual timing will be arbitrary.
     long cycle_time = cycle_nano / 8.0; 
     struct timespec cycle_delay = { 0, cycle_time };
+
+    // nanosleep( &cycle_delay, NULL );
 
     while( 1 ) {
         // Check for cycle_ready
@@ -127,14 +175,28 @@ void * _zdj_io_analog_thread_main( void * arg ) {
 
             // Don't spend a ton of time in the CB.  
             // You want to be done before the next cycle_ready assert.
-            if( node->update_cb ) { node->update_cb( node ); }
+            if( node->update_cb ) { 
+                if( node->perf_enabled && node->perf->tag_count < node->perf->tag_max ) {
+                    // Capture perf metrics on soundcard mix cycle
+                    node->perf->tags[ node->perf->tag_count ].name = ZDJ_PERF_TAG_FAST_CYCLE;
+                    node->perf->tags[ node->perf->tag_count ].start = zdj_perf_time( );
+                    node->update_cb( node );
+                    node->perf->tags[ node->perf->tag_count ].end = zdj_perf_time( );
+                    node->perf->tag_count++;
+                } else {
+                    node->update_cb( node );
+                }
+            }
         } 
 
         // Sleep thread until next check
-        nanosleep( &cycle_delay, NULL );
+        // nanosleep( &cycle_delay, NULL );
 
         // Exit thread on command
-        // if( !node_state->shared_audio_state->running ) { return NULL; }
+        if( node_state && node_state->running == false ) { 
+            // printf( "exiting thread\n" );
+            return NULL; 
+        }
     }
 
     return NULL;

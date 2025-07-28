@@ -29,7 +29,6 @@
 
 zdj_view_t * zdj_new_soundcard_select_node( 
     zdj_soundcard_node_config_context_t * context,
-    bool is_edit,
     zdj_soundcard_node_name_t edit_node_name
 );
 
@@ -39,6 +38,11 @@ zdj_error_type_t zdj_soundcard_build_select_node_output_menu(
 
 zdj_error_type_t zdj_soundcard_build_select_node_input_menu( 
     zdj_view_t * menu, zdj_soundcard_node_config_context_t * context 
+);
+
+zdj_error_type_t zdj_soundcard_build_select_node_internal_bus_menu( 
+    zdj_view_t * menu,
+    zdj_soundcard_node_config_context_t * context 
 );
 
 zdj_error_type_t zdj_soundcard_build_select_node_aux_bus_menu( 

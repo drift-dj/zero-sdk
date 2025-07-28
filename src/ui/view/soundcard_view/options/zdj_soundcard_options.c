@@ -115,13 +115,11 @@ soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_no
     zdj_soundcard_node_t * node 
 ) {
     
-    if ( zdj_soundcard_node_name_is_output( node->name ) ) {
-        // Return node's source node link
-        printf( "Showing options for output node\n" );
-        return &zdj_soundcard_options_update_port_output_layout;
-    } else if ( zdj_soundcard_node_name_is_audio( node->name ) ) {
-        if( zdj_soundcard_node_name_is_io( node->name ) ) {
-            return &zdj_soundcard_options_update_audio_io_layout;
+    if ( zdj_soundcard_node_name_is_audio( node->name ) ) {
+        if ( zdj_soundcard_node_name_is_output( node->name ) ) {
+            return &zdj_soundcard_options_update_port_output_layout;
+        } else if( zdj_soundcard_node_name_is_input( node->name ) ) {
+            return &zdj_soundcard_options_update_port_input_layout;
         } else {
             return &zdj_soundcard_options_update_audio_bus_layout;
         }
@@ -155,9 +153,12 @@ void _zdj_soundcard_options_handle_hmi( zdj_view_t * view, void * _event ) {
         zdj_view_t * item = zdj_menu_view_item_at_current_scroll_index( state->menu );
         
         // Send events into view's hmi handler
+        
         if ( zdj_soundcard_node_name_is_audio( context->node->name ) ) {
-            if( zdj_soundcard_node_name_is_io( context->node->name ) ) {
-                zdj_soundcard_options_audio_io_hmi( view, _event );
+            if ( zdj_soundcard_node_name_is_output( context->node->name ) ) {
+                zdj_soundcard_options_port_output_hmi( view, _event );
+            } else if( zdj_soundcard_node_name_is_input( context->node->name ) ) {
+                zdj_soundcard_options_port_input_hmi( view, _event );
             } else {
                 zdj_soundcard_options_audio_bus_hmi( view, _event );
             }

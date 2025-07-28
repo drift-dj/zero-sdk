@@ -27,6 +27,7 @@
 #include <semaphore.h>
 
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/signal/pipeline/perf/zdj_pipeline_perf.h>
 
 #define ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE 2048
 
@@ -105,7 +106,7 @@ typedef struct zdj_pipeline_node_t {
     zdj_error_type_t ( *reset_window )( struct zdj_pipeline_node_t *, uint32_t );
     zdj_error_type_t ( *resize_window )( struct zdj_pipeline_node_t *, uint32_t, uint32_t );
 
-    zdj_error_type_t ( *get_data )( struct zdj_pipeline_node_t *, uint32_t, void * );
+    float * ( *get_data )( struct zdj_pipeline_node_t * );
 
     // Push funcs - Used when front-end code tells pipeline when to process data.
     // e.g. FX processor
@@ -124,14 +125,16 @@ typedef struct zdj_pipeline_node_t {
     zdj_error_type_t ( *open )( struct zdj_pipeline_node_t * );
     zdj_error_type_t ( *close )( struct zdj_pipeline_node_t * );
 
-    
-    double trim;
-    double pan;
-    void ** bus_effects;
+    bool perf_enabled;
+    zdj_pipeline_perf_state_t * perf;
 } zdj_pipeline_node_t;
 
 zdj_pipeline_node_t * zdj_new_pipeline_node( void );
 zdj_error_type_t zdj_deinit_pipeline_node( zdj_pipeline_node_t * node );
+
+zdj_error_type_t zdj_pipeline_enable_perf( zdj_pipeline_node_t * node, uint32_t tag_count );
+zdj_error_type_t zdj_pipeline_disable_perf( zdj_pipeline_node_t * node );
+zdj_error_type_t zdj_pipeline_reset_perf( zdj_pipeline_node_t * node );
 
 bool zdj_pipeline_window_state_get_valid_indexes( 
     zdj_pipeline_window_state_t * window_state, 

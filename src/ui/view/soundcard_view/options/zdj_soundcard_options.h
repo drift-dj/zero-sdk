@@ -44,9 +44,10 @@ soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_no
 );
 
 void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view );
+void zdj_soundcard_options_update_port_input_layout( zdj_view_t * view );
 void zdj_soundcard_options_update_audio_bus_layout( zdj_view_t * view );
-void zdj_soundcard_options_update_audio_io_layout( zdj_view_t * view );
-void zdj_soundcard_options_audio_io_hmi( zdj_view_t * view, void * _event );
+void zdj_soundcard_options_port_output_hmi( zdj_view_t * view, void * _event );
+void zdj_soundcard_options_port_input_hmi( zdj_view_t * view, void * _event );
 void zdj_soundcard_options_audio_bus_hmi( zdj_view_t * view, void * _event );
 
 #endif
