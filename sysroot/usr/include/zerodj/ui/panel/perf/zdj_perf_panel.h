@@ -18,34 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_IO_NODE_H
-#define ZDJ_IO_NODE_H
+#ifndef ZDJ_PERF_PANEL_H
+#define ZDJ_PERF_PANEL_H
 
-#include <zerodj/library/zdj_library.h>
-#include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/perf/zdj_pipeline_perf.h>
-#include <zerodj/system/m7/zdj_m7.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 
 typedef struct {
-    zdj_shared_audio_state_t * shared_audio_state;
-    int32_t * shared_dac_buffer;
-    volatile int32_t * shared_adc_buffer;
-    zdj_pipeline_node_t * out_1_buffer;
-    zdj_pipeline_node_t * out_2_buffer;
-    zdj_pipeline_node_t * in_1_buffer;
-    zdj_pipeline_node_t * in_2_buffer;
-    bool running;
-} zdj_io_analog_node_state_t;
+    bool deployed;
+    bool event_capture;
+    zdj_view_t * log_view;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
+} zdj_perf_panel_state_t;
 
-zdj_pipeline_node_t * zdj_new_io_analog_node( void );
-zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node );
-zdj_error_type_t zdj_io_analog_run( zdj_pipeline_node_t * node );
-zdj_error_type_t zdj_io_analog_stop( zdj_pipeline_node_t * node );
-
-zdj_pipeline_node_t * zdj_new_io_usb_node( );
-zdj_error_type_t zdj_io_update_usb_config( zdj_pipeline_node_t * node );
-
-zdj_error_type_t zdj_analog_io_push_samples( zdj_pipeline_node_t * node );
-zdj_error_type_t zdj_analog_io_pull_samples( zdj_pipeline_node_t * node );
+zdj_view_t * zdj_new_perf_panel( void );
 
 #endif

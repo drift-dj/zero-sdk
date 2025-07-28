@@ -18,34 +18,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_IO_NODE_H
-#define ZDJ_IO_NODE_H
+#ifndef ZDJ_TEST_DECK_H
+#define ZDJ_TEST_DECK_H
 
-#include <zerodj/library/zdj_library.h>
-#include <zerodj/signal/pipeline/zdj_pipeline.h>
-#include <zerodj/signal/pipeline/perf/zdj_pipeline_perf.h>
-#include <zerodj/system/m7/zdj_m7.h>
+#include <stdbool.h>
+#include <pthread.h>
 
 typedef struct {
-    zdj_shared_audio_state_t * shared_audio_state;
-    int32_t * shared_dac_buffer;
-    volatile int32_t * shared_adc_buffer;
-    zdj_pipeline_node_t * out_1_buffer;
-    zdj_pipeline_node_t * out_2_buffer;
-    zdj_pipeline_node_t * in_1_buffer;
-    zdj_pipeline_node_t * in_2_buffer;
-    bool running;
-} zdj_io_analog_node_state_t;
 
-zdj_pipeline_node_t * zdj_new_io_analog_node( void );
-zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node );
-zdj_error_type_t zdj_io_analog_run( zdj_pipeline_node_t * node );
-zdj_error_type_t zdj_io_analog_stop( zdj_pipeline_node_t * node );
+} zdj_test_transport_t;
 
-zdj_pipeline_node_t * zdj_new_io_usb_node( );
-zdj_error_type_t zdj_io_update_usb_config( zdj_pipeline_node_t * node );
+typedef struct {
+    // Links into the soundcard graph
+    zdj_pipeline_node_t * input_link;
+    zdj_pipeline_node_t * prefade_link;
+    zdj_pipeline_node_t * bus_link;
 
-zdj_error_type_t zdj_analog_io_push_samples( zdj_pipeline_node_t * node );
-zdj_error_type_t zdj_analog_io_pull_samples( zdj_pipeline_node_t * node );
+    // Internal audio pipeline
+    zdj_pipeline_node_t * tone_node;
+
+    zdj_test_transport_t transport;
+} zdj_test_deck_t;
+
+zdj_test_deck_t * zdj_new_test_deck( void );
+zdj_error_type_t zdj_deinit_test_deck( zdj_test_deck_t * deck );
+
+// One entry point for handling control inputs
+// One update cycle for running the control simulation
+// One entry point for data requests from other pipelines
+
 
 #endif

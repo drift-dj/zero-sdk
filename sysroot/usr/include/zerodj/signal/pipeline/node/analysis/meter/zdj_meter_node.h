@@ -24,26 +24,49 @@
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
+typedef enum {
+    ZDJ_METER_NODE_TYPE_AUDIO,
+    ZDJ_METER_NODE_TYPE_CLOCK,
+    ZDJ_METER_NODE_TYPE_CV,
+    ZDJ_METER_NODE_TYPE_MIDI
+} zdj_meter_node_type_t;
 
 typedef struct {
-    zdj_pipeline_node_t * buffer_node;
-} zdj_audio_meter_node_state_t;
+    zdj_meter_node_type_t type;
+    zdj_pipeline_node_t * signal_node;
+    int channel_count;
+    // instant meter data
+    float buffer_avg_0;
+    float buffer_avg_1;
+    // audio vu meter data
+    float lowpass_val_0;
+    float lowpass_peak_0;
+    float lowpass_val_1;
+    float lowpass_peak_1;
+    // audio chan 0 ol lamps
+    bool has_ol_0_0;
+    int timer_ol_0_0;
+    bool has_ol_1_0;
+    int timer_ol_1_0;
+    bool has_clip_0;
+    int timer_clip_0;
+    // audio chan 1 ol lamps
+    bool has_ol_0_1;
+    int timer_ol_0_1;
+    bool has_ol_1_1;
+    int timer_ol_1_1;
+    bool has_clip_1;
+    int timer_clip_1;
+    // clock signal data
+    float clock_bpm;
+    bool has_clock_pulse;
+    int timer_clock_pulse;
+    int clock_beat;
+} zdj_meter_node_state_t;
 
-typedef struct {
-    zdj_pipeline_node_t * clock_node;
-} zdj_clock_meter_node_state_t;
-
-typedef struct {
-    zdj_pipeline_node_t * cv_node;
-} zdj_cv_meter_node_state_t;
-
-typedef struct {
-    zdj_pipeline_node_t * midi_node;
-} zdj_midi_meter_node_state_t;
-
-zdj_pipeline_node_t * zdj_new_audio_meter_node( zdj_pipeline_node_t * buffer_node );
-zdj_pipeline_node_t * zdj_new_clock_meter_node( zdj_pipeline_node_t * clock_node );
-zdj_pipeline_node_t * zdj_new_cv_meter_node( zdj_pipeline_node_t * cv_node );
-zdj_pipeline_node_t * zdj_new_midi_meter_node( zdj_pipeline_node_t * midi_node );
+zdj_pipeline_node_t * zdj_new_meter_node( 
+    zdj_meter_node_type_t type, 
+    zdj_pipeline_node_t * signal_node 
+);
 
 #endif
