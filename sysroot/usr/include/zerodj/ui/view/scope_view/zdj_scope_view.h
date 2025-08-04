@@ -18,39 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_PLAYBACK_DECK_H
-#define ZDJ_PLAYBACK_DECK_H
+#ifndef ZDJ_SCOPE_VIEW_H
+#define ZDJ_SCOPE_VIEW_H
 
 #include <stdbool.h>
-#include <pthread.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 typedef struct {
+    zdj_soundcard_node_name_t node_name;
+    bool needs_layout_update;
+    zdj_soundcard_t * soundcard;
+    zdj_view_t * waveform;
+    zdj_view_t * menu;
+} zdj_scope_view_state_t;
 
-} zdj_playback_transport_t;
-
-typedef struct {
-    // Links into the soundcard graph
-    zdj_pipeline_node_t * input_link;
-    zdj_pipeline_node_t * prefade_link;
-    zdj_pipeline_node_t * bus_link;
-
-    // Internal audio pipeline
-    zdj_pipeline_node_t * dsp_node;
-    zdj_pipeline_node_t * tsm_node;
-    zdj_pipeline_node_t * decode_node;
-    zdj_pipeline_node_t * file_node;
-
-    pthread_t * control_sim_thread;
-
-    zdj_playback_transport_t transport;
-} zdj_playback_deck_t;
-
-zdj_playback_deck_t * zdj_new_playback_deck( void );
-zdj_error_type_t zdj_deinit_playback_deck( zdj_playback_deck_t * deck );
-
-// One entry point for handling control inputs
-// One update cycle for running the control simulation
-// One entry point for data requests from other pipelines
-
+zdj_view_t * zdj_new_scope_view( zdj_soundcard_t * soundcard, zdj_soundcard_node_name_t node_name );
 
 #endif

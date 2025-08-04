@@ -127,23 +127,18 @@ typedef struct {
 } zdj_soundcard_view_state_t;
 
 zdj_view_t * zdj_new_soundcard_view( zdj_soundcard_t * soundcard );
-// zdj_error_type_t zdj_soundcard_view_add_meter_for_node( 
-//     zdj_view_t * menu, 
-//     zdj_soundcard_node_t * node,
-//     zdj_soundcard_meter_label_t label,
-//     bool show_detail,
-//     int x
-// );
 int zdj_soundcard_view_add_meter_for_node( 
     zdj_view_t * menu, 
     zdj_soundcard_node_name_t meter_name,
     bool show_detail,
+    bool mono,
     int x
 );
 zdj_view_t * zdj_soundcard_view_new_meter_for_node( 
     zdj_soundcard_node_t * node,
     zdj_soundcard_meter_label_t label,
-    bool show_detail
+    bool show_detail,
+    bool mono
 );
 zdj_soundcard_node_config_context_t * zdj_soundcard_new_node_config_context( void );
 

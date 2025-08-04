@@ -24,6 +24,8 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 
+#include <zerodj/controls/zdj_controls.h>
+
 #define ZDJ_WHITE 0xFFFFFFFF
 #define ZDJ_SDL_WHITE (SDL_Color){255,255,255,255}
 #define ZDJ_MID_GRAY 0xFF999999
@@ -185,7 +187,8 @@ typedef enum {
     ZDJ_VIEW_BROWSER,
     ZDJ_VIEW_SOUNDCARD,
     ZDJ_VIEW_PROGRESS,
-    ZDJ_VIEW_DIALOG
+    ZDJ_VIEW_DIALOG,
+    ZDJ_VIEW_WAVEFORM
 } zdj_view_type_t;
 
 typedef enum {
@@ -193,7 +196,7 @@ typedef enum {
     ZDJ_UI_NOT_A_VIEW
 } zdj_ui_err_t;
 
-typedef void ( *handle_hmi_event_t )( struct zdj_view_t *, void * );
+typedef void ( *handle_control_event_t )( struct zdj_view_t *, zdj_control_event_t * );
 
 // zdj_view
 typedef struct zdj_view_t {
@@ -205,7 +208,7 @@ typedef struct zdj_view_t {
     void ( *deinit_state )( struct zdj_view_t * );
     void ( *draw )( struct zdj_view_t *, zdj_view_clip_t * );
     void ( *update_subview_clip )( struct zdj_view_t *, zdj_view_clip_t * );
-    handle_hmi_event_t handle_hmi_event;
+    handle_control_event_t handle_control_event;
     struct zdj_view_t * next;
     struct zdj_view_t * prev;
     struct zdj_view_t * subviews;

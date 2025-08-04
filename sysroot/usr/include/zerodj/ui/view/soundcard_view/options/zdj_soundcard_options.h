@@ -35,6 +35,7 @@ typedef struct {
     int menu_index_pan;
     int menu_index_stereo;
     int menu_index_mute;
+    int menu_index_scope;
 } zdj_soundcard_options_state_t;
 
 zdj_view_t * zdj_new_soundcard_options( zdj_soundcard_node_config_context_t * context );
@@ -46,8 +47,12 @@ soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_no
 void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view );
 void zdj_soundcard_options_update_port_input_layout( zdj_view_t * view );
 void zdj_soundcard_options_update_audio_bus_layout( zdj_view_t * view );
-void zdj_soundcard_options_port_output_hmi( zdj_view_t * view, void * _event );
-void zdj_soundcard_options_port_input_hmi( zdj_view_t * view, void * _event );
-void zdj_soundcard_options_audio_bus_hmi( zdj_view_t * view, void * _event );
+void zdj_soundcard_options_update_cv_layout( zdj_view_t * view );
+void zdj_soundcard_options_update_clock_layout( zdj_view_t * view );
+void zdj_soundcard_options_port_output_hmi( zdj_view_t * view, zdj_control_event_t * _event );
+void zdj_soundcard_options_port_input_hmi( zdj_view_t * view, zdj_control_event_t * _event );
+void zdj_soundcard_options_audio_bus_hmi( zdj_view_t * view, zdj_control_event_t * _event );
+void zdj_soundcard_options_cv_hmi( zdj_view_t * view, zdj_control_event_t * _event );
+void zdj_soundcard_options_clock_hmi( zdj_view_t * view, zdj_control_event_t * _event );
 
 #endif

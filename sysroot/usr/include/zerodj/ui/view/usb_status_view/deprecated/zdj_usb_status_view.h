@@ -53,8 +53,8 @@ void zdj_usb_status_view_build_system_error_layout( zdj_view_t * view );
 void zdj_usb_status_view_build_system_offline_layout( zdj_view_t * view );
 void zdj_usb_status_view_build_processing_layout( zdj_view_t * view );
 
-void zdj_usb_status_view_handle_host_mode_btn( zdj_view_t * view, void * _event );
-void zdj_usb_status_view_handle_device_mode_btn( zdj_view_t * view, void * _event );
-void zdj_usb_status_view_handle_offline_btn( zdj_view_t * view, void * _event );
+void zdj_usb_status_view_handle_host_mode_btn( zdj_view_t * view, zdj_control_event_t * _event );
+void zdj_usb_status_view_handle_device_mode_btn( zdj_view_t * view, zdj_control_event_t * _event );
+void zdj_usb_status_view_handle_offline_btn( zdj_view_t * view, zdj_control_event_t * _event );
 
 #endif

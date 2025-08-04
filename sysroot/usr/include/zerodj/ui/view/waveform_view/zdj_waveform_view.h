@@ -18,26 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_WAVEFORM_HIRES_VIEW_H
-#define ZDJ_WAVEFORM_HIRES_VIEW_H
+#ifndef ZDJ_WAVEFORM_VIEW_H
+#define ZDJ_WAVEFORM_VIEW_H
 
-#include <SDL2/SDL.h>
-
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
-#include <zerodj/signal/math/zdj_signal_math.h>
-#include <zerodj/signal/pipeline/zdj_pipeline.h>
 
 typedef struct {
-    zdj_library_audio_t * audio;
-    uint32_t current_sample;
-    int sample_offset_request;
-    double x_zoom;
-    zdj_pipeline_node_t * render_node;
-    zdj_pipeline_node_t * pcm_node;
-    zdj_pipeline_node_t * decode_node;
-    zdj_pipeline_node_t * file_node;
-} zdj_waveform_view_state_t;
+    zdj_soundcard_node_t * node;
+    zdj_pipeline_node_t * pipe;
+} zdj_live_waveform_view_state_t;
 
-zdj_view_t * zdj_new_waveform_view( zdj_rect_t * frame, zdj_library_song_t * song );
+zdj_view_t * zdj_new_live_waveform_view( zdj_rect_t * frame, zdj_soundcard_node_t * node );
 
 #endif

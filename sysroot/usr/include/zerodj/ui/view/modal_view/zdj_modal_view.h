@@ -26,6 +26,6 @@ typedef struct {
 } zdj_modal_view_state_t;
 
 zdj_view_t * zdj_new_modal_view( zdj_rect_t * frame );
-void zdj_modal_view_hmi_delegate( zdj_view_t * view, void * _event );
+void zdj_modal_view_hmi_delegate( zdj_view_t * view, zdj_control_event_t * _event );
 
 #endif

@@ -1,3 +1,4 @@
+
 // Copyright (c) 2025 Drift DJ Industries
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,34 +19,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_TEST_DECK_H
-#define ZDJ_TEST_DECK_H
+#ifndef ZDJ_THREAD_VIEW_H
+#define ZDJ_THREAD_VIEW_H
 
-#include <stdbool.h>
-#include <pthread.h>
+#include <SDL2/SDL.h>
 
-typedef struct {
-
-} zdj_test_transport_t;
+#include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
-    // Links into the soundcard graph
-    zdj_pipeline_node_t * input_link;
-    zdj_pipeline_node_t * prefade_link;
-    zdj_pipeline_node_t * bus_link;
+    int type;
+    int update_counter;
+    uint64_t start_time;
+    zdj_view_t * menu_view;
+} zdj_thread_view_state_t;
 
-    // Internal audio pipeline
-    zdj_pipeline_node_t * tone_node;
-
-    zdj_test_transport_t transport;
-} zdj_test_deck_t;
-
-zdj_test_deck_t * zdj_new_test_deck( void );
-zdj_error_type_t zdj_deinit_test_deck( zdj_test_deck_t * deck );
-
-// One entry point for handling control inputs
-// One update cycle for running the control simulation
-// One entry point for data requests from other pipelines
-
+zdj_view_t * zdj_new_thread_view( zdj_rect_t * frame );
 
 #endif

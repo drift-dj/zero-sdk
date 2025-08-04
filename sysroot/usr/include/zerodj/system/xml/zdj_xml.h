@@ -49,7 +49,7 @@ zdj_view_t * zdj_xml_menu_view_for_node(
     xml_layout_linkage layout_linkage,
     xml_action_linkage action_linkage,
     xml_update_linkage update_linkage,
-    handle_hmi_event_t handle_hmi_event
+    handle_control_event_t handle_control_event
 );
 
 #endif

@@ -30,7 +30,7 @@
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/soundcard/zdj_soundcard_dto.h>
 
-#define ZDJ_SOUNDCARD_BUF_LEN 64
+#define ZDJ_SOUNDCARD_BUF_LEN 256
 
 #define ZDJ_SOUNDCARD_DB_PATH "/etc/zero_data/soundcard.db"
 #define ZDJ_SOUNDCARD_DEFAULT_DJ "DJ_Default"
@@ -214,7 +214,10 @@ typedef struct  {
     int invert;
     zdj_pipeline_node_t * data_pipe;
     zdj_pipeline_node_t * meter_pipe;
-    void ( *get_edge_data )( zdj_pipeline_node_t * );
+    void ( *get_edge_input_data )( void *, zdj_pipeline_node_t *, bool );
+    void * edge_input_link;
+    void ( *push_edge_output_data )( void *, zdj_pipeline_node_t *, bool );
+    void * edge_output_link;
     zdj_soundcard_link_bitmap_t link_map;
     int input_link_count;
     zdj_soundcard_link_t input_links[ 8 ];
@@ -230,6 +233,8 @@ typedef struct {
     zdj_soundcard_node_t * nodes;
     zdj_pipeline_node_t * analog_io_node;
     zdj_pipeline_node_t * usb_io_node;
+    zdj_pipeline_node_t * scope_waveform;
+    zdj_soundcard_node_name_t scope_node_name;
     bool has_edits;
 } zdj_soundcard_t;
 
@@ -244,13 +249,11 @@ zdj_error_type_t zdj_soundcard_save_temp( zdj_soundcard_t * soundcard );
 zdj_error_type_t zdj_soundcard_start( zdj_soundcard_t * soundcard );
 zdj_error_type_t zdj_soundcard_stop( zdj_soundcard_t * soundcard );
 
-// Perf
-zdj_error_type_t zdj_soundcard_enable_perf( zdj_soundcard_t * soundcard, uint32_t tag_count );
-zdj_error_type_t zdj_soundcard_disable_perf( zdj_soundcard_t * soundcard );
-zdj_error_type_t zdj_soundcard_reset_perf( zdj_soundcard_t * soundcard );
-zdj_pipeline_perf_report_t * zdj_soundcard_make_fast_cycle_perf_report(zdj_soundcard_t * soundcard );
-
 // Mixing/DSP
+zdj_error_type_t zdj_soundcard_clear_buffer( 
+    zdj_soundcard_t * soundcard, 
+    zdj_soundcard_node_t * node 
+);
 zdj_error_type_t zdj_soundcard_mix_input( 
     zdj_soundcard_t * soundcard, 
     zdj_soundcard_node_t * node 
@@ -351,5 +354,7 @@ bool zdj_soundcard_node_name_is_cv( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_muted( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_midi( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_usb( zdj_soundcard_node_name_t name );
+
+bool zdj_soundcard_node_name_is_right_channel( zdj_soundcard_node_name_t name );
 
 #endif

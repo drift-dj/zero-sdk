@@ -90,8 +90,8 @@ typedef struct {
     int i_val;
     double d_val;
     bool b_val;
-    struct zdj_hmi_event_t * next;
-    struct zdj_hmi_event_t * prev;
+    struct zdj_control_event_t * next;
+    struct zdj_control_event_t * prev;
 } zdj_hmi_event_t;
 
 typedef enum {
@@ -123,8 +123,8 @@ typedef struct {
 
 // Head of the linked list of unprocessed events
 // Will be NULL if no events need to be processed
-extern zdj_hmi_event_t * zdj_hmi_event_base;
-extern zdj_hmi_event_t * zdj_hmi_event_tip;
+extern zdj_control_event_t * zdj_hmi_event_base;
+extern zdj_control_event_t * zdj_hmi_event_tip;
 
 // 
 extern zdj_hmi_control_state_t ** zdj_hmi_control_states;

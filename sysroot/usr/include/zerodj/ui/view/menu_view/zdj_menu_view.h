@@ -76,6 +76,6 @@ void zdj_menu_view_add_scroll_filter_input( zdj_view_t * view, int input );
 void zdj_menu_view_update_scroll_filter( zdj_view_t * view );
 
 void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-void zdj_menu_handle_hmi( zdj_view_t * view, void * _event );
+void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 
 #endif

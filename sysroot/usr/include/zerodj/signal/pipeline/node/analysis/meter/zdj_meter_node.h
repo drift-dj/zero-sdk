@@ -33,11 +33,11 @@ typedef enum {
 
 typedef struct {
     zdj_meter_node_type_t type;
-    zdj_pipeline_node_t * signal_node;
+    void ( *add_frame )( struct zdj_pipeline_node_t *, float, float );
     int channel_count;
     // instant meter data
-    float buffer_avg_0;
-    float buffer_avg_1;
+    float instant_val_0;
+    float instant_val_1;
     // audio vu meter data
     float lowpass_val_0;
     float lowpass_peak_0;
@@ -64,9 +64,7 @@ typedef struct {
     int clock_beat;
 } zdj_meter_node_state_t;
 
-zdj_pipeline_node_t * zdj_new_meter_node( 
-    zdj_meter_node_type_t type, 
-    zdj_pipeline_node_t * signal_node 
-);
+zdj_pipeline_node_t * zdj_new_meter_node( zdj_meter_node_type_t type, int channel_count  );
+zdj_error_type_t zdj_meter_node_reset( zdj_pipeline_node_t * meter_node );
 
 #endif
