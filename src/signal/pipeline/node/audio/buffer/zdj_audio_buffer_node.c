@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <zerodj/library/zdj_library.h>
@@ -22,6 +23,7 @@ zdj_pipeline_node_t * zdj_new_audio_buffer_node( int buffer_sample_count, zdj_au
     state->sample_count = buffer_sample_count;
     state->stereo_mode = stereo_mode;
     state->buffer = calloc( buffer_sample_count * stereo_mode, sizeof( float ) );
+    memset( state->buffer, 0, sizeof( float ) * buffer_sample_count * stereo_mode );
 
     return node;
 }

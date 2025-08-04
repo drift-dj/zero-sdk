@@ -6,7 +6,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -19,7 +19,7 @@
 #include <zerodj/system/usb/zdj_usb.h>
 
 static void _zdj_usb_status_view_update_layout( zdj_view_t * view );
-static void _zdj_usb_status_view_handle_hmi( zdj_view_t * menu_stack, void * _event );
+static void _zdj_usb_status_view_handle_control( zdj_view_t * menu_stack, zdj_control_event_t * _event );
 static void _zdj_usb_status_view_deinit_state( zdj_view_t * usb_status_view );
 
 static void * _zdj_usb_status_view_inotify_thread_main( void * arg );
@@ -28,7 +28,7 @@ zdj_view_t * zdj_new_usb_status_view( void ) {
     printf( "zdj_new_usb_status_view\n" );
     zdj_view_t * usb_status_view = zdj_new_view( zdj_modal_rect( ) );
     usb_status_view->type = ZDJ_VIEW_MODAL;
-    usb_status_view->handle_hmi_event = _zdj_usb_status_view_handle_hmi;
+    usb_status_view->handle_control_event = _zdj_usb_status_view_handle_control;
     usb_status_view->deinit_state = &_zdj_usb_status_view_deinit_state;
     usb_status_view->frame->x = ZDJ_MODAL_X;
     usb_status_view->frame->y = ZDJ_SCREEN_H+2;
@@ -74,8 +74,8 @@ zdj_view_t * zdj_new_usb_status_view( void ) {
     return usb_status_view;
 }
 
-void _zdj_usb_status_view_handle_hmi( zdj_view_t * usb_status_view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_usb_status_view_handle_control( zdj_view_t * usb_status_view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_usb_status_view_state_t * state = (zdj_usb_status_view_state_t*)usb_status_view->state;
     
     // Ignore events which have been blocked by layers above this one.
@@ -84,8 +84,11 @@ void _zdj_usb_status_view_handle_hmi( zdj_view_t * usb_status_view, void * _even
     // Catch a header back button press, or send events into the menu.
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)state->menu_view->state;
     
-    if( e->id == ZDJ_HMI_ENCO_2_JOG &&
-        e->type == ZDJ_HMI_EVENT_RELEASE &&
+    // if( e->id == ZDJ_HMI_ENCO_2_JOG &&
+    //     e->type == ZDJ_HMI_EVENT_RELEASE &&
+    //     menu_state->scroll_index == -1
+    // ) {
+    if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 &&
         menu_state->scroll_index == -1
     ) {
         // Dump the top view on the stack (this view)
@@ -95,7 +98,7 @@ void _zdj_usb_status_view_handle_hmi( zdj_view_t * usb_status_view, void * _even
         return;
     } else {
         // Send events down into the subview stack
-        state->menu_view->handle_hmi_event( state->menu_view, _event );
+        state->menu_view->handle_control_event( state->menu_view, _event );
     }
 
     // Send events down into the subview stack
@@ -108,7 +111,7 @@ void _zdj_usb_status_view_deinit_state( zdj_view_t * usb_status_view ) {
     usb_status_view->state = NULL;
 }
 
-void zdj_usb_status_view_handle_host_mode_btn( zdj_view_t * view, void * _event ) { 
+void zdj_usb_status_view_handle_host_mode_btn( zdj_view_t * view, zdj_control_event_t * _event ) { 
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
@@ -125,7 +128,7 @@ void zdj_usb_status_view_handle_host_mode_btn( zdj_view_t * view, void * _event 
     zdj_usb_request_mode_switch( &request );
 }
 
-void zdj_usb_status_view_handle_device_mode_btn( zdj_view_t * view, void * _event ) {
+void zdj_usb_status_view_handle_device_mode_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
@@ -154,7 +157,7 @@ void zdj_usb_status_view_handle_device_mode_btn( zdj_view_t * view, void * _even
     zdj_usb_request_mode_switch( &request );
 }
 
-void zdj_usb_status_view_handle_offline_btn( zdj_view_t * view, void * _event ) {
+void zdj_usb_status_view_handle_offline_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;

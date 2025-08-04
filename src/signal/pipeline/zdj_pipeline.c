@@ -12,8 +12,6 @@ zdj_pipeline_node_t * zdj_new_pipeline_node( void ) {
     node->window_state = calloc( 1, sizeof( zdj_pipeline_window_state_t ) );
     node->window_state->back_valid_index = -1;
     node->window_state->fwd_valid_index = -1;
-    node->perf = calloc( 1, sizeof( zdj_pipeline_perf_state_t ) );
-    node->perf_enabled = false;
     return node;
 }
 
@@ -26,23 +24,6 @@ zdj_error_type_t zdj_deinit_pipeline_node( zdj_pipeline_node_t * node ) {
     free( node );
 
     return ZDJ_ERROR_OKAY;
-}
-
-zdj_error_type_t zdj_pipeline_enable_perf( zdj_pipeline_node_t * node, uint32_t tag_count ) {
-    node->perf_enabled = true;
-    node->perf->tag_max = tag_count;
-    node->perf->tag_count = 0;
-    // pre-allocate an array of [tag_count] tags
-    if( node->perf->tags ) { free( node->perf->tags ); }
-    node->perf->tags = calloc( node->perf->tag_max, sizeof( zdj_pipeline_perf_tag_t ) );
-}
-
-zdj_error_type_t zdj_pipeline_disable_perf( zdj_pipeline_node_t * node ) {
-    node->perf_enabled = false;
-}
-
-zdj_error_type_t zdj_pipeline_reset_perf( zdj_pipeline_node_t * node ) {
-    node->perf->tag_count = 0;
 }
 
 // Helper function to format valid indexes for further processing.

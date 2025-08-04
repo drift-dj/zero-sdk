@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.23)
 project(zerodj VERSION 0.1.0 LANGUAGES C)
 
 add_library(zerodj 
-    src/controls/hmi/zdj_hmi.c
+    src/controls/zdj_controls.c
     src/controls/hmi/zdj_hmi_input.c
+    src/controls/hmi/zdj_hmi_input_map.c
     src/controls/hmi/zdj_hmi_scan_thread.c
     src/controls/hmi/zdj_hmi_sm_analog.c
     src/controls/hmi/zdj_hmi_sm_digital.c
-    src/controls/playback/zdj_playback_control.c
     src/library/zdj_library.c
     src/library/api/library/zdj_library_api_library_config.c
     src/library/api/library/zdj_library_api_library.c
@@ -29,7 +29,7 @@ add_library(zerodj
     src/signal/pipeline/zdj_pipeline.c
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
     src/signal/pipeline/node/analysis/meter/zdj_meter_node.c
-    src/signal/pipeline/node/analysis/waveform/zdj_waveform_comp_build_node.c
+    src/signal/pipeline/node/analysis/waveform/live/zdj_live_waveform.c
     src/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.c
     src/signal/pipeline/node/audio/decode/zdj_decode_node.c
     src/signal/pipeline/node/audio/decode/zdj_decode_raw_node.c
@@ -37,7 +37,6 @@ add_library(zerodj
     src/signal/pipeline/node/audio/io/zdj_io_usb_node.c
     src/signal/pipeline/node/file/zdj_file_read_node.c
     src/signal/pipeline/node/file/zdj_file_write_node.c
-    src/signal/pipeline/perf/zdj_pipeline_perf.c
     src/signal/soundcard/zdj_soundcard.c
     src/signal/soundcard/zdj_soundcard_deck.c
     src/signal/soundcard/zdj_soundcard_dto.c
@@ -50,8 +49,10 @@ add_library(zerodj
     src/system/fs/zdj_fs.c
     src/system/m7/zdj_m7.c
     src/system/installer/zdj_installer.c
+    src/system/perf/zdj_perf.c
     src/system/registry/zdj_registry_install.c
     src/system/registry/zdj_registry_launch_req.c
+    src/system/thread/zdj_thread.c
     src/system/sql/zdj_sql.c
     src/system/usb/zdj_usb.c
     src/system/usb/zdj_usb_device.c
@@ -101,6 +102,7 @@ add_library(zerodj
     src/ui/view/menu_stack/zdj_menu_stack.c
     src/ui/view/modal_view/zdj_modal_view.c
     src/ui/view/progress_bar_view/zdj_progress_bar_view.c
+    src/ui/view/scope_view/zdj_scope_view.c
     src/ui/view/scroll_view/zdj_scroll_view.c
     src/ui/view/soundcard_view/zdj_soundcard_view.c
     src/ui/view/soundcard_view/meters/zdj_soundcard_meter.c
@@ -111,6 +113,8 @@ add_library(zerodj
     src/ui/view/soundcard_view/meters/zdj_soundcard_usb_meter.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_audio_bus.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_cv.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_clock.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_port_input.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_port_output.c
     src/ui/view/soundcard_view/select_node/zdj_soundcard_select_node.c
@@ -118,6 +122,7 @@ add_library(zerodj
     src/ui/view/text_input_view/buffer/zdj_text_input_buffer_view.c
     src/ui/view/text_input_view/keyboard/zdj_text_input_keyboard_view.c
     src/ui/view/texture_view/zdj_texture_view.c
+    src/ui/view/thread_view/zdj_thread_view.c
     src/ui/view/ticker_view/zdj_ticker_view.c
     src/ui/view/usb_drive_view/zdj_usb_drive_view.c
     src/ui/view/usb_status_view/zdj_usb_status_view.c
@@ -125,8 +130,7 @@ add_library(zerodj
     src/ui/view/usb_status_view/zdj_usb_status_view_host.c
     src/ui/view/usb_status_view/zdj_usb_status_view_offline.c
     src/ui/view/usb_status_view/zdj_usb_status_view_reboot.c
-    src/ui/view/waveform_view/zdj_waveform_lores_view.c
-    src/ui/view/waveform_view/zdj_waveform_view.c
+    src/ui/view/waveform_view/zdj_live_waveform_view.c
 )
 
 target_compile_definitions(

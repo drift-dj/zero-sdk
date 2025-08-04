@@ -8,11 +8,12 @@
 
 #include <zerodj/system/boot/zdj_boot.h>
 #include <zerodj/health/zdj_health_type.h>
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/controls/hmi/zdj_hmi_input.h>
 #include <zerodj/controls/hmi/zdj_hmi_m7_state_model.h>
 
 void zdj_boot_scan_hmi( void ) {
+    int mem_fd = open( "/dev/mem", O_RDWR );
+	zdj_hmi_m7_state_model = mmap(0, 0x20000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a11000);
 
     // Setup GPIO bitbang for encoders
     int fd = open( "/sys/class/gpio/export", O_WRONLY );

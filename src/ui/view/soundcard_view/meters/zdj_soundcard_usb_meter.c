@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+
 #include <zerodj/signal/pipeline/node/analysis/meter/zdj_meter_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>

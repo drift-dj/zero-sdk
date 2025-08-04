@@ -3,7 +3,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -14,7 +14,7 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _zdj_text_input_view_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_text_input_view_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_text_input_view_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_text_input_view_deinit_state( zdj_view_t * view );
 
 static void _zdj_text_input_view_next_char( zdj_view_t * view );
@@ -27,7 +27,7 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
     zdj_view_t * view = zdj_new_view( &(zdj_rect_t){0,0,ZDJ_MODAL_WIDTH+1,ZDJ_MODAL_HEIGHT} );
     view->type = ZDJ_VIEW_TEXT_INPUT;
     view->draw = &_zdj_text_input_view_draw;
-    view->handle_hmi_event = _zdj_text_input_view_handle_hmi;
+    view->handle_control_event = _zdj_text_input_view_handle_control;
     view->deinit_state = &_zdj_text_input_view_deinit_state;
     view->frame->x = ZDJ_MODAL_X+1;
     view->frame->y = ZDJ_SCREEN_H;
@@ -69,8 +69,8 @@ void _zdj_text_input_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     }
 }
 
-void _zdj_text_input_view_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_text_input_view_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_text_input_view_state_t * view_state = (zdj_text_input_view_state_t*)view->state;
     zdj_text_input_buffer_view_state_t * input_buffer_state = (zdj_text_input_buffer_view_state_t*)view_state->input_buffer->state;
 
@@ -78,92 +78,64 @@ void _zdj_text_input_view_handle_hmi( zdj_view_t * view, void * _event ) {
     if( e->blocked ) { return; }
 
     // Jog Wheel
-    if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
+    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) {
         // Scroll thru keyboard l->r + t->b -> cmd keys t->b.
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
-            view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, _event );
-            // Reset input buffer char to value in str if we're over menu chrome.
+        view_state->keyboard_menu->handle_control_event( view_state->keyboard_menu, _event );
+        // Reset input buffer char to value in str if we're over menu chrome.
+    } else if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
+        _zdj_text_input_view_handle_key_release( view );
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ) { 
+        printf( "tone 1 adjust\n" );
+        // Scroll input cursor 1 char right/left.
+        if( e->i_val > 0 ) {
+            _zdj_text_input_view_next_char( view );
+        } else if( e->i_val < 0 ) {
+            _zdj_text_input_view_prev_char( view );
         }
-
-        // Releases
-        if( e->type == ZDJ_HMI_EVENT_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_MOD_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ||
-            e->type == ZDJ_HMI_EVENT_PRESS_ADJUST_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_LONG_PRESS || 
-            e->type == ZDJ_HMI_EVENT_LONG_RELEASE 
-        ) {
-            _zdj_text_input_view_handle_key_release( view );
-        }
-    } else if( e->id == ZDJ_HMI_ENCO_3_TONE_1 ) {
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
-            printf( "tone 1 adjust\n" );
-            // Scroll input cursor 1 char right/left.
-            if( e->i_val > 0 ) {
-                _zdj_text_input_view_next_char( view );
-            } else if( e->i_val < 0 ) {
-                _zdj_text_input_view_prev_char( view );
-            }
-        } else if( e->type == ZDJ_HMI_EVENT_RELEASE ) {
-            _zdj_text_input_view_handle_key_release( view );
-        }
-    } else if( e->id == ZDJ_HMI_ENCO_4_TONE_2 ) {
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ) {
+        _zdj_text_input_view_handle_key_release( view );
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0 ) { 
             printf( "tone 2 adjust\n" ); 
             // Scroll keyboard to next/prev key
             // Make a fake event to send into menu
-            zdj_hmi_event_t * fake_e = calloc( 1, sizeof( zdj_hmi_event_t ) );
-            fake_e->id = ZDJ_HMI_ENCO_2_JOG;
-            fake_e->type = ZDJ_HMI_EVENT_ADJUST;
+            zdj_control_event_t * fake_e = calloc( 1, sizeof( zdj_control_event_t ) );
+            fake_e->id = ZDJ_UI_CONTROL_JOG_ADJUST_0;
             fake_e->i_val = e->i_val;
-            view_state->keyboard_menu->handle_hmi_event( view_state->keyboard_menu, fake_e );
+            view_state->keyboard_menu->handle_control_event( view_state->keyboard_menu, fake_e );
             free( fake_e );
-        } else if( e->type == ZDJ_HMI_EVENT_RELEASE ) {
-            _zdj_text_input_view_handle_key_release( view );
-        }
-    } else if( e->id == ZDJ_HMI_ENCO_5_TONE_3 ) {
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_2_RELEASE_0 ) {
+        _zdj_text_input_view_handle_key_release( view );
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_3_ADJUST_0 ) { 
             // printf( "tone 3 adjust\n" );
         //     // Scroll keyboard/cmd selection 1 column up/down.
         // } else if( e->type == ZDJ_HMI_EVENT_RELEASE ) {
         //     // Select char at cursor and move cursor to next char.
         //     input_buffer_state->str[ input_buffer_state->cursor_index ] = zdj_text_input_keyboard_get_current_char( view_state->keyboard_menu );
         //     _zdj_text_input_view_next_char( view );
-        }
-
-    // Handle pushbutton events
-    } else if( e->type == ZDJ_HMI_EVENT_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_MOD_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ||
-            e->type == ZDJ_HMI_EVENT_PRESS_ADJUST_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_LONG_PRESS || 
-            e->type == ZDJ_HMI_EVENT_LONG_RELEASE 
-    ) {
-       if( e->id == ZDJ_HMI_PB_0_HOTCUE ) {
+    } else if( e->id == ZDJ_UI_CONTROL_HOTCUE_RELEASE_0 ) {
         // Delete char at cursor and move cursor to prev char.
-        
-        } else if( e->id == ZDJ_HMI_PB_1_PLAY ) {
-            printf( "play btn\n" ); 
-            _zdj_text_input_view_handle_key_release( view );
+    
+    } else if( e->id == ZDJ_UI_CONTROL_PLAY_RELEASE_0 ) {
+        printf( "play btn\n" ); 
+        _zdj_text_input_view_handle_key_release( view );
 
-        } else if( e->id == ZDJ_HMI_PB_2_FN_1 ) {
-            printf( "fn 1 btn\n" );
-            _zdj_text_input_view_prev_char( view );
-        } else if( e->id == ZDJ_HMI_PB_3_FN_2 ) {
-            printf( "fn 2 btn\n" );
-        } else if( e->id == ZDJ_HMI_PB_4_FN_3 ) {
-            printf( "fn 3 btn\n" );
-            _zdj_text_input_view_next_char( view );
-        } else if( e->id == ZDJ_HMI_PB_5_NAV ) {
-            printf( "nav btn\n" );
-            // Scroll-to+blink cancel button if not already there.
-            // Exit w/cancel action if cancel is selected.
-            zdj_keyboard_chrome_item_t current_chrome = zdj_text_input_keyboard_get_current_chrome( view_state->keyboard_menu );
-            if( current_chrome == ZDJ_KEYBOARD_CHROME_CANCEL ) {
-                view_state->cb( ZDJ_TEXT_INPUT_ACTION_CANCEL, NULL );
-            } else {
-                zdj_text_input_keyboard_set_current_chrome( view_state->keyboard_menu, ZDJ_KEYBOARD_CHROME_CANCEL );
-            }
+    } else if( e->id == ZDJ_UI_CONTROL_FN_1_RELEASE_0 ) {
+        printf( "fn 1 btn\n" );
+        _zdj_text_input_view_prev_char( view );
+    } else if( e->id == ZDJ_UI_CONTROL_FN_2_RELEASE_0 ) {
+        printf( "fn 2 btn\n" );
+    } else if( e->id == ZDJ_UI_CONTROL_FN_3_RELEASE_0 ) {
+        printf( "fn 3 btn\n" );
+        _zdj_text_input_view_next_char( view );
+    } else if( e->id == ZDJ_UI_CONTROL_NAV_PRESS_0 ) {
+        printf( "nav btn\n" );
+        // Scroll-to+blink cancel button if not already there.
+        // Exit w/cancel action if cancel is selected.
+        zdj_keyboard_chrome_item_t current_chrome = zdj_text_input_keyboard_get_current_chrome( view_state->keyboard_menu );
+        if( current_chrome == ZDJ_KEYBOARD_CHROME_CANCEL ) {
+            view_state->cb( ZDJ_TEXT_INPUT_ACTION_CANCEL, NULL );
+        } else {
+            zdj_text_input_keyboard_set_current_chrome( view_state->keyboard_menu, ZDJ_KEYBOARD_CHROME_CANCEL );
         }
     }
 

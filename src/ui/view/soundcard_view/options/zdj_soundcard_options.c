@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -21,18 +21,18 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _zdj_soundcard_options_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_soundcard_options_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_soundcard_options_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_soundcard_options_deinit_state( zdj_view_t * view );
 static void _zdj_soundcard_options_handle_back( zdj_view_t * menu_view );
 
-static void _zdj_soundcard_options_handle_bus_btn( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_options_handle_save_btn( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_options_handle_load_btn( zdj_view_t * view, void * _event );
+static void _zdj_soundcard_options_handle_bus_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_options_handle_save_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_options_handle_load_btn( zdj_view_t * view, zdj_control_event_t * _event );
 
 zdj_view_t * zdj_new_soundcard_options( zdj_soundcard_node_config_context_t * context ) {
     zdj_view_t * soundcard_options = zdj_new_modal_view( zdj_modal_rect( ) );
     soundcard_options->draw = &_zdj_soundcard_options_draw;
-    soundcard_options->handle_hmi_event = &_zdj_soundcard_options_handle_hmi;
+    soundcard_options->handle_control_event = &_zdj_soundcard_options_handle_control;
     soundcard_options->deinit_state = &_zdj_soundcard_options_deinit_state;
 
     // Add a state instance
@@ -114,8 +114,8 @@ void _zdj_soundcard_options_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_node( 
     zdj_soundcard_node_t * node 
 ) {
-    
     if ( zdj_soundcard_node_name_is_audio( node->name ) ) {
+        
         if ( zdj_soundcard_node_name_is_output( node->name ) ) {
             return &zdj_soundcard_options_update_port_output_layout;
         } else if( zdj_soundcard_node_name_is_input( node->name ) ) {
@@ -126,7 +126,7 @@ soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_no
     } else if ( zdj_soundcard_node_name_is_clock( node->name ) ) {
         
     } else if ( zdj_soundcard_node_name_is_cv( node->name ) ) {
-       
+       return &zdj_soundcard_options_update_cv_layout;
     } else if ( zdj_soundcard_node_name_is_usb( node->name) ) {
         
     } else if ( zdj_soundcard_node_name_is_midi( node->name ) ) {
@@ -134,8 +134,8 @@ soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_no
     }
 }
 
-void _zdj_soundcard_options_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_soundcard_options_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_soundcard_options_state_t * state = (zdj_soundcard_options_state_t*)view->state;
     zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)state->config_context;
 
@@ -143,10 +143,10 @@ void _zdj_soundcard_options_handle_hmi( zdj_view_t * view, void * _event ) {
     if( e->blocked ) { return; }
 
     // Grab Tone 1,2,3 + Jog push turn to send controls into channels.
-    if( (e->id == ZDJ_HMI_ENCO_2_JOG && e->type == ZDJ_HMI_EVENT_PRESS_ADJUST) ||
-        (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_ADJUST) ||
-        (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_RELEASE) ||
-        (e->id == ZDJ_HMI_ENCO_4_TONE_2 && e->type == ZDJ_HMI_EVENT_ADJUST)
+    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ||
+        e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ||
+        e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ||
+        e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0
     ) {
         // Get current menu scroll index
         zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)state->menu->state;
@@ -171,10 +171,10 @@ void _zdj_soundcard_options_handle_hmi( zdj_view_t * view, void * _event ) {
         } else if ( zdj_soundcard_node_name_is_midi( context->node->name ) ) {
             
         }
-
+        e->blocked = true;
     } else {
         // Send remaining events down into the menu
-        state->menu->handle_hmi_event( state->menu, _event );
+        state->menu->handle_control_event( state->menu, _event );
     }
 }
 
@@ -188,16 +188,16 @@ void _zdj_soundcard_options_handle_back( zdj_view_t * view ) {
     zdj_pop_subview_of( zdj_root_view( ), true );
 }
 
-void _zdj_soundcard_options_handle_bus_btn( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_options_handle_bus_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     // Push bus mixer
     // zdj_view_t * soundcard_options = zdj_new_soundcard_soundcard_options( zdj_soundcard );
     // zdj_push_subview( zdj_root_view( ), soundcard_options, true );
 }
 
-void _zdj_soundcard_options_handle_save_btn( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_options_handle_save_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     // Push text edit for soundcard name
 }
 
-void _zdj_soundcard_options_handle_load_btn( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_options_handle_load_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     // Open soundcard selection list
 }

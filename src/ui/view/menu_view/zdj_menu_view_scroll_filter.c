@@ -2,7 +2,6 @@
 #include <string.h>
 
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 

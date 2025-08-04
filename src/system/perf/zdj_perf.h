@@ -18,41 +18,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_PIPELINE_PERF_H
-#define ZDJ_PIPELINE_PERF_H
+#ifndef ZDJ_PERF_H
+#define ZDJ_PERF_H
 
 #include <stdint.h>
 #include <stdbool.h>
 
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/thread/zdj_thread.h>
 
 typedef enum {
-    ZDJ_PERF_TAG_CHECK_FAST_CYCLE_READY,
-    ZDJ_PERF_TAG_FAST_CYCLE_READY,
-    ZDJ_PERF_TAG_FAST_CYCLE,
+    ZDJ_PERF_TAG_CONTROL_CYCLE,
+    ZDJ_PERF_TAG_UI_CYCLE,
+    ZDJ_PERF_TAG_AUDIO_BUF_CYCLE,
     ZDJ_PERF_TAG_COUNT
-} zdj_pipeline_perf_tag_name_t;
+} zdj_perf_tag_name_t;
 
-static char * zdj_pipeline_perf_tag_name[ ZDJ_PERF_TAG_COUNT ] = { 
-    "Chk",// ZDJ_PERF_TAG_CHECK_FAST_CYCLE_READY,
-    "Rdy",// ZDJ_PERF_TAG_FAST_CYCLE_READY,
-    "Mix"// ZDJ_PERF_TAG_FAST_CYCLE,
+static char * zdj_perf_tag_name[ ZDJ_PERF_TAG_COUNT ] = { 
+    "Ctrl",// ZDJ_PERF_TAG_CONTROL_CYCLE,
+    "UI",// ZDJ_PERF_TAG_UI_CYCLE,
+    "Aud",// ZDJ_PERF_TAG_SOUNDCARD_FAST_CYCLE
 };
 
 typedef struct {
-    zdj_pipeline_perf_tag_name_t name;
+    zdj_perf_tag_name_t name;
     uint64_t start;
     uint64_t end;
-} zdj_pipeline_perf_tag_t;
+} zdj_perf_tag_t;
 
 typedef struct {
     uint32_t tag_count;
     uint32_t tag_max;
-    zdj_pipeline_perf_tag_t * tags;
-} zdj_pipeline_perf_state_t;
+    zdj_perf_tag_t * tags;
+} zdj_perf_state_t;
 
 typedef struct {
-    zdj_pipeline_perf_tag_name_t name;
+    zdj_perf_tag_name_t name;
     uint32_t count;
     uint64_t max_dur;
     uint64_t min_dur;
@@ -60,27 +61,39 @@ typedef struct {
     uint32_t max_cadence;
     uint32_t min_cadence;
     uint32_t avg_cadence;
-    struct zdj_pipeline_perf_report_line_t * next;
-} zdj_pipeline_perf_report_line_t;
+    struct zdj_perf_report_line_t * next;
+} zdj_perf_report_line_t;
 
 typedef struct {
     int line_count;
-    zdj_pipeline_perf_report_line_t * lines;
+    zdj_perf_report_line_t * lines;
     uint32_t cycle_count;
     uint32_t miss_count;
-} zdj_pipeline_perf_report_t;
+} zdj_perf_report_t;
 
 // Get raw time for perf tag
 uint64_t zdj_perf_time( void );
 
-zdj_pipeline_perf_report_t * zdj_pipeline_new_perf_report( void );
-zdj_pipeline_perf_report_line_t * zdj_pipeline_perf_report_line_for_name( 
-    zdj_pipeline_perf_report_t * report,
-    zdj_pipeline_perf_tag_name_t name 
+zdj_error_type_t zdj_perf_init( uint32_t tag_count );
+zdj_error_type_t zdj_enable_perf( void );
+zdj_error_type_t zdj_disable_perf( void );
+zdj_error_type_t zdj_reset_perf( void );
+
+bool zdj_perf_enabled( void );
+
+zdj_perf_tag_t * zdj_new_perf_tag_for_thread( zdj_system_thread_t thread );
+
+zdj_perf_report_t * zdj_new_perf_report( void );
+zdj_perf_report_line_t * zdj_perf_report_line_for_name( 
+    zdj_perf_report_t * report,
+    zdj_perf_tag_name_t name 
 );
-zdj_error_type_t zdj_pipeline_perf_report_add_tags( 
-    zdj_pipeline_perf_report_t * report, 
-    zdj_pipeline_perf_state_t * perf_state 
+zdj_error_type_t zdj_perf_report_add_tag( 
+    zdj_perf_report_t * report, 
+    zdj_perf_tag_t * tag,
+    zdj_perf_tag_t * next_tag
 );
+
+zdj_perf_report_t * zdj_perf_make_cycle_timing_report( void );
 
 #endif

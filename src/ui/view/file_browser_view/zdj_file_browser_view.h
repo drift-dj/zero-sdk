@@ -60,7 +60,7 @@ zdj_view_t * zdj_new_file_browser_view(
     char * select_dir_title
 );
 
-void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, void * _event );
+void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t * _event );
 
 zdj_view_t * zdj_new_file_browser_menu_for_path( 
     zdj_view_t * browser,

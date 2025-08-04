@@ -5,22 +5,26 @@
 #include <zerodj/signal/math/zdj_signal_math.h>
 
 zdj_gaussian_t * zdj_new_gaussian( int kernel_width, double blur ) {
-	// zdj_gaussian_t * kernel = calloc( 1, sizeof( zdj_gaussian_t ) );
-	// kernel->sigma = sigma;
-	// kernel->width = ceil( sigma * 4.5 ); // 3.5 is flavor - increase if edges get weird
-	// kernel->lut = calloc( kernel->width, sizeof( double ) );
-	// double sum = 0.0;
+	zdj_gaussian_t * kernel = calloc( 1, sizeof( zdj_gaussian_t ) );
+	double sigma = blur;
+	kernel->sigma = sigma;
+	kernel->width = ceil( sigma * 2.5 ); // 3.5 is flavor - increase if edges get weird
+	kernel->lut = calloc( kernel->width, sizeof( double ) );
+	double sum = 0.0;
 
-	// for ( int x = 0; x < kernel->width; x++ ) {
-	// 	kernel->lut[ x ] = exp( -0.5 * (pow(x/sigma, 2.0) )) / (2 * M_PI * sigma * sigma);
-	// 	// Accumulate the kernel values
-	// 	sum += kernel->lut[ x ] * 2;
-	// }
+	for ( int x = 0; x < kernel->width; x++ ) {
+		kernel->lut[ x ] = exp( -0.5 * (pow(x/sigma, 2.0) )) / (2 * M_PI * sigma * sigma);
+		// Accumulate the kernel values
+		sum += kernel->lut[ x ] * 2;
+	}
 
-	// // Normalize
-	// sum -= kernel->lut[ 0 ];
-	// for ( int x = 0; x < kernel->width; x++ ){ kernel->lut[ x ] /= sum; }
-	// return kernel;
+	// Normalize
+	sum -= kernel->lut[ 0 ];
+	for ( int x = 0; x < kernel->width; x++ ){ 
+		kernel->lut[ x ] /= sum;
+		// printf( "x: %1.3f\n", kernel->lut[ x ] ); 
+	}
+	return kernel;
 }
 
 zdj_error_type_t zdj_gaussian_free( zdj_gaussian_t * kernel ) {

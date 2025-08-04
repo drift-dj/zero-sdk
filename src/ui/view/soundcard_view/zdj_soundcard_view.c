@@ -5,7 +5,6 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -23,15 +22,17 @@
 
 static void _zdj_soundcard_view_draw( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_souncard_view_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_souncard_view_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_soundcard_view_deinit_state( zdj_view_t * view );
 
 static void _zdj_soundcard_view_cb( void * _context );
 
 static void _zdj_soundcard_view_handle_back( zdj_view_t * menu_view );
-static void _zdj_soundcard_handle_aux_bus_btn( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_view_handle_save_btn( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_view_handle_load_btn( zdj_view_t * view, void * _event );
+static void _zdj_soundcard_handle_aux_bus_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_handle_clock_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_handle_cv_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_view_handle_save_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_view_handle_load_btn( zdj_view_t * view, zdj_control_event_t * _event );
 
 static bool _zdj_soundcard_view_single_meter_for_port( zdj_soundcard_node_name_t name );
 
@@ -42,7 +43,7 @@ static zdj_soundcard_view_state_t * _zdj_soundcard_view_state;
 zdj_view_t * zdj_new_soundcard_view( zdj_soundcard_t * soundcard ) {
     zdj_view_t * soundcard_view = zdj_new_modal_view( zdj_modal_rect( ) );
     soundcard_view->draw = &_zdj_soundcard_view_draw;
-    soundcard_view->handle_hmi_event = &_zdj_souncard_view_handle_hmi;
+    // soundcard_view->handle_control_event = &_zdj_souncard_view_handle_control;
     soundcard_view->deinit_state = &_zdj_soundcard_view_deinit_state;
 
     // Add a state instance
@@ -75,28 +76,28 @@ zdj_view_t * zdj_new_soundcard_view( zdj_soundcard_t * soundcard ) {
     return soundcard_view;
 }
 
-void _zdj_souncard_view_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_souncard_view_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_soundcard_view_state_t * state = (zdj_soundcard_view_state_t*)view->state;
     
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
     // Grab Tone 1,2,3 + Jog push turn to send controls into channels.
-    if( (e->id == ZDJ_HMI_ENCO_2_JOG && e->type == ZDJ_HMI_EVENT_PRESS_ADJUST) ||
-        (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_ADJUST) ||
-        (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_RELEASE) ||
-        (e->id == ZDJ_HMI_ENCO_4_TONE_2 && e->type == ZDJ_HMI_EVENT_ADJUST)
+    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ||
+        e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ||
+        e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ||
+        e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0
     ) {
         // Get current menu scroll index
         zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)state->menu->state;
         zdj_view_t * meter = zdj_menu_view_item_at_current_scroll_index( state->menu );
         
         // Send event into meter
-        meter->handle_hmi_event( meter, _event );
+        meter->handle_control_event( meter, _event );
     } else {
         // Send remaining events down into the menu
-        state->menu->handle_hmi_event( state->menu, _event );
+        state->menu->handle_control_event( state->menu, _event );
     }   
 }
 
@@ -112,6 +113,8 @@ void _zdj_soundcard_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
 // This should be invoked anytime there's a bus or port linkage change in the soundcard
 void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // printf( "_zdj_soundcard_view_update_layout\n" );
+
     zdj_soundcard_view_state_t * state = (zdj_soundcard_view_state_t*)view->state;
     zdj_view_t * menu_view = state->menu;
     zdj_soundcard_t * soundcard = state->soundcard;
@@ -132,28 +135,31 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
 
     // Add analog out ports 0+1
     if( _zdj_soundcard_view_single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 ) ) {
+        // printf( "Adding ports 0 + 1 stereo\n" );
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0, true, false, meter_x 
         );
     } else {
+        // printf( "Adding port 0 mono\n" );
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0, true, false, meter_x 
         );
+        // printf( "Adding port 1 mono\n" );
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1, true, false, meter_x 
         );
     }
     // Add analog out ports 2+3
     if( _zdj_soundcard_view_single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 ) ) {
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, false, meter_x 
         );
     } else {
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, false, meter_x 
         );
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3, true, false, meter_x 
         );
     }
 
@@ -180,28 +186,28 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
     // Add analog in ports 0+1
     if( _zdj_soundcard_view_single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 ) ) {
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0, true, false, meter_x 
         );
     } else {
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0, true, false, meter_x 
         );
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1, true, false, meter_x 
         );
     }
 
     // Add analog in ports 2+3
     if( _zdj_soundcard_view_single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 ) ) {
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2, true, false, meter_x 
         );
     } else {
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2, true, false, meter_x 
         );
         meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3, true, meter_x 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3, true, false, meter_x 
         );
     }
 
@@ -217,62 +223,74 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
     meter_x += 11;
 
     // User Aux busses
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3, true, false, meter_x );
     }
 
     // User Clock busses
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 )->output_link_count) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3, true, false, meter_x );
     }
 
     // User CV busses
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_0 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_0, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_0 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_0 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_0, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_1 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_1, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_1 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_1 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_1, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_2 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_2, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_2 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_2 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_2, true, false, meter_x );
     }
-    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_3 )->output_link_count ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_3, true, meter_x );
+    if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_3 )->output_link_count ||
+        zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_3 )->input_link_count ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CV_3, true, false, meter_x );
     }
 
     // Add LR Bus
     meter_x += zdj_soundcard_view_add_meter_for_node( 
-        menu_view, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS, true, meter_x 
+        menu_view, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS, true, false, meter_x 
     );
     // Add Cue Bus
     meter_x += zdj_soundcard_view_add_meter_for_node( 
-        menu_view, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS, true, meter_x 
+        menu_view, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS, true, false, meter_x 
     );
     // Add Annotation Bus
     meter_x += zdj_soundcard_view_add_meter_for_node( 
-        menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS, true, meter_x 
+        menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS, true, false, meter_x 
     );
     // Add Recording Bus
     meter_x += zdj_soundcard_view_add_meter_for_node( 
-        menu_view, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS, true, meter_x 
+        menu_view, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS, true, false, meter_x 
     );
 
     // Add Button Stack
@@ -287,7 +305,7 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
             ZDJ_UI_ASSET_MIXER_ADD_BUS_HI,
             false
         );
-        bus_btn->handle_hmi_event = &_zdj_soundcard_handle_aux_bus_btn;
+        bus_btn->handle_control_event = &_zdj_soundcard_handle_aux_bus_btn;
         bus_btn->frame->x = btn_x;
         bus_btn->frame->y = bus_btn_y;
         bus_btn->frame->w = 16;
@@ -303,7 +321,7 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
             ZDJ_UI_ASSET_MIXER_ADD_CLK_HI,
             false
         );
-        // clk_btn->handle_hmi_event = &_zdj_bus_mixer_handle_bus_btn;
+        clk_btn->handle_control_event = &_zdj_soundcard_handle_clock_btn;
         clk_btn->frame->x = btn_x;
         clk_btn->frame->y = 9;
         clk_btn->frame->w = 16;
@@ -319,7 +337,7 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
             ZDJ_UI_ASSET_MIXER_ADD_CV_HI,
             false
         );
-        // cv_btn->handle_hmi_event = &_zdj_bus_mixer_handle_bus_btn;
+        cv_btn->handle_control_event = &_zdj_soundcard_handle_cv_btn;
         cv_btn->frame->x = btn_x;
         cv_btn->frame->y = 16;
         cv_btn->frame->w = 16;
@@ -335,7 +353,7 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
             ZDJ_UI_ASSET_MIXER_ADD_MIDI_HI,
             false
         );
-        // midi_btn->handle_hmi_event = &_zdj_bus_mixer_handle_bus_btn;
+        // midi_btn->handle_control_event = &_zdj_bus_mixer_handle_bus_btn;
         midi_btn->frame->x = btn_x;
         midi_btn->frame->y = 23;
         midi_btn->frame->w = 19;
@@ -350,7 +368,7 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
         ZDJ_UI_ASSET_MIXER_ADD_SAVE_BTN_HI,
         false
     );
-    save_btn->handle_hmi_event = &_zdj_soundcard_view_handle_save_btn;
+    save_btn->handle_control_event = &_zdj_soundcard_view_handle_save_btn;
     save_btn->frame->x = btn_x;
     save_btn->frame->y = 38;
     save_btn->frame->w = 16;
@@ -363,12 +381,14 @@ void _zdj_soundcard_view_update_layout( zdj_view_t * view, zdj_view_clip_t * cli
         ZDJ_UI_ASSET_MIXER_ADD_LOAD_BTN_HI,
         false
     );
-    // load_btn->handle_hmi_event = &_zdj_soundcard_view_handle_bus_btn;
+    // load_btn->handle_control_event = &_zdj_soundcard_view_handle_bus_btn;
     load_btn->frame->x = btn_x;
     load_btn->frame->y = 44;
     load_btn->frame->w = 16;
     load_btn->frame->h = 5;
     zdj_menu_view_add_item( menu_view, load_btn );
+
+    // printf( "_zdj_soundcard_view_update_layout done\n" );
 }
 
 void _zdj_soundcard_view_deinit_state( zdj_view_t * view ) {
@@ -388,12 +408,14 @@ int zdj_soundcard_view_add_meter_for_node(
     zdj_view_t * menu, 
     zdj_soundcard_node_name_t meter_name,
     bool show_detail,
+    bool mono,
     int x
 ) {
     zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, meter_name );
     zdj_soundcard_meter_label_t label = zdj_meter_label_for_node( node );
 
     // printf( "add_meter_for_node: %s, st:%d\n", zdj_soundcard_node_name[ node->name ], node->stereo );
+
     zdj_view_t * meter;
     if( zdj_soundcard_node_name_is_output( node->name ) ) {
         // Output nodes show meter for whatever is feeding them
@@ -401,9 +423,14 @@ int zdj_soundcard_view_add_meter_for_node(
         zdj_soundcard_node_t * source_node = zdj_soundcard_get_node_for_name( 
             zdj_soundcard, node->input_links->source_node 
         );
-        meter = zdj_soundcard_view_new_meter_for_node( source_node, label, show_detail );
+        meter = zdj_soundcard_view_new_meter_for_node( source_node, label, show_detail, !node->stereo );    
+    } else if ( zdj_soundcard_node_name_is_input( node->name ) ) {
+        zdj_soundcard_node_t * linked_node = zdj_soundcard_get_node_for_name( 
+            zdj_soundcard, node->output_links->dest_node
+        );
+        meter = zdj_soundcard_view_new_meter_for_node( linked_node, label, show_detail, !node->stereo );
     } else {
-        meter = zdj_soundcard_view_new_meter_for_node( node, label, show_detail );
+        meter = zdj_soundcard_view_new_meter_for_node( node, label, show_detail, mono );
     }
     
     if( !meter ) { return 0; }
@@ -429,18 +456,18 @@ int zdj_soundcard_view_add_meter_for_node(
 zdj_view_t * zdj_soundcard_view_new_meter_for_node( 
     zdj_soundcard_node_t * node, 
     zdj_soundcard_meter_label_t label,
-    bool show_detail
+    bool show_detail,
+    bool mono
 ) {
-    printf( "zdj_soundcard_view_new_meter_for_node: %s, %d, %d\n",
-        zdj_soundcard_node_name[ node->name ], label, show_detail
-    );
-    if ( !zdj_soundcard_node_name_show_in_mixer( node->name ) ) { return NULL; }
-    
+    // printf( "zdj_soundcard_view_new_meter_for_node: %s, %d, %d\n",
+    //     zdj_soundcard_node_name[ node->name ], label, show_detail
+    // );
+
     zdj_view_t * meter = NULL;
 
     // Select an appropriate meter view
     if ( zdj_soundcard_node_name_is_audio( node->name ) ) {
-        if( node->stereo ) { meter = zdj_new_audio_stereo_meter_view( node, label, show_detail ); } 
+        if( node->stereo && !mono ) { meter = zdj_new_audio_stereo_meter_view( node, label, show_detail ); } 
         else { meter = zdj_new_audio_mono_meter_view( node, label, show_detail ); }
     } else if ( zdj_soundcard_node_name_is_clock( node->name ) ) {
         meter = zdj_new_clock_meter_view( node, label, show_detail );
@@ -463,14 +490,13 @@ void _zdj_soundcard_view_handle_back( zdj_view_t * menu_view ) {
 
 // Handle a callback invoked from somewhere within the souncard config view stack
 void _zdj_soundcard_view_cb( void * _context ) {
-    printf( "_zdj_soundcard_view_cb\n" );
     zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)_context;
     zdj_soundcard_view_state_t * state = (zdj_soundcard_view_state_t*)context->main_view_state;
     // Set needs_layout_update
     state->needs_layout_update = true;
 }
 
-void _zdj_soundcard_handle_aux_bus_btn( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_handle_aux_bus_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     // Create a new context 
     zdj_soundcard_node_config_context_t * context = zdj_soundcard_new_node_config_context( );
     context->soundcard = zdj_soundcard;
@@ -482,7 +508,31 @@ void _zdj_soundcard_handle_aux_bus_btn( zdj_view_t * view, void * _event ) {
     zdj_push_subview( zdj_root_view( ), zdj_new_soundcard_options( context ), true );
 }
 
-void _zdj_soundcard_view_handle_save_btn( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_handle_clock_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
+    // Create a new context 
+    zdj_soundcard_node_config_context_t * context = zdj_soundcard_new_node_config_context( );
+    context->soundcard = zdj_soundcard;
+    context->node = zdj_soundcard_get_available_clock_bus_node( zdj_soundcard );
+    context->main_view_cb = &_zdj_soundcard_view_cb;
+    context->main_view_state = (void*)_zdj_soundcard_view_state;
+    context->meter_status_counter = 0;
+
+    zdj_push_subview( zdj_root_view( ), zdj_new_soundcard_options( context ), true );
+}
+
+void _zdj_soundcard_handle_cv_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
+    // Create a new context 
+    zdj_soundcard_node_config_context_t * context = zdj_soundcard_new_node_config_context( );
+    context->soundcard = zdj_soundcard;
+    context->node = zdj_soundcard_get_available_cv_bus_node( zdj_soundcard );
+    context->main_view_cb = &_zdj_soundcard_view_cb;
+    context->main_view_state = (void*)_zdj_soundcard_view_state;
+    context->meter_status_counter = 0;
+
+    zdj_push_subview( zdj_root_view( ), zdj_new_soundcard_options( context ), true );
+}
+
+void _zdj_soundcard_view_handle_save_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     // Push text edit for soundcard name
     zdj_view_t * name_edit_view = zdj_new_text_input_view( 
         _zdj_soundcard_view_text_input_cb, 
@@ -491,7 +541,7 @@ void _zdj_soundcard_view_handle_save_btn( zdj_view_t * view, void * _event ) {
     zdj_push_subview( zdj_root_view( ), name_edit_view, true );
 }
 
-void _zdj_soundcard_view_handle_load_btn( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_view_handle_load_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     // Open soundcard selection list
 }
 
@@ -506,7 +556,7 @@ bool _zdj_soundcard_view_single_meter_for_port( zdj_soundcard_node_name_t name )
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
         port_node = zdj_soundcard_get_node_for_name( zdj_soundcard, name );
         source_node = zdj_soundcard_get_node_for_name( zdj_soundcard, port_node->input_links->source_node );
-        if( zdj_soundcard_node_name_is_audio( source_node->name ) && source_node->stereo ) { return true; }
+        if( zdj_soundcard_node_name_is_audio( source_node->name ) && port_node->stereo ) { return true; }
         else { return false; }
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:

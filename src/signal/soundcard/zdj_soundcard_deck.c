@@ -20,15 +20,18 @@ zdj_error_type_t zdj_soundcard_link_deck(
     switch ( deck->num ) {
         case ZDJ_DECK_NUM_1:
             input_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT );
-            input_node->get_edge_data = deck->get_edge_data;
+            input_node->get_edge_input_data = deck->get_edge_data;
+            input_node->edge_input_link = deck;
             break;
         case ZDJ_DECK_NUM_2:
             input_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
-            input_node->get_edge_data = deck->get_edge_data;
+            input_node->get_edge_input_data = deck->get_edge_data;
+            input_node->edge_input_link = deck;
             break;
         case ZDJ_DECK_NUM_EXT:
             input_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
-            input_node->get_edge_data = deck->get_edge_data;
+            input_node->get_edge_input_data = deck->get_edge_data;
+            input_node->edge_input_link = deck;
             break;
     }
 

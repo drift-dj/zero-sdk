@@ -2,7 +2,6 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -10,14 +9,14 @@
 #include <zerodj/ui/view/modal_view/zdj_modal_view.h>
 
 void _zdj_modal_view_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-void _zdj_modal_view_handle_hmi( zdj_view_t * menu_stack, void * _event );
+void _zdj_modal_view_handle_control( zdj_view_t * menu_stack, zdj_control_event_t * _event );
 void _zdj_modal_view_deinit_state( zdj_view_t * modal_view );
 
 zdj_view_t * zdj_new_modal_view( zdj_rect_t * frame ) {
     zdj_view_t * modal_view = zdj_new_view( frame );
     modal_view->type = ZDJ_VIEW_MODAL;
     modal_view->draw = &_zdj_modal_view_draw;
-    modal_view->handle_hmi_event = _zdj_modal_view_handle_hmi;
+    modal_view->handle_control_event = _zdj_modal_view_handle_control;
     modal_view->deinit_state = &_zdj_modal_view_deinit_state;
 
     modal_view->frame->x = ZDJ_MODAL_X;
@@ -38,15 +37,15 @@ void _zdj_modal_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
 }
 
-void _zdj_modal_view_handle_hmi( zdj_view_t * modal_view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_modal_view_handle_control( zdj_view_t * modal_view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
     // Send events down into the subview stack
     zdj_view_t * top_subview = zdj_view_stack_top_subview_of( modal_view );
-    top_subview->handle_hmi_event( top_subview, _event );
+    top_subview->handle_control_event( top_subview, _event );
 }
 
 void _zdj_modal_view_deinit_state( zdj_view_t * modal_view ) {

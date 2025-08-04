@@ -5,7 +5,6 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/system/error/zdj_error.h>
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 // #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/view/label_view/zdj_label_view.h>
@@ -19,7 +18,7 @@
 
 static void _zdj_log_view_draw_tail( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _zdj_log_view_draw_cat( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_log_view_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_log_view_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static zdj_error_type_t _zdj_log_view_cleanup_str( char * buf, size_t buf_len );
 
 zdj_view_t * zdj_new_log_view( char * log_path, zdj_log_view_type_t type, zdj_rect_t * frame ) {
@@ -31,7 +30,7 @@ zdj_view_t * zdj_new_log_view( char * log_path, zdj_log_view_type_t type, zdj_re
     } else if( type == ZDJ_LOG_VIEW_TYPE_CAT ) {
         view->draw = &_zdj_log_view_draw_cat;
     }
-    view->handle_hmi_event = &_zdj_log_view_handle_hmi;
+    view->handle_control_event = &_zdj_log_view_handle_control;
 
     // Add a scroll_view
     zdj_view_t * scroll_view = zdj_new_scroll_view( frame );
@@ -118,41 +117,35 @@ static void _zdj_log_view_draw_cat( zdj_view_t * view, zdj_view_clip_t * clip ) 
     }
 }
 
-static void _zdj_log_view_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+static void _zdj_log_view_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_log_view_state_t * state = (zdj_log_view_state_t*)view->state;
     zdj_scroll_view_state_t * scroll_state = (zdj_scroll_view_state_t*)state->scroll_view->state;
 
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
     
-    if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) {
-            e->blocked = true;
-            // Scroll the scroll view
-            zdj_point_t point;
-            point.x = 0;
-            point.y = (float)e->i_val;
-            zdj_scroll_view_by_point( state->scroll_view, &point );
-        }
-    } else if( e->id == ZDJ_HMI_ENCO_3_TONE_1 ) {
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) {
-            e->blocked = true;
-            // Scroll the scroll view
-            zdj_point_t point;
-            point.x = 0;
-            point.y = e->i_val;
-            zdj_scroll_view_by_point( state->scroll_view, &point );
-        }
-    } else if( e->id == ZDJ_HMI_ENCO_4_TONE_2 ) {
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) {
-            e->blocked = true;
-            // Scroll the scroll view
-            zdj_point_t point;
-            point.x = e->i_val;
-            point.y = 0;
-            zdj_scroll_view_by_point( state->scroll_view, &point );
-        }
+    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) {
+        e->blocked = true;
+        // Scroll the scroll view
+        zdj_point_t point;
+        point.x = 0;
+        point.y = (float)e->i_val;
+        zdj_scroll_view_by_point( state->scroll_view, &point );
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ) {
+        e->blocked = true;
+        // Scroll the scroll view
+        zdj_point_t point;
+        point.x = 0;
+        point.y = e->i_val;
+        zdj_scroll_view_by_point( state->scroll_view, &point );
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0 ) {
+        e->blocked = true;
+        // Scroll the scroll view
+        zdj_point_t point;
+        point.x = e->i_val;
+        point.y = 0;
+        zdj_scroll_view_by_point( state->scroll_view, &point );
     }
 }
 

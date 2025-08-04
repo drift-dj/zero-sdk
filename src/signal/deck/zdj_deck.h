@@ -47,7 +47,7 @@ typedef struct {
     zdj_deck_num_t num;
 
     // Link into the soundcard graph's fast-cycle mix flow.
-    void ( *get_edge_data )( zdj_pipeline_node_t * );
+    void ( *get_edge_data )( void *, zdj_pipeline_node_t *, bool );
 
     // internal state
     void * state;
@@ -55,7 +55,14 @@ typedef struct {
 } zdj_deck_t;
 
 typedef struct {
-    zdj_pipeline_node_t * tone_node;
+    float s1_p;
+    float s1_f;
+    float s2_p;
+    float s2_f;
+    float s3_p;
+    float s3_f;
+    float s4_p;
+    float s4_f;
 } zdj_test_deck_state_t;
 
 typedef struct {

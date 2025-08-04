@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -21,7 +21,7 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _zdj_soundcard_select_node_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_soundcard_select_node_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_soundcard_select_node_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_soundcard_select_node_deinit_state( zdj_view_t * view );
 static void _zdj_soundcard_select_node_handle_back( zdj_view_t * menu_view );
 
@@ -30,8 +30,8 @@ static zdj_error_type_t _zdj_soundcard_add_select_menu_item(
     zdj_soundcard_node_config_context_t * context,
     zdj_soundcard_node_name_t name
 );
-static void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_select_node_handle_remove( zdj_view_t * view, void * _event );
+static void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_select_node_handle_remove( zdj_view_t * view, zdj_control_event_t * _event );
 
 zdj_view_t * zdj_new_soundcard_select_node( 
     zdj_soundcard_node_config_context_t * context,
@@ -88,7 +88,7 @@ zdj_view_t * zdj_new_soundcard_select_node(
             remove_str, 
             ZDJ_MENU_ITEM_LAYOUT_BASIC_R 
         );
-        item->handle_hmi_event = &_zdj_soundcard_select_node_handle_remove;
+        item->handle_control_event = &_zdj_soundcard_select_node_handle_remove;
         zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
         item_state->data->ptr = context; // Store config context for handling selection
         item_state->data->i_val = edit_node_name; // Store this menu item's node name str
@@ -131,7 +131,7 @@ void _zdj_soundcard_select_node_handle_back( zdj_view_t * menu_view ) {
     zdj_pop_subview_of( zdj_root_view( ), true );
 }
 
-void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * node_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)node_state->data->ptr;
 
@@ -141,13 +141,14 @@ void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, void * _event 
         node_state->data->i_val 
     );
     context->remove_node_selection = NULL;
-    printf( "_zdj_soundcard_select_node_handle_select: %s %p %p %p\n",
-        zdj_soundcard_node_name[ node_state->data->i_val ],
-        context->new_node_selection,
-        context->options_view_cb,
-        context->main_view_cb
-    );
+    // printf( "_zdj_soundcard_select_node_handle_select: %s %p %p %p\n",
+    //     zdj_soundcard_node_name[ node_state->data->i_val ],
+    //     context->new_node_selection,
+    //     context->options_view_cb,
+    //     context->main_view_cb
+    // );
     if( context->options_view_cb ) { 
+        // printf( "context: %p - %p\n", context, context->options_view_cb );
         context->options_view_cb( context ); 
     }
     if( context->main_view_cb ) { 
@@ -155,9 +156,11 @@ void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, void * _event 
     }
     // Select and pop to options
     zdj_pop_subview_of( zdj_root_view( ), true );
+
+    // printf( "_zdj_soundcard_select_node_handle_select done\n" );
 }
 
-void _zdj_soundcard_select_node_handle_remove( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_select_node_handle_remove( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * node_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)node_state->data->ptr;
     
@@ -167,18 +170,18 @@ void _zdj_soundcard_select_node_handle_remove( zdj_view_t * view, void * _event 
         node_state->data->i_val 
     );
     context->new_node_selection = NULL;
-    printf( "_zdj_soundcard_select_node_handle_remove: %s %p %p %p\n",
-        zdj_soundcard_node_name[ node_state->data->i_val ],
-        context->remove_node_selection,
-        context->options_view_cb,
-        context->main_view_cb
-    );
+    // printf( "_zdj_soundcard_select_node_handle_remove: %s %p %p %p\n",
+    //     zdj_soundcard_node_name[ node_state->data->i_val ],
+    //     context->remove_node_selection,
+    //     context->options_view_cb,
+    //     context->main_view_cb
+    // );
     if( context->options_view_cb ) { 
-        printf( "calling ops cb\n" );
+        // printf( "calling ops cb\n" );
         context->options_view_cb( context ); 
     }
     if( context->main_view_cb ) { 
-        printf( "calling main cb\n" );
+        // printf( "calling main cb\n" );
         context->main_view_cb( context ); 
     }
     // Select and pop to options
@@ -195,7 +198,11 @@ zdj_error_type_t _zdj_soundcard_add_select_menu_item(
     if( zdj_soundcard_node_name_is_analog_input( name ) ||
         zdj_soundcard_node_name_is_analog_output( name ) 
     ) {
-        zdj_soundcard_get_port_title_with_stereo( context->soundcard, name, adjusted_name );
+        if( zdj_soundcard_get_node_for_name( context->soundcard, name )->stereo ) {
+            zdj_soundcard_get_port_title_with_stereo( context->soundcard, name, adjusted_name );
+        } else {
+            strcpy( adjusted_name, zdj_soundcard_node_name[ name ] );
+        }
     } else {
         strcpy( adjusted_name, zdj_soundcard_node_name[ name ] );
     }
@@ -205,7 +212,7 @@ zdj_error_type_t _zdj_soundcard_add_select_menu_item(
         adjusted_name, 
         ZDJ_MENU_ITEM_LAYOUT_BASIC_R 
     );
-    item->handle_hmi_event = &_zdj_soundcard_select_node_handle_select;
+    item->handle_control_event = &_zdj_soundcard_select_node_handle_select;
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
     item_state->data->ptr = context; // Store config context for handling selection
     item_state->data->i_val = name; // Store this menu item's node name
@@ -216,7 +223,7 @@ zdj_error_type_t zdj_soundcard_build_select_node_output_menu(
     zdj_view_t * menu,
     zdj_soundcard_node_config_context_t * context 
 ) {
-    printf( "zdj_soundcard_build_select_node_output_menu\n" );
+    // printf( "zdj_soundcard_build_select_node_output_menu\n" );
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Input Ports" ) );
      _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 );
     // Only show in 1 if in 0/1 are mono

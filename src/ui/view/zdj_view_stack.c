@@ -5,16 +5,18 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/controls/zdj_controls.h>
 #include <zerodj/system/debug/zdj_debug.h>
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/perf/zdj_perf.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/panel/accessibility/zdj_accessibility_panel.h>
 #include <zerodj/ui/panel/debug/zdj_debug_panel.h>
+#include <zerodj/ui/panel/perf/zdj_perf_panel.h>
 #include <zerodj/ui/panel/widget/zdj_widget_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/system/display/zdj_display.h>
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/health/zdj_health_type.h>
 
 zdj_view_t * zdj_view_stack_bottom;
@@ -25,8 +27,9 @@ zdj_view_t * zdj_view_stack_root_view;
 zdj_view_t * zdj_view_stack_widget_panel;
 zdj_view_t * zdj_view_stack_accessibility_panel;
 zdj_view_t * zdj_view_stack_debug_panel;
+zdj_view_t * zdj_view_stack_perf_panel;
 
-static void _zdj_view_stack_handle_events( zdj_view_t * view );
+// static void _zdj_view_stack_handle_events( zdj_view_t * view );
 static void _zdj_view_stack_draw( zdj_view_t * view );
 
 zdj_view_t * zdj_root_view( void ) {
@@ -45,6 +48,10 @@ zdj_view_t * zdj_debug_panel( void ) {
     return zdj_view_stack_debug_panel;
 }
 
+zdj_view_t * zdj_perf_panel( void ) {
+    return zdj_view_stack_perf_panel;
+}
+
 void zdj_view_stack_init( void ) {
     zdj_view_stack_root_view = zdj_new_view( &view_stack_frame );
     zdj_view_stack_root_view->subview_clip->src.w = zdj_view_stack_root_view->subview_clip->dst.w = 128;
@@ -61,6 +68,10 @@ void zdj_view_stack_init( void ) {
     zdj_view_stack_debug_panel = zdj_new_debug_panel( );
     zdj_view_stack_debug_panel->subview_clip->src.w = zdj_view_stack_debug_panel->subview_clip->dst.w = 128;
     zdj_view_stack_debug_panel->subview_clip->src.h = zdj_view_stack_debug_panel->subview_clip->dst.h = 64;
+
+    zdj_view_stack_perf_panel = zdj_new_perf_panel( );
+    zdj_view_stack_perf_panel->subview_clip->src.w = zdj_view_stack_perf_panel->subview_clip->dst.w = 128;
+    zdj_view_stack_perf_panel->subview_clip->src.h = zdj_view_stack_perf_panel->subview_clip->dst.h = 64;
     
     zdj_delete_stack = NULL;
 }
@@ -71,19 +82,39 @@ void zdj_view_stack_deinit( void ) {
 
 void zdj_view_stack_update( void ) {
     zdj_view_t * view;
-    zdj_hmi_event_t * event;
 
-    // Pass events into views from highest to lowest.
-    _zdj_view_stack_handle_events( zdj_debug_panel( ) );
-    // _zdj_view_stack_handle_events( zdj_accessibility_panel( ) );
-    // _zdj_view_stack_handle_events( zdj_widget_panel( ) );
-    _zdj_view_stack_handle_events( zdj_root_view( ) );
+    // Open a tag for the UI cycle
+    zdj_perf_tag_t * tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_UI );
+    tag->name = ZDJ_PERF_TAG_UI_CYCLE;
+    tag->start = zdj_perf_time( );
+
+    
+    // If there are unhandled events in the event ring buffer...
+    int start_ind = zdj_ui_event_buf_read;
+    int end_ind = zdj_ui_event_buf_write;
+    if( start_ind != end_ind ) {
+        // ...send events into views for handling.
+        zdj_view_stack_handle_events( 
+            start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_debug_panel( ) ) 
+        );
+        zdj_view_stack_handle_events( 
+            start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_perf_panel( ) ) 
+        );
+        // _zdj_view_stack_handle_events( zdj_accessibility_panel( ) );
+        // _zdj_view_stack_handle_events( zdj_widget_panel( ) );
+        zdj_view_stack_handle_events( 
+            start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_root_view( ) ) 
+        );
+        // Update the event buf's read head so we don't re-process these events
+        zdj_ui_event_buf_read = end_ind;
+    }
 
     // Draw views from lowest to highest.
     _zdj_view_stack_draw( zdj_root_view( ) );
     // _zdj_view_stack_draw( zdj_widget_panel( ) );
     // _zdj_view_stack_draw( zdj_accessibility_panel( ) );
     _zdj_view_stack_draw( zdj_debug_panel( ) );
+    _zdj_view_stack_draw( zdj_perf_panel( ) );
 
     // Delete everything in the delete stack
     zdj_view_t * delete_view = zdj_delete_stack;
@@ -93,13 +124,15 @@ void zdj_view_stack_update( void ) {
         delete_view = next_delete_view;
     }
     zdj_delete_stack = NULL;
+
+    tag->end = zdj_perf_time( );
 }
 
-void _zdj_view_stack_handle_events( zdj_view_t * view ) {
-    // Pass events into view's subviews (top-down)
-    zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
-    if( top_subview ) { zdj_view_stack_handle_events( top_subview ); }
-}
+// void _zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view ) {
+//     // Handle events top-down
+//     zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+//     if( top_subview ) { zdj_view_stack_handle_events( top_subview ); }
+// }
 
 void _zdj_view_stack_draw( zdj_view_t * view ) {
     // Draw view's subviews (bottom-up)
@@ -111,21 +144,23 @@ void zdj_view_stack_clear_screen( void ) {
     boxColor( zdj_renderer( ), 0, 0, 128, 64, 0xFF000000 );
 }
 
-// Walk backward thru a view's stack of siblings.
+// Walk top-to-bottom thru a view's stack of siblings.
 // Note that this only walks siblings, it doesn't recurse into subviews.
 // This function must be called on the LAST view in the linked list of subviews.
-void zdj_view_stack_handle_events( zdj_view_t * view ) {
+// Process events from the circular buffer, as specified by start/end_ind.
+void zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view ) {
+    if( !view ) { return; }
     // Get a prev ref before processing view's events in case it gets deleted during processing.
     zdj_view_t * view_prev = view->prev;
-    zdj_hmi_event_t * event = zdj_hmi_event_base;
-    if( view && view->handle_hmi_event && event ) {
-        while( event ) {
-            view->handle_hmi_event( view, event );
-            event = (zdj_hmi_event_t *)event->next;
-        }
+    int i = start_ind;
+    while ( i != end_ind ) {
+        i++;
+        i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
+        // Step thru ring buffer, passing each event down into view's subviews.
+        view->handle_control_event( view, &zdj_ui_event_buf[ i ] );
     }
     if( view_prev ) {
-        zdj_view_stack_handle_events( view_prev );
+        zdj_view_stack_handle_events( start_ind, end_ind, view_prev );
     }
 }
 

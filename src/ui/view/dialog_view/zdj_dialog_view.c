@@ -2,7 +2,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+#include <zerodj/controls/zdj_controls.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -14,9 +14,9 @@
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 
 void _zdj_dialog_view_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-void _zdj_dialog_view_handle_hmi( zdj_view_t * menu_stack, void * _event );
+void _zdj_dialog_view_handle_control( zdj_view_t * menu_stack, zdj_control_event_t * _event );
 void _zdj_dialog_view_deinit_state( zdj_view_t * dialog_view );
-void _zdj_dialog_okay_btn_handle_event( zdj_view_t * view, void * _event );
+void _zdj_dialog_okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event );
 
 zdj_view_t * zdj_new_dialog_view( 
     zdj_dialog_view_type_t type,
@@ -27,7 +27,7 @@ zdj_view_t * zdj_new_dialog_view(
     zdj_view_t * dialog_view = zdj_new_view( zdj_dialog_rect( ) );
     dialog_view->type = ZDJ_VIEW_DIALOG;
     dialog_view->draw = &_zdj_dialog_view_draw;
-    dialog_view->handle_hmi_event = _zdj_dialog_view_handle_hmi;
+    dialog_view->handle_control_event = _zdj_dialog_view_handle_control;
     dialog_view->deinit_state = &_zdj_dialog_view_deinit_state;
 
     dialog_view->frame->x = ZDJ_DIALOG_X;
@@ -67,7 +67,7 @@ zdj_view_t * zdj_new_dialog_view(
     zdj_view_t * okay_btn = zdj_new_menu_item( "OKAY", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     zdj_menu_item_view_state_t * okay_btn_state = (zdj_menu_item_view_state_t*)okay_btn->state;
     okay_btn_state->data->ptr = dialog_view;
-    okay_btn->handle_hmi_event = &_zdj_dialog_okay_btn_handle_event;
+    okay_btn->handle_control_event = &_zdj_dialog_okay_btn_handle_event;
     okay_btn->frame->x = 76;
     okay_btn->frame->y = 25;
     okay_btn->frame->w = 19;
@@ -93,18 +93,18 @@ void _zdj_dialog_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // SDL_RenderCopy( zdj_renderer( ), zdj_asset_atlas( ), &zdj_ui_assets[ ZDJ_UI_ASSET_DOT_BG ], &(SDL_Rect){0,0,127,64} );
 }
 
-void _zdj_dialog_view_handle_hmi( zdj_view_t * dialog_view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_dialog_view_handle_control( zdj_view_t * dialog_view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
     // Send events down into the subview stack
     zdj_view_t * top_subview = zdj_view_stack_top_subview_of( dialog_view );
-    top_subview->handle_hmi_event( top_subview, _event );
+    top_subview->handle_control_event( top_subview, _event );
 }
 
-void _zdj_dialog_okay_btn_handle_event( zdj_view_t * view, void * _event ) {
+void _zdj_dialog_okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * view_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * dialog = view_state->data->ptr;
     zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;

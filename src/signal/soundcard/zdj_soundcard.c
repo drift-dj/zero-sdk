@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
+#include <zerodj/signal/pipeline/node/analysis/waveform/zdj_waveform.h>
 #include <zerodj/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.h>
 #include <zerodj/signal/pipeline/node/audio/io/zdj_io_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
@@ -45,7 +46,13 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     io_node_state->out_1_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 )->data_pipe;
     io_node_state->out_2_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 )->data_pipe;
     io_node_state->in_1_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 )->data_pipe;
+    zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1 )->data_pipe = io_node_state->in_1_buffer;
     io_node_state->in_2_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 )->data_pipe;
+    zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3 )->data_pipe = io_node_state->in_2_buffer;
+
+    // Create a waveform pipeline node to process o-scope data.
+    soundcard->scope_waveform = zdj_new_live_waveform( );
+    soundcard->scope_node_name = ZDJ_SOUNDCARD_NODE_NAME_NONE;
 
     // Start the transport pipeline
     zdj_soundcard_start( soundcard );
@@ -90,47 +97,29 @@ zdj_error_type_t zdj_soundcard_stop( zdj_soundcard_t * soundcard ) {
     zdj_io_analog_stop( soundcard->analog_io_node );
 }
 
-zdj_error_type_t zdj_soundcard_enable_perf( zdj_soundcard_t * soundcard, uint32_t tag_count ) {
-    zdj_pipeline_enable_perf( soundcard->analog_io_node, tag_count );
-    // Add slow-cycle domain nodes to perf here
-}
-
-zdj_error_type_t zdj_soundcard_disable_perf( zdj_soundcard_t * soundcard ) {
-    zdj_pipeline_disable_perf( soundcard->analog_io_node );
-}
-
-zdj_error_type_t zdj_soundcard_reset_perf( zdj_soundcard_t * soundcard ) {
-    zdj_pipeline_reset_perf( soundcard->analog_io_node );
-}
-
-zdj_pipeline_perf_report_t * zdj_soundcard_make_fast_cycle_perf_report(zdj_soundcard_t * soundcard ) {
-    zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t*)soundcard->analog_io_node->state;
-    zdj_pipeline_perf_report_t * report = zdj_pipeline_new_perf_report( );
-    if( soundcard->analog_io_node->perf ) {
-        zdj_pipeline_perf_report_add_tags( report, soundcard->analog_io_node->perf );
-    }
-    report->cycle_count = state->shared_audio_state->cycle_count;
-    report->miss_count = state->shared_audio_state->miss_count;
-    return report;
-}
-
-
 // M7 soundcard has signaled that there is a new cycle of buffers available for processing.
 // This CB sets the cadence for Soundcard's fast-cycle - finish before next cycle or we stutter.
 void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
+
+
+    // // Transform output samples from io_node's output float buffers to shared M7 buffers
+    // zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
+
     // Note this is currently running as a 'single-buffered' op.
     // New cycle's data isn't available until after full soundcard has been mixed + DSP'd.
     // If we get into underrun trouble, go to 'double-buffered' model, immediately
     // copying last cycle's outut to shared M7 buffer before processing next cycle.
 
+    // Reset all node buffers and mix_complete flags for this cycle.
+    for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
+        zdj_soundcard_clear_buffer( 
+            zdj_soundcard, 
+            zdj_soundcard_get_node_for_name( zdj_soundcard, i )
+        );
+    }
+
     // Transform input samples from shared M7 buffer to io_node's input float buffers
     zdj_analog_io_pull_samples( zdj_soundcard->analog_io_node );
-
-    // Reset all node mix_complete flags for this cycle
-    for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
-        zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, i );
-        node->mix_complete = false;
-    }
 
     // mix_inputs will recursively walk the graph of input nodes for a single node.
     // How to deal with stereo output channels? - do we need to?
@@ -143,6 +132,20 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     zdj_soundcard_node_t * ana_out_3 = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
     zdj_soundcard_mix_input( zdj_soundcard, ana_out_2 );
     if( !ana_out_3->stereo ) { zdj_soundcard_mix_input( zdj_soundcard, ana_out_3 ); }
+
+    // Explicitly mix inputs to persistent nodes - Main bus, Cue, Decks, etc.
+    // If they aren't link to an output, nodes won't get a metering update.
+    // zdj_soundcard_node_t * main_bus = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
+    // zdj_soundcard_mix_input( zdj_soundcard, main_bus );
+    // zdj_soundcard_node_t * cue_bus = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
+    // zdj_soundcard_mix_input( zdj_soundcard, cue_bus );
+    // zdj_soundcard_node_t * recording_bus = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
+    // zdj_soundcard_mix_input( zdj_soundcard, recording_bus );
+    for( int i=ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
+        zdj_soundcard_node_t * bus = zdj_soundcard_get_node_for_name( zdj_soundcard, i );
+        zdj_soundcard_mix_input( zdj_soundcard, bus );
+    }
+
 
     // zdj_soundcard_mix_inputs( zdj_soundcard_get_node_for_name( 
     //     zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT

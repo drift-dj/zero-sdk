@@ -23,7 +23,7 @@
 
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
-#include <zerodj/signal/pipeline/perf/zdj_pipeline_perf.h>
+#include <zerodj/system/perf/zdj_perf.h>
 #include <zerodj/system/m7/zdj_m7.h>
 
 typedef struct {

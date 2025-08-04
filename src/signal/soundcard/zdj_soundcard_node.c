@@ -15,7 +15,7 @@ zdj_soundcard_node_t * zdj_soundcard_create_node( zdj_soundcard_node_name_t name
     zdj_soundcard_node_t * node = calloc( 1, sizeof( zdj_soundcard_node_t ) );
     node->name = name;
 
-    printf( "zdj_soundcard_create_node: %s\n", zdj_soundcard_node_name[ node->name ] );
+    // printf( "zdj_soundcard_create_node: %s\n", zdj_soundcard_node_name[ node->name ] );
 
     // Get props from the dto
     node->link_map = zdj_soundcard_dto_get_linkmap_for_node_name( &zdj_soundcard->dto, name );
@@ -32,7 +32,13 @@ zdj_soundcard_node_t * zdj_soundcard_create_node( zdj_soundcard_node_name_t name
     if( zdj_soundcard_node_name_is_audio( name ) ) {
         // Add a buffer if applicable
         node->data_pipe = zdj_new_audio_buffer_node( ZDJ_SOUNDCARD_BUF_LEN, node->stereo+1 );
-        node->meter_pipe = zdj_new_meter_node( ZDJ_METER_NODE_TYPE_AUDIO, node->data_pipe );
+        node->meter_pipe = zdj_new_meter_node( ZDJ_METER_NODE_TYPE_AUDIO, node->stereo+1 );
+    } else if( zdj_soundcard_node_name_is_cv( name ) ) {
+        node->data_pipe = zdj_new_audio_buffer_node( ZDJ_SOUNDCARD_BUF_LEN, node->stereo+1 );
+        node->meter_pipe = zdj_new_meter_node( ZDJ_METER_NODE_TYPE_CV, node->stereo+1 );
+    } else if( zdj_soundcard_node_name_is_clock( name ) ) {
+        node->data_pipe = zdj_new_audio_buffer_node( ZDJ_SOUNDCARD_BUF_LEN, node->stereo+1 );
+        node->meter_pipe = zdj_new_meter_node( ZDJ_METER_NODE_TYPE_CLOCK, node->stereo+1 );
     }
 
     // Process the linkmap into links
@@ -128,10 +134,10 @@ zdj_error_type_t zdj_soundcard_link_source_node_to_dest_node(
     zdj_soundcard_node_t * source_node,
     zdj_soundcard_node_t * dest_node
 ) {
-    printf( "zdj_soundcard_link_source_node_to_dest_node: %s -> %s\n",
-        zdj_soundcard_node_name[ source_node->name ],
-        zdj_soundcard_node_name[ dest_node->name ]
-    );
+    // printf( "zdj_soundcard_link_source_node_to_dest_node: %s -> %s\n",
+    //     zdj_soundcard_node_name[ source_node->name ],
+    //     zdj_soundcard_node_name[ dest_node->name ]
+    // );
     zdj_soundcard_link_bitmap_t source_link_map;
     zdj_soundcard_link_bitmap_t dest_node_mask;
 
@@ -165,10 +171,10 @@ zdj_error_type_t zdj_soundcard_unlink_source_node_from_dest_node(
     zdj_soundcard_node_t * source_node,
     zdj_soundcard_node_t * dest_node
 ) {
-    printf( "zdj_soundcard_unlink_source_node_from_dest_node %s x-> %s\n",
-        zdj_soundcard_node_name[ source_node->name ],
-        zdj_soundcard_node_name[ dest_node->name ] 
-    );
+    // printf( "zdj_soundcard_unlink_source_node_from_dest_node %s x-> %s\n",
+    //     zdj_soundcard_node_name[ source_node->name ],
+    //     zdj_soundcard_node_name[ dest_node->name ] 
+    // );
     zdj_soundcard_link_bitmap_t source_link_map;
     zdj_soundcard_link_bitmap_t dest_node_mask;
 
@@ -177,10 +183,10 @@ zdj_error_type_t zdj_soundcard_unlink_source_node_from_dest_node(
     );
     dest_node_mask = 1ULL << dest_node->name;
     if( source_link_map & dest_node_mask ) {
-        printf( "flipping %s bit: %s\n", 
-            zdj_soundcard_node_name[ source_node->name ],
-            zdj_soundcard_node_name[ dest_node->name ] 
-        );
+        // printf( "flipping %s bit: %s\n", 
+        //     zdj_soundcard_node_name[ source_node->name ],
+        //     zdj_soundcard_node_name[ dest_node->name ] 
+        // );
         // Flip the link map bit
         source_link_map ^= dest_node_mask;
         zdj_soundcard_dto_set_linkmap_for_node_name( 
@@ -294,21 +300,72 @@ int zdj_soundcard_count_output_nodes_from_link_map(
 
 
 void zdj_soundcard_set_stereo_for_node( zdj_soundcard_node_t * node, bool stereo ) {
+    printf( "zdj_soundcard_set_stereo_for_node\n" );
     zdj_soundcard_node_t * stereo_partner_node = zdj_soundcard_node_get_stereo_partner_node( node );
     node->stereo = stereo;
-    // zdj_soundcard_dto_set_stereo_for_node_name( node )
     if( stereo_partner_node ) { 
         // Link stereo
         stereo_partner_node->stereo = stereo; 
-        // zdj_soundcard_dto_set_stereo_for_node_name( partner )
 
         // If stereo, join up the signals
         if( stereo ) { 
             stereo_partner_node->signal_type = node->signal_type;
-            // zdj_soundcard_dto_set_sig_type_for_node_name( partner )
             stereo_partner_node->mute = node->mute;
-            // zdj_soundcard_dto_set_mute_for_node_name( partner )
-        }
+            
+            // Output/Input ports need special node link handling.
+            // Require left channel only to have linkage when stereo.
+            if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1 ||
+                node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3
+            ) {
+                printf( "unlinking node for stereo merge: %s\n", zdj_soundcard_node_name[ node->name ] );
+                for( int i=0; i<node->input_link_count; i++ ) {
+                    zdj_soundcard_unlink_source_node_from_dest_node( 
+                        zdj_soundcard, node, 
+                        zdj_soundcard_get_node_for_name( 
+                            zdj_soundcard, node->input_links[ i ].source_node 
+                        )
+                    );
+                }
+            } else if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1 ||
+                node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3
+            ) {
+                printf( "unlinking node for stereo merge: %s\n", zdj_soundcard_node_name[ node->name ] );
+                for( int i=0; i<node->output_link_count; i++ ) {
+                    zdj_soundcard_unlink_source_node_from_dest_node( 
+                        zdj_soundcard, node, 
+                        zdj_soundcard_get_node_for_name( 
+                            zdj_soundcard, node->output_links[ i ].dest_node 
+                        )
+                    );
+                }
+            }
+        } else {
+            // Output/Input ports need special node link handling.
+            // When splitting a stereo channel into monos, 
+            // copy this node's links to the stereo partner.
+            printf( "linking node for stereo split: %s\n", zdj_soundcard_node_name[ node->name ] );
+            if( zdj_soundcard_node_name_is_analog_output( node->name ) ) {
+                for( int i=0; i<node->input_link_count; i++ ) {
+                    zdj_soundcard_link_source_node_to_dest_node( 
+                        zdj_soundcard,
+                        zdj_soundcard_get_node_for_name( 
+                            zdj_soundcard, node->input_links[ i ].source_node 
+                        ),
+                        stereo_partner_node
+                    );
+                }
+            } else if( zdj_soundcard_node_name_is_analog_input( node->name ) ) {
+                for( int i=0; i<node->output_link_count; i++ ) {
+                    zdj_soundcard_link_source_node_to_dest_node( 
+                        zdj_soundcard,
+                        stereo_partner_node,
+                        zdj_soundcard_get_node_for_name( 
+                            zdj_soundcard, node->output_links[ i ].dest_node 
+                        )
+                    );
+                }
+            }
+        } 
     }
 }
 
@@ -669,4 +726,14 @@ bool zdj_soundcard_node_name_is_midi( zdj_soundcard_node_name_t name ) {
 
 bool zdj_soundcard_node_name_is_usb( zdj_soundcard_node_name_t name ) {
     return false;
+}
+
+bool zdj_soundcard_node_name_is_right_channel( zdj_soundcard_node_name_t name ) {
+    switch ( name ) {
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return true;
+        default: return false;
+    }
 }

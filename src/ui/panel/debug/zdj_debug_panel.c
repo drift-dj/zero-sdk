@@ -4,7 +4,6 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -15,7 +14,7 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _zdj_debug_panel_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_debug_panel_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_debug_panel_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_debub_panel_deploy( zdj_view_t * view );
 static void _zdj_debub_panel_retract( zdj_view_t * view );
 
@@ -27,7 +26,7 @@ zdj_view_t * zdj_new_debug_panel( void ) {
     zdj_add_subview( view, container_view );
     container_view->type = ZDJ_VIEW_BASE;
     container_view->draw = &_zdj_debug_panel_draw;
-    container_view->handle_hmi_event = &_zdj_debug_panel_handle_hmi;
+    container_view->handle_control_event = &_zdj_debug_panel_handle_control;
 
     container_view->frame->x = ZDJ_DEBUG_PANEL_WIDTH * -3;
     container_view->frame->y = 0;
@@ -66,15 +65,15 @@ void _zdj_debug_panel_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     }
 }
 
-void _zdj_debug_panel_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_debug_panel_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_debug_panel_state_t * state = (zdj_debug_panel_state_t*)view->state;
 
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
     
     // Capture events for deploy/retract and focus/un-focus.
-    if( e->id == ZDJ_HMI_PB_2_FN_1 && e->type == ZDJ_HMI_EVENT_LONG_PRESS ) {
+    if( e->id == ZDJ_UI_CONTROL_FN_1_PRESS_1 ) {
         e->blocked = true;
         if( !state->deployed ) { 
             // Show debug panel
@@ -83,7 +82,7 @@ void _zdj_debug_panel_handle_hmi( zdj_view_t * view, void * _event ) {
             // Hide debug panel
             _zdj_debub_panel_retract( view );
         }
-    } else if( e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_RELEASE ) {
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ) {
         // If we're deployed, capture Tone 1 PB release as a toggle on event_capture.
         // (deployed debug menu always captures Tone 1 PB release)
         if( state->deployed ) {
@@ -95,21 +94,15 @@ void _zdj_debug_panel_handle_hmi( zdj_view_t * view, void * _event ) {
     // If we're currently capturing events, grab menu scroll stuff
     // and pass it down to the subview stack.
     if( state->event_capture ) {
-        if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
-            if( e->type == ZDJ_HMI_EVENT_ADJUST ) {
-                state->log_view->handle_hmi_event( state->log_view, e );
-                e->blocked = true;
-            }
-        } else if( e->id == ZDJ_HMI_ENCO_3_TONE_1) {
-            if( e->type == ZDJ_HMI_EVENT_ADJUST ) {
-                state->log_view->handle_hmi_event( state->log_view, _event );
-                e->blocked = true;
-            }
-        } else if( e->id == ZDJ_HMI_ENCO_4_TONE_2 ) {
-            if( e->type == ZDJ_HMI_EVENT_ADJUST ) {
-                state->log_view->handle_hmi_event( state->log_view, _event );
-                e->blocked = true;
-            }
+        if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) {
+            state->log_view->handle_control_event( state->log_view, e );
+            e->blocked = true;
+        } else if( e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ) {
+            state->log_view->handle_control_event( state->log_view, _event );
+            e->blocked = true;
+        } else if( e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0 ) {
+            state->log_view->handle_control_event( state->log_view, _event );
+            e->blocked = true;
         }
     }
 }

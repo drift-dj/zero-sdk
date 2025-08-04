@@ -11,7 +11,7 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 void _zdj_menu_item_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-void _zdj_menu_item_hmi_event( zdj_view_t * view, void * _event );
+void _zdj_menu_item_hmi_event( zdj_view_t * view, zdj_control_event_t * _event );
 void _zdj_menu_item_deinit_state( zdj_view_t * view );
 
 void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_clip_t * clip, bool hilite );

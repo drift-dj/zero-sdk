@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+
 #include <zerodj/controls/hmi/zdj_hmi_input.h>
 #include <zerodj/system/m7/zdj_m7.h>
 

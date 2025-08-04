@@ -3,7 +3,6 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
@@ -20,7 +19,7 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
     zdj_view_t * menu_view = zdj_new_view( frame );
     menu_view->type = ZDJ_VIEW_MENU;
     menu_view->draw = &zdj_menu_draw;
-    menu_view->handle_hmi_event = zdj_menu_handle_hmi;
+    menu_view->handle_control_event = zdj_menu_handle_control;
     menu_view->deinit_state = &_zdj_menu_deinit_state;
     menu_view->in_anim = zdj_new_anim( ZDJ_ANIM_MENU_SHOW );
     menu_view->out_anim = zdj_new_anim( ZDJ_ANIM_MENU_HIDE );
@@ -310,8 +309,8 @@ zdj_view_t * zdj_menu_view_get_item_for_data_c_val( zdj_view_t * menu_view, char
     return NULL;
 }
 
-void zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
 
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
@@ -325,25 +324,27 @@ void zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
     }
 
     // Handle all the jog-wheel stuff (scroll, mod scroll, press/long press, etc.)
-    if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
+    // if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
         // Prevent views/menus below this one from getting jog wheel events
-        e->blocked = true;
+        // e->blocked = true;
 
-        if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
+        // if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
+        if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) { 
             // Add the event's value to the scroll filter.
             // The scroll filter simulation runs in the draw loop,
             // therefore, menu_update_scroll happens during the draw loop.
             zdj_menu_view_add_scroll_filter_input( view, e->i_val );
+            // Prevent views/menus below this one from getting jog wheel events
+            e->blocked = true;
         }
 
         // Release, mod-scroll, long-press, etc. should invoke hmi handler of menu_item @scroll_index
-        if( e->type == ZDJ_HMI_EVENT_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_MOD_RELEASE ||
-            // e->type == ZDJ_HMI_EVENT_MOD_ADJUST ||
-            e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ||
-            e->type == ZDJ_HMI_EVENT_PRESS_ADJUST_RELEASE ||
-            e->type == ZDJ_HMI_EVENT_LONG_PRESS || 
-            e->type == ZDJ_HMI_EVENT_LONG_RELEASE 
+        if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ||
+            e->id == ZDJ_UI_CONTROL_JOG_RELEASE_1 ||
+            e->id == ZDJ_UI_CONTROL_JOG_RELEASE_2 ||
+            e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ||
+            e->id == ZDJ_UI_CONTROL_JOG_ADJUST_2 ||
+            e->id == ZDJ_UI_CONTROL_JOG_PRESS_1
         ) {
             if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
                 // Blink the back btn
@@ -360,19 +361,21 @@ void zdj_menu_handle_hmi( zdj_view_t * view, void * _event ) {
                 );
     
                 // Blink the selected menu_item if this is a button press
-                if( e->type == ZDJ_HMI_EVENT_RELEASE ) {
+                if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
                     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)menu_item->state;
                     state->is_blinking = true;
                     state->blink_timer = 0;
                 }
                 
-                // Call into handle_hmi_event set by front-end
-                if( menu_item->handle_hmi_event ) {
-                    menu_item->handle_hmi_event( menu_item, e );
+                // Call into handle_control_event set by front-end
+                if( menu_item->handle_control_event ) {
+                    menu_item->handle_control_event( menu_item, e );
                 }
             }
+            // Prevent views/menus below this one from getting jog wheel events
+            e->blocked = true;
         }
-    } // Jog-wheel stuff
+    // } // Jog-wheel stuff
 }
 
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index ) {

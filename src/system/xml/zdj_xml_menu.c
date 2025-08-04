@@ -20,7 +20,7 @@ static void _xml_menu_process_section_nodes(
     xml_layout_linkage layout_linkage,
     xml_action_linkage action_linkage,
     xml_update_linkage update_linkage,
-    handle_hmi_event_t handle_hmi_event 
+    handle_control_event_t handle_control_event 
 );
 static void _xml_menu_process_item_nodes( 
     xmlNode * node, 
@@ -28,7 +28,7 @@ static void _xml_menu_process_item_nodes(
     xml_layout_linkage layout_linkage,
     xml_action_linkage action_linkage,
     xml_update_linkage update_linkage,
-    handle_hmi_event_t handle_hmi_event 
+    handle_control_event_t handle_control_event 
 );
 static xmlNode * _xml_node_for_name( char * name );
 
@@ -90,7 +90,7 @@ zdj_view_t * zdj_xml_menu_view_for_node(
     xml_layout_linkage layout_linkage,
     xml_action_linkage action_linkage,
     xml_update_linkage update_linkage,
-    handle_hmi_event_t handle_hmi_event
+    handle_control_event_t handle_control_event
 ) {
     // Ensure front-end linkage is supplied
     if( !layout_linkage || !action_linkage || !update_linkage ) { return NULL; }
@@ -118,7 +118,7 @@ zdj_view_t * zdj_xml_menu_view_for_node(
             layout_linkage,
             action_linkage,
             update_linkage,
-            handle_hmi_event
+            handle_control_event
         );
     } else if( items_node ) {
         menu_view = zdj_new_menu_view( ZDJ_VERTICAL, frame );
@@ -128,7 +128,7 @@ zdj_view_t * zdj_xml_menu_view_for_node(
             layout_linkage,
             action_linkage,
             update_linkage,
-            handle_hmi_event
+            handle_control_event
         );
     }
 
@@ -162,7 +162,7 @@ void _xml_menu_process_section_nodes(
     xml_layout_linkage layout_linkage,
     xml_action_linkage action_linkage,
     xml_update_linkage update_linkage,
-    handle_hmi_event_t handle_hmi_event 
+    handle_control_event_t handle_control_event 
 ) {
     while( node ) {
         if( !xmlStrcmp( node->name, (const xmlChar *)"SECTION" ) ) {
@@ -186,7 +186,7 @@ void _xml_menu_process_section_nodes(
                     layout_linkage,
                     action_linkage,
                     update_linkage,
-                    handle_hmi_event
+                    handle_control_event
                 );
             }
         }
@@ -200,7 +200,7 @@ void _xml_menu_process_item_nodes(
     xml_layout_linkage layout_linkage,
     xml_action_linkage action_linkage,
     xml_update_linkage update_linkage,
-    handle_hmi_event_t handle_hmi_event
+    handle_control_event_t handle_control_event
 ) {
     while( node ) {
         if( !xmlStrcmp( node->name, (const xmlChar *)"ITEM" ) ) {
@@ -233,7 +233,7 @@ void _xml_menu_process_item_nodes(
             state->action = action_linkage( action_str );
 
             // Handle hmi event
-            item->handle_hmi_event = handle_hmi_event;
+            item->handle_control_event = handle_control_event;
             
             // Insert into menu
             zdj_menu_view_add_item( menu_view, item );

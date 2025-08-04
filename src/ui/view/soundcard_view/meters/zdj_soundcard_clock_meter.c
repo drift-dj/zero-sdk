@@ -4,7 +4,6 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/node/analysis/meter/zdj_meter_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
@@ -18,7 +17,7 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _zdj_clock_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_clock_meter_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_clock_meter_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_clock_meter_deinit_state( zdj_view_t * view );
 
 zdj_view_t * zdj_new_clock_meter_view( 
@@ -29,7 +28,7 @@ zdj_view_t * zdj_new_clock_meter_view(
     zdj_view_t * clock_meter_view = zdj_new_view( &(zdj_rect_t){0,0,12,40} );
     clock_meter_view->type = ZDJ_VIEW_MENU_ITEM;
     clock_meter_view->draw = &_zdj_clock_meter_draw;
-    clock_meter_view->handle_hmi_event = &_zdj_clock_meter_handle_hmi;
+    clock_meter_view->handle_control_event = &_zdj_clock_meter_handle_control;
     clock_meter_view->deinit_state = &_zdj_clock_meter_deinit_state;
 
     // Add a state instance
@@ -58,8 +57,8 @@ zdj_view_t * zdj_new_clock_meter_view(
 
     // Add BPM
     zdj_view_t * bpm = zdj_new_label_vert_view( "124.3", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    bpm->frame->y = 25;
-    bpm->frame->x = -2;
+    bpm->frame->y = 2;
+    bpm->frame->x = 1;
     zdj_add_subview( clock_meter_view, bpm );
 
     // Add label
@@ -92,31 +91,31 @@ void _zdj_clock_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     }
 }
 
-void _zdj_clock_meter_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_clock_meter_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_soundcard_meter_state_t * state = (zdj_soundcard_meter_state_t*)view->state;
     zdj_soundcard_node_config_context_t * context = state->config_context;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)context->options_view_state;
     
-    if(e->id == ZDJ_HMI_ENCO_2_JOG && e->type == ZDJ_HMI_EVENT_RELEASE ) {
-        printf( "show detail\n" );
+    if(e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
         zdj_push_subview( zdj_root_view( ), zdj_new_soundcard_options( context ), true );
+        e->blocked = true;
     }
 
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
-    if( (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_RELEASE) ) {
-        // Prevent views/menus below this one from getting jog wheel events
-        e->blocked = true;
+    // if( (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_RELEASE) ) {
+    //     // Prevent views/menus below this one from getting jog wheel events
+    //     e->blocked = true;
 
-        printf( "toggle mute\n" );
-        // if( !zdj_soundcard_node_name_is_output( context->node->name ) ) {
-            context->node->mute = !context->node->mute;
-            if( options_state ){ options_state->needs_layout_update = true; }
-        // }
+    //     printf( "toggle mute\n" );
+    //     // if( !zdj_soundcard_node_name_is_output( context->node->name ) ) {
+    //         context->node->mute = !context->node->mute;
+    //         if( options_state ){ options_state->needs_layout_update = true; }
+    //     // }
         
-    }
+    // }
 }
 
 void _zdj_clock_meter_deinit_state( zdj_view_t * view ) {

@@ -2,11 +2,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include <zerodj/controls/zdj_controls.h>
+#include <zerodj/health/zdj_health_type.h>
 #include <zerodj/system/display/zdj_display.h>
 #include <zerodj/system/error/zdj_error.h>
-#include <zerodj/controls/hmi/zdj_hmi.h>
-#include <zerodj/controls/playback/zdj_playback_control.h>
-#include <zerodj/health/zdj_health_type.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -23,14 +22,6 @@ void _zdj_view_deinit( struct zdj_view_t * view );
 void zdj_ui_init( void ) {
     // Grab the display memory
     zdj_display_init( );
- 
-    // Init the onboard HMI event system
-    zdj_hmi_init( );
-    // Init the USB HID event system
-    // Init the Midi event system
-    // Init the CV control event system
-
-    // Init the Control Map system
 
     // Bringup SDL - exit on fail
     int err = SDL_Init( SDL_INIT_VIDEO );
@@ -68,43 +59,14 @@ void zdj_ui_deinit( void ) {
 }
 
 void zdj_ui_update( void ) {
-    // Get a set of HMI events from the onboard HMI system
-    zdj_hmi_pull_m7_events( true );
-    // Get a set of playback/hmi events from the USB HID system
-    // zdj_usb_pull_hid_gadget_events( );
-    // Get a set of playback/hmi events from the Midi system
-    // zdj_usb_pull_midi_gadget_events( );
-    // Get a set of playback/hmi events from the CV control system
-    // zdj_cv_pull_control_events( );
-
     // Clear the screen
     zdj_view_stack_clear_screen( );
 
     // Update the view stack
-    // Some HMI events will be converted to playbac events here
     zdj_view_stack_update( );
-
-    // Push playback control events to the audio processing thread
-    zdj_playback_control_post_events( );
 
     // Push the output pixels to the M7 core's memory
     zdj_display_m7_push( );
-
-    // Trigger the HMI event system to post-process the event stack
-    zdj_hmi_clear_events( );
-}
-
-void zdj_ui_start_events( void ) {
-    // Pull and discard any cached M7 events
-    zdj_hmi_pull_m7_events( true );
-    zdj_hmi_clear_events( );
-
-    // Tell M7 to start scanning HMI for new events
-    zdj_hmi_activate( );
-}
-
-void zdj_ui_stop_events( void ) {
-    zdj_hmi_deactivate( );
 }
 
 zdj_view_t * zdj_new_view( zdj_rect_t * frame ) {
@@ -217,7 +179,7 @@ void zdj_push_subview( zdj_view_t * view, zdj_view_t * subview, bool animated ) 
     zdj_view_t * old_subview = zdj_view_stack_top_subview_of( view );
     // Add the new subview to the top
     zdj_add_subview( view, subview );
-
+    
     // Show new subview
     if( subview->in_anim ) {
         subview->in_anim->cb_fn = NULL;

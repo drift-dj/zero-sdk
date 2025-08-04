@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
+
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
@@ -16,20 +16,22 @@
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/menu_section_view/zdj_menu_section_view.h>
 #include <zerodj/ui/view/modal_view/zdj_modal_view.h>
+#include <zerodj/ui/view/scope_view/zdj_scope_view.h>
 #include <zerodj/ui/view/soundcard_view/zdj_soundcard_view.h>
 #include <zerodj/ui/view/soundcard_view/options/zdj_soundcard_options.h>
 #include <zerodj/ui/view/soundcard_view/meters/zdj_soundcard_meter.h>
 #include <zerodj/ui/view/soundcard_view/select_node/zdj_soundcard_select_node.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
-static void _zdj_soundcard_options_port_output_handle_pad( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_options_port_output_handle_stereo( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_options_port_output_handle_mute( zdj_view_t * view, void * _event );
-static void _zdj_soundcard_options_port_output_handle_linkage( zdj_view_t * view, void * _event );
+static void _zdj_soundcard_options_port_output_handle_pad( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_options_port_output_handle_stereo( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_options_port_output_handle_mute( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_options_port_output_handle_scope( zdj_view_t * view, zdj_control_event_t * _event );
+static void _zdj_soundcard_options_port_output_handle_linkage( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_soundcard_options_port_output_cb( void * _context );
 
-void zdj_soundcard_options_port_output_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void zdj_soundcard_options_port_output_hmi( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view->state;
     zdj_view_t * menu_view = options_state->menu;
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
@@ -62,15 +64,17 @@ void zdj_soundcard_options_port_output_hmi( zdj_view_t * view, void * _event ) {
 }
 
 void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
+    // printf( "zdj_soundcard_options_update_port_output_layout\n" );
+
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view->state;
     zdj_view_t * menu_view = options_state->menu;
     options_state->needs_layout_update = false;
 
     zdj_soundcard_node_t * page_node = options_state->config_context->node;
 
-    printf( "zdj_soundcard_options_update_port_output_layout: %s\n",
-        zdj_soundcard_node_name[ page_node->name ]
-    );
+    // printf( "zdj_soundcard_options_update_port_output_layout: %s\n",
+    //     zdj_soundcard_node_name[ page_node->name ]
+    // );
 
     // // For output ports, options point to a mix of source and dest link nodes
     // // Ex. for analog out 0, show main lr bus settings for gain,
@@ -78,10 +82,10 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
     // bool is_port_output = zdj_soundcard_node_name_is_output( 
     //     options_state->config_context->node->name 
     // );
-    // zdj_soundcard_node_t * output_source_node = zdj_soundcard_get_node_for_name( 
-    //     options_state->config_context->soundcard,
-    //     options_state->config_context->node->input_links->source_node 
-    // );
+    zdj_soundcard_node_t * source_node = zdj_soundcard_get_node_for_name( 
+        options_state->config_context->soundcard,
+        options_state->config_context->node->input_links->source_node 
+    );
     // zdj_soundcard_node_t * port_node = options_state->config_context->node;
     
 
@@ -93,7 +97,7 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
     zdj_menu_view_add_padding( menu_view, 1 );
 
     zdj_view_t * meter = zdj_soundcard_view_new_meter_for_node( 
-        page_node, zdj_meter_label_for_node( page_node ), false 
+        source_node, zdj_meter_label_for_node( source_node ), false, false 
     );
     if( meter ) { 
         // Since we're fudging a menu_item_view, we manually create the state data instance.
@@ -128,7 +132,7 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
         NULL,
         NULL 
     );
-    sig_type->handle_hmi_event = &_zdj_soundcard_options_port_output_handle_pad;
+    sig_type->handle_control_event = &_zdj_soundcard_options_port_output_handle_pad;
     zdj_menu_item_view_state_t * sig_type_state = (zdj_menu_item_view_state_t*)sig_type->state;
     sig_type_state->data->ptr = options_state;
     sig_type_state->data->c_val = zdj_soundcard_signal_name[ 
@@ -160,13 +164,13 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
     // } else {
     //     options_state->menu_index_pan = -1;
     // }
-    
+
     // Stereo
-    // zdj_view_t * stereo = zdj_new_menu_item( "Stereo", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
-    // stereo->handle_hmi_event = &_zdj_soundcard_options_port_output_handle_stereo;
-    // zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)stereo->state;
-    // stereo_state->data->b_val = page_node->stereo;
-    // stereo_state->data->ptr = options_state; // Ref to options view state to force update_needed on click
+    zdj_view_t * stereo = zdj_new_menu_item( "Stereo", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    stereo->handle_control_event = &_zdj_soundcard_options_port_output_handle_stereo;
+    zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)stereo->state;
+    stereo_state->data->b_val = page_node->stereo;
+    stereo_state->data->ptr = options_state; // Ref to options view state to force update_needed on click
     // if( options_state->menu_index_pan != -1 ){ 
     //     options_state->menu_index_stereo = options_state->menu_index_pan + 1;; 
     // } else if( options_state->menu_index_pad != -1 ){ 
@@ -174,16 +178,25 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
     // } else {
     //     options_state->menu_index_stereo = options_state->menu_index_gain + 1;
     // }
-    // zdj_menu_view_add_item( menu_view, stereo );
+    options_state->menu_index_stereo = options_state->menu_index_pad + 1;
+    zdj_menu_view_add_item( menu_view, stereo );
 
     // Mute
     // zdj_view_t * mute = zdj_new_menu_item( "Mute", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
-    // mute->handle_hmi_event = &_zdj_soundcard_options_port_output_handle_mute;
+    // mute->handle_control_event = &_zdj_soundcard_options_port_output_handle_mute;
     // zdj_menu_item_view_state_t * mute_state = (zdj_menu_item_view_state_t*)mute->state;
     // mute_state->data->b_val = page_node->mute;
     // mute_state->data->ptr = options_state; // Ref to options view state to force update_needed on click
     // options_state->menu_index_mute = 1;
     // zdj_menu_view_add_item( menu_view, mute );
+
+    // Scope View
+    zdj_view_t * scope = zdj_new_menu_item( "Scope", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    scope->handle_control_event = &_zdj_soundcard_options_port_output_handle_scope;
+    zdj_menu_item_view_state_t * scope_state = (zdj_menu_item_view_state_t*)scope->state;
+    scope_state->data->ptr = options_state; // Ref to options view state to force update_needed on click
+    options_state->menu_index_scope = options_state->menu_index_stereo + 1;;
+    zdj_menu_view_add_item( menu_view, scope );
 
     // Inputs section
     zdj_menu_view_add_section( menu_view, zdj_new_menu_section( "Input" ) );
@@ -193,11 +206,6 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
         for( int i=0; i<in_node_count; i++ ) {
             // If we're linked to a stereo io port, adjust name to show "out 1/2"
             // instead of just "out 1"
-
-            printf( "adding link: %s -> %s\n", 
-                zdj_soundcard_node_name[ page_node->input_links[ i ].source_node ],
-                zdj_soundcard_node_name[ page_node->input_links[ i ].dest_node ]
-            );
 
             char adjusted_name[ 64 ];
             if( zdj_soundcard_node_name_is_analog_input( page_node->input_links[ i ].source_node ) ) {
@@ -214,7 +222,7 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
                 adjusted_name, 
                 ZDJ_MENU_ITEM_LAYOUT_BASIC_R 
             );
-            input->handle_hmi_event = &_zdj_soundcard_options_port_output_handle_linkage;
+            input->handle_control_event = &_zdj_soundcard_options_port_output_handle_linkage;
             zdj_menu_item_view_state_t * input_state = (zdj_menu_item_view_state_t*)input->state;
             input_state->data->ptr = options_state;
             input_state->data->i_val = page_node->input_links[ i ].source_node;
@@ -224,42 +232,10 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
 
     // Add Input
     zdj_view_t * add_input = zdj_new_menu_item( "+ Add Input", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
-    add_input->handle_hmi_event = &_zdj_soundcard_options_port_output_handle_linkage;
+    add_input->handle_control_event = &_zdj_soundcard_options_port_output_handle_linkage;
     zdj_menu_item_view_state_t * add_input_state = (zdj_menu_item_view_state_t*)add_input->state;
     add_input_state->data->ptr = options_state;
     zdj_menu_view_add_item( menu_view, add_input );
-
-    // If there is an input, show it, otherwise show add input button
-    // if( (zdj_soundcard_count_input_nodes_to_node_name( &zdj_soundcard->dto, port_node->name ) > 0) ) {
-    //     // If we're linked to a stereo io port, adjust name to show "out 1/2"
-    //     // instead of just "out 1"
-    //     char adjusted_name[ 64 ];
-    //     if( zdj_soundcard_node_name_is_analog_input( output_source_node->name ) ||
-    //         zdj_soundcard_node_name_is_analog_output( output_source_node->name ) 
-    //     ) {
-    //         zdj_soundcard_get_port_title_with_stereo( 
-    //             options_state->config_context->soundcard,
-    //             output_source_node->name, 
-    //             adjusted_name 
-    //         );
-    //     } else {
-    //         strcpy( adjusted_name, zdj_soundcard_node_name[ output_source_node->name ] );
-    //     }
-
-    //     zdj_view_t * input = zdj_new_menu_item( 
-    //         adjusted_name, 
-    //         ZDJ_MENU_ITEM_LAYOUT_BASIC_R 
-    //     );
-    //     input->handle_hmi_event = &_zdj_soundcard_options_port_output_handle_linkage;
-    //     zdj_menu_item_view_state_t * input_state = (zdj_menu_item_view_state_t*)input->state;
-    //     input_state->data->ptr = options_state;
-    //     zdj_menu_view_add_item( menu_view, input );
-    // } else {
-    //     // Add Input
-    //     zdj_view_t * add_input = zdj_new_menu_item( "+ Add Input", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
-    //     zdj_menu_view_add_item( menu_view, add_input );
-    // }
-
 }
 
 void _zdj_soundcard_options_port_output_cb( void * _context ) {
@@ -267,12 +243,11 @@ void _zdj_soundcard_options_port_output_cb( void * _context ) {
     zdj_soundcard_options_state_t * state = (zdj_soundcard_options_state_t*)context->options_view_state;
     // Handle the selection of a new linked node.
     if( context->remove_node_selection ) {
+        // Removing an existing link
         printf( "_zdj_soundcard_options_port_output_cb remove select: %s -> %s\n",
             zdj_soundcard_node_name[ context->remove_node_selection->name ],
             zdj_soundcard_node_name[ context->node->name ] 
         );
-        // Removing an existing link
-        printf( "removing link: %s\n", zdj_soundcard_node_name[ context->remove_node_selection->name ] );
         zdj_soundcard_unlink_source_node_from_dest_node( 
             context->soundcard,
             context->remove_node_selection,
@@ -291,6 +266,10 @@ void _zdj_soundcard_options_port_output_cb( void * _context ) {
                 zdj_soundcard_get_node_for_name( context->soundcard, context->edit_name ),
                 context->node
             );
+            printf( "Uninking %s -> %s\n",
+                zdj_soundcard_node_name[ context->edit_name ],
+                zdj_soundcard_node_name[ context->node->name ]
+            );
         }
         // Add new linkage
         zdj_soundcard_link_source_node_to_dest_node( 
@@ -298,15 +277,29 @@ void _zdj_soundcard_options_port_output_cb( void * _context ) {
             context->new_node_selection,
             context->node
         );
+        printf( "Linking %s -> %s\n",
+            zdj_soundcard_node_name[ context->new_node_selection->name ],
+            zdj_soundcard_node_name[ context->node->name ]
+        );
     }
 
+    // Set the signal type for the output port based on the node selected.
+    if( zdj_soundcard_node_name_is_audio( context->node->input_links->source_node ) ) {
+        context->node->signal_type = ZDJ_SOUNDCARD_SIGNAL_CON_0_DBV;
+    } else if( zdj_soundcard_node_name_is_clock( context->node->input_links->source_node ) ) {
+        context->node->signal_type = ZDJ_SOUNDCARD_SIGNAL_CLOCK_PPQN;
+    } else if( zdj_soundcard_node_name_is_cv( context->node->input_links->source_node ) ) {
+        context->node->signal_type = ZDJ_SOUNDCARD_SIGNAL_CV_BIPOLAR;
+    } else if( zdj_soundcard_node_name_is_midi( context->node->input_links->source_node ) ) {
+        context->node->signal_type = ZDJ_SOUNDCARD_SIGNAL_USB_MIDI;
+    }
 
     // Update the layout_update function since the signal type may have changed.
     state->update_layout = zdj_soundcard_options_get_update_layout_for_node( context->node );
     state->needs_layout_update = true;
 }
 
-void _zdj_soundcard_options_port_output_handle_pad( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_options_port_output_handle_pad( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * pad_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)pad_state->data->ptr;
     // Cycle thru the pad options based on node
@@ -316,7 +309,7 @@ void _zdj_soundcard_options_port_output_handle_pad( zdj_view_t * view, void * _e
     options_state->needs_layout_update = true;
 }
 
-void _zdj_soundcard_options_port_output_handle_stereo( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_options_port_output_handle_stereo( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data->ptr;
     // Toggle the node's stereo val and tell main screen to redraw with new vals
@@ -330,7 +323,7 @@ void _zdj_soundcard_options_port_output_handle_stereo( zdj_view_t * view, void *
     zdj_pop_subview_of( zdj_root_view( ), true );
 }
 
-void _zdj_soundcard_options_port_output_handle_mute( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_options_port_output_handle_mute( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data->ptr;
     // Toggle the node's stereo val and tell main screen to redraw with new vals
@@ -341,7 +334,18 @@ void _zdj_soundcard_options_port_output_handle_mute( zdj_view_t * view, void * _
     options_state->needs_layout_update = true;
 }
 
-void _zdj_soundcard_options_port_output_handle_linkage( zdj_view_t * view, void * _event ) {
+void _zdj_soundcard_options_port_output_handle_scope( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)item_state->data->ptr;
+
+    zdj_view_t * scope_view = zdj_new_scope_view( 
+        options_state->config_context->soundcard,
+        options_state->config_context->node->name 
+    );
+    zdj_push_subview( zdj_root_view( ), scope_view, true );
+}
+
+void _zdj_soundcard_options_port_output_handle_linkage( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = state->data->ptr;
     options_state->config_context->options_view_cb = _zdj_soundcard_options_port_output_cb;

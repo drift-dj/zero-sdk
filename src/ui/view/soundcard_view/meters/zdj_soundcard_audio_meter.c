@@ -4,7 +4,6 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/controls/hmi/zdj_hmi.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/node/analysis/meter/zdj_meter_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
@@ -17,7 +16,7 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_audio_meter_handle_hmi( zdj_view_t * view, void * _event );
+static void _zdj_audio_meter_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_audio_meter_deinit_state( zdj_view_t * view );
 
 zdj_view_t * zdj_new_audio_stereo_meter_view( 
@@ -28,7 +27,7 @@ zdj_view_t * zdj_new_audio_stereo_meter_view(
     zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,15,41} );
     audio_meter_view->type = ZDJ_VIEW_MENU_ITEM;
     audio_meter_view->draw = &_zdj_audio_meter_draw;
-    audio_meter_view->handle_hmi_event = &_zdj_audio_meter_handle_hmi;
+    audio_meter_view->handle_control_event = &_zdj_audio_meter_handle_control;
     audio_meter_view->deinit_state = &_zdj_audio_meter_deinit_state;
 
     // Add a state instance
@@ -105,10 +104,11 @@ zdj_view_t * zdj_new_audio_mono_meter_view(
     zdj_soundcard_meter_label_t label,
     bool show_detail 
 ) {
+    // printf( "zdj_new_audio_mono_meter_view: \n" );
     zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,12,40} );
     audio_meter_view->type = ZDJ_VIEW_MENU_ITEM;
     audio_meter_view->draw = &_zdj_audio_meter_draw;
-    audio_meter_view->handle_hmi_event = &_zdj_audio_meter_handle_hmi;
+    audio_meter_view->handle_control_event = &_zdj_audio_meter_handle_control;
     audio_meter_view->deinit_state = &_zdj_audio_meter_deinit_state;
 
     // Add a state instance
@@ -172,6 +172,16 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_soundcard_meter_state_t * state = (zdj_soundcard_meter_state_t*)view->state;
     zdj_soundcard_node_config_context_t * config = state->config_context;
 
+    zdj_pipeline_node_t * meter_pipe = config->node->meter_pipe;
+    zdj_meter_node_state_t * meter_state = (zdj_meter_node_state_t*)meter_pipe->state;
+    float meter_l_h = (meter_state->instant_val_0) * 46;
+    float meter_r_h = (meter_state->instant_val_1) * 46;
+    // printf( "%1.1f/%1.1f - %1.0f/%1.0f\n", 
+    //     meter_state->lowpass_val_0, 
+    //     meter_state->instant_val_1, 
+    //     meter_l_h, meter_r_h 
+    // );
+
     if( state->is_hilite ) {
         state->fader->frame->w = 12;
         state->detail->frame->w = 7;
@@ -185,25 +195,28 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         state->fader->frame->w = 0;
     } else { 
         state->mute_cover->frame->w = 0; 
+        state->meter_cover_l->frame->h = 46 - meter_l_h;
+        if( config->node->stereo ) {
+            state->meter_cover_r->frame->h = 46 - meter_r_h;
+        }
     }
 }
 
-void _zdj_audio_meter_handle_hmi( zdj_view_t * view, void * _event ) {
-    zdj_hmi_event_t * e = (zdj_hmi_event_t *)_event;
+void _zdj_audio_meter_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_soundcard_meter_state_t * state = (zdj_soundcard_meter_state_t*)view->state;
     zdj_soundcard_node_config_context_t * context = state->config_context;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)context->options_view_state;
-    
-    if(e->id == ZDJ_HMI_ENCO_2_JOG && e->type == ZDJ_HMI_EVENT_RELEASE ) {
+
+    if(e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
         zdj_push_subview( zdj_root_view( ), zdj_new_soundcard_options( context ), true );
+        e->blocked = true;
     }
 
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
-    if( (e->id == ZDJ_HMI_ENCO_2_JOG && e->type == ZDJ_HMI_EVENT_PRESS_ADJUST) ||
-        (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_ADJUST) 
-    ) {
+    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 || e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ) {
         // Prevent views/menus below this one from getting jog wheel events
         e->blocked = true;
 
@@ -211,7 +224,7 @@ void _zdj_audio_meter_handle_hmi( zdj_view_t * view, void * _event ) {
         if( context->node->gain > 255 ) { context->node->gain = 255; }
         if( context->node->gain < 0 ) { context->node->gain = 0; }
         if( options_state ){ options_state->needs_layout_update = true; }
-    } else if( (e->id == ZDJ_HMI_ENCO_3_TONE_1 && e->type == ZDJ_HMI_EVENT_RELEASE) ) {
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ) {
         // Prevent views/menus below this one from getting jog wheel events
         e->blocked = true;
 
@@ -221,7 +234,7 @@ void _zdj_audio_meter_handle_hmi( zdj_view_t * view, void * _event ) {
             if( options_state ){ options_state->needs_layout_update = true; }
         // }
         
-    } else if( (e->id == ZDJ_HMI_ENCO_4_TONE_2 && e->type == ZDJ_HMI_EVENT_ADJUST) ) {
+    } else if( e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0 ) {
         // Prevent views/menus below this one from getting jog wheel events
         e->blocked = true;
 
