@@ -105,7 +105,7 @@ void zdj_control_scan_hmi_input( void ) {
     enco_5_t3->cursam = (a_val[0]-48) * 2 + (b_val[0]-48);
     enco_5_t3->upval += quad_mat[ enco_5_t3->presam * 4 + enco_5_t3->cursam ];
     enco_5_t3->presam = enco_5_t3->cursam;
-    zdj_hmi_m7_state_model->tone_3_pb_state = (sw_val[0]-48);
+    zdj_hmi_m7_state_model->tone_3_pb_state = !(sw_val[0]-48);
 
     // Address 1 - 001
     write( a0_fd, "1", 1 );

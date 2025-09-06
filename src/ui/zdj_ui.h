@@ -46,10 +46,10 @@
 #define ZDJ_MODAL_WIDTH 118
 #define ZDJ_MODAL_HEIGHT 58
 
-#define ZDJ_DIALOG_X 5
-#define ZDJ_DIALOG_Y 3
-#define ZDJ_DIALOG_W 118
-#define ZDJ_DIALOG_H 58
+#define ZDJ_DIALOG_X 15
+#define ZDJ_DIALOG_Y 9
+#define ZDJ_DIALOG_W 100
+#define ZDJ_DIALOG_H 48
  
 #define ZDJ_MENU_X 15
 #define ZDJ_MENU_Y 5
@@ -59,7 +59,12 @@
 #define ZDJ_DEBUG_PANEL_X 0
 #define ZDJ_DEBUG_PANEL_Y 0
 #define ZDJ_DEBUG_PANEL_WIDTH 100
-#define ZDJ_DEBUG_PANEL_HEIGHT 50
+#define ZDJ_DEBUG_PANEL_HEIGHT 20
+
+#define ZDJ_PERF_PANEL_X 0
+#define ZDJ_PERF_PANEL_Y 0
+#define ZDJ_PERF_PANEL_WIDTH 100
+#define ZDJ_PERF_PANEL_HEIGHT 50
 
 typedef struct {
     float x;
@@ -75,7 +80,7 @@ typedef struct {
 
 typedef struct {
     char * tag;
-    char * c_val;
+    char c_val[ 32 ];
     int i_val;
     float f_val;
     bool b_val;
@@ -148,6 +153,8 @@ typedef enum {
     ZDJ_ANIM_HEADER_DEACTIVATE,
     ZDJ_ANIM_DIALOG_SHOW,
     ZDJ_ANIM_DIALOG_HIDE,
+    ZDJ_ANIM_DJ_DECK_PAGE_SHOW,
+    ZDJ_ANIM_DJ_DECK_PAGE_HIDE,
     ZDJ_ANIM_DEBUG_PANEL_SHOW,
     ZDJ_ANIM_DEBUG_PANEL_HIDE
 } zdj_anim_type_t;
@@ -188,7 +195,8 @@ typedef enum {
     ZDJ_VIEW_SOUNDCARD,
     ZDJ_VIEW_PROGRESS,
     ZDJ_VIEW_DIALOG,
-    ZDJ_VIEW_WAVEFORM
+    ZDJ_VIEW_WAVEFORM,
+    ZDJ_VIEW_DJ_DECK_PAGE
 } zdj_view_type_t;
 
 typedef enum {
@@ -208,6 +216,8 @@ typedef struct zdj_view_t {
     void ( *deinit_state )( struct zdj_view_t * );
     void ( *draw )( struct zdj_view_t *, zdj_view_clip_t * );
     void ( *update_subview_clip )( struct zdj_view_t *, zdj_view_clip_t * );
+    // control map will be activated on push/pop_to
+    zdj_control_map_id_t map;
     handle_control_event_t handle_control_event;
     struct zdj_view_t * next;
     struct zdj_view_t * prev;
@@ -219,6 +229,7 @@ typedef struct zdj_view_t {
     zdj_anim_t * anim;
     zdj_anim_t * in_anim;
     zdj_anim_t * out_anim;
+    bool is_deleting;
     void * state;
 } zdj_view_t;
 
@@ -231,14 +242,21 @@ extern uint32_t * zdj_ui_pixels;
 extern SDL_Renderer* zdj_display_renderer;
 extern zdj_view_t * zdj_delete_stack;
 extern zdj_rect_t * zdj_screen_rect_priv;
+extern int zdj_view_count;
+extern int zdj_new_view_count;
 SDL_Renderer * zdj_renderer( void );
 zdj_rect_t * zdj_screen_rect( void );
 zdj_rect_t * zdj_modal_rect( void );
 zdj_rect_t * zdj_dialog_rect( void );
 zdj_rect_t * zdj_menu_rect( void );
+zdj_rect_t * zdj_menu_rect_sm( void );
+zdj_rect_t * zdj_menu_rect_med( void );
+zdj_rect_t * zdj_dj_deck_page_rect( void );
 zdj_rect_t * zdj_debug_panel_rect( void );
+zdj_rect_t * zdj_perf_panel_rect( void );
 bool zdj_ui_intersect( zdj_rect_t * rect1, zdj_rect_t * rect2 );
 SDL_Texture * zdj_ui_texture_from_bmp( char * filepath );
+
 
 void zdj_ui_init( void );
 void zdj_ui_deinit( void );

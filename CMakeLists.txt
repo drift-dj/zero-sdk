@@ -3,6 +3,7 @@ project(zerodj VERSION 0.1.0 LANGUAGES C)
 
 add_library(zerodj 
     src/controls/zdj_controls.c
+    src/controls/zdj_control_map.c
     src/controls/hmi/zdj_hmi_input.c
     src/controls/hmi/zdj_hmi_input_map.c
     src/controls/hmi/zdj_hmi_scan_thread.c
@@ -17,6 +18,7 @@ add_library(zerodj
     src/library/api/library/query/zdj_library_api_query_playlist.c
     src/library/api/library/query/zdj_library_api_query_year.c
     src/library/api/curation/zdj_library_api_playlist.c
+    src/library/api/data_source/zdj_library_api_data_source.c
     src/library/api/setting/zdj_library_api_setting.c
     src/library/api/song/zdj_library_api_audio.c
     src/library/api/song/zdj_library_api_catalog.c
@@ -25,16 +27,34 @@ add_library(zerodj
     src/library/api/song/zdj_library_api_song_graph.c
     src/library/api/song/zdj_library_api_song.c
     src/signal/deck/zdj_deck.c
+    src/signal/deck/zdj_deck_loop_skip.c
+    src/signal/deck/zdj_deck_manager.c
+    src/signal/deck/cv/zdj_deck_cv.c
+    src/signal/deck/dj/zdj_deck_dj.c
+    src/signal/deck/extern/zdj_deck_extern.c
+    src/signal/deck/lib/zdj_deck_lib.c
+    src/signal/deck/live_loop/zdj_deck_live_loop.c
+    src/signal/deck/plugin/zdj_deck_plugin.c
+    src/signal/deck/test/zdj_deck_test.c
     src/signal/math/zdj_signal_math.c
     src/signal/pipeline/zdj_pipeline.c
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
     src/signal/pipeline/node/analysis/meter/zdj_meter_node.c
     src/signal/pipeline/node/analysis/waveform/live/zdj_live_waveform.c
+    src/signal/pipeline/node/analysis/waveform/playback/zdj_playback_waveform.c
+    src/signal/pipeline/node/analysis/waveform/playback/zdj_playback_waveform_maker.c
     src/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.c
     src/signal/pipeline/node/audio/decode/zdj_decode_node.c
-    src/signal/pipeline/node/audio/decode/zdj_decode_raw_node.c
+    src/signal/pipeline/node/audio/decode/zdj_decode_layer.c
+    src/signal/pipeline/node/audio/decode/zdj_decode_packet.c
+    src/signal/pipeline/node/audio/decode/zdj_decode_packet_mp3.c
+    src/signal/pipeline/node/audio/decode/zdj_decode_packet_pcm.c
+    src/signal/pipeline/node/audio/decode/zdj_decode_accum.c
     src/signal/pipeline/node/audio/io/zdj_io_analog_node.c
     src/signal/pipeline/node/audio/io/zdj_io_usb_node.c
+    src/signal/pipeline/node/audio/library_decode/zdj_library_decode_node.c
+    src/signal/pipeline/node/audio/record/zdj_audio_record_node.c
+    src/signal/pipeline/node/audio/tsm/zdj_tsm_pitch_node.c
     src/signal/pipeline/node/file/zdj_file_read_node.c
     src/signal/pipeline/node/file/zdj_file_write_node.c
     src/signal/soundcard/zdj_soundcard.c
@@ -65,6 +85,7 @@ add_library(zerodj
     src/ui/anim/zdj_anim.c
     src/ui/anim/zdj_anim_debug_panel.c
     src/ui/anim/zdj_anim_dialog.c
+    src/ui/anim/zdj_anim_dj_deck_page.c
     src/ui/anim/zdj_anim_header.c
     src/ui/anim/zdj_anim_menu.c
     src/ui/anim/zdj_anim_menu_stack.c
@@ -79,6 +100,8 @@ add_library(zerodj
     src/ui/view/zdj_view_stack.c
     src/ui/view/asset_view/zdj_asset_view.c
     src/ui/view/cue_point_view/zdj_cue_point_view.c
+    src/ui/view/debug_view/zdj_debug_view.c
+    src/ui/view/device_settings_menu_view/zdj_device_settings_menu_view.c
     src/ui/view/dialog_view/zdj_dialog_view.c
     src/ui/view/file_browser_view/zdj_file_browser_view.c
     src/ui/view/file_browser_view/zdj_file_browser_devices_menu.c
@@ -95,6 +118,7 @@ add_library(zerodj
     src/ui/view/menu_item_view/zdj_menu_item_view_dir.c
     src/ui/view/menu_item_view/zdj_menu_item_view_icon.c
     src/ui/view/menu_item_view/zdj_menu_item_view_inert.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_launch.c
     src/ui/view/menu_item_view/zdj_menu_item_view_slider.c
     src/ui/view/menu_item_view/zdj_menu_item_view_song.c
     src/ui/view/menu_item_view/zdj_menu_item_view_toggle.c
@@ -155,6 +179,12 @@ target_link_directories(
     sysroot/usr/lib
     sysroot/lib/aarch64-linux-gnu
     sysroot/lib/gcc/aarch64-linux-gnu/9
+)
+
+target_compile_options(
+    zerodj
+    PUBLIC
+    -gdwarf-4
 )
 
 target_link_options(

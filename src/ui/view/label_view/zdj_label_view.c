@@ -20,7 +20,7 @@ zdj_view_t * zdj_new_label_view(
 ) {
     // Build the label_view state instance
     zdj_label_state_t * label_state = calloc( 1, sizeof( zdj_label_state_t ) );
-    label_state->str = strdup( str );
+    strcpy( label_state->str, str );
     label_state->justify = justify;
 
     // Build type texture
@@ -75,7 +75,7 @@ zdj_view_t * zdj_new_label_vert_view(
 ) {
     // Build the label_view state instance
     zdj_label_state_t * label_state = calloc( 1, sizeof( zdj_label_state_t ) );
-    label_state->str = strdup( str );
+    strcpy( label_state->str, str );
     label_state->justify = justify;
 
     // Build type texture
@@ -112,7 +112,6 @@ void _zdj_label_view_draw_vert( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
 void _zdj_label_view_deinit_state( zdj_view_t * view ) {
     zdj_label_state_t * state = (zdj_label_state_t*)view->state;
-    free( state->str );
     SDL_DestroyTexture( state->tex );
     free( state );
     view->state = NULL;

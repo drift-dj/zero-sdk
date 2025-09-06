@@ -23,7 +23,7 @@ zdj_view_t * zdj_new_device_browser_menu( zdj_view_t * browser, zdj_rect_t * fra
 
     // Update the header's path display
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)browser_state->header_view->state;
-    header_state->title = "Media";
+    strcpy( header_state->title, "Media" );
     header_state->has_valid_display = false;
 
     // Make menu
@@ -36,7 +36,7 @@ zdj_view_t * zdj_new_device_browser_menu( zdj_view_t * browser, zdj_rect_t * fra
     zdj_view_t * zero_item = zdj_new_menu_item( "Zero", ZDJ_MENU_ITEM_LAYOUT_ICON );
     zdj_menu_item_view_state_t * zero_state = (zdj_menu_item_view_state_t*)zero_item->state;
     zero_state->action = ZDJ_MENU_ITEM_ACTION_DIR_ENTER;
-    zero_state->link = "/media/internal/";
+    strcpy( zero_state->link, "/media/internal/" );
     zero_state->data->ptr = browser;
     zero_state->handles_hmi = true;
     zero_item->handle_control_event = &zdj_file_browser_item_hmi_delegate;
@@ -50,7 +50,7 @@ zdj_view_t * zdj_new_device_browser_menu( zdj_view_t * browser, zdj_rect_t * fra
     zdj_view_t * msd_item = zdj_new_menu_item( "MSD", ZDJ_MENU_ITEM_LAYOUT_ICON );
     zdj_menu_item_view_state_t * msd_state = (zdj_menu_item_view_state_t*)msd_item->state;
     msd_state->action = ZDJ_MENU_ITEM_ACTION_DIR_ENTER;
-    msd_state->link = "/media/internal/";
+    strcpy( msd_state->link, "/media/internal/" );
     msd_state->data->ptr = browser;
     msd_state->handles_hmi = true;
     msd_item->handle_control_event = &zdj_file_browser_item_hmi_delegate;

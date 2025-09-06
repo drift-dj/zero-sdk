@@ -45,8 +45,8 @@ void _zdj_usb_status_view_offline_update_layout( zdj_view_t * view ) {
     
     // Set header title
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state;
-    header_state->name = "USB Mode";
-    header_state->title = "Offline";
+    strcpy( header_state->name, "USB Mode" );
+    strcpy( header_state->title, "Offline" );
     header_state->has_valid_display = false;
 
     // Add zero icon

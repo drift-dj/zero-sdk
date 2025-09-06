@@ -29,7 +29,6 @@
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/perf/zdj_perf.h>
 
-#define ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE 2048
 
 typedef enum {
     ZDJ_PIPELINE_TIMEBASE_PCM_44100,
@@ -39,6 +38,39 @@ typedef enum {
     ZDJ_PIPELINE_TIMEBASE_BEATS
 } zdj_pipeline_timebase_t;
 
+typedef enum {
+     // Montonic sample counter from soundcard. 0 at soundcard_start( ), increments by buffer_len.
+    ZDJ_PIPELINE_ADDRESS_GLOBAL_PCM,
+    ZDJ_PIPELINE_ADDRESS_GLOBAL_BEATGRID,
+
+    // ZDJ_PIPELINE_ADDRESS_TSM_WIN,
+
+    // Samples in decode buf (0 -> node.win_sample_count)
+    ZDJ_PIPELINE_ADDRESS_DECODE_BUF, 
+
+    // Monotonically increasing sample space, invariant against discons.
+    // Designed to be moved forward and backward as decode window moves.
+    // Maps an external buffer to decode's out_buffer regardless of how
+    // far decode's window has moved, and regardless of how many discon
+    // boundaries have been crossed during that move.
+    ZDJ_PIPELINE_ADDRESS_DECODE, 
+
+    // Beats/milibeats overlaid on Source PCM Space
+    ZDJ_PIPELINE_ADDRESS_DECODE_BEATGRID,
+
+    // Decoded samples from source file.  Start at 0.
+    ZDJ_PIPELINE_ADDRESS_SOURCE_PCM,
+
+    ZDJ_PIPELINE_ADDRESS_FILE_SEEK
+} zdj_pipeline_address_space_t;
+
+typedef struct {
+    zdj_pipeline_address_space_t space;
+    int64_t i_val;
+    uint64_t u_val;
+    double d_val;
+} zdj_pipeline_addr_t;
+
 typedef struct {
     double d_val;
     uint32_t u_val;
@@ -46,26 +78,10 @@ typedef struct {
     zdj_pipeline_timebase_t timebase;
 } zdj_pipeline_mark_t;
 
-typedef enum {
-    ZDJ_PIPELINE_BREAK_LOOP,
-    ZDJ_PIPELINE_BREAK_SKIP,
-    ZDJ_PIPELINE_BREAK_SPLICE,
-    ZDJ_PIPELINE_BREAK_START,
-    ZDJ_PIPELINE_BREAK_START_FX,
-    ZDJ_PIPELINE_BREAK_STOP,
-    ZDJ_PIPELINE_BREAK_STOP_FX,
-} zdj_pipeline_break_type_t;
-
-typedef struct {
-    zdj_pipeline_mark_t mark_in;
-    zdj_pipeline_mark_t mark_out;
-    zdj_pipeline_break_type_t type;
-    bool quantized;
-} zdj_pipeline_break_t;
-
 typedef struct {
     // Abstract reference address for window in external data ref's coordinate space.
     // e.g. SEEK_SET offset in file pointer, PCM sample # in WAV file.
+    zdj_pipeline_addr_t addr;
     uint64_t ext_ref_addr; 
     zdj_pipeline_mark_t source_mark;
     // Index into buffer/linked list where external reference address is found.
@@ -99,6 +115,7 @@ typedef enum {
 
 typedef struct zdj_pipeline_node_t {
     void * state;
+    void ( *deinit )( struct zdj_pipeline_node_t * );
     void ( *deinit_state )( struct zdj_pipeline_node_t * );
 
     zdj_pipeline_window_state_t * window_state;
@@ -111,7 +128,7 @@ typedef struct zdj_pipeline_node_t {
     // Push funcs - Used when front-end code tells pipeline when to process data.
     // e.g. FX processor
     void ( *update_wait )( struct zdj_pipeline_node_t * );
-    void ( *update_async )( struct zdj_pipeline_node_t * );
+    // void ( *update_async )( struct zdj_pipeline_node_t * );
 
     // Pull callback - Used when internal system tells front-end when pipeline has new data to process 
     // e.g. analog io node - updates are triggered within M7 core
@@ -119,19 +136,14 @@ typedef struct zdj_pipeline_node_t {
 
     pthread_t * thread;
 
-    sem_t * async_wait;
-    sem_t * async_ready;
+    // sem_t * async_wait;
+    // sem_t * async_ready;
 
     zdj_error_type_t ( *open )( struct zdj_pipeline_node_t * );
     zdj_error_type_t ( *close )( struct zdj_pipeline_node_t * );
 } zdj_pipeline_node_t;
 
 zdj_pipeline_node_t * zdj_new_pipeline_node( void );
-zdj_error_type_t zdj_deinit_pipeline_node( zdj_pipeline_node_t * node );
-
-// zdj_error_type_t zdj_pipeline_enable_perf( zdj_pipeline_node_t * node, uint32_t tag_count );
-// zdj_error_type_t zdj_pipeline_disable_perf( zdj_pipeline_node_t * node );
-// zdj_error_type_t zdj_pipeline_reset_perf( zdj_pipeline_node_t * node );
 
 bool zdj_pipeline_window_state_get_valid_indexes( 
     zdj_pipeline_window_state_t * window_state, 

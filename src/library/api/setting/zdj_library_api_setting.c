@@ -43,7 +43,8 @@ zdj_health_status_t zdj_library_set_int_setting( char * library_entity_id, zdj_l
         );
     } else {
         // Insert if setting does't exist
-        char * uuid = zdj_library_get_uuid( );
+        char uuid[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
+        zdj_library_put_uuid( uuid );
         snprintf( _sql, sizeof( _sql ), 
             "INSERT INTO Setting_Entity VALUES(\"%s\", \"%s\", %d, %d, 0, 0, NULL);\n",
             uuid,
@@ -51,7 +52,6 @@ zdj_health_status_t zdj_library_set_int_setting( char * library_entity_id, zdj_l
             setting,
             val
         );
-        free( uuid );
     }
     int sql_res = zdj_sql_exec( (char *)&_sql, zdj_library_db );
     if( sql_res == SQLITE_OK ) {
@@ -72,7 +72,8 @@ zdj_health_status_t zdj_library_set_bool_setting( char * library_entity_id, zdj_
         );
     } else {
         // Insert if setting does't exist
-        char * uuid = zdj_library_get_uuid( );
+        char uuid[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
+        zdj_library_put_uuid( uuid );
         snprintf( _sql, sizeof( _sql ), 
             "INSERT INTO Setting_Entity VALUES(\"%s\", \"%s\", %d, 0, %d, 0, \"\");\n",
             uuid,
@@ -80,7 +81,6 @@ zdj_health_status_t zdj_library_set_bool_setting( char * library_entity_id, zdj_
             setting,
             val
         );
-        free( uuid );
     }
     int sql_res = zdj_sql_exec( (char *)&_sql, zdj_library_db );
     if( sql_res == SQLITE_OK ) {
@@ -101,7 +101,8 @@ zdj_health_status_t zdj_library_set_float_setting( char * library_entity_id, zdj
         );
     } else {
         // Insert if setting does't exist
-        char * uuid = zdj_library_get_uuid( );
+        char uuid[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
+        zdj_library_put_uuid( uuid );
         snprintf( _sql, sizeof( _sql ), 
             "INSERT INTO Setting_Entity VALUES(\"%s\", \"%s\", %d, 0, 0, %f, \"\");\n",
             uuid,
@@ -109,7 +110,6 @@ zdj_health_status_t zdj_library_set_float_setting( char * library_entity_id, zdj
             setting,
             val
         );
-        free( uuid );
     }
     int sql_res = zdj_sql_exec( (char *)&_sql, zdj_library_db );
     if( sql_res == SQLITE_OK ) {
@@ -130,7 +130,8 @@ zdj_health_status_t zdj_library_set_char_setting( char * library_entity_id, zdj_
         );
     } else {
         // Insert if setting does't exist
-        char * uuid = zdj_library_get_uuid( );
+        char uuid[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
+        zdj_library_put_uuid( uuid );
         snprintf( _sql, sizeof( _sql ), 
             "INSERT INTO Setting_Entity VALUES(\"%s\", \"%s\", %d, 0, 0, 0, \"%s\");\n",
             uuid,
@@ -138,7 +139,6 @@ zdj_health_status_t zdj_library_set_char_setting( char * library_entity_id, zdj_
             setting,
             val
         );
-        free( uuid );
     }
     int sql_res = zdj_sql_exec( (char *)&_sql, zdj_library_db );
     if( sql_res == SQLITE_OK ) {

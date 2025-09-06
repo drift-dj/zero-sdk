@@ -15,9 +15,9 @@
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
-void _zdj_file_browser_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-void _zdj_file_browser_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
-void _zdj_file_browser_deinit_state( zdj_view_t * view );
+static void _draw( zdj_view_t * view, zdj_view_clip_t * clip );
+static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event );
+static void _deinit_state( zdj_view_t * view );
 
 // void _zdj_file_browser_handle_cancel_btn( zdj_view_t * view );
 
@@ -34,14 +34,15 @@ zdj_view_t * zdj_new_file_browser_view(
 
     zdj_view_t * browser_view = zdj_new_view( frame );
     browser_view->type = ZDJ_VIEW_BROWSER;
-    browser_view->draw = &_zdj_file_browser_draw;
-    browser_view->handle_control_event = _zdj_file_browser_handle_control;
-    browser_view->deinit_state = &_zdj_file_browser_deinit_state;
+    browser_view->draw = &_draw;
+    browser_view->handle_control_event = _handle_control;
+    browser_view->deinit_state = &_deinit_state;
     browser_view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
     browser_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
 
     browser_view->frame->x = ZDJ_MODAL_X;
     browser_view->frame->y = ZDJ_SCREEN_H+1;
+    browser_view->frame->w = ZDJ_MODAL_WIDTH;
 
     // Add a state instance
     zdj_file_browser_view_state_t * state = calloc( 1, sizeof( zdj_file_browser_view_state_t ) );
@@ -73,7 +74,7 @@ zdj_view_t * zdj_new_file_browser_view(
     // Add first menu to stack
     zdj_view_t * menu = zdj_new_file_browser_menu_for_path( 
         browser_view,
-        &(zdj_rect_t){frame->x, frame->y+10, frame->w, frame->h-9}, 
+        &(zdj_rect_t){frame->x, frame->y+10, ZDJ_MODAL_WIDTH, frame->h-9}, 
         path, 
         read_only, 
         allow_nav, 
@@ -85,12 +86,12 @@ zdj_view_t * zdj_new_file_browser_view(
     return browser_view;
 }
 
-void _zdj_file_browser_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
 }
 
 // Pass appropriate hmi events down into the top menu_view
-void _zdj_file_browser_handle_control( zdj_view_t * browser, zdj_control_event_t * _event ) {
+static void _handle_control( zdj_view_t * browser, zdj_control_event_t * _event ) {
     zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_file_browser_view_state_t * browser_state = (zdj_file_browser_view_state_t *)browser->state;
     zdj_view_t * header_view = browser_state->header_view;
@@ -101,7 +102,9 @@ void _zdj_file_browser_handle_control( zdj_view_t * browser, zdj_control_event_t
 
     // Handle a cancel button press
     zdj_menu_view_state_t * top_menu_state = (zdj_menu_view_state_t*)top_menu->state;
-    if( top_menu_state->scroll_index == -1 && e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
+    if( (top_menu_state->scroll_index == -1 && e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0) ||
+         e->id == ZDJ_UI_CONTROL_NAV_RELEASE_0
+    ) {
         zdj_file_browser_exit_context_t exit_context = {
             ZDJ_FILE_BROWSER_EXIT_STATUS_CANCEL, NULL
         };
@@ -139,64 +142,9 @@ void _zdj_file_browser_handle_control( zdj_view_t * browser, zdj_control_event_t
 
     // Prevent views/menus below this one from getting jog wheel events
     e->blocked = true;
-
-
-
-    
-
-    // Get ready to scroll menu
-
-    // if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
-    //     zdj_view_t * top_menu = zdj_view_stack_top_subview_of( browser_state->menu_container );
-
-    //     if( top_menu ) {
-    //         zdj_menu_view_state_t * top_menu_state = (zdj_menu_view_state_t*)top_menu->state;
-
-    //         // Handle a cancel button press - return immediately since we're being dismissed
-    //         // if( top_menu_state->scroll_index == -1 && e->type == ZDJ_HMI_EVENT_RELEASE ) {
-    //         if( top_menu_state->scroll_index == -1 && e->type == ZDJ_HMI_EVENT_RELEASE ) {
-    //             zdj_file_browser_exit_context_t exit_context = {
-    //                 ZDJ_FILE_BROWSER_EXIT_STATUS_CANCEL, NULL
-    //             };
-    //             browser_state->handle_file_browser_exit( browser, &exit_context );
-    //             e->blocked = true;
-    //             return;
-    //         }
-
-    //         // Grab a scroll_index pre- and post- hmi event handler.
-    //         // We'll use this to show/hide the browser back button.
-    //         int menu_scroll_index = top_menu_state->scroll_index;
-
-    //         // Pass events down into the menu view stack.
-    //         // Note that browser/subviews may be deleted during handle_control_event.
-    //         // Be careful accessing them after this line.
-    //         top_menu->handle_control_event( top_menu, _event );
-
-    //         // Show/hide header's cancel button
-    //         zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)header_view->state;
-            
-    //         if( e->type == ZDJ_HMI_EVENT_ADJUST &&
-    //             header_state
-    //         ) {
-    //             if( top_menu_state->scroll_index == -1 &&
-    //                 header_state->back_hidden
-    //             ) {
-    //                 header_state->show_back = true;
-    //             } else if( 
-    //                 top_menu_state->scroll_index == 0 &&
-    //                 !header_state->back_hidden 
-    //             ) {
-    //                 header_state->hide_back = true;
-    //             }
-    //         }
-    //     }
-        
-    //     // Prevent views/menus below this one from getting jog wheel events
-    //     e->blocked = true;
-    // }
 }
 
-void _zdj_file_browser_deinit_state( zdj_view_t * view ) {
+static void _deinit_state( zdj_view_t * view ) {
     zdj_menu_view_state_t * state = (zdj_menu_view_state_t*)view->state;
     free( state );
     view->state = NULL;
@@ -282,14 +230,14 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
             if( !browser ){ break; }
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
             if( browser_state->handle_file_browser_exit ) {
-                char * filename = strdup( item_state->link );
+                char * filepath = strdup( item_state->link );
                 char * dir = strdup( browser_state->path );
-                char filepath[1024];
-                snprintf( filepath, sizeof( filepath ), "%s/%s", dir, filename );
+                // char filepath[1024];
+                // snprintf( filepath, sizeof( filepath ), "%s/%s", dir, filename );
                 zdj_file_browser_exit_context_t exit_context = {
                     ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, 
                     dir, 
-                    filename, 
+                    strdup( basename( filepath ) ), 
                     strdup( filepath )
                 };
                 browser_state->handle_file_browser_exit( browser, &exit_context );

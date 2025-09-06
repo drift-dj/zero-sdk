@@ -26,18 +26,27 @@ zdj_library_config_t * zdj_library_get_config( void ) {
     if( stmt ) {
         while ( ( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW ) {
             cfg = calloc( 1, sizeof( zdj_library_config_t ) );
-            cfg->entity_id = strdup( (char*)sqlite3_column_text ( stmt, 0 ) );
+            strcpy( cfg->entity_id, (char*)sqlite3_column_text ( stmt, 0 ) );
             cfg->entity_counter = sqlite3_column_int ( stmt, 1 );
-            cfg->current_lib_entity_id = strdup( (char*)sqlite3_column_text ( stmt, 2 ) );
+            strcpy( cfg->current_lib_entity_id, (char*)sqlite3_column_text ( stmt, 2 ) );
         }
         sqlite3_finalize( stmt );
     }
 
+    // If there is no cfg row in the db, make a new one.
     if( !cfg ) {
         cfg = calloc( 1, sizeof( zdj_library_config_t ) );
-        cfg->entity_id = zdj_library_get_uuid( );
+        zdj_library_put_uuid( cfg->entity_id );
         cfg->entity_counter = 1;
-        cfg->current_lib_entity_id = NULL;
+        strcpy( cfg->current_lib_entity_id, "" );
+
+        snprintf( _sql, sizeof( _sql ), "INSERT INTO \"%s\" VALUES(\"%s\", %d, \"%s\");\n",
+            ZDJ_LIBRARY_TABLE_LIBRARY_CONFIG,
+            cfg->entity_id,
+            cfg->entity_counter,
+            cfg->current_lib_entity_id
+        );
+        zdj_sql_exec( (char *)&_sql, zdj_library_db );
     }
 
     library_config = cfg;
@@ -45,6 +54,7 @@ zdj_library_config_t * zdj_library_get_config( void ) {
 }
 
 char * zdj_library_config_get_current_library_id( void ) {
+    // printf( "zdj_library_config_get_current_library_id\n" );
     zdj_library_config_t * cfg = zdj_library_get_config( );
     if( cfg ) {
         return cfg->current_lib_entity_id;
@@ -54,9 +64,10 @@ char * zdj_library_config_get_current_library_id( void ) {
 }
 
 zdj_health_status_t zdj_library_config_set_current_library_id( char * entity_id ) {
+    printf( "zdj_library_config_set_current_library_id\n" );
     zdj_library_config_t * cfg = zdj_library_get_config( );
     if( !cfg ) { return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR; }
-    cfg->current_lib_entity_id = strdup( entity_id );
+    strcpy( cfg->current_lib_entity_id, entity_id );
 
     snprintf( _sql, sizeof( _sql ), "UPDATE Library_Config_Entity SET entity_id=\'%s\', entity_counter=%d, current_lib_entity_id=\'%s\';\n",
         cfg->entity_id,

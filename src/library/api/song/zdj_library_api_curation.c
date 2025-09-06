@@ -15,7 +15,7 @@
 
 zdj_library_curation_t * zdj_library_create_curation_dto( void ) {
     zdj_library_curation_t * curation = calloc( 1, sizeof( zdj_library_curation_t ) );
-    curation->entity_id = zdj_library_get_uuid( );
+    zdj_library_put_uuid( curation->entity_id );
     return curation;
 }
 
@@ -40,10 +40,16 @@ zdj_library_curation_t * zdj_library_fetch_current_curation_dto_for_song(
     if( stmt ) {
         while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
             curation = calloc( 1, sizeof( zdj_library_curation_t ) );
-            curation->entity_id = strdup( (char*)sqlite3_column_text ( stmt, _eid_col ) );
-            curation->data_source_entity_id = strdup( (char*)sqlite3_column_text ( stmt, _dseid_col ) );
-            curation->tags_links_table = strdup( (char*)sqlite3_column_text ( stmt, _tl_col ) );
-            curation->playlists_links_table = strdup( (char*)sqlite3_column_text ( stmt, _pl_col ) );
+            strcpy( curation->entity_id, (char*)sqlite3_column_text ( stmt, _eid_col ) );
+            
+            char * data_source_entity_id = (char*)sqlite3_column_text ( stmt, _dseid_col );
+            if( data_source_entity_id ) { strcpy( curation->data_source_entity_id, data_source_entity_id ); }
+
+            char * tags_links_table = (char*)sqlite3_column_text ( stmt, _tl_col );
+            if( tags_links_table ) { strcpy( curation->tags_links_table, tags_links_table ); }
+
+            char * playlists_links_table = (char*)sqlite3_column_text ( stmt, _pl_col );
+            if( playlists_links_table ) { strcpy( curation->playlists_links_table, playlists_links_table ); }
         }
         sqlite3_finalize( stmt );
     }
@@ -88,7 +94,7 @@ zdj_health_status_t zdj_library_store_curation(
         curation->playlists_links_table,
         curation->error
     );
-    zdj_sql_exec( (char*)&sql, db );
+    zdj_sql_exec( sql, db );
     
     return ZDJ_HEALTH_STATUS_OKAY;
 }

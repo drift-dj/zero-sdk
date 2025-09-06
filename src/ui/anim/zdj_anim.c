@@ -66,12 +66,12 @@ zdj_anim_t * zdj_new_anim( zdj_anim_type_t type ) {
         case ZDJ_ANIM_HEADER_ACTIVATE:
             anim->init_fn = &zdj_anim_init_header_activate;
             anim->update_fn = &zdj_anim_update_header;
-            anim->deinit_fn = &zdj_anim_deinit_header;
+            anim->deinit_fn = &zdj_anim_deinit;
             break;
         case ZDJ_ANIM_HEADER_DEACTIVATE:
             anim->init_fn = &zdj_anim_init_header_deactivate;
             anim->update_fn = &zdj_anim_update_header;
-            anim->deinit_fn = &zdj_anim_deinit_header;
+            anim->deinit_fn = &zdj_anim_deinit;
             break;
         case ZDJ_ANIM_DIALOG_SHOW:
             anim->init_fn = &zdj_anim_init_dialog_show;
@@ -81,6 +81,16 @@ zdj_anim_t * zdj_new_anim( zdj_anim_type_t type ) {
         case ZDJ_ANIM_DIALOG_HIDE:
             anim->init_fn = &zdj_anim_init_dialog_hide;
             anim->update_fn = &zdj_anim_update_dialog;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_DJ_DECK_PAGE_SHOW:
+            anim->init_fn = &zdj_anim_init_dj_deck_page_show;
+            anim->update_fn = &zdj_anim_update_dj_deck_page;
+            anim->deinit_fn = &zdj_anim_deinit;
+            break;
+        case ZDJ_ANIM_DJ_DECK_PAGE_HIDE:
+            anim->init_fn = &zdj_anim_init_dj_deck_page_hide;
+            anim->update_fn = &zdj_anim_update_dj_deck_page;
             anim->deinit_fn = &zdj_anim_deinit;
             break;
         case ZDJ_ANIM_DEBUG_PANEL_SHOW:

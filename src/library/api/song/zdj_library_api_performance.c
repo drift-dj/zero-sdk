@@ -12,7 +12,7 @@
 
 zdj_library_performance_t * zdj_library_create_performance_dto( void ) {
     zdj_library_performance_t * performance = calloc( 1, sizeof( zdj_library_performance_t ) );
-    performance->entity_id = zdj_library_get_uuid( );
+    zdj_library_put_uuid( performance->entity_id );
     return performance;
 }
 
@@ -41,14 +41,19 @@ zdj_library_performance_t * zdj_library_fetch_current_performance_dto_for_song(
     if( stmt ) {
         while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
             performance = calloc( 1, sizeof( zdj_library_performance_t ) );
-            performance->entity_id = strdup( (char*)sqlite3_column_text ( stmt, _eid_col ) );
-            performance->data_source_entity_id = strdup( (char*)sqlite3_column_text ( stmt, _dseid_col ) );
+            strcpy( performance->entity_id, (char*)sqlite3_column_text ( stmt, _eid_col ) );
+            
+            char * data_source_entity_id = (char*)sqlite3_column_text ( stmt, _dseid_col );
+            if( data_source_entity_id ) { strcpy( performance->data_source_entity_id, data_source_entity_id ); }
+
             performance->sample_length = sqlite3_column_int ( stmt, _lis_col );
             performance->key = sqlite3_column_int ( stmt, _k_col );
             performance->bpm = sqlite3_column_double ( stmt, _bpm_col );
             performance->has_beat_grid = sqlite3_column_int ( stmt, _hbg_col );
             performance->beat_grid_start_sample = sqlite3_column_int ( stmt, _bgs_col );
-            performance->cuepoints_links_table = strdup( (char*)sqlite3_column_text ( stmt, _cl_col ) );
+
+            char * cuepoints_links_table = (char*)sqlite3_column_text ( stmt, _cl_col );
+            strcpy( performance->cuepoints_links_table, cuepoints_links_table );
         }
         sqlite3_finalize( stmt );
     }
@@ -101,7 +106,7 @@ zdj_health_status_t zdj_library_store_performance(
         performance->cuepoints_links_table,
         performance->error
     );
-    zdj_sql_exec( (char*)&sql, db );
+    zdj_sql_exec( sql, db );
     
     return ZDJ_HEALTH_STATUS_OKAY;
 }

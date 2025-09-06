@@ -32,6 +32,8 @@ void zdj_menu_item_song_import_init_layout( zdj_view_t * view ) {
     state->normal_view->frame->h = view->frame->h;
 
     state->needs_layout_init = false;
+
+    // printf( "zdj_menu_item_song_import_init_layout done\n" );
 }
 
 void zdj_menu_item_song_import_update_layout( zdj_view_t * view ) {

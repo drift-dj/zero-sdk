@@ -44,7 +44,7 @@ zdj_pipeline_node_t * zdj_new_file_read_node(
 
     zdj_file_read_node_state_t * state = calloc( 1, sizeof( zdj_file_read_node_state_t ) );
     node->state = state;
-    state->filepath = strdup( filepath );
+    strcpy( state->filepath, filepath );
 
     state->header = calloc( 1, header_size );
     state->header_size = header_size;

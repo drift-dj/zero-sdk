@@ -26,13 +26,13 @@ zdj_pipeline_node_t * zdj_new_waveform_comp_build_node( zdj_pipeline_node_t * de
     state->decode_node = decode_node;
 
     // Make Gaussian scaling state
-    state->kernel = zdj_new_gaussian( ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE, 1.0 );
+    state->kernel = zdj_new_gaussian( ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE, 1.0 );
 
     // Setup point window - (as byte_buf)
     // zdj_pipeline_window_resize( node->window, 0, ZDJ_WAVEFORM_COMP_POINTS_PER_CYCLE );
 
     // Setup decode_node's window based on the number of samples per cycle required.
-    // uint32_t decode_width = ZDJ_WAVEFORM_COMP_POINTS_PER_CYCLE * ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE;
+    // uint32_t decode_width = ZDJ_WAVEFORM_COMP_POINTS_PER_CYCLE * ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE;
     // decode_node->resize_window( decode_node, 0, decode_width );
 
     return node;
@@ -45,7 +45,7 @@ void _zdj_waveform_comp_build_update_wait( zdj_pipeline_node_t * node ) {
     // // Tell decode node to fill its sample window
     // decode_node->update_wait( decode_node );
 
-    // int point_width = ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE;
+    // int point_width = ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE;
     // int decode_width = point_width * ZDJ_WAVEFORM_COMP_POINTS_PER_CYCLE;
 
     // // Fill infill window with data from decode node.

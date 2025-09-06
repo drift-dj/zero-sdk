@@ -16,6 +16,8 @@ SDL_Surface* zdj_display_surface;
 uint32_t * zdj_ui_pixels = NULL;
 static int zdj_view_stack_id = 0;
 zdj_view_t * zdj_delete_stack;
+int zdj_view_count;
+int zdj_new_view_count;
 
 void _zdj_view_deinit( struct zdj_view_t * view );
 
@@ -50,6 +52,8 @@ void zdj_ui_init( void ) {
         exit( ZDJ_HEALTH_STATUS_MISSING_GFX_RESOURCE );
     }
 
+    zdj_view_count = 0;
+
     // Bringup the display stack
     zdj_view_stack_init( ); 
 }
@@ -59,6 +63,7 @@ void zdj_ui_deinit( void ) {
 }
 
 void zdj_ui_update( void ) {
+    
     // Clear the screen
     zdj_view_stack_clear_screen( );
 
@@ -74,7 +79,11 @@ zdj_view_t * zdj_new_view( zdj_rect_t * frame ) {
     view->id = zdj_view_stack_id++;
     view->deinit = &_zdj_view_deinit;
     view->type = ZDJ_VIEW_BASE;
-    
+
+    // Control map inits to 'none.'
+    // Change by view/front-end to enable auto-activation of a control mapping.
+    view->map = ZDJ_CONTROL_MAP_NONE;
+
     // Default metrics update -- re-define in front-end layer to alter
     view->subview_clip = calloc( 1, sizeof( zdj_view_clip_t ) );
     view->update_subview_clip = &zdj_view_stack_update_subview_clip;
@@ -92,6 +101,8 @@ zdj_view_t * zdj_new_view( zdj_rect_t * frame ) {
     view->anim = NULL;
     view->in_anim = NULL;
     view->out_anim = NULL;
+
+    view->is_deleting = false;
 
     return view;
 }
@@ -132,19 +143,28 @@ void zdj_add_bottom_subview_to( zdj_view_t * view, zdj_view_t * new_subview ) {
 }
 
 void zdj_remove_subview_of( zdj_view_t * view, zdj_view_t * subview ) {
-    // If this is the base subview, null subviews out
+    // printf( "zdj_remove_subview_of: %p/%p\n", view, subview );
+    if( !subview ){ return; }
+    
     if( subview->next && subview->prev ) {
+        // printf( "middle case\n" );
         // If we're in the middle of a linked list, splice the subview out
         subview->next->prev = subview->prev;
         subview->prev->next = subview->next;
     } else if( subview->next ) {
+        // printf( "beginning case\n" );
         // If we're at the beginning of the linked list,
         // subview.next becomes head of superview's subviews list.
         subview->next->prev = NULL;
         view->subviews = subview->next;
     } else if( subview->prev ) {
+        // printf( "end case\n" );
         // If we're at the end of the linked list, null out the new end.
         subview->prev->next = NULL;
+    } else {
+        // printf( "single case\n" );
+        // If this is the base subview, null subviews out
+        view->subviews = NULL;
     }
     view->subview_count--;
     zdj_delete_view( subview );
@@ -179,7 +199,12 @@ void zdj_push_subview( zdj_view_t * view, zdj_view_t * subview, bool animated ) 
     zdj_view_t * old_subview = zdj_view_stack_top_subview_of( view );
     // Add the new subview to the top
     zdj_add_subview( view, subview );
-    
+
+    // Activate view's control map
+    if( subview->map != ZDJ_CONTROL_MAP_NONE ){ zdj_activate_control_map( subview->map ); }
+
+    // printf( "zdj_push_subview: %p old %p new: %p\n", view, old_subview, subview );
+
     // Show new subview
     if( subview->in_anim ) {
         subview->in_anim->cb_fn = NULL;
@@ -212,6 +237,12 @@ void zdj_pop_subview_of( zdj_view_t * view, bool animated ) {
     zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
     // Get next highest subview to show
     zdj_view_t * prev_subview = top_subview->prev;
+
+    // printf( "zdj_pop_subview_of: %p top: %p prev: %p\n", view, top_subview, prev_subview );
+
+    // Activate view's control map
+    if( prev_subview->map != ZDJ_CONTROL_MAP_NONE ){ zdj_activate_control_map( prev_subview->map ); }
+
     if( top_subview ) {
 
         if( top_subview->out_anim ) {
@@ -264,11 +295,9 @@ void zdj_pop_n_subviews_of( zdj_view_t * view, int count, bool animated ) {
     
     // Animate out anything from top view down to n
     zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
-    // printf( "subview: %p, %p\n", subview, subview->out_anim );
     for( int n=0; n<count; n++ ) {
         if( subview ) {
             if( subview->out_anim ) {
-                // printf( "animating out: %p\n", subview );
                 ((anim_init_t)subview->out_anim->init_fn)( subview->out_anim, subview );
                 subview->out_anim->view = subview;
                 subview->out_anim->superview = view;
@@ -278,10 +307,13 @@ void zdj_pop_n_subviews_of( zdj_view_t * view, int count, bool animated ) {
             } else {
                 zdj_remove_subview_of( view, subview );
             }
-            subview = subview->prev;;
+            subview = subview->prev;
         }
     }
 
+    // Activate view's control map
+    if( subview->map != ZDJ_CONTROL_MAP_NONE ){ zdj_activate_control_map( subview->map ); }
+    
     // Animate in target subview
     // Show next subview down if available
     if( subview && subview->in_anim ) {
@@ -297,35 +329,35 @@ void zdj_pop_n_subviews_of( zdj_view_t * view, int count, bool animated ) {
 // Note that deinit isn't called here.
 // deinit() is called when view_stack_update() traverses the delete stack later. 
 void zdj_delete_view( zdj_view_t * view ) {
+    // printf( "zdj_delete_view: %p\n", view );
+    view->is_deleting = true;
     view->next = NULL;
     view->prev = NULL;
-    if( !zdj_delete_stack ) {
-        zdj_delete_stack = view;
-    } else {
-        zdj_view_t * delete_tip = zdj_delete_stack;
-        while( delete_tip ) {
-            if( delete_tip->next ) {
-                delete_tip = delete_tip->next;
-                continue;
-            } else {
-                break;
-            }
-        }
-        delete_tip->next = view;
+
+    // Recurse into subviews and delete
+    zdj_view_t * next_subview = view->subviews;
+    while( next_subview ) {
+        // printf( "next_subview: %p\n", next_subview );
+        zdj_view_t * new_next_subview = next_subview->next;
+        zdj_delete_view( next_subview );
+        next_subview = new_next_subview;
     }
+
+    // Put this view at the head of the delete stack
+    if( zdj_delete_stack ) {
+        zdj_delete_stack->prev = view;
+        view->next = zdj_delete_stack;
+    }
+    zdj_delete_stack = view;
 }
 
 void _zdj_view_deinit( zdj_view_t * view ) {
-    // Deinit subviews
-    zdj_view_t * subview = view->subviews;
-    while( subview ) {
-        zdj_view_t * old_subview = subview;
-        subview = subview->next;
-        zdj_delete_view( old_subview );
-    }
     if( view->deinit_state ) { view->deinit_state( view ); }
     free( view->subview_clip );
     free( view->frame );
+
+    // Shift the view stack forward
+    zdj_delete_stack = view->next;
     
     if( view->in_anim && view->in_anim->deinit_fn ) { 
         ((anim_deinit_t)view->in_anim->deinit_fn)( view->in_anim ); 

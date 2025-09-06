@@ -135,9 +135,15 @@ void zdj_soundcard_options_update_port_output_layout( zdj_view_t * view ) {
     sig_type->handle_control_event = &_zdj_soundcard_options_port_output_handle_pad;
     zdj_menu_item_view_state_t * sig_type_state = (zdj_menu_item_view_state_t*)sig_type->state;
     sig_type_state->data->ptr = options_state;
-    sig_type_state->data->c_val = zdj_soundcard_signal_name[ 
-        zdj_soundcard_dto_get_sigtype_for_node_name( &zdj_soundcard->dto, page_node->name ) 
-    ];
+    // sig_type_state->data->c_val = zdj_soundcard_signal_name[ 
+    //     zdj_soundcard_dto_get_sigtype_for_node_name( &zdj_soundcard->dto, page_node->name ) 
+    // ];
+    strcpy( 
+        sig_type_state->data->c_val, 
+        zdj_soundcard_signal_name[ 
+            zdj_soundcard_dto_get_sigtype_for_node_name( &zdj_soundcard->dto, page_node->name ) 
+        ]
+    );
     options_state->menu_index_pad = 0;
     zdj_menu_view_add_item( menu_view, sig_type );
     // } else {

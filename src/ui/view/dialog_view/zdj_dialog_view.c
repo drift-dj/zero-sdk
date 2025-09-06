@@ -13,10 +13,11 @@
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 
-void _zdj_dialog_view_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-void _zdj_dialog_view_handle_control( zdj_view_t * menu_stack, zdj_control_event_t * _event );
-void _zdj_dialog_view_deinit_state( zdj_view_t * dialog_view );
-void _zdj_dialog_okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event );
+static void _draw( zdj_view_t * view, zdj_view_clip_t * clip );
+static void _handle_control( zdj_view_t * menu_stack, zdj_control_event_t * _event );
+static void _handle_cancel( zdj_view_t * view );
+static void _deinit_state( zdj_view_t * dialog_view );
+static void _okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event );
 
 zdj_view_t * zdj_new_dialog_view( 
     zdj_dialog_view_type_t type,
@@ -26,9 +27,9 @@ zdj_view_t * zdj_new_dialog_view(
 ) {
     zdj_view_t * dialog_view = zdj_new_view( zdj_dialog_rect( ) );
     dialog_view->type = ZDJ_VIEW_DIALOG;
-    dialog_view->draw = &_zdj_dialog_view_draw;
-    dialog_view->handle_control_event = _zdj_dialog_view_handle_control;
-    dialog_view->deinit_state = &_zdj_dialog_view_deinit_state;
+    dialog_view->draw = &_draw;
+    dialog_view->handle_control_event = _handle_control;
+    dialog_view->deinit_state = &_deinit_state;
 
     dialog_view->frame->x = ZDJ_DIALOG_X;
     dialog_view->frame->y = ZDJ_SCREEN_H+2;
@@ -64,13 +65,22 @@ zdj_view_t * zdj_new_dialog_view(
     }
 
     // Add buttons
-    zdj_view_t * okay_btn = zdj_new_menu_item( "OKAY", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    char btn_title[ 16 ];
+    switch( type ){ 
+        case ZDJ_DIALOG_VIEW_TYPE_OKAY:
+            strcpy( btn_title, "Okay" );
+            break;
+        case ZDJ_DIALOG_VIEW_TYPE_GULP:
+            strcpy( btn_title, "GULP" );
+            break;
+    }
+    zdj_view_t * okay_btn = zdj_new_menu_item( btn_title, ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     zdj_menu_item_view_state_t * okay_btn_state = (zdj_menu_item_view_state_t*)okay_btn->state;
     okay_btn_state->data->ptr = dialog_view;
-    okay_btn->handle_control_event = &_zdj_dialog_okay_btn_handle_event;
-    okay_btn->frame->x = 76;
-    okay_btn->frame->y = 25;
-    okay_btn->frame->w = 19;
+    okay_btn->handle_control_event = &_okay_btn_handle_event;
+    okay_btn->frame->x = 73;
+    okay_btn->frame->y = 28;
+    okay_btn->frame->w = 21;
     okay_btn->frame->h = 10;
     zdj_menu_view_add_item( _menu, okay_btn );
 
@@ -82,18 +92,23 @@ zdj_view_t * zdj_new_dialog_view(
         ZDJ_MENU_HEADER_BACK_STYLE_CANCEL
     );
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_header->state;
+    header_state->handle_back = &_handle_cancel;
     zdj_menu_view_add_header( _menu, menu_header );
 
     return dialog_view;
 }
 
 // Drop in a dotted BG to obscure the views below
-void _zdj_dialog_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // boxColor( zdj_renderer( ), 0, 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, ZDJ_BLACK );
     // SDL_RenderCopy( zdj_renderer( ), zdj_asset_atlas( ), &zdj_ui_assets[ ZDJ_UI_ASSET_DOT_BG ], &(SDL_Rect){0,0,127,64} );
 }
 
-void _zdj_dialog_view_handle_control( zdj_view_t * dialog_view, zdj_control_event_t * _event ) {
+static void _handle_cancel( zdj_view_t * view ) {
+    zdj_pop_subview_of( zdj_root_view( ), true );
+}
+
+static void _handle_control( zdj_view_t * dialog_view, zdj_control_event_t * _event ) {
     zdj_control_event_t * e = (zdj_control_event_t *)_event;
     
     // Ignore events which have been blocked by layers above this one.
@@ -104,7 +119,7 @@ void _zdj_dialog_view_handle_control( zdj_view_t * dialog_view, zdj_control_even
     top_subview->handle_control_event( top_subview, _event );
 }
 
-void _zdj_dialog_okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event ) {
+static void _okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * view_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * dialog = view_state->data->ptr;
     zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
@@ -114,7 +129,7 @@ void _zdj_dialog_okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t *
     }
 }
 
-void _zdj_dialog_view_deinit_state( zdj_view_t * dialog_view ) {
+static void _deinit_state( zdj_view_t * dialog_view ) {
     zdj_dialog_view_state_t * state = (zdj_dialog_view_state_t*)dialog_view->state;
     free( state );
     dialog_view->state = NULL;

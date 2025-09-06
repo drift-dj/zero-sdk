@@ -31,10 +31,11 @@ zdj_view_t * zdj_new_ticker_view(
     zdj_ticker_state_t * state = calloc( 1, sizeof( zdj_ticker_state_t ) );
     state->scroll_offset = 0;
     state->scroll_rate = 0.3;
-    state->str = strdup( str );
+    strcpy( state->str, str );
     state->justify = justify;
     view->state = (void*)state;
 
+    
     // Build type texture
     TTF_Font * ttf_font = zdj_font( font );
     if( ttf_font ) {
@@ -42,7 +43,7 @@ zdj_view_t * zdj_new_ticker_view(
         // requires the beginning and end of the string to appear a 
         // few pixels from eachother to acheive seemless scrolling.
         char double_str[ 1024 ];
-        snprintf( double_str, sizeof( double_str ), "%s - %s",
+        snprintf( double_str, sizeof( double_str ), "%s        %s",
             str,
             str
         );
@@ -106,7 +107,6 @@ void _zdj_ticker_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
 void _zdj_ticker_view_deinit_state( zdj_view_t * view ) {
     zdj_ticker_state_t * state = (zdj_ticker_state_t*)view->state;
-    free( state->str );
     free( state );
     view->state = NULL;
 }

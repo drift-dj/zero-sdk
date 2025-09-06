@@ -226,7 +226,7 @@ void _xml_menu_process_item_nodes(
             }
             
             // Capture link string
-            state->link = strdup((char*)xmlGetProp( node, (const xmlChar *)"link" ));
+            strcpy( state->link, (char*)xmlGetProp( node, (const xmlChar *)"link" ));
 
             // Find hmi_event action type
             char * action_str = (char*)xmlGetProp( node, (const xmlChar *)"action" );

@@ -38,8 +38,8 @@ typedef void ( *zdj_menu_view_header_back_btn_fn )( zdj_view_t * );
 
 typedef struct {
     zdj_menu_view_header_style_t style;
-    char * name;
-    char * title;
+    char name[ 32 ];
+    char title[ 256 ];
     zdj_view_t * name_label;
     zdj_view_t * title_ticker;
     zdj_view_t * title_divider;

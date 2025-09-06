@@ -39,7 +39,7 @@ void _zdj_asset_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     
     // Draw the texture
     SDL_Rect s = { state->asset_rect.x + clip->src.x, state->asset_rect.y + clip->src.y, clip->src.w, clip->src.h };
-    SDL_Rect d = { clip->dst.x, clip->dst.y, clip->dst.w, clip->dst.h };
+    SDL_Rect d = { clip->dst.x, round(clip->dst.y), clip->dst.w, clip->dst.h };
     SDL_RenderCopy( zdj_renderer( ), state->tex, &s, &d );
 }
 

@@ -3,7 +3,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-
+#include <zerodj/controls/zdj_controls.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -53,6 +53,9 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
     zdj_view_t * input_buffer = zdj_new_text_input_buffer_view( input );
     view_state->input_buffer = input_buffer;
     zdj_add_subview( view, input_buffer );
+
+    // Active controls
+    zdj_activate_control_map( ZDJ_CONTROL_MAP_TEXT_INPUT );
 
     return view;
 }
@@ -127,16 +130,16 @@ void _zdj_text_input_view_handle_control( zdj_view_t * view, zdj_control_event_t
     } else if( e->id == ZDJ_UI_CONTROL_FN_3_RELEASE_0 ) {
         printf( "fn 3 btn\n" );
         _zdj_text_input_view_next_char( view );
-    } else if( e->id == ZDJ_UI_CONTROL_NAV_PRESS_0 ) {
+    } else if( e->id == ZDJ_UI_CONTROL_NAV_RELEASE_0 ) {
         printf( "nav btn\n" );
         // Scroll-to+blink cancel button if not already there.
         // Exit w/cancel action if cancel is selected.
         zdj_keyboard_chrome_item_t current_chrome = zdj_text_input_keyboard_get_current_chrome( view_state->keyboard_menu );
-        if( current_chrome == ZDJ_KEYBOARD_CHROME_CANCEL ) {
+        // if( current_chrome == ZDJ_KEYBOARD_CHROME_CANCEL ) {
             view_state->cb( ZDJ_TEXT_INPUT_ACTION_CANCEL, NULL );
-        } else {
-            zdj_text_input_keyboard_set_current_chrome( view_state->keyboard_menu, ZDJ_KEYBOARD_CHROME_CANCEL );
-        }
+        // } else {
+        //     zdj_text_input_keyboard_set_current_chrome( view_state->keyboard_menu, ZDJ_KEYBOARD_CHROME_CANCEL );
+        // }
     }
 
     // Prevent views/menus below this one from getting events

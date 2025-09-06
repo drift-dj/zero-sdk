@@ -17,6 +17,15 @@ void _zdj_control_copy_hmi_to_control_event(
     zdj_control_event_t * c_e 
 );
 
+
+// Main internal HMI input event mapping point.
+// Events from the onboard HMI input scan are processed here.
+// We decide whether an event should be mapped to a UI control or a deck control.
+// Ex. depending on UI state, a jog turn will either scroll an onscreen menu,
+// or scrub playback of one of the decks.
+// Since UI, HMI, and playback threads are totally asynchronous, UI has to declare event
+// capture intent on its thread, then we check capture state and route events from 
+// here on the Controls thread.
 bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_event_t * c_e ) {
 
     // Jog Knob
@@ -40,12 +49,12 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_SCRUB, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_SCRUB ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_SCRUB, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_NUDGE ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_NUDGE, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_NUDGE ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_NUDGE, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_NUDGE ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_NUDGE, in_e, c_e ); return true; 
+            // } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_NUDGE ] ) { 
+            //     _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_NUDGE, in_e, c_e ); return true; 
+            // } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_NUDGE ] ) { 
+            //     _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_NUDGE, in_e, c_e ); return true; 
+            // } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_NUDGE ] ) { 
+            //     _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_NUDGE, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_TEMPO_FINE ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_TEMPO_FINE, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_TEMPO_FINE ] ) { 
@@ -207,8 +216,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
 
     // Nav Btn
     else if( in_e->id == ZDJ_HMI_PB_5_NAV ) {
-        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_NAV_RELEASE_0 ] ) { 
-            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_NAV_RELEASE_0, in_e, c_e ); return true; 
+        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_NAV_PRESS_0 ] ) { 
+            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_NAV_PRESS_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_NAV_RELEASE_0 ] ) { 
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_NAV_RELEASE_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_LONG_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_NAV_PRESS_1 ] ) { 
@@ -222,8 +231,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
 
     // Fn 1
     else if( in_e->id == ZDJ_HMI_PB_2_FN_1 ) {
-        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_RELEASE_0 ] ) { 
-            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_RELEASE_0, in_e, c_e ); return true; 
+        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_PRESS_0 ] ) { 
+            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_PRESS_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_RELEASE_0 ] ) { 
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_RELEASE_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_LONG_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_PRESS_1 ] ) { 
@@ -237,8 +246,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
 
     // Fn 2
     else if( in_e->id == ZDJ_HMI_PB_3_FN_2 ) {
-        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_2_RELEASE_0 ] ) { 
-            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_2_RELEASE_0, in_e, c_e ); return true; 
+        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_2_PRESS_0 ] ) { 
+            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_2_PRESS_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_2_RELEASE_0 ] ) { 
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_2_RELEASE_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_LONG_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_2_PRESS_1 ] ) { 
@@ -252,8 +261,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
 
     // Fn 3
     else if( in_e->id == ZDJ_HMI_PB_4_FN_3 ) {
-        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_3_RELEASE_0 ] ) { 
-            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_3_RELEASE_0, in_e, c_e ); return true; 
+        if( in_e->type == ZDJ_HMI_EVENT_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_3_PRESS_0 ] ) { 
+            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_3_PRESS_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_3_RELEASE_0 ] ) { 
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_3_RELEASE_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_LONG_PRESS && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_3_PRESS_1 ] ) { 
@@ -443,7 +452,7 @@ bool zdj_control_event_is_deck_control( zdj_control_event_t * event ) {
         case ZDJ_DECK_1_CONTROL_FX_4:
         case ZDJ_DECK_1_CONTROL_FX_5:
         case ZDJ_DECK_1_CONTROL_SCRUB:
-        case ZDJ_DECK_1_CONTROL_NUDGE:
+        // case ZDJ_DECK_1_CONTROL_NUDGE:
         case ZDJ_DECK_1_CONTROL_TEMPO:
         case ZDJ_DECK_1_CONTROL_TEMPO_FINE:
         case ZDJ_DECK_1_CONTROL_PLAY_PAUSE:
@@ -465,7 +474,7 @@ bool zdj_control_event_is_deck_control( zdj_control_event_t * event ) {
         case ZDJ_DECK_2_CONTROL_FX_4:
         case ZDJ_DECK_2_CONTROL_FX_5:
         case ZDJ_DECK_2_CONTROL_SCRUB:
-        case ZDJ_DECK_2_CONTROL_NUDGE:
+        // case ZDJ_DECK_2_CONTROL_NUDGE:
         case ZDJ_DECK_2_CONTROL_TEMPO:
         case ZDJ_DECK_2_CONTROL_TEMPO_FINE:
         case ZDJ_DECK_2_CONTROL_PLAY_PAUSE:
@@ -485,7 +494,7 @@ bool zdj_control_event_is_deck_control( zdj_control_event_t * event ) {
         case ZDJ_DECK_EXT_CONTROL_FX_3:
         case ZDJ_DECK_EXT_CONTROL_FX_4:
         case ZDJ_DECK_EXT_CONTROL_FX_5:
-        case ZDJ_DECK_EXT_CONTROL_NUDGE:
+        // case ZDJ_DECK_EXT_CONTROL_NUDGE:
         case ZDJ_DECK_EXT_CONTROL_TEMPO:
         case ZDJ_DECK_EXT_CONTROL_TEMPO_FINE:
         case ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE:

@@ -28,7 +28,7 @@ void zdj_library_get_all_libraries(
     if( stmt ) {
         while ( (( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW) && row < result_limit ) {
             zdj_library_t * lib = calloc( 1, sizeof( zdj_library_t ) );
-            lib->entity_id = strdup( (char*)sqlite3_column_text ( stmt, 0 ) );
+            strcpy( lib->entity_id, (char*)sqlite3_column_text ( stmt, 0 ) );
             lib->name = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
             lib->song_links = strdup( (char*)sqlite3_column_text ( stmt, 2 ) );
             lib->curation_data_links = strdup( (char*)sqlite3_column_text ( stmt, 3 ) );
@@ -48,7 +48,7 @@ zdj_library_t * zdj_library_get_library_for_entity_id( char * library_entity_id 
     if( stmt ) {
         while ( ( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW ) {
             lib = calloc( 1, sizeof( zdj_library_t ) );
-            lib->entity_id = strdup( (char*)sqlite3_column_text ( stmt, 0 ) );
+            strcpy( lib->entity_id, (char*)sqlite3_column_text ( stmt, 0 ) );
             lib->name = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
             lib->song_links = strdup( (char*)sqlite3_column_text ( stmt, 2 ) );
             lib->curation_data_links = strdup( (char*)sqlite3_column_text ( stmt, 3 ) );
@@ -60,7 +60,7 @@ zdj_library_t * zdj_library_get_library_for_entity_id( char * library_entity_id 
 }
 
 
-int zdj_library_set_current( int library_entity_id ) {
+int zdj_library_set_current( char * library_entity_id ) {
     return 0;
 }
 
@@ -72,7 +72,8 @@ zdj_health_status_t zdj_library_new( void ) {
     // printf( "zdj_library_new\n" );
     // Insert a new Library_Entity record
     int lib_count = zdj_sql_rows_in_table ( "Library_Entity", NULL, zdj_library_db );
-    char * new_lib_entity_id = zdj_library_get_uuid( );
+    char new_lib_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
+    zdj_library_put_uuid( new_lib_entity_id );
     snprintf( _sql, sizeof( _sql ), "INSERT INTO Library_Entity VALUES(\"%s\", \"Library %d\", \"Song_Links_%s\", \"Playlist_Links_%s\", \"Curation_Data_Links_%s\", \"Setting_Links_%s\");\n",
         new_lib_entity_id,
         lib_count,
@@ -90,6 +91,9 @@ zdj_health_status_t zdj_library_new( void ) {
     );
     zdj_sql_exec( (char*)&_sql, zdj_library_db );
 
+    // Add a Playlist_Links table
+    // Add a Curation_Data_Links table
+
     // Set current lib to the new lib
     zdj_library_config_set_current_library_id( new_lib_entity_id );
 
@@ -99,26 +103,35 @@ zdj_health_status_t zdj_library_new( void ) {
     zdj_library_set_bool_setting( new_lib_entity_id, ZDJ_LIBRARY_SETTING_SHOW_YEARS_MENU, false );
     zdj_library_set_bool_setting( new_lib_entity_id, ZDJ_LIBRARY_SETTING_SHOW_BPM_MENU, true );
 
-    free( new_lib_entity_id );
-
     // Flush the db
     zdj_library_db_flush( );
 
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
-zdj_health_status_t zdj_library_duplicate_library( int library_entity_id ) {
+zdj_health_status_t zdj_library_duplicate_library( char * library_entity_id ) {
     // Copy song links table
     // Copy curation data links table
     // copy setting links table
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
-zdj_health_status_t zdj_library_remove_library( int library_entity_id ) {
+zdj_health_status_t zdj_library_remove_library( char * library_entity_id ) {
+    // Remove the links tables
+    // Song Links
+    // Playlist Links
+    // Curation Data Links
+    // Settings Links
+
+    // Remove the Library Record
+    snprintf( _sql, sizeof( _sql ), "DELETE FROM Library_Entity where entity_id like \'%s\'",
+        library_entity_id
+    );
+    zdj_sql_exec( (char *)&_sql, zdj_library_db );
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
-zdj_health_status_t zdj_library_rename_library( int library_entity_id, char * name ) {
+zdj_health_status_t zdj_library_rename_library( char * library_entity_id, char * name ) {
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 

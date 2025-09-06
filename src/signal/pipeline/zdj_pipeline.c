@@ -7,23 +7,23 @@
 
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
+static void _deinit_node( zdj_pipeline_node_t * node );
+
 zdj_pipeline_node_t * zdj_new_pipeline_node( void ) {
     zdj_pipeline_node_t * node = calloc( 1, sizeof( zdj_pipeline_node_t ) );
     node->window_state = calloc( 1, sizeof( zdj_pipeline_window_state_t ) );
     node->window_state->back_valid_index = -1;
     node->window_state->fwd_valid_index = -1;
+    node->deinit = &_deinit_node;
     return node;
 }
 
-zdj_error_type_t zdj_deinit_pipeline_node( zdj_pipeline_node_t * node ) {
+static void _deinit_node( zdj_pipeline_node_t * node ) {
+    // printf( "deinit node\n" );
     if( node->deinit_state ) { node->deinit_state( node ); }
     if( node->window_state ) { free( node->window_state ); }
-    if( node->thread ) { free( node->thread ); }
-    if( node->async_wait ) { free( node->async_wait ); }
-    if( node->async_ready ) { free( node->async_ready ); }
     free( node );
-
-    return ZDJ_ERROR_OKAY;
+    // printf( "deinit node done\n" );
 }
 
 // Helper function to format valid indexes for further processing.
@@ -77,9 +77,9 @@ zdj_error_type_t zdj_pipeline_window_state_move( zdj_pipeline_window_state_t * w
 // When a node finds a window with no data_valid, it should attempt to refill the
 // entire span.
 zdj_error_type_t zdj_pipeline_window_state_reset( zdj_pipeline_window_state_t * window_state, uint32_t ext_address ) {
-    window_state->ext_ref_addr = ext_address;
-    window_state->fwd_valid_index = -1;
-    window_state->back_valid_index = -1;
+    // window_state->ext_ref_addr = ext_address;
+    // window_state->fwd_valid_index = -1;
+    // window_state->back_valid_index = -1;
 
     return ZDJ_ERROR_OKAY;
 }
@@ -90,32 +90,32 @@ zdj_error_type_t zdj_pipeline_window_state_resize(
     uint32_t back_len, 
     uint32_t fwd_len
 ) {
-    // Clip/offset back_valid_index against new back_len val.
-    int new_back_offset = back_len - window_state->back_len;
-    if( window_state->back_valid_index != -1 && window_state->back_valid_index != window_state->len ) {
-        window_state->back_valid_index -= new_back_offset;
-    }
+    // // Clip/offset back_valid_index against new back_len val.
+    // int new_back_offset = back_len - window_state->back_len;
+    // if( window_state->back_valid_index != -1 && window_state->back_valid_index != window_state->len ) {
+    //     window_state->back_valid_index -= new_back_offset;
+    // }
 
-    // Preserve the offset from ref_addr to fwd_valid index
-    int fwd_valid_offset = window_state->fwd_valid_index - window_state->int_ref_addr_index;
+    // // Preserve the offset from ref_addr to fwd_valid index
+    // int fwd_valid_offset = window_state->fwd_valid_index - window_state->int_ref_addr_index;
 
-    // Offset ref_addr index against new back_len val.
-    window_state->int_ref_addr_index -= new_back_offset;
+    // // Offset ref_addr index against new back_len val.
+    // window_state->int_ref_addr_index -= new_back_offset;
 
-    // Offset fwd_valid index against new ref_addr index.
-    if( window_state->fwd_valid_index != -1 && window_state->fwd_valid_index != window_state->len ) {
-        window_state->fwd_valid_index = window_state->int_ref_addr_index + fwd_valid_offset;
-    }
+    // // Offset fwd_valid index against new ref_addr index.
+    // if( window_state->fwd_valid_index != -1 && window_state->fwd_valid_index != window_state->len ) {
+    //     window_state->fwd_valid_index = window_state->int_ref_addr_index + fwd_valid_offset;
+    // }
 
-    // Set new len values
-    window_state->back_len = back_len;
-    window_state->fwd_len = fwd_len;
-    window_state->len = back_len + fwd_len;
+    // // Set new len values
+    // window_state->back_len = back_len;
+    // window_state->fwd_len = fwd_len;
+    // window_state->len = back_len + fwd_len;
 
-    // Clip fwd_valid index to new len
-    if( window_state->fwd_valid_index >= window_state->len ) {
-        window_state->fwd_valid_index = window_state->len - 1;
-    }
+    // // Clip fwd_valid index to new len
+    // if( window_state->fwd_valid_index >= window_state->len ) {
+    //     window_state->fwd_valid_index = window_state->len - 1;
+    // }
 
     return ZDJ_ERROR_OKAY;
 }
@@ -125,16 +125,16 @@ bool zdj_pipeline_window_contains_address_range(
     uint32_t start, 
     uint32_t end 
 ) {
-    return (window_state->ext_ref_addr - window_state->back_len > start) &&
-           (window_state->ext_ref_addr + window_state->fwd_len < end);
+    // return (window_state->ext_ref_addr - window_state->back_len > start) &&
+    //        (window_state->ext_ref_addr + window_state->fwd_len < end);
 }
 
 void zdj_pipeline_window_print( zdj_pipeline_window_state_t * window_state ) {
-    printf( "win: %p bv_i:%d fv_i:%d l:%d ref:%d\n", 
-        window_state,
-        window_state->back_valid_index, 
-        window_state->fwd_valid_index,
-        window_state->len,
-        window_state->int_ref_addr_index
-    );
+    // printf( "win: %p bv_i:%d fv_i:%d l:%d ref:%d\n", 
+    //     window_state,
+    //     window_state->back_valid_index, 
+    //     window_state->fwd_valid_index,
+    //     window_state->len,
+    //     window_state->int_ref_addr_index
+    // );
 }

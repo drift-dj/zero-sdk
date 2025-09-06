@@ -26,7 +26,7 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
-    char * str;
+    char str[ 256 ];
     zdj_font_t font;
     zdj_justify_t justify;
     zdj_view_t * texture_view;

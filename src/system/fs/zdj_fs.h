@@ -65,6 +65,6 @@ unsigned long long zdj_fs_media_space( void );
 char * zdj_fs_read_buffer( char * path, int limit );
 int zdj_fs_write_buffer( char * path, char * buffer );
 
-char * zdj_fs_get_popen( char * cmd );
+void zdj_fs_get_popen( char * cmd, char * res );
 
 #endif

@@ -68,7 +68,7 @@ void zdj_scroll_view_to_view( zdj_view_t * scroll_view, zdj_view_t * to_view, bo
         // If we're scrolling down 
         if( direction ) {
             int win_bottom = (scroll_view->subview_clip->scroll_offset.set_y*-1) + scroll_view->frame->h;
-            int to_view_bottom = to_view->frame->y + to_view->frame->h;
+            int to_view_bottom = to_view->frame->y + to_view->frame->h + 2;
 
             // If item bottom falls within [margin] pixels of window bottom
             if( (win_bottom - to_view_bottom) < ZDJ_SCROLL_VIEW_MARGIN_V ) {
@@ -87,13 +87,16 @@ void zdj_scroll_view_to_view( zdj_view_t * scroll_view, zdj_view_t * to_view, bo
 
         // If we're scrolling up
         } else {
+            // printf( "scroll_view_to_view - up\n" );
             int win_top = scroll_view->subview_clip->scroll_offset.set_y * -1;
             int to_view_top = to_view->frame->y;
             // If item is first in list
             if( is_final_view ) {
+                // printf( "to final view\n" );
                 // Move window to y=0
                 scroll_view->subview_clip->scroll_offset.set_y = 0;
             } else if( (to_view_top - win_top) < ZDJ_SCROLL_VIEW_MARGIN_V ) {
+                // printf( "to margin\n" );
                 // Item top falls within [margin] pixels of top of window
                 // Move window so window top is [margin] pixels from top of view
                 scroll_view->subview_clip->scroll_offset.set_y = to_view_top - ZDJ_SCROLL_VIEW_MARGIN_V;

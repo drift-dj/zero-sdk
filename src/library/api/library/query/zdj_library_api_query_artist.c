@@ -46,7 +46,7 @@ zdj_error_type_t zdj_library_query_all_artists(
     int count, 
     sqlite3 * db 
 ) {
-    printf( "zdj_library_query_all_artists\n" );
+    // printf( "zdj_library_query_all_artists\n" );
     // Populate list of artists
     snprintf( _sql, sizeof( _sql ), 
         "SELECT DISTINCT artist from\n"
@@ -77,7 +77,7 @@ int zdj_library_query_count_songs_by_artist(
 	char * artist,
 	sqlite3 * db 
 ) {
-    printf( "zdj_library_query_count_songs_by_artist\n" );
+    // printf( "zdj_library_query_count_songs_by_artist\n" );
     // Build a count of all songs by an artist in a given library
 
     snprintf( _sql, sizeof( _sql ),
@@ -108,7 +108,7 @@ zdj_error_type_t zdj_library_query_songs_by_artist(
 	int count, 
 	sqlite3 * db 
 ) {
-    printf( "zdj_library_query_songs_by_artist\n" );
+    // printf( "zdj_library_query_songs_by_artist\n" );
     // Populate list of artists
     snprintf( _sql, sizeof( _sql ), 
         "SELECT * from Song_Entity\n"
@@ -125,10 +125,10 @@ zdj_error_type_t zdj_library_query_songs_by_artist(
             // Bound results by count input
             if( row < count ) {
                 songs[ row ] = zdj_library_fetch_song_dto_for_entity_id( (char*)sqlite3_column_text ( a_stmt, 0 ), db );
-                printf( "songs[%d]: %p\n", row, songs[ row ] );
+                // printf( "songs[%d]: %p\n", row, songs[ row ] );
                 if( songs[ row ] ) {
                     zdj_library_fetch_menu_song_graph( songs[ row ], db );
-                    printf( "catalog: %p\n", songs[ row ]->catalog );
+                    // printf( "catalog: %p\n", songs[ row ]->catalog );
                 }
             }
             row++;

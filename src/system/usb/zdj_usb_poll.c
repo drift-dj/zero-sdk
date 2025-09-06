@@ -82,7 +82,7 @@ static void * _zdj_port_partner_thread_main( void * arg ) {
             if ( fp != NULL ) {
                 char line[ 256 ];
                 fgets( line, sizeof( line ), fp );
-                printf( "/typec:%s\n", line );
+                // printf( "/typec:%s\n", line );
                 if( strstr( line, "partner" ) ) { 
                     // Partner exists
                     if( state->has_partner == false ) {

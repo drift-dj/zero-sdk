@@ -147,9 +147,9 @@ zdj_view_t * zdj_new_text_input_keyboard_view( void ) {
     _okay_key_index = menu_state->item_count;
     zdj_view_t * ok_key = zdj_new_menu_item( "Okay", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     zdj_menu_item_view_state_t * ok_state = (zdj_menu_item_view_state_t*)ok_key->state;
-    ok_key->frame->x = 98;
+    ok_key->frame->x = 94;
     ok_key->frame->y = 25;
-    ok_key->frame->w = 19;
+    ok_key->frame->w = 23;
     ok_key->frame->h = 8;
     zdj_menu_view_add_item( menu, ok_key );
 

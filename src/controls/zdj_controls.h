@@ -31,6 +31,7 @@ typedef enum {
     /////////////////////////
     //  UI Control Events  //
     /////////////////////////
+    ZDJ_UI_CONTROL_NONE,
     // Jog Events
     ZDJ_UI_CONTROL_JOG_ADJUST_0, // Normal
     ZDJ_UI_CONTROL_JOG_ADJUST_1, // Press-Adjust
@@ -186,7 +187,7 @@ typedef enum {
     ZDJ_DECK_1_CONTROL_FX_4,
     ZDJ_DECK_1_CONTROL_FX_5,
     ZDJ_DECK_1_CONTROL_SCRUB,
-    ZDJ_DECK_1_CONTROL_NUDGE,
+    // ZDJ_DECK_1_CONTROL_NUDGE,
     ZDJ_DECK_1_CONTROL_TEMPO,
     ZDJ_DECK_1_CONTROL_TEMPO_FINE,
     ZDJ_DECK_1_CONTROL_PLAY_PAUSE,
@@ -210,7 +211,7 @@ typedef enum {
     ZDJ_DECK_2_CONTROL_FX_4,
     ZDJ_DECK_2_CONTROL_FX_5,
     ZDJ_DECK_2_CONTROL_SCRUB,
-    ZDJ_DECK_2_CONTROL_NUDGE,
+    // ZDJ_DECK_2_CONTROL_NUDGE,
     ZDJ_DECK_2_CONTROL_TEMPO,
     ZDJ_DECK_2_CONTROL_TEMPO_FINE,
     ZDJ_DECK_2_CONTROL_PLAY_PAUSE,
@@ -232,7 +233,8 @@ typedef enum {
     ZDJ_DECK_EXT_CONTROL_FX_3,
     ZDJ_DECK_EXT_CONTROL_FX_4,
     ZDJ_DECK_EXT_CONTROL_FX_5,
-    ZDJ_DECK_EXT_CONTROL_NUDGE,
+    // ZDJ_DECK_EXT_CONTROL_NUDGE,
+    ZDJ_DECK_EXT_CONTROL_SCRUB,
     ZDJ_DECK_EXT_CONTROL_TEMPO,
     ZDJ_DECK_EXT_CONTROL_TEMPO_FINE,
     ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE,
@@ -242,6 +244,41 @@ typedef enum {
 
     ZDJ_CONTROL_ID_COUNT
 } zdj_control_id_t;
+
+typedef enum {
+    ZDJ_CONTROL_MAP_NONE,
+    
+    ZDJ_CONTROL_MAP_MENU_BASE,
+    ZDJ_CONTROL_MAP_MENU_DJ_ROOT,
+
+    ZDJ_CONTROL_MAP_TEXT_INPUT,
+    
+    ZDJ_CONTROL_MAP_SDK_TEST,
+
+    ZDJ_CONTROL_MAP_LIB_EDIT_SONG,
+    ZDJ_CONTROL_MAP_LIB_EDIT_CUEPOINT,
+    ZDJ_CONTROL_MAP_LIB_EDIT_BEATGRID,
+
+    ZDJ_CONTROL_MAP_STATION_1_EMPTY,
+    ZDJ_CONTROL_MAP_STATION_1_MOM_EQ,
+    ZDJ_CONTROL_MAP_STATION_1_EQ,
+    ZDJ_CONTROL_MAP_STATION_1_TRIM,
+    ZDJ_CONTROL_MAP_STATION_1_LOOP,
+    ZDJ_CONTROL_MAP_STATION_1_SYNC,
+
+    ZDJ_CONTROL_MAP_STATION_2_EMPTY,
+    ZDJ_CONTROL_MAP_STATION_2_MOM_EQ,
+    ZDJ_CONTROL_MAP_STATION_2_EQ,
+    ZDJ_CONTROL_MAP_STATION_2_TRIM,
+    ZDJ_CONTROL_MAP_STATION_2_LOOP,
+    ZDJ_CONTROL_MAP_STATION_2_SYNC,
+    
+    ZDJ_CONTROL_MAP_STATION_EXT_MOM_EQ,
+    ZDJ_CONTROL_MAP_STATION_EXT_EQ,
+    ZDJ_CONTROL_MAP_STATION_EXT_TRIM,
+
+    ZDJ_CONTROL_MAP_COUNT
+} zdj_control_map_id_t;
 
 typedef struct {
     bool controls[ ZDJ_CONTROL_ID_COUNT ];
@@ -254,6 +291,13 @@ typedef struct {
     double d_val;
     bool b_val;
 } zdj_control_event_t;
+
+typedef void ( *zdj_special_control_cb )( zdj_control_event_t * );
+typedef struct {
+    zdj_control_id_t id;
+    zdj_special_control_cb cb;
+} zdj_special_control_handler_t;
+extern zdj_special_control_handler_t * zdj_special_control_handler;
 
 void * zdj_control_cycle_thread_main( void * arg );
 
@@ -277,6 +321,12 @@ zdj_error_type_t zdj_clear_controls( void );
 
 zdj_error_type_t zdj_activate_control( zdj_control_id_t control_id );
 zdj_error_type_t zdj_deactivate_control( zdj_control_id_t control_id );
+zdj_error_type_t zdj_deactivate_all_controls( void );
+
+void zdj_activate_control_map( zdj_control_map_id_t map_id );
+
+// Register for event CB outside control map
+void zdj_register_special_control_handler( zdj_control_id_t control_id, zdj_special_control_cb cb );
 
 // Mapping System
 bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_event_t * c_e );

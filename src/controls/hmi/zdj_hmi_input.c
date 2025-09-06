@@ -109,6 +109,13 @@ void zdj_control_hmi_input_init( void ) {
 }
 
 void zdj_control_process_hmi_input( void ) {
+
+    // printf( "pots: %d %d %d\n", 
+    //     zdj_hmi_m7_state_model->fade_1_state,
+    //     zdj_hmi_m7_state_model->fade_2_state,
+    //     zdj_hmi_m7_state_model->xfade_state
+    // );
+
     // Read the most recent m7 HMI state model and generate events for changes
     zdj_control_process_hmi_digital_input( 
         zdj_hmi_input_states[ ZDJ_HMI_ENCO_1_VOL ], 
@@ -186,6 +193,8 @@ void zdj_control_process_hmi_input( void ) {
 void zdj_control_transform_hmi_events( void ) {
     // Loop on new events
     if( zdj_hmi_input_event_buf_read != zdj_hmi_input_event_buf_write ) {
+        // printf( "zdj_control_transform_hmi_events: read: %d write: %d\n", zdj_hmi_input_event_buf_read, zdj_hmi_input_event_buf_write );
+
         int i = zdj_hmi_input_event_buf_read;
         zdj_control_event_t event;
         while ( i != zdj_hmi_input_event_buf_write ) {
@@ -203,11 +212,11 @@ void zdj_control_transform_hmi_events( void ) {
                 } else if( zdj_control_event_is_deck_control( &event ) ) {
                     // If input event maps to an active Deck control, make a Deck Control event
                     int write_head = zdj_get_next_deck_event_ind( );
-                    zdj_ui_event_buf[ write_head ].id = event.id;
-                    zdj_ui_event_buf[ write_head ].blocked = event.blocked;
-                    zdj_ui_event_buf[ write_head ].i_val = event.i_val;
-                    zdj_ui_event_buf[ write_head ].d_val = event.d_val;
-                    zdj_ui_event_buf[ write_head ].b_val = event.b_val;
+                    zdj_deck_event_buf[ write_head ].id = event.id;
+                    zdj_deck_event_buf[ write_head ].blocked = event.blocked;
+                    zdj_deck_event_buf[ write_head ].i_val = event.i_val;
+                    zdj_deck_event_buf[ write_head ].d_val = event.d_val;
+                    zdj_deck_event_buf[ write_head ].b_val = event.b_val;
                 }
                 // Unmapped HMI Input events are ignored
             }

@@ -72,13 +72,13 @@ void _zdj_waveform_lores_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) 
     // // bool bg_mode
 
     // // Find sample-time window start and end based on playhead location and x-zoom factor
-    // double win_sample_time_width = (double)ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE * ( (double)screen_w / (data_zoom_x*delta_t_scale) );
+    // double win_sample_time_width = (double)ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE * ( (double)screen_w / (data_zoom_x*delta_t_scale) );
     
     // double win_sample_start = playhead_frame/* - 3800*/ - (win_sample_time_width / 2.0);
     // double win_sample_end = playhead_frame/* - 3800*/ + (win_sample_time_width / 2.0);
 
-    // double waveform_frame_start = floor( win_sample_start / ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE );
-    // double waveform_frame_end = ceil( win_sample_end / ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE );
+    // double waveform_frame_start = floor( win_sample_start / ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE );
+    // double waveform_frame_end = ceil( win_sample_end / ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE );
     // int waveform_point_count = waveform_frame_end - waveform_frame_start;
 
     // // int waveform_baseline = screen_y+screen_h+12;
@@ -140,5 +140,5 @@ int _playback_screen_x_for_sample_time( int sample_time, int win_start_sample, i
 }
 
 int _playback_sample_time_for_waveform_frame( int waveform_frame ) {
-    return waveform_frame * ZDJ_WAVEFORM_WINDOW_SAMPLE_STRIDE;
+    return waveform_frame * ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE;
 }

@@ -36,8 +36,8 @@ zdj_view_t * zdj_new_menu_header(
     // Build state
     zdj_menu_header_view_state_t * state = calloc( 1, sizeof( zdj_menu_header_view_state_t ) );
     menu_header->state = state;
-    state->name = strdup( name );
-    state->title = strdup( title );
+    strcpy( state->name, name );
+    strcpy( state->title, title );
     state->style = style;
     state->back_style = back_btn_style;
     state->has_back = (back_btn_style > ZDJ_MENU_HEADER_BACK_STYLE_NONE) ? true : false;
@@ -98,8 +98,6 @@ void _zdj_menu_header_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
 void _zdj_menu_header_deinit_state( zdj_view_t * view ) {
     zdj_menu_header_view_state_t * state = (zdj_menu_header_view_state_t*)view->state;
-    free( state->name );
-    free( state->title );
     free( state );
     view->state = NULL;
 }

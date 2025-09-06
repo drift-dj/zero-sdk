@@ -10,8 +10,8 @@ void zdj_anim_init_menu_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn
     anim->start_data = start_point;
     // Set up end data
     zdj_point_t * end_point = malloc( sizeof( zdj_point_t ) );
-    end_point->x = 0;
-    end_point->y = 0;
+    end_point->x = view->frame->x;
+    end_point->y = ZDJ_MENU_Y;
     anim->end_data = end_point;
     // Delay the in anim by a few frames to let the old menu's out animation happen.
     anim->frame = -12;
@@ -26,8 +26,9 @@ void zdj_anim_init_menu_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn
     anim->start_data = start_point;
     // Set up end data
     zdj_point_t * end_point = malloc( sizeof( zdj_point_t ) );
-    end_point->x = 0;
-    end_point->y = ZDJ_MENU_HEIGHT+1;
+    end_point->x = view->frame->x;
+    // end_point->y = ZDJ_MENU_HEIGHT+1;
+    end_point->y = ZDJ_SCREEN_H+1;
     anim->end_data = end_point;
     // Delay the out anim by a few frames to give the button flash time to happen.
     anim->frame = -5;

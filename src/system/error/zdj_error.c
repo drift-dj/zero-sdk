@@ -45,7 +45,14 @@ static char * _zdj_error_marker_string[ ZDJ_ERROR_MARKER_COUNT ] = {
     "add view", // ZDJ_ERROR_MARKER_VIEW_ADD,
     "remove view", // ZDJ_ERROR_MARKER_VIEW_REMOVE,
     "deinit view", // ZDJ_ERROR_MARKER_VIEW_DEINIT,
-    "draw view" // ZDJ_ERROR_MARKER_VIEW_DRAW,
+    "draw view", // ZDJ_ERROR_MARKER_VIEW_DRAW,
+    "db access", // ZDJ_ERROR_MARKER_DB,
+    "deck init", // ZDJ_ERROR_MARKER_DECK_INIT,
+    "deck update", // ZDJ_ERROR_MARKER_DECK_UPDATE,
+    "decode update", // ZDJ_ERROR_MARKER_DECODE_UPDATE,
+    "decode window", // ZDJ_ERROR_MARKER_DECODE_WINDOW,
+    "event handling", // ZDJ_ERROR_MARKER_HANDLE_EVENT,
+    "debug" // ZDJ_ERROR_MARKER_DEBUG,
 };
 
 // Print (hopefully) helpful info and exit.

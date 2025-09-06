@@ -30,7 +30,7 @@ zdj_pipeline_node_t * zdj_new_file_write_node(
 
     zdj_file_write_node_state_t * state = calloc( 1, sizeof( zdj_file_write_node_state_t ) );
     node->state = state;
-    state->filepath = strdup( filepath );
+    strcpy( state->filepath, filepath );
     state->header = NULL;
     state->header_size = 0;
     if( header ) {

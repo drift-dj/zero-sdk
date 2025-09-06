@@ -38,6 +38,7 @@ zdj_health_status_t zdj_library_store_song_graph(
     zdj_library_song_t * song, 
     sqlite3 * db
 ) {
+    // printf( "zdj_library_store_song_graph: %p/%p - %p %p %p %p\n", song, song->entity_id, song->audio, song->catalog, song->curation, song->performance );
     if( !song ) { return ZDJ_HEALTH_STATUS_MISSING_SONG; }
     
     // Insert record into db.
@@ -55,8 +56,23 @@ zdj_health_status_t zdj_library_store_song_graph(
             printf( "Library failed to store catalog: %s\n", song->catalog->title );
         }
     }
+
+    if( song->curation ) {
+        zdj_health_status_t res = zdj_library_store_curation( song->curation, db );
+        if( res != ZDJ_HEALTH_STATUS_OKAY ) {
+            song->has_error = true;
+            printf( "Library failed to store curation: %p\n", song->curation );
+        }
+    }
+    if( song->performance ) {
+        zdj_health_status_t res = zdj_library_store_performance( song->performance, db );
+        if( res != ZDJ_HEALTH_STATUS_OKAY ) {
+            song->has_error = true;
+            printf( "Library failed to store performance: %p\n", song->performance );
+        }
+    }
     zdj_library_store_song( song, db );
-    
+
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
@@ -66,12 +82,32 @@ zdj_library_song_t * zdj_library_create_file_import_song_graph(
 ) {
     // Make song
     zdj_library_song_t * song = zdj_library_create_song_dto( );
+    
     // Make audio data
     zdj_library_audio_t * audio = zdj_library_create_audio_dto( );
-    audio->filepath = strdup( filepath );
-    // Link everything together
+    strcpy( audio->filepath, filepath );
+    strcpy( song->current_audio_entity_id, audio->entity_id );
+    strcpy( audio->song_entity_id, song->entity_id );
     song->audio = audio;
-    song->current_audio_entity_id = audio->entity_id;
+    
+    // Make catalog data
+    zdj_library_catalog_t * catalog = zdj_library_create_catalog_dto( );
+    strcpy( song->current_catalog_entity_id, catalog->entity_id );
+    strcpy( catalog->song_entity_id, song->entity_id );
+    song->catalog = catalog;
+    
+    // Make curation data
+    zdj_library_curation_t * curation = zdj_library_create_curation_dto( );
+    strcpy( song->current_curation_entity_id, curation->entity_id );
+    strcpy( curation->parent_entity_id, song->entity_id );
+    song->curation = curation;
+    
+    // Make performance data
+    zdj_library_performance_t * performance = zdj_library_create_performance_dto( );
+    strcpy( song->current_performance_entity_id, performance->entity_id );
+    strcpy( performance->song_entity_id, song->entity_id );
+    song->performance = performance;
+    
     return song;
 }
 
@@ -79,6 +115,9 @@ zdj_library_song_t * zdj_library_fetch_file_import_song_graph(
     char * song_entity_id, 
     sqlite3 * db 
 ) {
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_DB;
+    // printf( "zdj_library_fetch_file_import_song_graph\n" );
+
     // Fetch Song DTO
     zdj_library_song_t * song = zdj_library_fetch_song_dto_for_entity_id( song_entity_id, db );
     if( !song ) { return NULL; }
@@ -89,12 +128,24 @@ zdj_library_song_t * zdj_library_fetch_file_import_song_graph(
         printf( "audio failed to load for %p\n", song );
         song->has_error = true;
     }
-
     // Fetch Catalog DTO - it may not exist during first stages of import scan
     song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db );
-    // if( !song->catalog ) {
-    //     printf( "catalog failed to load for %p\n", song );
-    // }
+    if( !song->catalog ) {
+        printf( "catalog failed to load for %p\n", song );
+    }
+    // Fetch Curation DTO
+    song->curation = zdj_library_fetch_current_curation_dto_for_song( song, db );
+    if( !song->curation ) {
+        printf( "curation failed to load for %p\n", song );
+        song->has_error = true;
+    }
+    // Fetch Performance DTO - it may not exist during first stages of import scan
+    song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db );
+    if( !song->performance ) {
+        printf( "catalog failed to load for %p\n", song );
+    }
+
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
     // Standup Graph
     return song;
 }
@@ -136,10 +187,39 @@ zdj_library_song_t * zdj_library_fetch_playback_song_graph(
 }
 
 zdj_library_song_t * zdj_library_fetch_edit_song_graph( 
-    zdj_library_song_t * song, 
+    char * song_entity_id, 
     sqlite3 * db 
 ) {
+    zdj_library_song_t * song = zdj_library_fetch_song_dto_for_entity_id( song_entity_id, db );
+    if( !song ) { return NULL; }
 
+    // Fetch Audio DTO
+    song->audio = zdj_library_fetch_current_audio_dto_for_song( song, db );
+    if( !song->audio ) {
+        printf( "audio failed to load for %p\n", song );
+        song->has_error = true;
+    }
+    
+    // Fetch Catalog DTO
+    song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db );
+    if( !song->catalog ) {
+        printf( "catalog failed to load for %p\n", song );
+    }
+
+    // Fetch Curation DTO
+    song->curation = zdj_library_fetch_current_curation_dto_for_song( song, db );
+    if( !song->curation ) {
+        printf( "curation failed to load for %p\n", song );
+    }
+
+    // Fetch Performance DTO
+    song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db );
+    if( !song->performance ) {
+        printf( "performance failed to load for %p\n", song );
+    }
+
+    // Standup Graph
+    return song;
 }
 
 zdj_library_song_t * zdj_library_fetch_migration_song_graph( 
@@ -159,9 +239,7 @@ zdj_library_song_t * zdj_library_fetch_migration_song_graph(
 
     // Fetch Catalog DTO - it may not exist during first stages of import scan
     song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db );
-    // if( !song->catalog ) {
-    //     printf( "catalog failed to load for %p\n", song );
-    // }
+
     // Standup Graph
     return song;
 }
@@ -169,5 +247,6 @@ zdj_library_song_t * zdj_library_fetch_migration_song_graph(
 zdj_health_status_t zdj_library_free_song_graph( 
     zdj_library_song_t * song 
 ) {
-
+    if( song->audio ){ zdj_library_free_audio_dto( song->audio ); }
+    zdj_library_free_song_dto( song );
 }

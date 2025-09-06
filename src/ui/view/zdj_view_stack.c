@@ -82,17 +82,19 @@ void zdj_view_stack_deinit( void ) {
 
 void zdj_view_stack_update( void ) {
     zdj_view_t * view;
-
     // Open a tag for the UI cycle
     zdj_perf_tag_t * tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_UI );
     tag->name = ZDJ_PERF_TAG_UI_CYCLE;
     tag->start = zdj_perf_time( );
 
-    
     // If there are unhandled events in the event ring buffer...
     int start_ind = zdj_ui_event_buf_read;
     int end_ind = zdj_ui_event_buf_write;
     if( start_ind != end_ind ) {
+        // Invoke any special commands before sending remaining events into stack
+        if( zdj_special_control_handler ) {
+            zdj_view_stack_handle_special_events( start_ind, end_ind );
+        }
         // ...send events into views for handling.
         zdj_view_stack_handle_events( 
             start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_debug_panel( ) ) 
@@ -110,38 +112,53 @@ void zdj_view_stack_update( void ) {
     }
 
     // Draw views from lowest to highest.
+    zdj_new_view_count = 0;
     _zdj_view_stack_draw( zdj_root_view( ) );
     // _zdj_view_stack_draw( zdj_widget_panel( ) );
     // _zdj_view_stack_draw( zdj_accessibility_panel( ) );
     _zdj_view_stack_draw( zdj_debug_panel( ) );
     _zdj_view_stack_draw( zdj_perf_panel( ) );
+    zdj_view_count = zdj_new_view_count;
 
     // Delete everything in the delete stack
     zdj_view_t * delete_view = zdj_delete_stack;
     while( delete_view ) {
-        zdj_view_t * next_delete_view = delete_view->next;
         delete_view->deinit( delete_view );
-        delete_view = next_delete_view;
+        // Deinit shifts the delete stack forward
+        delete_view = zdj_delete_stack;
     }
     zdj_delete_stack = NULL;
-
+    
     tag->end = zdj_perf_time( );
 }
 
-// void _zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view ) {
-//     // Handle events top-down
-//     zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
-//     if( top_subview ) { zdj_view_stack_handle_events( top_subview ); }
-// }
-
 void _zdj_view_stack_draw( zdj_view_t * view ) {
+    // printf( "_zdj_view_stack_draw\n" );
     // Draw view's subviews (bottom-up)
     zdj_view_t * bottom_subview = zdj_view_stack_bottom_subview_of( view );
     if( bottom_subview ) { zdj_view_stack_draw( bottom_subview, view->subview_clip ); }
+    // printf( "_zdj_view_stack_draw done\n" );
 }
 
 void zdj_view_stack_clear_screen( void ) {
     boxColor( zdj_renderer( ), 0, 0, 128, 64, 0xFF000000 );
+}
+
+// Look for a matching special event and send it to the linked handler.
+void zdj_view_stack_handle_special_events( int start_ind, int end_ind ) {
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_HANDLE_EVENT;
+    int i = start_ind;
+    while ( i != end_ind ) {
+        i++;
+        i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
+        // printf( "zdj_view_stack_handle_special_events ui_event_buf[ %d ].id:%d\n", i, zdj_ui_event_buf[ i ].id );
+        if( zdj_ui_event_buf[ i ].id == zdj_special_control_handler->id &&
+            zdj_special_control_handler->cb 
+        ) {
+            zdj_special_control_handler->cb( &zdj_ui_event_buf[ i ] );
+        }
+    }
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
 }
 
 // Walk top-to-bottom thru a view's stack of siblings.
@@ -150,30 +167,40 @@ void zdj_view_stack_clear_screen( void ) {
 // Process events from the circular buffer, as specified by start/end_ind.
 void zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view ) {
     if( !view ) { return; }
+
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_HANDLE_EVENT;
     // Get a prev ref before processing view's events in case it gets deleted during processing.
     zdj_view_t * view_prev = view->prev;
     int i = start_ind;
     while ( i != end_ind ) {
         i++;
         i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
+        // printf( "zdj_view_stack_handle_events view: %p ui_event_buf[ %d ].id:%d\n", view, i, zdj_ui_event_buf[ i ].id );
         // Step thru ring buffer, passing each event down into view's subviews.
-        view->handle_control_event( view, &zdj_ui_event_buf[ i ] );
+        if( view->handle_control_event ) {
+            view->handle_control_event( view, &zdj_ui_event_buf[ i ] );
+        }
     }
     if( view_prev ) {
         zdj_view_stack_handle_events( start_ind, end_ind, view_prev );
     }
+
+    zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
 }
 
 // This is a recursive draw, first getting a clip frame from the view's draw func,
 // then recursing into the view's subviews, finally moving to the next sibling view.
 void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // Build view count by counting every draw invocation.
+    zdj_new_view_count++;
+    // printf( "zdj_view_stack_draw\n" );
     // Claim any errors for debugging.
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_VIEW_DRAW;
 
     // Update anim before updating subview clip
     if( view->anim && view->anim->alive && view->anim->update_fn ){ 
         ((anim_update_t)view->anim->update_fn)( view->anim, view ); 
-    } 
+    }
 
     // Update metrics passed to subviews based on that clipping.
     view->update_subview_clip( view, clip );
@@ -184,7 +211,9 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         }
 
         // Recurse into the view's subviews, passing clipped metrics.
-        if( view->subviews ) {
+        // Note, during draw(), view may have been moved to the delete stack.
+        // Be sure we're not drawing the delete stack here.
+        if( !view->is_deleting && view->subviews ) {
             zdj_view_stack_draw( view->subviews, view->subview_clip );
         }
     }
@@ -214,8 +243,10 @@ void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t *
 
     // Horizontal arithmetic
     // Clip left draw edge to furthest right pixel of subview/superview frame x.
-    subview_clip->dst.x = (int)fmax( subview_clip->screen.x, superview_clip->dst.x );
-    subview_clip->src.x = (int)fmax( 0, subview_clip->dst.x-subview_clip->screen.x );
+    // subview_clip->dst.x = (int)fmax( subview_clip->screen.x, superview_clip->dst.x );
+    // subview_clip->src.x = (int)fmax( 0, subview_clip->dst.x-subview_clip->screen.x );
+    subview_clip->dst.x = (int)round(fmax( subview_clip->screen.x, superview_clip->dst.x ));
+    subview_clip->src.x = (int)round(fmax( 0, subview_clip->dst.x-subview_clip->screen.x ));
     // Clip right draw edge to narrower pixel val of subview/superview frame widths.
     int sub_dst_lx = subview_clip->screen.x; // screen x of left edge of subview's frame
     int sup_dst_lx = superview_clip->dst.x; // screen x of left edge of superview's frame
@@ -255,8 +286,10 @@ void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t *
 
     // Vertical arithmetic
     // Clip top draw edge to lowest pixel of subview/superview frame y.
-    subview_clip->dst.y = (int)fmax( subview_clip->screen.y, superview_clip->dst.y );
-    subview_clip->src.y = (int)fmax( 0, subview_clip->dst.y-subview_clip->screen.y );
+    // subview_clip->dst.y = (int)fmax( subview_clip->screen.y, superview_clip->dst.y );
+    // subview_clip->src.y = (int)fmax( 0, subview_clip->dst.y-subview_clip->screen.y );
+    subview_clip->dst.y = (int)round(fmax( subview_clip->screen.y, superview_clip->dst.y ));
+    subview_clip->src.y = (int)round(fmax( 0, subview_clip->dst.y-subview_clip->screen.y ));
     // Clip bottom draw edge to higher pixel val of subview/superview frame heights.
     int sub_dst_ty = subview_clip->screen.y; // screen y of top edge of subview's frame
     int sup_dst_ty = superview_clip->dst.y; // screen y of top edge of superview's frame

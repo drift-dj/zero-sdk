@@ -24,6 +24,7 @@
 typedef enum {
     ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL,
     ZDJ_DIALOG_VIEW_TYPE_OKAY,
+    ZDJ_DIALOG_VIEW_TYPE_GULP,
     ZDJ_DIALOG_VIEW_TYPE_CANCEL
 } zdj_dialog_view_type_t;
 

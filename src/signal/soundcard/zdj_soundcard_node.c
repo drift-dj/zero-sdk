@@ -221,10 +221,10 @@ zdj_error_type_t zdj_soundcard_pull_node_links_from_dto(
                 &soundcard->dto, i 
             );
             if ( link_map & node_mask ) { 
-                printf( "setting input link: %s<-%s\n", 
-                    zdj_soundcard_node_name[ node->name ],
-                    zdj_soundcard_node_name[ i ]
-                );
+                // printf( "setting input link: %s<-%s\n", 
+                //     zdj_soundcard_node_name[ node->name ],
+                //     zdj_soundcard_node_name[ i ]
+                // );
                 node->input_links[cur_link].source_node = i;
                 node->input_links[cur_link].dest_node = node->name;
                 cur_link++;
@@ -242,10 +242,10 @@ zdj_error_type_t zdj_soundcard_pull_node_links_from_dto(
         for ( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
             node_mask = 1ULL << i;
             if ( node->link_map & node_mask ) { 
-                printf( "setting output link: %s->%s\n", 
-                    zdj_soundcard_node_name[ node->name ], 
-                    zdj_soundcard_node_name[ i ] 
-                );
+                // printf( "setting output link: %s->%s\n", 
+                //     zdj_soundcard_node_name[ node->name ], 
+                //     zdj_soundcard_node_name[ i ] 
+                // );
                 node->output_links[ cur_link ].source_node = node->name;
                 node->output_links[ cur_link ].dest_node = i;
                 cur_link++;

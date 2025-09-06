@@ -1,4 +1,4 @@
-Copyright (c) 2025 Drift DJ Industries
+// Copyright (c) 2025 Drift DJ Industries
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,30 +18,31 @@ Copyright (c) 2025 Drift DJ Industries
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_FAST_DECODE_NODE_H
-#define ZDJ_FAST_DECODE_NODE_H
+#ifndef ZDJ_DECK_DJ_H
+#define ZDJ_DECK_DJ_H
 
-#include <mpg123.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
-typedef enum {
-    ZDJ_FAST_DECODE_INIT,
-    ZDJ_FAST_DECODE_READY,
-    ZDJ_FAST_DECODE_RUNNING,
-    ZDJ_FAST_DECODE_DONE,
-    ZDJ_FAST_DECODE_IDLE
-} zdj_fast_decode_node_status_t;
-
 typedef struct {
-    zdj_library_song_t * song_dto;
-    zdj_fast_decode_node_status_t status;
-    sem_t * wait_sem;
-    sem_t * ready_sem;
-    pthread_t thread;
-} zdj_fast_decode_node_state_t;
+    zdj_deck_station_t station;
+    
+    zdj_library_song_t * song;
+    
+    // Internal audio pipeline
+    zdj_pipeline_node_t * dsp_node;
+    zdj_pipeline_node_t * tsm_node;
+    zdj_pipeline_node_t * decode_node;
+    
+    // Thread management
+    sem_t start_cycle;
+    bool thread_ready;
+    bool exit_thread;
 
-zdj_pipeline_node_t * zdj_new_fast_decode_node( zdj_library_song_t * song );
+} zdj_dj_deck_state_t;
 
 #endif

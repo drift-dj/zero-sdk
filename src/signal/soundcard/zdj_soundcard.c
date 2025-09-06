@@ -3,10 +3,12 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/analysis/waveform/zdj_waveform.h>
 #include <zerodj/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.h>
 #include <zerodj/signal/pipeline/node/audio/io/zdj_io_node.h>
+#include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/signal/soundcard/zdj_soundcard_dto.h>
 #include <zerodj/system/sql/zdj_sql.h>
@@ -38,6 +40,7 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
 
     // Create nodes for everything
     for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
+        // printf( "making node: %s\n", zdj_soundcard_node_name[ i ] );
         zdj_soundcard_node_t * node = zdj_soundcard_create_node( i );
         zdj_soundcard_install_node( soundcard, node );
     }
@@ -53,6 +56,9 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     // Create a waveform pipeline node to process o-scope data.
     soundcard->scope_waveform = zdj_new_live_waveform( );
     soundcard->scope_node_name = ZDJ_SOUNDCARD_NODE_NAME_NONE;
+
+    // Bring up/link an audio recording pipeline node.
+    soundcard->recording_node = zdj_new_audio_record_node( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) );
 
     // Start the transport pipeline
     zdj_soundcard_start( soundcard );
@@ -110,6 +116,10 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     // If we get into underrun trouble, go to 'double-buffered' model, immediately
     // copying last cycle's outut to shared M7 buffer before processing next cycle.
 
+    // Run the deck control update cycles.
+    // These are directly coupled to the buffer so they must be run here.
+    zdj_deck_manager_control_update_cycle( );
+
     // Reset all node buffers and mix_complete flags for this cycle.
     for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
         zdj_soundcard_clear_buffer( 
@@ -134,18 +144,10 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     if( !ana_out_3->stereo ) { zdj_soundcard_mix_input( zdj_soundcard, ana_out_3 ); }
 
     // Explicitly mix inputs to persistent nodes - Main bus, Cue, Decks, etc.
-    // If they aren't link to an output, nodes won't get a metering update.
-    // zdj_soundcard_node_t * main_bus = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
-    // zdj_soundcard_mix_input( zdj_soundcard, main_bus );
-    // zdj_soundcard_node_t * cue_bus = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
-    // zdj_soundcard_mix_input( zdj_soundcard, cue_bus );
-    // zdj_soundcard_node_t * recording_bus = zdj_soundcard_get_node_for_name( zdj_soundcard,ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
-    // zdj_soundcard_mix_input( zdj_soundcard, recording_bus );
     for( int i=ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
         zdj_soundcard_node_t * bus = zdj_soundcard_get_node_for_name( zdj_soundcard, i );
         zdj_soundcard_mix_input( zdj_soundcard, bus );
     }
-
 
     // zdj_soundcard_mix_inputs( zdj_soundcard_get_node_for_name( 
     //     zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT
@@ -154,9 +156,7 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     // Transform output samples from io_node's output float buffers to shared M7 buffers
     zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
 
-    // Record bus needs special multi-channel mix fn.
-    // zdj_soundcard_mix_inputs( zdj_soundcard_get_node_for_name( 
-    //     zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS 
-    // ) );
+    // Update the audio recording node - periodically flush samples to file
+    zdj_soundcard->recording_node->update_wait( zdj_soundcard->recording_node );
 }
 

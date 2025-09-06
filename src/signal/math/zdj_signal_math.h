@@ -38,4 +38,27 @@ zdj_error_type_t zdj_gaussian_free( zdj_gaussian_t * g );
 double zdj_calc_fader_gain( double travel );
 double zdj_calc_fader_db( double travel );
 
+double zdj_signal_lowpass( double state, double input, double coeff );
+
+void zdj_signal_resample_audio( 
+    float * in_buf,
+    double in_start_coord,
+    double in_end_coord,
+    int in_channel_count,
+    float * out_buf,
+    double out_start_coord,
+    double out_end_coord,
+    int out_channel_count
+);
+
+float zdj_signal_gen_sine( 
+	float freq, 
+	float phase, 
+	int sample_count, 
+	float * buf, 
+	int stride, 
+	int offset, 
+	double scale 
+);
+
 #endif

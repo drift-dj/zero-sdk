@@ -19,7 +19,7 @@ static int _zdj_maybe_mkdir(const char* path, mode_t mode);
 
 // Copy a file from source to destination.
 zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite ) {
-    printf( "zdj_fs_copy_file: %s -> %s, o/w: %d\n", src, dst, overwrite );
+    // printf( "zdj_fs_copy_file: %s -> %s, o/w: %d\n", src, dst, overwrite );
     // TODO - Add free space check
 
     // Confirm source file exists.
@@ -42,7 +42,7 @@ zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite ) {
 
     // Copy bytes from source to destination
     FILE * dst_fd = fopen( dst, "w" );
-    printf( "opend dst_fd: %s, %p\n", dst, dst_fd );
+    // printf( "opend dst_fd: %s, %p\n", dst, dst_fd );
     if( !dst_fd ) { return ZDJ_HEALTH_STATUS_BAD_DIR; }
     int a;
     while ( ( a = fgetc( src_fd ) ) != EOF ) {
@@ -50,7 +50,7 @@ zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite ) {
     }
 
     // Set permissions for new file
-    printf( "chmod 0744 %s\n", dst );
+    // printf( "chmod 0744 %s\n", dst );
     if( chmod( dst, 0744 ) == -1 ) {
         return ZDJ_HEALTH_STATUS_BAD_PERMS;
     }
@@ -254,7 +254,7 @@ void zdj_fs_scan_dir(
 }
 
 int zdj_fs_mkdir_p( char * path ) {
-    printf( "zdj_fs_mkdir_p: %s\n", path );
+    // printf( "zdj_fs_mkdir_p: %s\n", path );
     /* Adapted from http://stackoverflow.com/a/2336245/119527 */
     char * _path = NULL;
     char * p; 
@@ -286,7 +286,7 @@ int zdj_fs_mkdir_p( char * path ) {
 
 // Make a directory; already existing dir okay
 static int _zdj_maybe_mkdir(const char* path, mode_t mode) {
-    printf( "_zdj_maybe_mkdir: %s\n", path );
+    // printf( "_zdj_maybe_mkdir: %s\n", path );
     struct stat st;
     errno = 0;
    
@@ -424,26 +424,27 @@ int zdj_fs_write_buffer( char * path, char * buffer ) {
     return bw;
 }
 
-char * zdj_fs_get_popen( char * cmd ) {
+void zdj_fs_get_popen( char * cmd, char * res ) {
     FILE *fp;
-    char res[ 256 ];
+    char ret[ 256 ];
     // Open a pipe to execute the command
     fp = popen( cmd, "r" );
     if ( !fp ) {
-        perror( "zdj_fs_get_popen failed\n" );
-        return NULL;
+        printf( "zdj_fs_get_popen failed\n" );
+        return;
     }
 
     // Read the output of the command
-    while ( fgets( res, sizeof( res ), fp ) != NULL ) {
-        // printf( "%s", res );
+    while ( fgets( ret, sizeof( ret ), fp ) != NULL ) {
+        printf( "%s", ret );
     }
 
     // Close the pipe
     if ( pclose( fp ) == -1 ) {
-        perror( "zdj_fs_get_popen close failed" );
-        return NULL;
+        printf( "zdj_fs_get_popen close failed" );
+        return;
     }
 
-    return strdup( &res[ 8 ] );
+    // return strdup( &res[ 8 ] );
+    strcpy( res, &res[ 8 ] );
 }

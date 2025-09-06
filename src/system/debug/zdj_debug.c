@@ -75,27 +75,27 @@ void zdj_debug_ui_toggle( void ) {
 }
 
 void _zdj_debug_update_layout( void ) {
-    if( !zdj_debug_state ) { return; }
+    // if( !zdj_debug_state ) { return; }
 
-    // Build mem size string
-    char cmd[ 256 ];
-    char mem[ 256 ];
-    snprintf( cmd, sizeof( cmd ), "cat /proc/%ld/status | grep 'VmSize*'", zdj_debug_state->pid );
-    char * p_res = zdj_fs_get_popen( cmd );
-    if( !p_res ) { return; }
-    snprintf( mem, sizeof( mem ), "%s | ", p_res );
+    // // Build mem size string
+    // char cmd[ 256 ];
+    // char mem[ 256 ];
+    // snprintf( cmd, sizeof( cmd ), "cat /proc/%ld/status | grep 'VmSize*'", zdj_debug_state->pid );
+    // char * p_res = zdj_fs_get_popen( cmd );
+    // if( !p_res ) { return; }
+    // snprintf( mem, sizeof( mem ), "%s | ", p_res );
 
-    free( p_res );
+    // free( p_res );
 
-    if( zdj_debug_state->line_1 ) { zdj_delete_view( zdj_debug_state->line_1 ); }
-    zdj_debug_state->line_1 = zdj_new_label_view( (char*)&mem, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    zdj_label_state_t * label_state = (zdj_label_state_t*)zdj_debug_state->line_1->state;
-    label_state->debug = true;
+    // if( zdj_debug_state->line_1 ) { zdj_delete_view( zdj_debug_state->line_1 ); }
+    // zdj_debug_state->line_1 = zdj_new_label_view( (char*)&mem, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    // zdj_label_state_t * label_state = (zdj_label_state_t*)zdj_debug_state->line_1->state;
+    // label_state->debug = true;
 
-    // Build view stack string
+    // // Build view stack string
 
     
-    if( zdj_debug_state->line_2 ) { zdj_delete_view( zdj_debug_state->line_2 ); }
+    // if( zdj_debug_state->line_2 ) { zdj_delete_view( zdj_debug_state->line_2 ); }
 
     
 }

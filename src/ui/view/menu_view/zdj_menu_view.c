@@ -12,22 +12,22 @@
 #include <zerodj/ui/view/scroll_view/zdj_scroll_view.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
-void _zdj_menu_deinit_state( zdj_view_t * view );
-void _zdj_menu_update_scroll( zdj_view_t * menu_view, int new_scroll );
+static void _deinit_state( zdj_view_t * view );
+static void _update_scroll( zdj_view_t * menu_view, int new_scroll );
 
 zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame ) {
     zdj_view_t * menu_view = zdj_new_view( frame );
     menu_view->type = ZDJ_VIEW_MENU;
     menu_view->draw = &zdj_menu_draw;
     menu_view->handle_control_event = zdj_menu_handle_control;
-    menu_view->deinit_state = &_zdj_menu_deinit_state;
+    menu_view->deinit_state = &_deinit_state;
+    menu_view->map = ZDJ_CONTROL_MAP_MENU_BASE;
     menu_view->in_anim = zdj_new_anim( ZDJ_ANIM_MENU_SHOW );
     menu_view->out_anim = zdj_new_anim( ZDJ_ANIM_MENU_HIDE );
-    
-    menu_view->frame->x = 0;
-    menu_view->frame->y = ZDJ_MENU_HEIGHT+2;
-    menu_view->frame->w = ZDJ_MENU_WIDTH;
-    menu_view->frame->h = ZDJ_MENU_HEIGHT;
+
+    menu_view->frame->y = ZDJ_SCREEN_H + 1;
+    menu_view->frame->w = frame->w;
+    menu_view->frame->h = frame->h;
 
     // Add a scroll_view
     zdj_view_t * menu_scroll_view = zdj_new_scroll_view( frame );
@@ -38,7 +38,7 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
     // Add a state instance
     zdj_menu_view_state_t * state = calloc( 1, sizeof( zdj_menu_view_state_t ) );
     state->scroll_view = menu_scroll_view;
-    state->scroll_view_frame.x = frame->x;
+    state->scroll_view_frame.x = 0;
     state->scroll_view_frame.w = frame->w;
     state->scroll_dir = scroll_dir;
     state->scroll_enabled = true;
@@ -53,14 +53,14 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
 }
 
 void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    // boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
+    boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
 
     // Update the scroll filter physics simulation.
     // Use the output value to set menu scroll index.
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)view->state;
     zdj_menu_view_update_scroll_filter( view );
     if( menu_state->scroll_filter->out_index != menu_state->scroll_index ) {
-        _zdj_menu_update_scroll( view, menu_state->scroll_filter->out_index );
+        _update_scroll( view, menu_state->scroll_filter->out_index );
     }
 }
 
@@ -103,7 +103,7 @@ void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section ) {
     }    
     section->frame->x = scroll_size.x;
     section->frame->w = menu_view->frame->w;
-    section->frame->h = 10;
+    section->frame->h = 9;
     zdj_scroll_view_add_subview( state->scroll_view, section );
 }
 
@@ -124,8 +124,9 @@ void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item ) {
         item->frame->w = menu_state->scroll_view_frame.w;
     }
     if( item->frame->h == 0 ) {
-        item->frame->h = 10;
+        item->frame->h = 9;
     }
+    // item->frame->h+=1;
     zdj_scroll_view_add_subview( menu_state->scroll_view, item );
 
     // Set scroll_index for new item
@@ -192,6 +193,40 @@ void zdj_menu_view_remove_all_items( zdj_view_t * menu_view ) {
         menu_scroll_view->frame->y = 8;
         menu_scroll_view->frame->h = menu_view->frame->h - 7;
     }
+    zdj_add_bottom_subview_to( menu_view, menu_scroll_view );
+    menu_state->scroll_view = menu_scroll_view;
+    menu_state->scroll_index = 0;
+    menu_state->section_count = 0;
+    menu_state->item_count = 0;
+}
+
+void zdj_menu_view_remove_all_subviews( zdj_view_t * menu_view ) {
+    if( menu_view->type != ZDJ_VIEW_MENU ) { 
+        printf( "Remove Subviews called on non-menu\n" );
+        return;
+    }
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t *)menu_view->state;
+    if( !menu_state) {
+        printf( "Remove Subviews called with menu->state = NULL\n" );
+        return;
+    }
+    // Dump the current scroll_view
+    if( menu_state->scroll_view) {
+        zdj_remove_subview_of( menu_view, menu_state->scroll_view );
+    }
+
+    // Add a new scroll_view
+    zdj_view_t * menu_scroll_view = zdj_new_scroll_view( menu_view->frame );
+    menu_scroll_view->frame->x = menu_state->scroll_view_frame.x;
+    menu_scroll_view->frame->w = menu_state->scroll_view_frame.w;
+
+    zdj_scroll_view_state_t * scroll_view_state = (zdj_scroll_view_state_t*)menu_scroll_view->state;
+    scroll_view_state->scroll_dir = menu_state->scroll_dir;
+    if( menu_state->header_view ) {
+        menu_scroll_view->frame->y = 8;
+        menu_scroll_view->frame->h = menu_view->frame->h - 7;
+    }
+
     zdj_add_bottom_subview_to( menu_view, menu_scroll_view );
     menu_state->scroll_view = menu_scroll_view;
     menu_state->scroll_index = 0;
@@ -297,8 +332,7 @@ zdj_view_t * zdj_menu_view_get_item_for_data_c_val( zdj_view_t * menu_view, char
     while( scroll_view_subview ) {
         if( scroll_view_subview->type == ZDJ_VIEW_MENU_ITEM ) {
             zdj_menu_item_view_state_t * item_state = ( zdj_menu_item_view_state_t* )scroll_view_subview->state;
-            if( item_state->data->c_val &&
-                !strcmp( item_state->data->c_val, c_val )
+            if( !strcmp( item_state->data->c_val, c_val )
             ) {
                 return scroll_view_subview;
             }
@@ -310,7 +344,7 @@ zdj_view_t * zdj_menu_view_get_item_for_data_c_val( zdj_view_t * menu_view, char
 }
 
 void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
-    zdj_control_event_t * e = (zdj_control_event_t *)_event;
+    zdj_control_event_t * e = (zdj_control_event_t *)_event; 
 
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
@@ -318,80 +352,92 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
     // Prevent view stack from sending events to subviews.
     // Any events will be passed to subviews from this func.
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)view->state;
-    zdj_menu_header_view_state_t * menu_header_state;
+    zdj_menu_header_view_state_t * menu_header_state = NULL;
     if( menu_state->header_view ){ 
         menu_header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state; 
     }
 
-    // Handle all the jog-wheel stuff (scroll, mod scroll, press/long press, etc.)
-    // if( e->id == ZDJ_HMI_ENCO_2_JOG ) {
+    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) { 
+        // Add the event's value to the scroll filter.
+        // The scroll filter simulation runs in the draw loop,
+        // therefore, menu_update_scroll happens during the draw loop.
+        zdj_menu_view_add_scroll_filter_input( view, e->i_val );
         // Prevent views/menus below this one from getting jog wheel events
-        // e->blocked = true;
+        e->blocked = true;
+    }
 
-        // if( e->type == ZDJ_HMI_EVENT_ADJUST ) { 
-        if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) { 
-            // Add the event's value to the scroll filter.
-            // The scroll filter simulation runs in the draw loop,
-            // therefore, menu_update_scroll happens during the draw loop.
-            zdj_menu_view_add_scroll_filter_input( view, e->i_val );
-            // Prevent views/menus below this one from getting jog wheel events
-            e->blocked = true;
-        }
+    // Release, mod-scroll, long-press, etc. should invoke hmi handler of menu_item @scroll_index
+    if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ||
+        e->id == ZDJ_UI_CONTROL_JOG_RELEASE_1 ||
+        e->id == ZDJ_UI_CONTROL_JOG_RELEASE_2 ||
+        e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ||
+        e->id == ZDJ_UI_CONTROL_JOG_ADJUST_2 ||
+        e->id == ZDJ_UI_CONTROL_JOG_PRESS_1
+    ) {
+        if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
+            printf( "handling back jog release\n" );
+            // Blink the back btn
+            menu_header_state->is_blinking = true;
+            menu_header_state->blink_timer = 0;
 
-        // Release, mod-scroll, long-press, etc. should invoke hmi handler of menu_item @scroll_index
-        if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ||
-            e->id == ZDJ_UI_CONTROL_JOG_RELEASE_1 ||
-            e->id == ZDJ_UI_CONTROL_JOG_RELEASE_2 ||
-            e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ||
-            e->id == ZDJ_UI_CONTROL_JOG_ADJUST_2 ||
-            e->id == ZDJ_UI_CONTROL_JOG_PRESS_1
-        ) {
-            if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
-                // Blink the back btn
-                menu_header_state->is_blinking = true;
-                menu_header_state->blink_timer = 0;
+            // Call the back btn handler
+            menu_header_state->handle_back( view );
+        } else {
+            // Get the menu_item @ current scroll_index
+            zdj_view_t * menu_item = zdj_menu_item_for_scroll_index( 
+                menu_state->scroll_view, 
+                menu_state->scroll_index 
+            );
 
-                // Call the back btn handler
-                menu_header_state->handle_back( view );
-            } else {
-                // Get the menu_item @ current scroll_index
-                zdj_view_t * menu_item = zdj_menu_item_for_scroll_index( 
-                    menu_state->scroll_view, 
-                    menu_state->scroll_index 
-                );
-    
-                // Blink the selected menu_item if this is a button press
-                if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
-                    zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)menu_item->state;
-                    state->is_blinking = true;
-                    state->blink_timer = 0;
-                }
-                
-                // Call into handle_control_event set by front-end
-                if( menu_item->handle_control_event ) {
-                    menu_item->handle_control_event( menu_item, e );
-                }
+            // Blink the selected menu_item if this is a button press
+            if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
+                zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)menu_item->state;
+                state->is_blinking = true;
+                state->blink_timer = 0;
             }
-            // Prevent views/menus below this one from getting jog wheel events
-            e->blocked = true;
+            
+            // Call into handle_control_event set by front-end
+            if( menu_item->handle_control_event ) {
+                menu_item->handle_control_event( menu_item, e );
+            }
         }
-    // } // Jog-wheel stuff
+        // Prevent views/menus below this one from getting jog wheel events
+        e->blocked = true;
+
+    // Handle nav back button
+    } else if( e->id == ZDJ_UI_CONTROL_NAV_RELEASE_0 && menu_header_state ) {
+        printf( "handling nav release\n" );
+        // Blink the back btn
+        menu_header_state->is_blinking = true;
+        menu_header_state->blink_timer = 0;
+
+        // Call the back btn handler
+        if( menu_header_state->handle_back ) {
+            printf( "handle_back\n" );
+            menu_header_state->handle_back( view );
+        }
+        // Prevent views/menus below this one from getting bav release
+        e->blocked = true;
+    }
 }
 
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index ) {
-    _zdj_menu_update_scroll( menu_view, index );
+    _update_scroll( menu_view, index );
 }
 
-void _zdj_menu_update_scroll( zdj_view_t * menu_view, int new_scroll ) {
+static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
     zdj_scroll_view_state_t * scroll_state = (zdj_scroll_view_state_t*)menu_state->scroll_view->state;
+
+    // printf( "_update_scroll: %d/%d\n", new_scroll, menu_state->scroll_index );
+
     zdj_menu_item_view_state_t * prev_menu_item_state;
     zdj_menu_item_view_state_t * new_menu_item_state;
     zdj_menu_header_view_state_t * menu_header_state;
     if( menu_state->header_view ){ 
         menu_header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state; 
     }
-    
+
     // If there are no menu items, set the back btn if available and return
     if( menu_state->item_count == 0 && menu_state->has_back ) {
         menu_state->scroll_index = -1;
@@ -403,7 +449,7 @@ void _zdj_menu_update_scroll( zdj_view_t * menu_view, int new_scroll ) {
 
     // Check the new value against the previous value.
     // Only start updating things if the value has changed.
-    if( new_scroll != menu_state->scroll_index ) {
+    if( new_scroll != menu_state->scroll_index ) { 
         // Clear hilite state of the previous selected item.
         // If it was the header's back item, hide the header's back view.
         // If it was a menu_item, clear menu_item->is_hilite and force
@@ -425,6 +471,7 @@ void _zdj_menu_update_scroll( zdj_view_t * menu_view, int new_scroll ) {
                     menu_state->scroll_index 
                 );
             }
+            if( !prev_menu_item ) { return; }
             prev_menu_item_state = prev_menu_item->state;
             prev_menu_item_state->is_hilite = false;
         }
@@ -476,14 +523,29 @@ void _zdj_menu_update_scroll( zdj_view_t * menu_view, int new_scroll ) {
         }
         bool is_final_view;
         if( new_menu_item_state->scroll_index == 0 ||
-            new_menu_item_state->scroll_index == menu_state->item_count-1 ) {
-                is_final_view = true;
-            }
-        zdj_scroll_view_to_view( menu_state->scroll_view, new_menu_item, scroll_dir, is_final_view, true );
-    }        
+            new_menu_item_state->scroll_index == menu_state->item_count-1 
+        ) {
+            // printf( "final view index: %d/%d\n", 
+            //     new_menu_item_state->scroll_index, menu_state->item_count
+            // );
+            is_final_view = true;
+        } else {
+            // printf( "not final view: %d/%d\n", 
+            //     new_menu_item_state->scroll_index, menu_state->item_count
+            // );
+            is_final_view = false;
+        }
+        zdj_scroll_view_to_view( 
+            menu_state->scroll_view, 
+            new_menu_item, 
+            scroll_dir, 
+            is_final_view, 
+            true 
+        );
+    }    
 }
 
-void _zdj_menu_deinit_state( zdj_view_t * view ) {
+static void _deinit_state( zdj_view_t * view ) {
     zdj_menu_view_state_t * state = (zdj_menu_view_state_t*)view->state;
     free( state );
     view->state = NULL;

@@ -27,10 +27,9 @@ zdj_view_t * zdj_new_menu_item( char * title, zdj_menu_item_view_layout_t layout
     // Build state
     zdj_menu_item_view_state_t * state = calloc( 1, sizeof( zdj_menu_item_view_state_t ) );
     menu_item->state = (void*)state;
-    if( title ) { state->title = strdup( title ); } else { state->title = "Undefined"; }
+    if( title ) { strcpy( state->title, title ); } else { strcpy( state->title, "Undefined" ); }
     state->layout = layout;
     state->data = calloc( 1, sizeof( zdj_ui_data_t ) );
-    state->link = NULL;
     state->needs_layout_init = true;
     state->init_layout = NULL;
     state->needs_layout_update = false;
@@ -153,15 +152,8 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     if( state->data ) {
         free( state->data->tag );
-        free( state->data->c_val );
         free( state->data );
         state->data = NULL;
-    }
-    if( state->title ) {
-        free( state->title );
-    }
-    if( state->link ) {
-        free( state->link );
     }
     free( state );
     view->state = NULL;
@@ -186,6 +178,10 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             break;
         case ZDJ_MENU_ITEM_LAYOUT_BASIC_R:
             item_state->init_layout = zdj_menu_item_basic_r_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_BASIC_LAUNCH_R:
+            item_state->init_layout = zdj_menu_item_basic_launch_r_init_layout;
             item_state->handles_hmi = true;
             break;
         case ZDJ_MENU_ITEM_LAYOUT_DATA_L:
@@ -227,6 +223,14 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             item_state->init_layout = zdj_menu_item_inert_status_init_layout;
             item_state->update_layout = zdj_menu_item_inert_status_update_layout;
             item_state->handles_hmi = false;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_LAUNCH_BIG:
+            item_state->init_layout = zdj_menu_item_launch_big_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_LAUNCH_SM:
+            item_state->init_layout = zdj_menu_item_launch_sm_init_layout;
+            item_state->handles_hmi = true;
             break;
         case ZDJ_MENU_ITEM_LAYOUT_SLIDER:
             item_state->init_layout = zdj_menu_item_slider_init_layout;

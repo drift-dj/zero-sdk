@@ -26,7 +26,7 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
-    char * str;
+    char str[ 256 ];
     zdj_justify_t justify;
     SDL_Texture * tex;
     int tex_w;

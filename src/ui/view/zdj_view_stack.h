@@ -39,6 +39,7 @@ void zdj_view_stack_update( void );
 
 void zdj_view_stack_clear_screen( void );
 
+void zdj_view_stack_handle_special_events( int start_ind, int end_ind );
 void zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view );
 void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip );
 

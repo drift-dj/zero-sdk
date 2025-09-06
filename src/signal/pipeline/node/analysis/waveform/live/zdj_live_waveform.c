@@ -26,7 +26,8 @@ zdj_pipeline_node_t * zdj_new_live_waveform( void ) {
 
     state->samples_per_point = 60;
     state->point_count = 64;
-    state->g = zdj_new_gaussian( state->samples_per_point, state->samples_per_point );
+    // state->g = zdj_new_gaussian( state->samples_per_point, 1.0 );
+    state->g = zdj_new_gaussian( state->point_count, 1.0 );
 
     return waveform;
 }

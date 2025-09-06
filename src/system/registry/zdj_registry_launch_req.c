@@ -45,21 +45,23 @@ int zdj_registry_commit_launch_req( zdj_launch_req_t * launch_req ) {
     int bw = zdj_registry_write_launch_req( ZDJ_REGISTRY_NEW_LAUNCH_REQ_PATH, launch_req );
 }
 
-// TODO, fix assumed new_launch_req filename here.
+// Attempt to replace the current launch request with a new launch request.
 zdj_launch_req_t * zdj_registry_process_new_launch_req( void ) {
+    printf( "zdj_registry_process_new_launch_req\n" );
     zdj_launch_req_t * req;
+
     // Duplicate current launch_req to prev_launch_req
-    req = zdj_registry_load_launch_req( ZDJ_REGISTRY_LAUNCH_REQ_PATH );
-    if( !zdj_registry_write_launch_req( ZDJ_REGISTRY_PREV_LAUNCH_REQ_PATH, req ) ) { 
-        // Exit with error if we can't overwrite launch_req.
-        exit( EINVAL );
-    }
+    // req = zdj_registry_load_launch_req( ZDJ_REGISTRY_LAUNCH_REQ_PATH );
+    // if( !zdj_registry_write_launch_req( ZDJ_REGISTRY_PREV_LAUNCH_REQ_PATH, req ) ) { 
+    //     // Exit with error if we can't overwrite launch_req.
+    //     printf( "Registry couldn't overwrite prev launch request. - EXITING\n" );
+    // }
 
     // Overwrite launch_req w/new_launch_req.
     req = zdj_registry_load_launch_req( ZDJ_REGISTRY_NEW_LAUNCH_REQ_PATH );
     if( !zdj_registry_write_launch_req( ZDJ_REGISTRY_LAUNCH_REQ_PATH, req ) ) { 
         // Exit with error if we can't overwrite launch_req.
-        exit( EINVAL ); 
+        printf( "Registry couldn't process a new launch request.\nThis is a brick-able error.\n" );
     }
     // Remove new_launch_req so we don't attempt to process it again.
     remove( ZDJ_REGISTRY_NEW_LAUNCH_REQ_PATH );
@@ -105,6 +107,7 @@ int zdj_registry_write_launch_req(
         bw = fwrite( launch_req, sizeof( zdj_launch_req_t ), 1, fp );
         fclose( fp );
     }
+    if( bw == 0 ) { printf( "ZDJ Registry failed to write launch request.\nThis is a brick-able error.\n" ); }
     return bw;
 }
 

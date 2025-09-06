@@ -23,11 +23,30 @@
 
 #include <zerodj/ui/zdj_ui.h>
 
+
+typedef void ( *zdj_menu_stack_retract_cb_t )( void* );
+
 typedef struct {
     int id;
     zdj_view_t * menus;
-    bool is_deployed;
+    bool can_retract;
+    bool is_enabled;
+    zdj_menu_stack_retract_cb_t retract_cb;
+    void * retract_data;
 } zdj_menu_stack_state_t;
 
-zdj_view_t * zdj_new_menu_stack( zdj_rect_t * frame );
+zdj_view_t * zdj_new_menu_stack( 
+    zdj_rect_t * frame, 
+    zdj_menu_stack_retract_cb_t retract_cb,
+    void * retract_data 
+);
+
+// Show+Enable/Hide+Disable an existing menu_stack without altering its view stack linkage
+void zdj_menu_stack_deploy( zdj_view_t * menu_stack );
+void zdj_menu_stack_retract( zdj_view_t * menu_stack );
+// Set a root menu reference - used to capture root menu's back command to auto-retract.
+void zdj_menu_stack_set_root_menu( zdj_view_t * menu_stack, zdj_view_t * root_menu );
+
+
+
 #endif

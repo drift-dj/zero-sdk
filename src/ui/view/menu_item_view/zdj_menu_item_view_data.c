@@ -33,7 +33,6 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
         state->normal_view->frame->w = view->frame->w;
         state->normal_view->frame->h = view->frame->h;
     }
-
     view->frame->h = 7;
 
     // Build data string
@@ -89,7 +88,6 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     title_label_norm->frame->x = 6;
     title_label_norm->frame->y = -1;
 
-
     zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, data_label_norm );
     data_label_norm->frame->x = view->frame->w - data_label_norm->frame->w;
@@ -103,7 +101,6 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     divider->frame->w = view->frame->w - title_label_norm->frame->w - data_label_norm->frame->w - 12;
     divider->frame->x = title_label_norm->frame->x + title_label_norm->frame->w + 2;
 
-    
     // Setup hilite view
     zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_HILITE_7_L ], NULL );
     zdj_add_subview( state->hilite_view, hilite_bg );

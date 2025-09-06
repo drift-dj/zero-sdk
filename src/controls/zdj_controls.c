@@ -7,11 +7,14 @@
 
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/controls/hmi/zdj_hmi_input.h>
+#include <zerodj/signal/deck/zdj_deck.h>
+#include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/perf/zdj_perf.h>
 #include <zerodj/system/thread/zdj_thread.h>
 
 zdj_control_active_state_t zdj_control_active_state;
+zdj_special_control_handler_t * zdj_special_control_handler;
 
 // Increment and bound and return write head.
 int zdj_get_next_deck_event_ind( void ) {
@@ -62,12 +65,18 @@ zdj_error_type_t zdj_deactivate_control( zdj_control_id_t control_id ) {
     zdj_control_active_state.controls[ control_id ] = false;
 }
 
-// Increment and bound the write head for hmi_input events
-// int zdj_get_next_hmi_input_event_write( void ) {
-//     zdj_hmi_input_event_buf_write++;
-//     zdj_hmi_input_event_buf_write %= ZDJ_CONTROL_EVENT_BUF_LEN;
-//     return zdj_hmi_input_event_buf_write;
-// }
+zdj_error_type_t zdj_deactivate_all_controls( void ) {
+    memset( zdj_control_active_state.controls, 0, sizeof(bool) * ZDJ_CONTROL_ID_COUNT );
+}
+
+// Register a special control cb which is called regardles of control map state.
+void zdj_register_special_control_handler( zdj_control_id_t control_id, zdj_special_control_cb cb ) {
+    zdj_special_control_handler = calloc( 1, sizeof( zdj_special_control_handler_t ) );
+    zdj_special_control_handler->id = control_id;
+    zdj_special_control_handler->cb = cb;
+
+    zdj_activate_control( control_id );
+}
 
 void * zdj_control_cycle_thread_main( void * arg ) {
 
@@ -98,8 +107,8 @@ void * zdj_control_cycle_thread_main( void * arg ) {
         zdj_control_process_hmi_input( );
 
         // Make events from external input sources. (MIDI controllers, etc.)
-        // These can map to UI/Deck Control events OR HMI Input events -- allowing
-        // external control surfaces to replicate Zero's built-in buttons/knobs.
+        // These can map directly to UI/Deck Control events OR indirectly as HMI Input events -- 
+        // allowing external control surfaces to replicate Zero's built-in buttons/knobs.
         // Generate MIDI mapped events
         // zdj_control_process_usb_midi_input( );
         // Generate USB HID mapped events
@@ -109,6 +118,14 @@ void * zdj_control_cycle_thread_main( void * arg ) {
 
         // Transform HMI Input events into UI/Deck Control events
         zdj_control_transform_hmi_events( );
+
+        // If there are unhandled deck events in the ring buffer...
+        if( zdj_deck_event_buf_read != zdj_deck_event_buf_write ) {
+            // ...pass control events into deck_manager.
+            zdj_deck_manager_handle_events( zdj_deck_event_buf_read, zdj_deck_event_buf_write );
+            // Update the event buf's read head so we don't re-process these events
+            zdj_deck_event_buf_read = zdj_deck_event_buf_write;
+        }
 
         // Close the perf tag
         tag->end = zdj_perf_time( );

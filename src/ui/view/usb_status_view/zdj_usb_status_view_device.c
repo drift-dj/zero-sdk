@@ -122,8 +122,8 @@ void _zdj_usb_status_view_device_update_layout( zdj_view_t * view ) {
     
      // Set header title
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state;
-    header_state->name = "USB Mode";
-    header_state->title = "Device";
+    strcpy( header_state->name, "USB Mode" );
+    strcpy( header_state->title, "Device" );
     header_state->has_valid_display = false;
 
     zdj_view_t * box;
@@ -232,8 +232,8 @@ static void _zdj_usb_status_view_device_processing_update_layout( zdj_view_t * v
 
     // Set header title
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state;
-    header_state->name = "USB Mode";
-    header_state->title = "Switching";
+    strcpy( header_state->name, "USB Mode" );
+    strcpy( header_state->title, "Switching" );
     header_state->has_valid_display = false;
 
     // Add progress view
@@ -259,8 +259,8 @@ static void _zdj_usb_status_view_device_error_update_layout( zdj_view_t * view )
 
     // Set header title
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state;
-    header_state->name = "USB Mode";
-    header_state->title = "System Error";
+    strcpy( header_state->name, "USB Mode" );
+    strcpy( header_state->title, "System Error" );
     header_state->has_valid_display = false;
 
     // Add zero icon

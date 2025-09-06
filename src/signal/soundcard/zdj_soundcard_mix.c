@@ -94,6 +94,8 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
     //     zdj_soundcard_node_name[ input_node->name ] 
     // );
 
+    zdj_audio_buffer_node_state_t * source_buf_state = (zdj_audio_buffer_node_state_t*)input_node->data_pipe->state;
+
     float * source_buf = input_node->data_pipe->get_data( input_node->data_pipe );
     float * dest_buf = node->data_pipe->get_data( node->data_pipe );
 
@@ -166,7 +168,7 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
 
 
     // Stride thru buffers, mixing samples, capturing metering data, and pushing waveform data
-    double source_sample, dest_sample, new_dest_sample;
+    float source_sample, dest_sample, new_dest_sample;
     int source_index, dest_index;
     float meter_val[ 2 ] = { 0 };
     // printf( "node:%s %p\n", zdj_soundcard_node_name[ node->name ], node->data_pipe );
@@ -237,7 +239,7 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
 
 
 // Analog input nodes need a special metering update cycle.
-// They don't pass thru the accumulate cycle since the have no input linkage,
+// They don't pass thru the accumulate cycle since they have no input linkage,
 // so their meter pipes don't get updated unless we explicitly do it here.
 zdj_error_type_t _zdj_soundcard_meter_analog_input_node(
     zdj_soundcard_t * soundcard, 

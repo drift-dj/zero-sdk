@@ -26,7 +26,7 @@
 typedef struct {
     bool deployed;
     bool event_capture;
-    zdj_view_t * log_view;
+    zdj_view_t * debug_view;
     zdj_anim_t * in_anim;
     zdj_anim_t * out_anim;
 } zdj_debug_panel_state_t;
