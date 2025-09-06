@@ -26,7 +26,7 @@
 #include <zerodj/system/error/zdj_error.h>
 
 typedef struct {
-    char * filepath;
+    char filepath[ 256 ];
     FILE * fd;
     size_t cache_len;
     size_t cache_size;

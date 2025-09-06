@@ -30,6 +30,7 @@
 typedef enum {
     ZDJ_MENU_ITEM_LAYOUT_BASIC_L,
     ZDJ_MENU_ITEM_LAYOUT_BASIC_R,
+    ZDJ_MENU_ITEM_LAYOUT_BASIC_LAUNCH_R,
     ZDJ_MENU_ITEM_LAYOUT_DATA_L,
     ZDJ_MENU_ITEM_LAYOUT_DATA_R,
     ZDJ_MENU_ITEM_LAYOUT_DIR,
@@ -39,6 +40,8 @@ typedef enum {
     ZDJ_MENU_ITEM_LAYOUT_INERT,
     ZDJ_MENU_ITEM_LAYOUT_INERT_DATA,
     ZDJ_MENU_ITEM_LAYOUT_INERT_STATUS,
+    ZDJ_MENU_ITEM_LAYOUT_LAUNCH_BIG,
+    ZDJ_MENU_ITEM_LAYOUT_LAUNCH_SM,
     ZDJ_MENU_ITEM_LAYOUT_SLIDER,
     ZDJ_MENU_ITEM_LAYOUT_SONG_IMPORT,
     ZDJ_MENU_ITEM_LAYOUT_TOGGLE,
@@ -76,8 +79,8 @@ typedef void ( *init_layout_t )( zdj_view_t* );
 typedef void ( *update_layout_t )( zdj_view_t* );
 
 typedef struct {
-    char * title;
-    char * subtitle;
+    char title[ 256 ];
+    char subtitle[ 256 ];
     zdj_ui_data_t * data;
     zdj_menu_item_data_display_type_t data_type;
     char data_prefix[ 32 ];
@@ -91,15 +94,13 @@ typedef struct {
     zdj_ui_asset_t icon;
     zdj_ui_asset_t icon_hi;
     zdj_menu_item_view_action_t action;
-    char * link;
+    char link[ 256 ];
     bool is_hilite;
     bool is_blinking;
     int blink_timer;
     bool handles_hmi;
     zdj_view_t * normal_view;
     zdj_view_t * hilite_view;
-    zdj_view_t * normal_data_view;
-    zdj_view_t * hilite_data_view;
     zdj_view_t * title_view;
     zdj_view_t * data_view;
     zdj_view_t * div_view;
@@ -130,6 +131,7 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
 
 void zdj_menu_item_basic_l_init_layout( zdj_view_t * view );
 void zdj_menu_item_basic_r_init_layout( zdj_view_t * view );
+void zdj_menu_item_basic_launch_r_init_layout( zdj_view_t * view );
 void zdj_menu_item_data_l_init_layout( zdj_view_t * view );
 void zdj_menu_item_data_r_init_layout( zdj_view_t * view );
 void zdj_menu_item_dir_init_layout( zdj_view_t * view );
@@ -139,6 +141,8 @@ void zdj_menu_item_icon_init_layout( zdj_view_t * view );
 void zdj_menu_item_inert_init_layout( zdj_view_t * view );
 void zdj_menu_item_inert_data_init_layout( zdj_view_t * view );
 void zdj_menu_item_inert_status_init_layout( zdj_view_t * view );
+void zdj_menu_item_launch_big_init_layout( zdj_view_t * view );
+void zdj_menu_item_launch_sm_init_layout( zdj_view_t * view );
 void zdj_menu_item_slider_init_layout( zdj_view_t * view );
 void zdj_menu_item_song_import_init_layout( zdj_view_t * view );
 void zdj_menu_item_toggle_init_layout( zdj_view_t * view );

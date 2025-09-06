@@ -234,6 +234,7 @@ typedef struct {
     zdj_pipeline_node_t * analog_io_node;
     zdj_pipeline_node_t * usb_io_node;
     zdj_pipeline_node_t * scope_waveform;
+    zdj_pipeline_node_t * recording_node;
     zdj_soundcard_node_name_t scope_node_name;
     bool has_edits;
 } zdj_soundcard_t;
@@ -266,6 +267,10 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
 
 // Decks
 zdj_error_type_t zdj_soundcard_link_deck( 
+    zdj_soundcard_t * soundcard, 
+    zdj_deck_t * deck 
+);
+zdj_error_type_t zdj_soundcard_unlink_deck( 
     zdj_soundcard_t * soundcard, 
     zdj_deck_t * deck 
 );

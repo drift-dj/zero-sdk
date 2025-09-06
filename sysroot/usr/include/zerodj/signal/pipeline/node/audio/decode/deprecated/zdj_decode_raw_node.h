@@ -29,6 +29,25 @@
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
+typedef enum {
+    ZDJ_DISCON_TYPE_CONTIGUOUS,
+    ZDJ_DISCON_TYPE_SKIP,
+    ZDJ_DISCON_TYPE_LOOP
+} zdj_discon_type_t;
+
+typedef struct {
+    zdj_discon_type_t type;
+    bool quantized;
+    bool pending;
+} zdj_discon_request_t;
+
+typedef struct { 
+    uint64_t in_addr;
+    int in_index;
+    uint64_t out_addr;
+    int out_index;
+} zdj_decode_discon_t;
+
 typedef struct zdj_decode_raw_data_frame_t {
     uint32_t song_samp_addr;
     void * buffer;
@@ -47,6 +66,8 @@ typedef struct zdj_decode_raw_node_state_t {
     zdj_decode_raw_data_frame_t * frames;
     zdj_decode_raw_data_frame_t * first_frame;
     zdj_decode_raw_data_frame_t * last_frame;
+    // During loop/skip discon, hold a parallel set of frames to fade across in/out point
+    zdj_decode_raw_data_frame_t * xfade_frames;
     zdj_pipeline_node_t * file_node;
     bool req_active;
     uint32_t req_song_samp_addr;
@@ -58,8 +79,8 @@ typedef struct zdj_decode_raw_node_state_t {
     AVCodecParserContext * parser;
     AVCodecContext * codec_context;
     zdj_error_type_t ( *decode )( zdj_decode_raw_data_frame_t* );
-    struct zdj_decode_raw_node_state_t * next;
-    struct zdj_decode_raw_node_state_t * prev;
+    // struct zdj_decode_raw_node_state_t * next;
+    // struct zdj_decode_raw_node_state_t * prev;
 } zdj_decode_raw_node_state_t;
 
 zdj_pipeline_node_t * zdj_new_decode_raw_node( 

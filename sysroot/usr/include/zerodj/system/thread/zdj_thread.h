@@ -56,5 +56,16 @@ zdj_error_type_t zdj_thread_launch_ui_cycle( zdj_thread_main main, void * arg );
 // NOTE: Audio buf cycle is pinned to A53 Core 1 for performance
 zdj_error_type_t zdj_thread_launch_audio_buf_cycle( zdj_thread_main main, void * arg );
 
+zdj_error_type_t zdj_thread_launch_deck_manager_cycle( zdj_thread_main main, void * arg );
+
+extern bool zdj_thread_deck_1_station_available;
+extern bool zdj_thread_deck_2_station_available;
+extern bool zdj_thread_deck_ext_station_available;
+
+zdj_error_type_t zdj_thread_launch_deck_station_1_cycle( zdj_thread_main main, void * arg );
+zdj_error_type_t zdj_thread_launch_deck_station_2_cycle( zdj_thread_main main, void * arg );
+zdj_error_type_t zdj_thread_launch_deck_station_ext_cycle( zdj_thread_main main, void * arg );
+
+zdj_error_type_t zdj_thread_launch_record_post_proc_cycle( zdj_thread_main main, void * arg );
 
 #endif
