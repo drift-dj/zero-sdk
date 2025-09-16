@@ -30,48 +30,46 @@
 #define ZDJ_ANIM_LENGTH_MENU_BLINK_LENGTH 7
 #define ZDJ_ANIM_LENGTH_MENU_BLINK_DELAY 30
 
-zdj_anim_t * zdj_new_anim( zdj_anim_type_t type );
-void zdj_anim_deinit( zdj_anim_t * anim );
-
+void zdj_set_anim( zdj_anim_t * anim, zdj_anim_type_t type );
 
 void zdj_anim_init_view_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_view_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_view( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_view( zdj_anim_t * anim );
 
 void zdj_anim_init_menu_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_menu_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_menu( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_menu( zdj_anim_t * anim );
 
 void zdj_anim_init_menu_stack_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_menu_stack_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_menu_stack( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_menu_stack( zdj_anim_t * anim );
 
 void zdj_anim_init_modal_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_modal_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_modal( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_modal( zdj_anim_t * anim );
 
 void zdj_anim_init_header_activate( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_header_deactivate( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_header( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_header( zdj_anim_t * anim );
 
 void zdj_anim_init_dialog_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_dialog_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_dialog( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_dialog( zdj_anim_t * anim );
 
 void zdj_anim_init_debug_panel_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_debug_panel_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_debug_panel( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_debug_panel( zdj_anim_t * anim );
 
 void zdj_anim_init_dj_deck_page_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_dj_deck_page_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_dj_deck_page( zdj_anim_t * anim, zdj_view_t * view );
-void zdj_anim_deinit_dj_deck_page( zdj_anim_t * anim );
+
+void zdj_anim_init_volume_panel_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_volume_panel_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_volume_panel( zdj_anim_t * anim, zdj_view_t * view );
+
+void zdj_anim_init_record_panel_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_record_panel_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_record_panel( zdj_anim_t * anim, zdj_view_t * view );
 
 #endif

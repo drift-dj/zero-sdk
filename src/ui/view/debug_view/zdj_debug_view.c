@@ -37,20 +37,20 @@ zdj_view_t * zdj_new_debug_view( zdj_rect_t * frame ) {
     
     // Add memory label
     state->mem_label = zdj_new_data_menu_item( "Memory", ZDJ_MENU_ITEM_LAYOUT_DATA_R, ZDJ_MENU_ITEM_DATA_TYPE_CHAR, NULL, NULL );
-    state->mem_label->frame->x = 0;
-    state->mem_label->frame->y = 2;
-    state->mem_label->frame->w = ZDJ_DEBUG_PANEL_WIDTH - 4;
-    state->mem_label->frame->h = 7;
+    state->mem_label->frame.x = 0;
+    state->mem_label->frame.y = 2;
+    state->mem_label->frame.w = ZDJ_DEBUG_PANEL_WIDTH - 4;
+    state->mem_label->frame.h = 7;
     zdj_add_subview( view, state->mem_label );
     zdj_menu_item_view_state_t * mem_state = (zdj_menu_item_view_state_t*)state->mem_label->state;
     strcpy( mem_state->data->c_val, "..." );
 
     // Add View counter
     state->view_label = zdj_new_data_menu_item( "Views", ZDJ_MENU_ITEM_LAYOUT_DATA_R, ZDJ_MENU_ITEM_DATA_TYPE_CHAR, NULL, NULL );
-    state->view_label->frame->x = 0;
-    state->view_label->frame->y = 10;
-    state->view_label->frame->w = ZDJ_DEBUG_PANEL_WIDTH - 4;
-    state->view_label->frame->h = 7;
+    state->view_label->frame.x = 0;
+    state->view_label->frame.y = 10;
+    state->view_label->frame.w = ZDJ_DEBUG_PANEL_WIDTH - 4;
+    state->view_label->frame.h = 7;
     zdj_add_subview( view, state->view_label );
     zdj_menu_item_view_state_t * view_state = (zdj_menu_item_view_state_t*)state->view_label->state;
     strcpy( view_state->data->c_val, "..." );

@@ -38,7 +38,7 @@ zdj_view_t * zdj_new_cv_meter_view(
 
     // Add baseline
     zdj_view_t * baseline = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_CV_BASELINE ], NULL );
-    baseline->frame->y = -1;
+    baseline->frame.y = -1;
     state->cv_baseline = baseline;
     zdj_add_subview( cv_meter_view, baseline );
 
@@ -52,14 +52,14 @@ zdj_view_t * zdj_new_cv_meter_view(
         &zdj_ui_assets[ zdj_meter_asset_for_label( label ) ], 
         NULL 
     );
-    meter_label->frame->x = -1;
+    meter_label->frame.x = -1;
     zdj_add_subview( cv_meter_view, meter_label );
 
     // Add detail
     zdj_view_t * detail = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DETAIL ], NULL );
-    detail->frame->x = 2;
-    detail->frame->y = 43;
-    detail->frame->w = 0;
+    detail->frame.x = 2;
+    detail->frame.y = 43;
+    detail->frame.w = 0;
     state->detail = detail;
     zdj_add_subview( cv_meter_view, detail );
 
@@ -106,16 +106,16 @@ void _zdj_cv_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     
 
     if( signal_type == ZDJ_SOUNDCARD_SIGNAL_CV_UNIPOLAR ) {
-        state->cv_baseline->frame->y = 45;
-        state->cv_value->frame->y = (meter_state->instant_val_0 * 20) + 20;
+        state->cv_baseline->frame.y = 45;
+        state->cv_value->frame.y = (meter_state->instant_val_0 * 20) + 20;
     } else if( signal_type == ZDJ_SOUNDCARD_SIGNAL_CV_BIPOLAR ) {
-        state->cv_baseline->frame->y = 20;
-        state->cv_value->frame->y = (meter_state->instant_val_0 * 20) + 20;
+        state->cv_baseline->frame.y = 20;
+        state->cv_value->frame.y = (meter_state->instant_val_0 * 20) + 20;
     }
     if( state->is_hilite ) {
-        state->detail->frame->w = 7;
+        state->detail->frame.w = 7;
     } else {
-        state->detail->frame->w = 0;
+        state->detail->frame.w = 0;
     }
 }
 

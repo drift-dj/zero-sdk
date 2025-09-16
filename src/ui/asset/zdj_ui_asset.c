@@ -179,8 +179,10 @@ int zdj_ui_asset_init( void ) {
 
 SDL_Texture * zdj_asset_atlas( void ) {
     if( _zdj_asset_atlas ) { return _zdj_asset_atlas; } else {
-        // It's probably bad if this case is called, but it's here for safety.
-        return zdj_ui_texture_from_bmp( "/root/res/zero_atlas-32bit.bmp" );
+        // // It's probably bad if this case is called, but it's here for safety.
+        // return zdj_ui_texture_from_bmp( "/root/res/zero_atlas-32bit.bmp" );
+        zdj_ui_asset_init( );
+        return _zdj_asset_atlas;
     }
 }
 

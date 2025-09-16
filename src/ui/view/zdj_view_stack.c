@@ -12,6 +12,8 @@
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/panel/accessibility/zdj_accessibility_panel.h>
+#include <zerodj/ui/panel/recording/zdj_recording_panel.h>
+#include <zerodj/ui/panel/volume/zdj_volume_panel.h>
 #include <zerodj/ui/panel/debug/zdj_debug_panel.h>
 #include <zerodj/ui/panel/perf/zdj_perf_panel.h>
 #include <zerodj/ui/panel/widget/zdj_widget_panel.h>
@@ -26,6 +28,8 @@ zdj_rect_t view_stack_frame = {0,0,128,64};
 zdj_view_t * zdj_view_stack_root_view;
 zdj_view_t * zdj_view_stack_widget_panel;
 zdj_view_t * zdj_view_stack_accessibility_panel;
+zdj_view_t * zdj_view_stack_record_panel;
+zdj_view_t * zdj_view_stack_volume_panel;
 zdj_view_t * zdj_view_stack_debug_panel;
 zdj_view_t * zdj_view_stack_perf_panel;
 
@@ -44,6 +48,14 @@ zdj_view_t * zdj_accessibility_panel( void ) {
     return zdj_view_stack_accessibility_panel;
 }
 
+zdj_view_t * zdj_record_panel( void ) {
+    return zdj_view_stack_record_panel;
+}
+
+zdj_view_t * zdj_volume_panel( void ) {
+    return zdj_view_stack_volume_panel;
+}
+
 zdj_view_t * zdj_debug_panel( void ) {
     return zdj_view_stack_debug_panel;
 }
@@ -54,24 +66,32 @@ zdj_view_t * zdj_perf_panel( void ) {
 
 void zdj_view_stack_init( void ) {
     zdj_view_stack_root_view = zdj_new_view( &view_stack_frame );
-    zdj_view_stack_root_view->subview_clip->src.w = zdj_view_stack_root_view->subview_clip->dst.w = 128;
-    zdj_view_stack_root_view->subview_clip->src.h = zdj_view_stack_root_view->subview_clip->dst.h = 64;
+    zdj_view_stack_root_view->subview_clip.src.w = zdj_view_stack_root_view->subview_clip.dst.w = 128;
+    zdj_view_stack_root_view->subview_clip.src.h = zdj_view_stack_root_view->subview_clip.dst.h = 64;
 
     zdj_view_stack_widget_panel = zdj_new_widget_panel( );
-    zdj_view_stack_widget_panel->subview_clip->src.w = zdj_view_stack_widget_panel->subview_clip->dst.w = 128;
-    zdj_view_stack_widget_panel->subview_clip->src.h = zdj_view_stack_widget_panel->subview_clip->dst.h = 64;
+    zdj_view_stack_widget_panel->subview_clip.src.w = zdj_view_stack_widget_panel->subview_clip.dst.w = 128;
+    zdj_view_stack_widget_panel->subview_clip.src.h = zdj_view_stack_widget_panel->subview_clip.dst.h = 64;
     
     zdj_view_stack_accessibility_panel = zdj_new_accessibility_panel( );
-    zdj_view_stack_accessibility_panel->subview_clip->src.w = zdj_view_stack_accessibility_panel->subview_clip->dst.w = 128;
-    zdj_view_stack_accessibility_panel->subview_clip->src.h = zdj_view_stack_accessibility_panel->subview_clip->dst.h = 64;
+    zdj_view_stack_accessibility_panel->subview_clip.src.w = zdj_view_stack_accessibility_panel->subview_clip.dst.w = 128;
+    zdj_view_stack_accessibility_panel->subview_clip.src.h = zdj_view_stack_accessibility_panel->subview_clip.dst.h = 64;
+
+    zdj_view_stack_record_panel = zdj_new_recording_panel( );
+    zdj_view_stack_record_panel->subview_clip.src.w = zdj_view_stack_record_panel->subview_clip.dst.w = 128;
+    zdj_view_stack_record_panel->subview_clip.src.h = zdj_view_stack_record_panel->subview_clip.dst.h = 64;
+
+    zdj_view_stack_volume_panel = zdj_new_volume_panel( );
+    zdj_view_stack_volume_panel->subview_clip.src.w = zdj_view_stack_volume_panel->subview_clip.dst.w = 128;
+    zdj_view_stack_volume_panel->subview_clip.src.h = zdj_view_stack_volume_panel->subview_clip.dst.h = 64;
 
     zdj_view_stack_debug_panel = zdj_new_debug_panel( );
-    zdj_view_stack_debug_panel->subview_clip->src.w = zdj_view_stack_debug_panel->subview_clip->dst.w = 128;
-    zdj_view_stack_debug_panel->subview_clip->src.h = zdj_view_stack_debug_panel->subview_clip->dst.h = 64;
+    zdj_view_stack_debug_panel->subview_clip.src.w = zdj_view_stack_debug_panel->subview_clip.dst.w = 128;
+    zdj_view_stack_debug_panel->subview_clip.src.h = zdj_view_stack_debug_panel->subview_clip.dst.h = 64;
 
     zdj_view_stack_perf_panel = zdj_new_perf_panel( );
-    zdj_view_stack_perf_panel->subview_clip->src.w = zdj_view_stack_perf_panel->subview_clip->dst.w = 128;
-    zdj_view_stack_perf_panel->subview_clip->src.h = zdj_view_stack_perf_panel->subview_clip->dst.h = 64;
+    zdj_view_stack_perf_panel->subview_clip.src.w = zdj_view_stack_perf_panel->subview_clip.dst.w = 128;
+    zdj_view_stack_perf_panel->subview_clip.src.h = zdj_view_stack_perf_panel->subview_clip.dst.h = 64;
     
     zdj_delete_stack = NULL;
 }
@@ -97,13 +117,14 @@ void zdj_view_stack_update( void ) {
         }
         // ...send events into views for handling.
         zdj_view_stack_handle_events( 
+            start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_record_panel( ) ) 
+        );
+        zdj_view_stack_handle_events( 
             start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_debug_panel( ) ) 
         );
         zdj_view_stack_handle_events( 
             start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_perf_panel( ) ) 
         );
-        // _zdj_view_stack_handle_events( zdj_accessibility_panel( ) );
-        // _zdj_view_stack_handle_events( zdj_widget_panel( ) );
         zdj_view_stack_handle_events( 
             start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_root_view( ) ) 
         );
@@ -116,6 +137,10 @@ void zdj_view_stack_update( void ) {
     _zdj_view_stack_draw( zdj_root_view( ) );
     // _zdj_view_stack_draw( zdj_widget_panel( ) );
     // _zdj_view_stack_draw( zdj_accessibility_panel( ) );
+
+    zdj_view_stack_draw( zdj_record_panel( ), &zdj_record_panel( )->subview_clip );
+    zdj_view_stack_draw( zdj_volume_panel( ), &zdj_volume_panel( )->subview_clip );
+
     _zdj_view_stack_draw( zdj_debug_panel( ) );
     _zdj_view_stack_draw( zdj_perf_panel( ) );
     zdj_view_count = zdj_new_view_count;
@@ -136,7 +161,7 @@ void _zdj_view_stack_draw( zdj_view_t * view ) {
     // printf( "_zdj_view_stack_draw\n" );
     // Draw view's subviews (bottom-up)
     zdj_view_t * bottom_subview = zdj_view_stack_bottom_subview_of( view );
-    if( bottom_subview ) { zdj_view_stack_draw( bottom_subview, view->subview_clip ); }
+    if( bottom_subview ) { zdj_view_stack_draw( bottom_subview, &view->subview_clip ); }
     // printf( "_zdj_view_stack_draw done\n" );
 }
 
@@ -207,14 +232,14 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Draw this view's pixels
     if( view->is_visible ) {
         if( view->draw ) {
-            view->draw( view, view->subview_clip );
+            view->draw( view, &view->subview_clip );
         }
 
         // Recurse into the view's subviews, passing clipped metrics.
         // Note, during draw(), view may have been moved to the delete stack.
         // Be sure we're not drawing the delete stack here.
         if( !view->is_deleting && view->subviews ) {
-            zdj_view_stack_draw( view->subviews, view->subview_clip );
+            zdj_view_stack_draw( view->subviews, &view->subview_clip );
         }
     }
 
@@ -232,36 +257,36 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 //  - a rect clipped within superview's clipped rect
 //  - a rect of screen-space coords to draw view's pixels
 void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t * superview_clip ) {
-    zdj_view_clip_t * subview_clip = subview->subview_clip;
+    zdj_view_clip_t * subview_clip = &subview->subview_clip;
 
     // Prep is_visible for view out-of-bounds state
     subview->is_visible = true;
     
     // Build screen x/y for subview's origin
-    subview_clip->screen.x = subview->frame->x + superview_clip->screen.x + superview_clip->scroll_offset.cur_x;
-    subview_clip->screen.y = subview->frame->y + superview_clip->screen.y + superview_clip->scroll_offset.cur_y;
+    subview_clip->screen.x = subview->frame.x + superview_clip->screen.x + superview_clip->scroll_offset.cur_x;
+    subview_clip->screen.y = subview->frame.y + superview_clip->screen.y + superview_clip->scroll_offset.cur_y;
 
     // Horizontal arithmetic
     // Clip left draw edge to furthest right pixel of subview/superview frame x.
-    // subview_clip->dst.x = (int)fmax( subview_clip->screen.x, superview_clip->dst.x );
-    // subview_clip->src.x = (int)fmax( 0, subview_clip->dst.x-subview_clip->screen.x );
+    // subview_clip.dst.x = (int)fmax( subview_clip.screen.x, superview_clip->dst.x );
+    // subview_clip.src.x = (int)fmax( 0, subview_clip.dst.x-subview_clip.screen.x );
     subview_clip->dst.x = (int)round(fmax( subview_clip->screen.x, superview_clip->dst.x ));
     subview_clip->src.x = (int)round(fmax( 0, subview_clip->dst.x-subview_clip->screen.x ));
     // Clip right draw edge to narrower pixel val of subview/superview frame widths.
     int sub_dst_lx = subview_clip->screen.x; // screen x of left edge of subview's frame
     int sup_dst_lx = superview_clip->dst.x; // screen x of left edge of superview's frame
-    int sub_dst_rx = subview_clip->screen.x+subview->frame->w; // screen x of right edge of subview's frame
+    int sub_dst_rx = subview_clip->screen.x+subview->frame.w; // screen x of right edge of subview's frame
     int sup_dst_rx = superview_clip->dst.x+superview_clip->dst.w; // screen x of right edge of superview's frame
     if( (sub_dst_rx <= sup_dst_rx) && (sub_dst_rx >= sup_dst_lx) ) { 
         // Subview right edge falls inside superview screen rect.
         if( sub_dst_lx > sup_dst_lx ) {
             // Entire subview falls within superview screen rect
-            subview_clip->dst.w = subview->frame->w;
+            subview_clip->dst.w = subview->frame.w;
             subview_clip->src.w = subview_clip->dst.w;
         } else {
             // Subview left edge falls to left of superview screen rect
             // Make width clipped to superview screen rect
-            subview_clip->dst.w = subview->frame->w - (subview_clip->dst.x-subview_clip->screen.x);
+            subview_clip->dst.w = subview->frame.w - (subview_clip->dst.x-subview_clip->screen.x);
             subview_clip->src.w = subview_clip->dst.w;
         }
     } else if( (sub_dst_rx > sup_dst_rx) && (sub_dst_lx <= sup_dst_rx) ) { 
@@ -286,26 +311,26 @@ void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t *
 
     // Vertical arithmetic
     // Clip top draw edge to lowest pixel of subview/superview frame y.
-    // subview_clip->dst.y = (int)fmax( subview_clip->screen.y, superview_clip->dst.y );
-    // subview_clip->src.y = (int)fmax( 0, subview_clip->dst.y-subview_clip->screen.y );
+    // subview_clip.dst.y = (int)fmax( subview_clip.screen.y, superview_clip->dst.y );
+    // subview_clip.src.y = (int)fmax( 0, subview_clip.dst.y-subview_clip.screen.y );
     subview_clip->dst.y = (int)round(fmax( subview_clip->screen.y, superview_clip->dst.y ));
     subview_clip->src.y = (int)round(fmax( 0, subview_clip->dst.y-subview_clip->screen.y ));
     // Clip bottom draw edge to higher pixel val of subview/superview frame heights.
     int sub_dst_ty = subview_clip->screen.y; // screen y of top edge of subview's frame
     int sup_dst_ty = superview_clip->dst.y; // screen y of top edge of superview's frame
-    int sub_dst_by = subview_clip->screen.y+subview->frame->h; // screen y of bottom edge of subview's frame
+    int sub_dst_by = subview_clip->screen.y+subview->frame.h; // screen y of bottom edge of subview's frame
     int sup_dst_by = superview_clip->dst.y+superview_clip->dst.h; // screen y of bottom edge of superview's frame
     if( (sub_dst_by <= sup_dst_by) && (sub_dst_by >= sup_dst_ty) ) { 
         // Subview to edge falls inside superview screen rect.
         if( sub_dst_ty > sup_dst_ty ) {
             // Entire subview falls within superview screen rect
-            subview_clip->dst.h = subview->frame->h;
+            subview_clip->dst.h = subview->frame.h;
             subview_clip->src.h = subview_clip->dst.h;
         } else {
             // Subview top edge falls above top of superview screen rect
             // Make width clipped to superview screen rect
-            // subview_clip->dst.h = subview->frame->y + subview->frame->h;
-            subview_clip->dst.h = subview->frame->h - (subview_clip->dst.y - subview_clip->screen.y);
+            // subview_clip.dst.h = subview->frame.y + subview->frame.h;
+            subview_clip->dst.h = subview->frame.h - (subview_clip->dst.y - subview_clip->screen.y);
             subview_clip->src.h = subview_clip->dst.h;
         }
     } else if( (sub_dst_by > sup_dst_by) && (sub_dst_ty <= sup_dst_by) ) { 
@@ -314,7 +339,7 @@ void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t *
         // Make height clipped to superview screen rect
         if( sub_dst_ty > sup_dst_ty ) {
             // Subview top edge falls within superview screen rect
-            // subview_clip->dst.h = (superview_clip->dst.h+superview_clip->src.y) - subview->frame->y;
+            // subview_clip.dst.h = (superview_clip->dst.h+superview_clip->src.y) - subview->frame.y;
             subview_clip->dst.h = (superview_clip->dst.h+superview_clip->dst.y) - subview_clip->screen.y;
             subview_clip->src.h = subview_clip->dst.h;
         } else {

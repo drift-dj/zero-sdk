@@ -78,8 +78,8 @@ typedef enum {
 
 typedef struct {
     // menu_item_view_state extension
-    char * title;
-    char * subtitle;
+    char title[ 256 ];
+    char subtitle[ 256 ];
     zdj_ui_data_t * data;
     zdj_menu_item_data_display_type_t data_type;
     char data_prefix[ 32 ];
@@ -93,15 +93,13 @@ typedef struct {
     zdj_ui_asset_t icon;
     zdj_ui_asset_t icon_hi;
     zdj_menu_item_view_action_t action;
-    char * link;
+    char link[ 256 ];
     bool is_hilite;
     bool is_blinking;
     int blink_timer;
     bool handles_hmi;
     zdj_view_t * normal_view;
     zdj_view_t * hilite_view;
-    zdj_view_t * normal_data_view;
-    zdj_view_t * hilite_data_view;
     zdj_view_t * title_view;
     zdj_view_t * data_view;
     zdj_view_t * div_view;
@@ -178,6 +176,7 @@ zdj_view_t * zdj_new_midi_meter_view(
     zdj_soundcard_meter_label_t label,
     bool show_detail 
 );
+zdj_view_t * zdj_new_record_mini_meter_view( void );
 
 zdj_soundcard_meter_label_t zdj_meter_label_for_node( zdj_soundcard_node_t * node );
 zdj_ui_asset_t zdj_meter_asset_for_label( zdj_soundcard_meter_label_t label );

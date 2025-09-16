@@ -117,9 +117,9 @@ void _zdj_waveform_lores_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) 
     // bottom_y_vals[ waveform_point_count+1 ] = waveform_baseline;
 
     // if( lead_in_x > -1 ) { 
-    //     state->leader->frame->x = lead_in_x - 128; 
+    //     state->leader->frame.x = lead_in_x - 128; 
     // } else {
-    //     state->leader->frame->x = -128;
+    //     state->leader->frame.x = -128;
     // }
 
     // int p;

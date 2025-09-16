@@ -40,8 +40,8 @@ zdj_view_t * zdj_new_clock_meter_view(
         &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_CLOCK_COUNT_3 ], 
         NULL 
     );
-    clock_counter->frame->x = 0;
-    clock_counter->frame->y = 36;
+    clock_counter->frame.x = 0;
+    clock_counter->frame.y = 36;
     state->clock_counter = clock_counter;
     zdj_add_subview( clock_meter_view, clock_counter );
 
@@ -50,15 +50,15 @@ zdj_view_t * zdj_new_clock_meter_view(
         &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_CLOCK_PULSE ], 
         NULL 
     );
-    clock_pulse->frame->x = 0;
-    clock_pulse->frame->y = 44;
+    clock_pulse->frame.x = 0;
+    clock_pulse->frame.y = 44;
     state->clock_pulse = clock_pulse;
     zdj_add_subview( clock_meter_view, clock_pulse );
 
     // Add BPM
     zdj_view_t * bpm = zdj_new_label_vert_view( "124.3", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    bpm->frame->y = 2;
-    bpm->frame->x = 1;
+    bpm->frame.y = 2;
+    bpm->frame.x = 1;
     zdj_add_subview( clock_meter_view, bpm );
 
     // Add label
@@ -66,14 +66,14 @@ zdj_view_t * zdj_new_clock_meter_view(
         &zdj_ui_assets[ zdj_meter_asset_for_label( label ) ], 
         NULL 
     );
-    meter_label->frame->x = -1;
+    meter_label->frame.x = -1;
     zdj_add_subview( clock_meter_view, meter_label );
 
     // Add detail
     zdj_view_t * detail = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DETAIL ], NULL );
-    detail->frame->x = 0;
-    detail->frame->y = 43;
-    detail->frame->w = 0;
+    detail->frame.x = 0;
+    detail->frame.y = 43;
+    detail->frame.w = 0;
     state->detail = detail;
     zdj_add_subview( clock_meter_view, detail );
 
@@ -85,9 +85,9 @@ void _zdj_clock_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_soundcard_meter_state_t * state = (zdj_soundcard_meter_state_t*)view->state;
     zdj_soundcard_node_config_context_t * config = state->config_context;
     if( state->is_hilite ) {
-        state->detail->frame->w = 7;
+        state->detail->frame.w = 7;
     } else {
-        state->detail->frame->w = 0;
+        state->detail->frame.w = 0;
     }
 }
 

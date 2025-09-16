@@ -33,10 +33,16 @@
 #define ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE 2048
 #define ZDJ_THUMB_WAVEFORM_SAMPLE_STRIDE 30000
 
-typedef struct {
-    uint32_t buffer_ind;
-    uint64_t sample_addr;
-} zdj_sample_buf_addr_t;
+typedef enum {
+    ZDJ_WAVEFORM_PLAYBACK,
+    ZDJ_WAVEFORM_LIVE
+} zdj_waveform_type_t;
+
+typedef enum {
+    ZDJ_WAVEFORM_SYM,
+    ZDJ_WAVEFORM_TOP_HALF,
+    ZDJ_WAVEFORM_BOTTOM_HALF
+} zdj_waveform_style_t;
 
 typedef struct {
     zdj_soundcard_node_t * soundcard_node;
@@ -59,51 +65,108 @@ typedef struct {
 typedef struct {
     int frame_count;
     int norm_val;
+    int samples_per_point;
     char song_entity_id[ 37 ];
-} zdj_playback_waveform_header_t;
+} zdj_waveform_header_t;
 
 typedef enum { 
     ZDJ_WAVEFORM_MAKER_PHASE_INIT,
     ZDJ_WAVEFORM_MAKER_PHASE_PREP_WINDOW,
     ZDJ_WAVEFORM_MAKER_PHASE_WAIT_WINDOW,
-    ZDJ_WAVEFORM_MAKER_PHASE_CAPTURE_WINDOW
-} zdj_playback_waveform_maker_phase_t;
+    ZDJ_WAVEFORM_MAKER_PHASE_CAPTURE_WINDOW,
+    ZDJ_WAVEFORM_MAKER_PHASE_BUILD_POINT
+} zdj_waveform_maker_phase_t;
 
 typedef struct {
-    zdj_playback_waveform_maker_phase_t phase;
+    zdj_waveform_maker_phase_t phase;
 
     zdj_pipeline_node_t * decode_node;
     char song_entity_id[ 37 ];
 
-    uint64_t input_sample_counter;
-    uint64_t output_sample_counter;
-    double point_tally;
-    int total_points;
-    int point_stride;
-    uint64_t window_start_pcm_addr;
+    float sample_accum;
+    int64_t sample_tally;
+    int64_t point_tally;
+    int64_t samples_per_point;
+    float accum_norm;
 
-    float * window_buf;
-    int window_width;
-    int window_cur_sample;
-
-    zdj_playback_waveform_header_t * waveform_header;
+    zdj_waveform_header_t * waveform_header;
     FILE * waveform_fd;
 
+} zdj_waveform_maker_state_t;
+
+typedef struct {
+    zdj_waveform_type_t type;
+    zdj_waveform_style_t style;
+
+    uint8_t * point_buf;
+    int64_t point_buf_len;
+
+    // Keep reference values in PCM sample space
+    double win_pcm_sample_head;
+    double win_fwd_pcm_sample_count;
+    double win_back_pcm_sample_count;
+    double win_pcm_sample_count;
+
+    // PCM sample values transformed into point-space
+    double samples_per_point;
+    double win_point_head;
+    double win_back_point_count;
+    double win_fwd_point_count;
+    double win_point_count;
+
+    // Point values transformed thru render_scale into pixel-space
+    double points_per_pixel;
+    double win_pixel_head;
+    double win_back_pixel_count;
+    double win_fwd_pixel_count;
+    double win_pixel_count;
+
+    // Playback waveform data
+    zdj_waveform_header_t * waveform_header;
+    FILE * waveform_fd;
+
+    // Hi-res waveform data
+    bool has_hires;
     zdj_gaussian_t * kernel;
-} zdj_playback_waveform_maker_state_t;
+
+    // Deck/control refs
+    zdj_deck_t * deck;
+
+    // Renderer
+    double render_scale;
+    zdj_rect_t render_frame;
+    bool needs_render;
+    bool needs_full_render;
+    int render_new_pixels;
+    void ( *render )( zdj_pipeline_node_t *, zdj_rect_t * );
+} zdj_waveform_state_t;
 
 zdj_pipeline_node_t * zdj_new_live_waveform( void );
 zdj_error_type_t zdj_live_waveform_set_scale( zdj_pipeline_node_t * waveform, float scale );
 zdj_error_type_t zdj_live_waveform_set_point_count( zdj_pipeline_node_t * waveform, int point_count );
 
-zdj_pipeline_node_t * zdj_new_playback_waveform( zdj_library_song_t * song );
+zdj_pipeline_node_t * zdj_new_playback_waveform( 
+    zdj_deck_t * deck,
+    zdj_waveform_style_t style,
+    zdj_library_song_t * song,
+    double points_per_pixel,
+    zdj_rect_t * frame,
+    bool hires
+);
+void zdj_playback_waveform_resize_window( 
+    zdj_pipeline_node_t * waveform, 
+    double points_per_pixel,
+    zdj_rect_t * frame 
+);
 
-zdj_pipeline_node_t * zdj_new_playback_waveform_maker( 
+zdj_pipeline_node_t * zdj_new_thumbnail_waveform( char * filepath, int pixel_width );
+
+zdj_pipeline_node_t * zdj_new_waveform_maker( 
     zdj_pipeline_node_t * decode_node,
     char * filepath,
     int samples_per_point,
     int hi_pass_freq
 );
-void zdj_close_playback_waveform_maker( zdj_pipeline_node_t * node );
+void zdj_close_waveform_maker( zdj_pipeline_node_t * node );
 
 #endif

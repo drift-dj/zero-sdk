@@ -52,8 +52,8 @@ void _zdj_live_waveform_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         zdj_renderer( ),
         SDL_PIXELFORMAT_RGBA8888,
         SDL_TEXTUREACCESS_TARGET,
-        view->frame->w, 
-        view->frame->h
+        view->frame.w, 
+        view->frame.h
     );
 
     // Grab the renderer for our texture
@@ -63,9 +63,9 @@ void _zdj_live_waveform_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         aalineColor( 
             zdj_renderer( ), 
             i*2, 
-            (waveform_state->render_buf[ i ] * (view->frame->h/2)) + (view->frame->h/2),
+            (waveform_state->render_buf[ i ] * (view->frame.h/2)) + (view->frame.h/2),
             i*2+1,
-            (waveform_state->render_buf[ i+1 ] * (view->frame->h/2)) + (view->frame->h/2),
+            (waveform_state->render_buf[ i+1 ] * (view->frame.h/2)) + (view->frame.h/2),
             ZDJ_WHITE
         );
     }

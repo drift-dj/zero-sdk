@@ -51,33 +51,33 @@ void _zdj_usb_status_view_offline_update_layout( zdj_view_t * view ) {
 
     // Add zero icon
     zdj_view_t * zero = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ZERO ], NULL );
-    zero->frame->x = 14;
-    zero->frame->y = 8;
+    zero->frame.x = 14;
+    zero->frame.y = 8;
     zdj_menu_view_add_item( menu, zero );
 
     // Add usb icon
     zdj_view_t * usb = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_USB ], NULL );
-    usb->frame->x = 70;
-    usb->frame->y = 8;
+    usb->frame.x = 70;
+    usb->frame.y = 8;
     zdj_menu_view_add_item( menu, usb );
     
     // Add offline label
     zdj_view_t * offline = zdj_new_label_view( "Offline", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    offline->frame->x = 84;
-    offline->frame->y = 11;
+    offline->frame.x = 84;
+    offline->frame.y = 11;
     zdj_menu_view_add_item( menu, offline );
 
     // Add sleep icon
     zdj_view_t * snooze = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_SNOOZE ], NULL );
-    snooze->frame->x = 77;
-    snooze->frame->y = 5;
+    snooze->frame.x = 77;
+    snooze->frame.y = 5;
     zdj_menu_view_add_item( menu, snooze );
 
     // Add divider
     zdj_view_t * div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_NAR_H_DIV ], NULL );
-    div->frame->x = 31;
-    div->frame->y = 12;
-    div->frame->w = 38;
+    div->frame.x = 31;
+    div->frame.y = 12;
+    div->frame.w = 38;
     zdj_menu_view_add_item( menu, div );
 
     zdj_menu_view_add_padding( menu, 12 );

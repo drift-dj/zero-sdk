@@ -19,32 +19,32 @@ void zdj_menu_item_asset_init_layout( zdj_view_t * view ) {
     } else {
         state->hilite_view = zdj_new_view( NULL );
         zdj_add_subview( view, state->hilite_view );
-        state->hilite_view->frame->w = view->frame->w;
-        state->hilite_view->frame->h = view->frame->h;
+        state->hilite_view->frame.w = view->frame.w;
+        state->hilite_view->frame.h = view->frame.h;
     }
     if( state->normal_view ) { 
         zdj_remove_all_subviews_of( state->normal_view );
     } else {
         state->normal_view = zdj_new_view( NULL );
         zdj_add_subview( view, state->normal_view );
-        state->normal_view->frame->w = view->frame->w;
-        state->normal_view->frame->h = view->frame->h;
+        state->normal_view->frame.w = view->frame.w;
+        state->normal_view->frame.h = view->frame.h;
     }
 
     // Setup normal view
     if( state->icon ) {
         zdj_view_t * icon = zdj_new_asset_view( &zdj_ui_assets[ state->icon ], NULL );
         zdj_add_subview( state->normal_view, icon );
-        // icon->frame->x = 7;
-        // icon->frame->y = 3;
+        // icon->frame.x = 7;
+        // icon->frame.y = 3;
     }
 
     // Setup hilite view
     // if( state->icon_hi ) {
         zdj_view_t * icon_hi = zdj_new_asset_view( &zdj_ui_assets[ state->icon_hi ], NULL );
         zdj_add_subview( state->hilite_view, icon_hi );
-        // icon_hi->frame->x = 7;
-        // icon_hi->frame->y = 3;
+        // icon_hi->frame.x = 7;
+        // icon_hi->frame.y = 3;
     // }
 
     state->needs_layout_init = false;

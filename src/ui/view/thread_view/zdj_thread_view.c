@@ -61,7 +61,7 @@ void _zdj_thread_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip )
         samps_per_time
     );
     zdj_view_t * miss_label = zdj_new_label_view( str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    miss_label->frame->y = y;
+    miss_label->frame.y = y;
     y+= 9;
     zdj_add_subview( view, miss_label );
 
@@ -80,7 +80,7 @@ void _zdj_thread_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip )
     dur_msec = (double)line->avg_dur / 1000000.0;
     snprintf( str, sizeof( str ), "%1.1fmS/%1.0fHz  %1.1fmS (CTRL)", cad_msec, cad_hz, dur_msec );
     label = zdj_new_label_view( str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    label->frame->y = y;
+    label->frame.y = y;
     y+= 9;
     zdj_add_subview( view, label );
 
@@ -90,7 +90,7 @@ void _zdj_thread_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip )
     dur_msec = (double)line->avg_dur / 1000000.0;
     snprintf( str, sizeof( str ), "%1.1fmS/%1.0fHz  %1.1fmS (AUDI)", cad_msec, cad_hz, dur_msec );
     label = zdj_new_label_view( str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    label->frame->y = y;
+    label->frame.y = y;
     y+= 9;
     zdj_add_subview( view, label );
 
@@ -100,7 +100,7 @@ void _zdj_thread_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip )
     dur_msec = (double)line->avg_dur / 1000000.0;
     snprintf( str, sizeof( str ), "%1.1fmS/%1.0fHz  %1.1fmS (UI)", cad_msec, cad_hz, dur_msec );
     label = zdj_new_label_view( str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    label->frame->y = y;
+    label->frame.y = y;
     y+= 9;
     zdj_add_subview( view, label );
 }

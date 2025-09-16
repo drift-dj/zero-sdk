@@ -47,7 +47,9 @@ void zdj_debug_ui_draw( void ) {
         // Draw field 1
         if( zdj_debug_state->line_1 ) {
             zdj_debug_state->line_1->update_subview_clip( zdj_debug_state->line_1, clip );
-            zdj_debug_state->line_1->draw( zdj_debug_state->line_1, zdj_debug_state->line_1->subview_clip );
+            zdj_debug_state->line_1->draw( 
+                zdj_debug_state->line_1, &zdj_debug_state->line_1->subview_clip 
+            );
         }
         // Draw field 2
         if( zdj_debug_state->line_2 ) {

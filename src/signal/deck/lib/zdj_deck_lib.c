@@ -12,6 +12,7 @@
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
+#include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_pitch_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/thread/zdj_thread.h>
@@ -71,7 +72,7 @@ static void _update_state ( zdj_deck_t * deck ) {
         case ZDJ_DECK_STATUS_MAKE_PIPELINE:
             printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE\n" );
             deck_state->decode_node = zdj_new_decode_node( 
-                deck_state->song, 0, ZDJ_SOUNDCARD_BUF_LEN*2, ZDJ_SOUNDCARD_BUF_LEN*2 
+                deck_state->song, 0, ZDJ_SOUNDCARD_BUF_LEN*6, ZDJ_SOUNDCARD_BUF_LEN*6 
             );
             deck_state->tsm_node = zdj_new_tsm_pitch_node( 
                 deck_state->song->audio->av_channel_count,
@@ -161,7 +162,7 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
 // Thread for processing soundcard fast-cycle requests.
 // get_edge_data posts the start_cycle semaphore below.
 static void * _pipeline_thread_main( void * arg ) {
-    // printf( "_pipeline_thread_main: %p\n", arg );
+    printf( "_pipeline_thread_main: %p\n", arg );
     zdj_deck_t * deck = (zdj_deck_t*)arg;
     zdj_lib_deck_state_t * deck_state = (zdj_lib_deck_state_t*)deck->state;
     zdj_tsm_pitch_node_state_t * tsm_state = (zdj_tsm_pitch_node_state_t*)deck_state->tsm_node->state;
@@ -188,10 +189,11 @@ static void * _pipeline_thread_main( void * arg ) {
             deck_state->decode_node->update_wait( deck_state->decode_node );
         }
 
-        // // Update tsm rate from control model
-        // tsm_state->rate = deck->controls.drive_state.instant_pitch;
-        // // Pitch-interpolate samples from decode window into tsm buffer        
-        // deck_state->tsm_node->update_wait( deck_state->tsm_node );
+        // Feed new needle head to tsm node state
+        tsm_state->decode_end_coord = deck->controls.platter.needle.head;
+        tsm_state->decode_buf_ref_coord = decode_state->head_win_start;
+        // Pitch-interpolate samples from decode window into tsm buffer        
+        deck_state->tsm_node->update_wait( deck_state->tsm_node );
 
         // This doesn't mean anything after the first run thru the loop.
         // Can we clean that up a bit?

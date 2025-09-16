@@ -41,8 +41,9 @@ add_library(zerodj
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
     src/signal/pipeline/node/analysis/meter/zdj_meter_node.c
     src/signal/pipeline/node/analysis/waveform/live/zdj_live_waveform.c
+    src/signal/pipeline/node/analysis/waveform/maker/zdj_playback_waveform_maker.c
     src/signal/pipeline/node/analysis/waveform/playback/zdj_playback_waveform.c
-    src/signal/pipeline/node/analysis/waveform/playback/zdj_playback_waveform_maker.c
+    src/signal/pipeline/node/analysis/waveform/thumbnail/zdj_thumbnail_waveform.c
     src/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.c
     src/signal/pipeline/node/audio/decode/zdj_decode_node.c
     src/signal/pipeline/node/audio/decode/zdj_decode_layer.c
@@ -90,12 +91,16 @@ add_library(zerodj
     src/ui/anim/zdj_anim_menu.c
     src/ui/anim/zdj_anim_menu_stack.c
     src/ui/anim/zdj_anim_modal.c
+    src/ui/anim/zdj_anim_record_panel.c
     src/ui/anim/zdj_anim_view.c
+    src/ui/anim/zdj_anim_volume_panel.c
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
     src/ui/panel/accessibility/zdj_accessibility_panel.c
     src/ui/panel/debug/zdj_debug_panel.c
     src/ui/panel/perf/zdj_perf_panel.c
+    src/ui/panel/recording/zdj_recording_panel.c
+    src/ui/panel/volume/zdj_volume_panel.c
     src/ui/panel/widget/zdj_widget_panel.c
     src/ui/view/zdj_view_stack.c
     src/ui/view/asset_view/zdj_asset_view.c
@@ -134,13 +139,16 @@ add_library(zerodj
     src/ui/view/soundcard_view/meters/zdj_soundcard_clock_meter.c
     src/ui/view/soundcard_view/meters/zdj_soundcard_cv_meter.c
     src/ui/view/soundcard_view/meters/zdj_soundcard_midi_meter.c
+    src/ui/view/soundcard_view/meters/zdj_soundcard_record_mini_meter.c
     src/ui/view/soundcard_view/meters/zdj_soundcard_usb_meter.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_annot_bus.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_audio_bus.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_cv.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_clock.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_port_input.c
     src/ui/view/soundcard_view/options/zdj_soundcard_options_port_output.c
+    src/ui/view/soundcard_view/options/zdj_soundcard_options_record_bus.c
     src/ui/view/soundcard_view/select_node/zdj_soundcard_select_node.c
     src/ui/view/text_input_view/zdj_text_input_view.c
     src/ui/view/text_input_view/buffer/zdj_text_input_buffer_view.c
@@ -155,6 +163,8 @@ add_library(zerodj
     src/ui/view/usb_status_view/zdj_usb_status_view_offline.c
     src/ui/view/usb_status_view/zdj_usb_status_view_reboot.c
     src/ui/view/waveform_view/zdj_live_waveform_view.c
+    src/ui/view/waveform_view/zdj_playback_waveform_view.c
+    src/ui/view/waveform_view/zdj_thumb_waveform_view.c
 )
 
 target_compile_definitions(

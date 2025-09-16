@@ -87,6 +87,7 @@ zdj_view_t * zdj_new_data_menu_item(
 // March through any view's subviews, looking for a menu_item_view
 // with a matching scroll_index.
 zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index ) {
+    // printf( "zdj_menu_item_for_scroll_index: %d\n", index );
     zdj_view_t * subview = view->subviews;
     while( subview ) {
         if( subview->type == ZDJ_VIEW_MENU_ITEM ) { 
@@ -139,11 +140,11 @@ void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_cli
         return;
     } else {
         if( hilite ) {
-            state->normal_view->frame->y = -100;
-            state->hilite_view->frame->y = 0;
+            state->normal_view->frame.y = -100;
+            state->hilite_view->frame.y = 0;
         } else {
-            state->normal_view->frame->y = 0;
-            state->hilite_view->frame->y = -100;
+            state->normal_view->frame.y = 0;
+            state->hilite_view->frame.y = -100;
         }
     }
 }
@@ -158,15 +159,6 @@ void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
     free( state );
     view->state = NULL;
 }
-
-// bool zdj_menu_item_layout_is_dynamic( zdj_menu_item_view_layout_t layout ) {
-//     if( layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_L || layout == ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) {
-//         return false;
-//     } else {
-//         return true;
-//     }
-// }
-
 
 void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout_t layout ) {
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;

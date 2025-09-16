@@ -31,11 +31,13 @@ zdj_view_t * zdj_new_dialog_view(
     dialog_view->handle_control_event = _handle_control;
     dialog_view->deinit_state = &_deinit_state;
 
-    dialog_view->frame->x = ZDJ_DIALOG_X;
-    dialog_view->frame->y = ZDJ_SCREEN_H+2;
+    dialog_view->frame.x = ZDJ_DIALOG_X;
+    dialog_view->frame.y = ZDJ_SCREEN_H+2;
     
-    dialog_view->in_anim = zdj_new_anim( ZDJ_ANIM_DIALOG_SHOW );
-    dialog_view->out_anim = zdj_new_anim( ZDJ_ANIM_DIALOG_HIDE );
+    // dialog_view->in_anim = zdj_new_anim( ZDJ_ANIM_DIALOG_SHOW );
+    // dialog_view->out_anim = zdj_new_anim( ZDJ_ANIM_DIALOG_HIDE );
+    zdj_set_anim( &dialog_view->in_anim, ZDJ_ANIM_DIALOG_SHOW );
+    zdj_set_anim( &dialog_view->out_anim, ZDJ_ANIM_DIALOG_HIDE );
 
     // Add a state instance
     zdj_dialog_view_state_t * state = calloc( 1, sizeof( zdj_dialog_view_state_t ) );
@@ -44,23 +46,23 @@ zdj_view_t * zdj_new_dialog_view(
     // Add menu
     zdj_view_t * _menu = zdj_new_menu_view( ZDJ_VERTICAL, zdj_dialog_rect( ) );
     zdj_add_subview( dialog_view, _menu );
-    _menu->frame->x = 0;
-    _menu->frame->y = 0;
-    _menu->frame->w = ZDJ_DIALOG_W;
-    _menu->frame->h = ZDJ_DIALOG_H;
+    _menu->frame.x = 0;
+    _menu->frame.y = 0;
+    _menu->frame.w = ZDJ_DIALOG_W;
+    _menu->frame.h = ZDJ_DIALOG_H;
 
     // Add body
     if( body_1 ) {
         zdj_view_t * body_1_ticker = zdj_new_ticker_view( body_1, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-        body_1_ticker->frame->x = 7;
-        body_1_ticker->frame->y = 4;
-        body_1_ticker->frame->w = dialog_view->frame->w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
+        body_1_ticker->frame.x = 7;
+        body_1_ticker->frame.y = 4;
+        body_1_ticker->frame.w = dialog_view->frame.w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
         zdj_menu_view_add_item( _menu, body_1_ticker );
     }
     if( body_2 ) {
         zdj_view_t * body_2_ticker = zdj_new_ticker_view( body_2, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-        body_2_ticker->frame->x = 7;
-        body_2_ticker->frame->w = dialog_view->frame->w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
+        body_2_ticker->frame.x = 7;
+        body_2_ticker->frame.w = dialog_view->frame.w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
         zdj_menu_view_add_item( _menu, body_2_ticker );
     }
 
@@ -78,10 +80,10 @@ zdj_view_t * zdj_new_dialog_view(
     zdj_menu_item_view_state_t * okay_btn_state = (zdj_menu_item_view_state_t*)okay_btn->state;
     okay_btn_state->data->ptr = dialog_view;
     okay_btn->handle_control_event = &_okay_btn_handle_event;
-    okay_btn->frame->x = 73;
-    okay_btn->frame->y = 28;
-    okay_btn->frame->w = 21;
-    okay_btn->frame->h = 10;
+    okay_btn->frame.x = 73;
+    okay_btn->frame.y = 28;
+    okay_btn->frame.w = 21;
+    okay_btn->frame.h = 10;
     zdj_menu_view_add_item( _menu, okay_btn );
 
     // Add header

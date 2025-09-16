@@ -30,8 +30,10 @@ zdj_view_t * zdj_new_menu_header(
     menu_header->deinit_state = &_zdj_menu_header_deinit_state;
 
     // Add back btn show/hide anims
-    menu_header->in_anim = zdj_new_anim( ZDJ_ANIM_HEADER_ACTIVATE );
-    menu_header->out_anim = zdj_new_anim( ZDJ_ANIM_HEADER_DEACTIVATE );
+    // menu_header->in_anim = zdj_new_anim( ZDJ_ANIM_HEADER_ACTIVATE );
+    // menu_header->out_anim = zdj_new_anim( ZDJ_ANIM_HEADER_DEACTIVATE );
+    zdj_set_anim( &menu_header->in_anim, ZDJ_ANIM_HEADER_ACTIVATE );
+    zdj_set_anim( &menu_header->out_anim, ZDJ_ANIM_HEADER_DEACTIVATE );
     
     // Build state
     zdj_menu_header_view_state_t * state = calloc( 1, sizeof( zdj_menu_header_view_state_t ) );
@@ -62,10 +64,12 @@ void _zdj_menu_header_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // If show_back is requested by menu system, animate back button into view
     if( state->show_back && state->back_hidden ) {
         // activate header in_anim
-        if( view->in_anim ) {
-            ((anim_init_t)view->in_anim->init_fn)( view->in_anim, view );
-            view->anim = view->in_anim;
-        }
+        // if( view->in_anim ) {
+        //     ((anim_init_t)view->in_anim->init_fn)( view->in_anim, view );
+        //     view->anim = view->in_anim;
+        // }
+        ((anim_init_t)view->in_anim.init_fn)( &view->in_anim, view );
+        view->anim = &view->in_anim;
         state->show_back = false;
         state->back_hidden = false;
     }
@@ -73,10 +77,12 @@ void _zdj_menu_header_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // If hide_back is requested by menu system, animate back button out of view
     if( state->hide_back && !state->back_hidden ) {
         // activate header out_anim
-        if( view->out_anim ) {
-            ((anim_init_t)view->out_anim->init_fn)( view->out_anim, view );
-            view->anim = view->out_anim;
-        }
+        // if( view->out_anim ) {
+        //     ((anim_init_t)view->out_anim->init_fn)( view->out_anim, view );
+        //     view->anim = view->out_anim;
+        // }
+        ((anim_init_t)view->out_anim.init_fn)( &view->out_anim, view );
+        view->anim = &view->out_anim;
         state->hide_back = false;
         state->back_hidden = true;
     }
@@ -110,15 +116,15 @@ void _zdj_menu_header_update_layout( zdj_view_t * header, zdj_view_clip_t * clip
 
     // Setup name label
     zdj_view_t * name_label = zdj_new_label_view( state->name, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
-    name_label->frame->y = -1;
+    name_label->frame.y = -1;
     state->name_label = name_label;
     zdj_add_subview( header, name_label );
 
     // Setup title divider
     // zdj_view_t * title_divider = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DOT_PIPE_HI ], NULL );
     zdj_view_t * title_divider = zdj_new_asset_view( &(SDL_Rect){13,81,1,6}, NULL );
-    title_divider->frame->y = -1;
-    title_divider->frame->x = state->name_label->frame->w + 2;
+    title_divider->frame.y = -1;
+    title_divider->frame.x = state->name_label->frame.w + 2;
     state->title_divider = title_divider;
     zdj_add_subview( header, title_divider );
 
@@ -126,8 +132,8 @@ void _zdj_menu_header_update_layout( zdj_view_t * header, zdj_view_clip_t * clip
     zdj_view_t * title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     state->title_ticker = title_ticker;
     zdj_add_subview( header, title_ticker );
-    state->title_ticker->frame->y = -1;
-    state->title_ticker->frame->h = 10;
+    state->title_ticker->frame.y = -1;
+    state->title_ticker->frame.h = 10;
 
     // Setup back button if needed
     if( state->has_back ) {
@@ -148,22 +154,22 @@ void _zdj_menu_header_update_layout( zdj_view_t * header, zdj_view_clip_t * clip
         default:
             break;
         }
-        back_view->frame->x = 2;
-        back_view->frame->y = 10;
+        back_view->frame.x = 2;
+        back_view->frame.y = 10;
         state->back_view = back_view;
         zdj_add_subview( header, back_view );
 
-        state->back_bg->frame->x = 0;
-        state->back_bg->frame->y = 10;
-        state->back_bg->frame->w = back_view->frame->w + 5;
-        state->back_bg->frame->h = 10;
+        state->back_bg->frame.x = 0;
+        state->back_bg->frame.y = 10;
+        state->back_bg->frame.w = back_view->frame.w + 5;
+        state->back_bg->frame.h = 10;
     }
 
-    state->name_label->frame->x = 1;
-    state->title_divider->frame->x = state->name_label->frame->w + 2;
-    state->title_divider->frame->y = 0;
-    state->title_ticker->frame->x = state->title_divider->frame->x + 2;
-    state->title_ticker->frame->w = header->frame->w - state->title_ticker->frame->x;
+    state->name_label->frame.x = 1;
+    state->title_divider->frame.x = state->name_label->frame.w + 2;
+    state->title_divider->frame.y = 0;
+    state->title_ticker->frame.x = state->title_divider->frame.x + 2;
+    state->title_ticker->frame.w = header->frame.w - state->title_ticker->frame.x;
 
     state->has_valid_display = true;
 }

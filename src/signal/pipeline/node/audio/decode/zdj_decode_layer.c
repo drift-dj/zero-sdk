@@ -45,13 +45,13 @@ zdj_decode_layer_t * zdj_decode_add_loop_layer(
     int64_t loop_start_pcm_addr, 
     int64_t loop_len
 ) {
-    printf( "zdj_decode_add_loop_layer %ld/%ld %ld/%ld %ld\n", 
-        layer_start_decode_addr,
-        layer_start_pcm_addr,
-        loop_start_decode_addr,
-        loop_start_pcm_addr,
-        loop_len
-    );
+    // printf( "zdj_decode_add_loop_layer %ld/%ld %ld/%ld %ld\n", 
+    //     layer_start_decode_addr,
+    //     layer_start_pcm_addr,
+    //     loop_start_decode_addr,
+    //     loop_start_pcm_addr,
+    //     loop_len
+    // );
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     zdj_decode_layer_t * layer = zdj_new_decode_layer( layer_start_pcm_addr, layer_start_decode_addr );
     
@@ -70,13 +70,13 @@ zdj_decode_layer_t * zdj_decode_add_loop_layer(
     if( state->last_layer && 
         ( layer_start_decode_addr >= state->last_layer->init_map_decode ) 
     ) {
-        printf( "adding loop layer to end\n" );
+        // printf( "adding loop layer to end\n" );
         layer->prev = state->last_layer;
         state->last_layer->next = layer;
         state->last_layer = layer;
         if( !state->first_layer ) { state->first_layer = layer; }
     } else {
-        printf( "adding loop layer to beginning\n" );
+        // printf( "adding loop layer to beginning\n" );
         layer->next = state->first_layer;
         state->first_layer->prev = layer;
         state->first_layer = layer;

@@ -15,7 +15,6 @@
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 
 static float _accum_floats( float val_1, float val_2 ) {
-    val_1 += val_2;
     float val = val_1+val_2;
     if( val > 1.0 ) { return 1.0; } 
     else if( val < -1.0 ) { return -1.0; } 
@@ -60,6 +59,18 @@ static void _make_buffer_indexes(
     *packet_buffer_start = packet_sample_start * state->channel_count;
     int out_sample_start = packet_clipped_start - node_win_start;
     *out_buffer_start = out_sample_start * state->channel_count;
+
+
+    // Find packet under head and report copy stuff
+    // if( packet->packet_decode_addr < state->head_decode_addr &&
+    //     packet->packet_decode_addr+packet->av_frame_sample_count > state->head_decode_addr 
+    // ) {
+    //     printf( "packet under head: %ld->%ld: %d\n", 
+    //         packet->packet_decode_addr,
+    //         packet->packet_decode_addr+packet->av_frame_sample_count,
+    //         *sample_count 
+    //     );
+    // }
 }
 
 int zdj_decode_node_accum_u8( zdj_pipeline_node_t * node, zdj_decode_packet_t * packet ) { }
@@ -96,7 +107,7 @@ int zdj_decode_node_accum_s16( zdj_pipeline_node_t * node, zdj_decode_packet_t *
 }
 
 int zdj_decode_node_accum_s32( zdj_pipeline_node_t * node, zdj_decode_packet_t * packet ) {
-    // printf( "zdj_decode_node_accum_s32\n" );
+    printf( "zdj_decode_node_accum_s32\n" );
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
     int packet_buffer_start, out_buffer_start, sample_count;
@@ -156,7 +167,7 @@ int zdj_decode_node_accum_s64( zdj_pipeline_node_t * node, zdj_decode_packet_t *
 }
 
 int zdj_decode_node_accum_flt( zdj_pipeline_node_t * node, zdj_decode_packet_t * packet ) {
-    // printf( "zdj_decode_node_accum_flt\n" );
+    // printf( "zdj_decode_node_accum_flt: %p %p %p\n", packet, packet->av_packet, packet->av_frame );
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
     int packet_buffer_start, out_buffer_start, sample_count;
@@ -317,7 +328,7 @@ int zdj_decode_node_accum_s64p( zdj_pipeline_node_t * node, zdj_decode_packet_t 
 }
 
 int zdj_decode_node_accum_fltp( zdj_pipeline_node_t * node, zdj_decode_packet_t * packet ) {
-    // printf( "zdj_decode_node_accum_fltp\n" );
+    printf( "zdj_decode_node_accum_fltp\n" );
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
     int packet_buffer_start, out_buffer_start, sample_count;
@@ -417,7 +428,7 @@ int zdj_decode_node_accum_fltp( zdj_pipeline_node_t * node, zdj_decode_packet_t 
     //     }
     // }
 
-    // // printf( "zdj_decode_node_accum_fltp done\n" );
+    // printf( "zdj_decode_node_accum_fltp done\n" );
     // // Return the total number of buffer writes
     // return write_tally;
 }

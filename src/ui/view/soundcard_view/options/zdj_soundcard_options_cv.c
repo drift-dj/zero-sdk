@@ -87,9 +87,9 @@ void zdj_soundcard_options_update_cv_layout( zdj_view_t * view ) {
         // Since we're fudging a menu_item_view, we manually create the state data instance.
         zdj_soundcard_meter_state_t * meter_state = (zdj_soundcard_meter_state_t*)meter->state;
         meter_state->config_context = options_state->config_context;
-        meter->frame->x = 3;
-        meter->frame->y = 10;
-        meter->frame->h = 47;
+        meter->frame.x = 3;
+        meter->frame.y = 10;
+        meter->frame.h = 47;
         zdj_add_bottom_subview_to( view, meter );
     }
 

@@ -24,10 +24,12 @@ zdj_view_t * zdj_new_menu_stack(
     // menu_stack->draw = &_draw;
     menu_stack->handle_control_event = &_handle_control;
     menu_stack->deinit_state = &_deinit_state;
-    menu_stack->in_anim = zdj_new_anim( ZDJ_ANIM_MENU_STACK_SHOW );
-    menu_stack->out_anim = zdj_new_anim( ZDJ_ANIM_MENU_STACK_HIDE );
+    // menu_stack->in_anim = zdj_new_anim( ZDJ_ANIM_MENU_STACK_SHOW );
+    // menu_stack->out_anim = zdj_new_anim( ZDJ_ANIM_MENU_STACK_HIDE );
+    zdj_set_anim( &menu_stack->in_anim, ZDJ_ANIM_MENU_STACK_SHOW );
+    zdj_set_anim( &menu_stack->out_anim, ZDJ_ANIM_MENU_STACK_HIDE );
 
-    menu_stack->frame->y = ZDJ_SCREEN_H+2;
+    menu_stack->frame.y = ZDJ_SCREEN_H+2;
 
     // Add a state instance
     zdj_menu_stack_state_t * state = malloc( sizeof( zdj_menu_stack_state_t ) );
@@ -82,13 +84,18 @@ static void _deinit_state( zdj_view_t * menu_stack ) {
 void zdj_menu_stack_deploy( zdj_view_t * menu_stack ) {
     zdj_menu_stack_state_t * state = (zdj_menu_stack_state_t*)menu_stack->state;
     // Run in_anim
-    if( menu_stack->in_anim ) {
-        menu_stack->in_anim->cb_fn = NULL;
-        if( menu_stack->out_anim ) { menu_stack->out_anim->cb_fn = NULL; }
-        ((anim_init_t)menu_stack->in_anim->init_fn)( menu_stack->in_anim, menu_stack );
-        menu_stack->in_anim->view = menu_stack;
-        menu_stack->anim = menu_stack->in_anim;
-    }
+    // if( menu_stack->in_anim ) {
+    //     menu_stack->in_anim->cb_fn = NULL;
+    //     if( menu_stack->out_anim ) { menu_stack->out_anim->cb_fn = NULL; }
+    //     ((anim_init_t)menu_stack->in_anim->init_fn)( menu_stack->in_anim, menu_stack );
+    //     menu_stack->in_anim->view = menu_stack;
+    //     menu_stack->anim = menu_stack->in_anim;
+    // }
+    menu_stack->in_anim.cb_fn = NULL;
+    menu_stack->out_anim.cb_fn = NULL;
+    ((anim_init_t)menu_stack->in_anim.init_fn)( &menu_stack->in_anim, menu_stack );
+    menu_stack->in_anim.view = menu_stack;
+    menu_stack->anim = &menu_stack->in_anim;
 
     // Activate control map/handling for top menu
     state->is_enabled = true;
@@ -99,12 +106,16 @@ void zdj_menu_stack_deploy( zdj_view_t * menu_stack ) {
 void zdj_menu_stack_retract( zdj_view_t * menu_stack ) {
     zdj_menu_stack_state_t * state = (zdj_menu_stack_state_t*)menu_stack->state;
     // Run out_anim
-    if( menu_stack->out_anim ) {
-        ((anim_init_t)menu_stack->out_anim->init_fn)( menu_stack->out_anim, menu_stack );
-        menu_stack->out_anim->view = menu_stack;
-        menu_stack->out_anim->cb_fn = NULL; // Delete subview after anim
-        menu_stack->anim = menu_stack->out_anim;
-    }
+    // if( menu_stack->out_anim ) {
+    //     ((anim_init_t)menu_stack->out_anim->init_fn)( menu_stack->out_anim, menu_stack );
+    //     menu_stack->out_anim->view = menu_stack;
+    //     menu_stack->out_anim->cb_fn = NULL; // Delete subview after anim
+    //     menu_stack->anim = menu_stack->out_anim;
+    // }
+    ((anim_init_t)menu_stack->out_anim.init_fn)( &menu_stack->out_anim, menu_stack );
+    menu_stack->out_anim.view = menu_stack;
+    menu_stack->out_anim.cb_fn = NULL; // Delete subview after anim
+    menu_stack->anim = &menu_stack->out_anim;
     
     // Disable control handling
     state->is_enabled = false;

@@ -70,10 +70,10 @@ static void _zdj_log_view_draw_tail( zdj_view_t * view, zdj_view_clip_t * clip )
         if( fgets( log_line, sizeof( log_line ), state->log_fp ) ) {
             _zdj_log_view_cleanup_str( log_line, sizeof( log_line ) );
             zdj_view_t * label = zdj_new_label_view( log_line, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
-            label->frame->x = 1;
-            label->frame->y = scroll_state->scroll_size.y;
+            label->frame.x = 1;
+            label->frame.y = scroll_state->scroll_size.y;
             zdj_scroll_view_add_subview( state->scroll_view, label );
-            point.y = scroll_state->scroll_size.y-view->frame->h;
+            point.y = scroll_state->scroll_size.y-view->frame.h;
         } else {
             // If we've drained the log, close it and de-ref so we
             // can re-open it at next draw cycle.
@@ -103,10 +103,10 @@ static void _zdj_log_view_draw_cat( zdj_view_t * view, zdj_view_clip_t * clip ) 
         if( fgets( log_line, sizeof( log_line ), state->log_fp ) ) {
             _zdj_log_view_cleanup_str( log_line, sizeof( log_line ) );
             zdj_view_t * label = zdj_new_label_view( log_line, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
-            label->frame->x = 1;
-            label->frame->y = scroll_state->scroll_size.y;
+            label->frame.x = 1;
+            label->frame.y = scroll_state->scroll_size.y;
             zdj_scroll_view_add_subview( state->scroll_view, label );
-            zdj_point_t point = { 0, scroll_state->scroll_size.y-view->frame->h };
+            zdj_point_t point = { 0, scroll_state->scroll_size.y-view->frame.h };
             zdj_scroll_view_to_point( state->scroll_view, &point );
         } else {
             // If we've drained the log, close it and de-ref so we

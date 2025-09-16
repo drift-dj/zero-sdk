@@ -40,14 +40,14 @@ double zdj_calc_fader_db( double travel );
 
 double zdj_signal_lowpass( double state, double input, double coeff );
 
-void zdj_signal_resample_audio( 
+void zdj_signal_naive_resample_audio( 
     float * in_buf,
     double in_start_coord,
     double in_end_coord,
+    double in_buf_ref_coord,
     int in_channel_count,
     float * out_buf,
-    double out_start_coord,
-    double out_end_coord,
+    int64_t out_sample_count,
     int out_channel_count
 );
 

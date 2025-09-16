@@ -8,19 +8,13 @@
 #include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
-// #include <zerodj/ui/anim/zdj_anim.h>
-// #include <zerodj/ui/asset/zdj_ui_asset.h>
-// #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
 #include <zerodj/ui/view/device_settings_menu_view/zdj_device_settings_menu_view.h>
 #include <zerodj/ui/view/dialog_view/zdj_dialog_view.h>
-// #include <zerodj/ui/view/file_browser_view/zdj_file_browser_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/menu_section_view/zdj_menu_section_view.h>
 #include <zerodj/ui/view/soundcard_view/zdj_soundcard_view.h>
-// #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
-// #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/ui/view/usb_drive_view/zdj_usb_drive_view.h>
 #include <zerodj/ui/view/usb_status_view/zdj_usb_status_view.h>
 

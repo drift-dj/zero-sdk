@@ -36,9 +36,9 @@ void _zdj_progress_bar_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         if( !progress_state->has_valid_display ) {
             // Add a wait crawl
             zdj_view_t * crawl = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ], NULL );
-            crawl->frame->w = view->frame->w+8;
-            crawl->frame->h = view->frame->h-1;
-            crawl->frame->y = 1;
+            crawl->frame.w = view->frame.w+8;
+            crawl->frame.h = view->frame.h-1;
+            crawl->frame.y = 1;
             progress_state->wait_crawl_view = crawl;
 
             zdj_add_subview( view, crawl );
@@ -46,7 +46,7 @@ void _zdj_progress_bar_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         // Update the wait crawl anim
         progress_state->crawl_anim_offset++;
         progress_state->crawl_anim_offset %= 8;
-        progress_state->wait_crawl_view->frame->x = progress_state->crawl_anim_offset * -1;
+        progress_state->wait_crawl_view->frame.x = progress_state->crawl_anim_offset * -1;
     } else {
         if( !progress_state->has_valid_display ) {
             // Remove all subviews in case we're switching from wait > normal

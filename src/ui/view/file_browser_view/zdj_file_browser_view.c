@@ -37,12 +37,12 @@ zdj_view_t * zdj_new_file_browser_view(
     browser_view->draw = &_draw;
     browser_view->handle_control_event = _handle_control;
     browser_view->deinit_state = &_deinit_state;
-    browser_view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
-    browser_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
+    zdj_set_anim( &browser_view->in_anim, ZDJ_ANIM_MODAL_SHOW );
+    zdj_set_anim( &browser_view->out_anim, ZDJ_ANIM_MODAL_HIDE );
 
-    browser_view->frame->x = ZDJ_MODAL_X;
-    browser_view->frame->y = ZDJ_SCREEN_H+1;
-    browser_view->frame->w = ZDJ_MODAL_WIDTH;
+    browser_view->frame.x = ZDJ_MODAL_X;
+    browser_view->frame.y = ZDJ_SCREEN_H+1;
+    browser_view->frame.w = ZDJ_MODAL_WIDTH;
 
     // Add a state instance
     zdj_file_browser_view_state_t * state = calloc( 1, sizeof( zdj_file_browser_view_state_t ) );
@@ -62,11 +62,11 @@ zdj_view_t * zdj_new_file_browser_view(
     state->header_view = header;
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)header->state;
     zdj_add_subview( browser_view, header );
-    header->frame->w = browser_view->frame->w;
-    header->frame->h = 7;
+    header->frame.w = browser_view->frame.w;
+    header->frame.h = 7;
 
     // Add the menu container view
-    zdj_rect_t container_frame = { 0, 9, frame->w, frame->h-9 };
+    zdj_rect_t container_frame = { 0, 3, frame->w, frame->h };
     zdj_view_t * menu_container = zdj_new_view( &container_frame );
     state->menu_container = menu_container;
     zdj_add_subview( browser_view, menu_container );
@@ -74,7 +74,7 @@ zdj_view_t * zdj_new_file_browser_view(
     // Add first menu to stack
     zdj_view_t * menu = zdj_new_file_browser_menu_for_path( 
         browser_view,
-        &(zdj_rect_t){frame->x, frame->y+10, ZDJ_MODAL_WIDTH, frame->h-9}, 
+        &(zdj_rect_t){frame->x, frame->y, ZDJ_MODAL_WIDTH, frame->h-9}, 
         path, 
         read_only, 
         allow_nav, 
@@ -172,14 +172,14 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
                 if( !current_menu->prev ) { // cur menu has no previous menu
                     if( !strcmp( "/media", item_state->link ) ) {
                         // Make a new device menu
-                        zdj_view_t * new_menu = zdj_new_device_browser_menu( browser, &(zdj_rect_t){0, 10, browser->frame->w, browser->frame->h-10} );
+                        zdj_view_t * new_menu = zdj_new_device_browser_menu( browser, &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10} );
                         // Insert it behind the current menu
                         zdj_push_subview_behind( browser_state->menu_container, current_menu, new_menu, true );
                     } else {
                         // Make a new file menu
                         zdj_view_t * new_menu = zdj_new_file_browser_menu_for_path( 
                             browser, 
-                            &(zdj_rect_t){0, 10, browser->frame->w, browser->frame->h-10}, 
+                            &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10}, 
                             strdup( item_state->link ), 
                             browser_state->read_only, 
                             browser_state->allow_nav, 
@@ -200,7 +200,7 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
             zdj_view_t * new_menu = zdj_new_file_browser_menu_for_path( 
                 browser, 
-                &(zdj_rect_t){0, 10, browser->frame->w, browser->frame->h-10}, 
+                &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10}, 
                 strdup( item_state->link ), 
                 browser_state->read_only, 
                 browser_state->allow_nav, 

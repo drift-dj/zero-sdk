@@ -32,8 +32,8 @@ zdj_view_t * zdj_new_menu_section( char * title ) {
     zdj_view_t * divider = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WIDE_H_DIV ], NULL );
     state->divider = divider;
     zdj_add_subview( menu_section, divider );
-    divider->frame->h = 1;
-    divider->frame->y = 4;
+    divider->frame.h = 1;
+    divider->frame.y = 4;
     
     return menu_section;
 }
@@ -43,16 +43,16 @@ void zdj_menu_section_static_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     // Update ticker's frame based on view's frame
     if( state->title_ticker ) {
-        state->title_ticker->frame->x = 1;
-        state->title_ticker->frame->y = 0;
-        state->title_ticker->frame->w = view->frame->w-10;
-        state->title_ticker->frame->h = view->frame->h;
+        state->title_ticker->frame.x = 1;
+        state->title_ticker->frame.y = 0;
+        state->title_ticker->frame.w = view->frame.w-10;
+        state->title_ticker->frame.h = view->frame.h;
 
         // Update divider asset's frame based on view's frame/ticker width
         if( state->divider ) {
             int ticker_w = zdj_ticker_view_get_text_w( state->title_ticker );
-            state->divider->frame->w = view->frame->w - ticker_w - 2;
-            state->divider->frame->x = ticker_w + 2;
+            state->divider->frame.w = view->frame.w - ticker_w - 2;
+            state->divider->frame.x = ticker_w + 2;
         }
     }
 }

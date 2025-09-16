@@ -76,14 +76,14 @@ void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip ) {
         if( strlen( input_state->str ) > 0 ) {
             strcpy( right_str, &input_state->str[ 1 ] );
             input_state->right_label = zdj_new_label_view( (char*)&right_str, ZDJ_FONT_12, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-            right_w = input_state->right_label->frame->w;
+            right_w = input_state->right_label->frame.w;
         } else {
             right_w = 0;
             input_state->right_label = NULL;
         }
     } else if( input_state->cursor_index == strlen( input_state->str ) ) {
         input_state->left_label = zdj_new_label_view( input_state->str, ZDJ_FONT_12, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
-        left_w = input_state->left_label->frame->w;
+        left_w = input_state->left_label->frame.w;
         right_w = 0;
         input_state->right_label = NULL;
     } else {
@@ -102,13 +102,13 @@ void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip ) {
             (char*)&left_str, 
             ZDJ_FONT_12, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE 
         );
-        left_w = input_state->left_label->frame->w;
+        left_w = input_state->left_label->frame.w;
         
         input_state->right_label = zdj_new_label_view( 
             (char*)&right_str, 
             ZDJ_FONT_12, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE 
         );
-        right_w = input_state->right_label->frame->w;
+        right_w = input_state->right_label->frame.w;
     }
 
     // Add cursor label
@@ -119,31 +119,31 @@ void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip ) {
         char cursor_title[ 2 ] = {' ', '\0'};
         input_state->cursor_label = zdj_new_label_view( cursor_title, ZDJ_FONT_18, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     }
-    cursor_w = input_state->cursor_label->frame->w;
+    cursor_w = input_state->cursor_label->frame.w;
 
     // Draw labels + cursor
     if( left_w + right_w + cursor_w < ZDJ_TEXT_INPUT_BUFFER_W ) {
         // Simple case - width of text is narrower than screen.
         // Just position everything from left to right.
         if( input_state->left_label ) {
-            input_state->left_label->frame->x = ZDJ_TEXT_INPUT_BUFFER_MARGIN;
-            input_state->left_label->frame->y = 3;
+            input_state->left_label->frame.x = ZDJ_TEXT_INPUT_BUFFER_MARGIN;
+            input_state->left_label->frame.y = 3;
             zdj_add_subview( input_view, input_state->left_label );
         }
         
         if( input_state->right_label ) {
-            input_state->right_label->frame->x = left_w + ZDJ_TEXT_INPUT_CURSOR_W + ZDJ_TEXT_INPUT_BUFFER_MARGIN;
-            input_state->right_label->frame->y = 3;
+            input_state->right_label->frame.x = left_w + ZDJ_TEXT_INPUT_CURSOR_W + ZDJ_TEXT_INPUT_BUFFER_MARGIN;
+            input_state->right_label->frame.y = 3;
             zdj_add_subview( input_view, input_state->right_label );
         }
 
         zdj_view_t * cursor_frame = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TEXT_INPUT_CURSOR ], NULL );
-        cursor_frame->frame->x = left_w + ZDJ_TEXT_INPUT_BUFFER_MARGIN + 1;
-        cursor_frame->frame->y = 1;
+        cursor_frame->frame.x = left_w + ZDJ_TEXT_INPUT_BUFFER_MARGIN + 1;
+        cursor_frame->frame.y = 1;
         zdj_add_subview( input_view, cursor_frame );
 
-        input_state->cursor_label->frame->x = left_w + ZDJ_TEXT_INPUT_BUFFER_MARGIN + 13-(cursor_w/2);
-        input_state->cursor_label->frame->y = -3;
+        input_state->cursor_label->frame.x = left_w + ZDJ_TEXT_INPUT_BUFFER_MARGIN + 13-(cursor_w/2);
+        input_state->cursor_label->frame.y = -3;
         zdj_add_subview( input_view, input_state->cursor_label );
     } else {
         // Complex case - cursor works like a scrollbar.
@@ -155,24 +155,24 @@ void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip ) {
         int cursor_x = (scroll_w * scroll_coeff) + ZDJ_TEXT_INPUT_BUFFER_MARGIN;
 
         if( input_state->left_label ) {
-            input_state->left_label->frame->x = cursor_x - input_state->left_label->frame->w - 2;
-            input_state->left_label->frame->y = 3;
+            input_state->left_label->frame.x = cursor_x - input_state->left_label->frame.w - 2;
+            input_state->left_label->frame.y = 3;
             zdj_add_subview( input_view, input_state->left_label );
         }
         
         if( input_state->right_label ) {
-            input_state->right_label->frame->x = cursor_x + ZDJ_TEXT_INPUT_CURSOR_W + 2;
-            input_state->right_label->frame->y = 3;
+            input_state->right_label->frame.x = cursor_x + ZDJ_TEXT_INPUT_CURSOR_W + 2;
+            input_state->right_label->frame.y = 3;
             zdj_add_subview( input_view, input_state->right_label );
         }
 
         zdj_view_t * cursor_frame = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TEXT_INPUT_CURSOR ], NULL );
-        cursor_frame->frame->x = cursor_x;
-        cursor_frame->frame->y = 1;
+        cursor_frame->frame.x = cursor_x;
+        cursor_frame->frame.y = 1;
         zdj_add_subview( input_view, cursor_frame );
 
-        input_state->cursor_label->frame->x = cursor_x + 13-(cursor_w/2);
-        input_state->cursor_label->frame->y = -3;
+        input_state->cursor_label->frame.x = cursor_x + 13-(cursor_w/2);
+        input_state->cursor_label->frame.y = -3;
         zdj_add_subview( input_view, input_state->cursor_label );
     }
     

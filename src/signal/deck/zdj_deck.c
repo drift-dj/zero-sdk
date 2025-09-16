@@ -53,33 +53,38 @@ void zdj_deck_init_controls( zdj_deck_t * deck ) {
     // Sim constants - adjust to taste
     deck->controls.platter.slip.sim_duration = (double)deck->controls.platter.slip.slip_dwell / 4.0;
     deck->controls.platter.slip.mass = 10.0;
-    deck->controls.platter.slip.spring_k = 13.0;
-    deck->controls.platter.slip.damp_c = 6.0;
+    deck->controls.platter.slip.spring_k = 8.0;
+    deck->controls.platter.slip.damp_c = 10.0;
 
     // Scratch/Nudge constants
     // These define the number of song PCM samples covered by a single step of the jog encoder.
     // Scratch should be orders of magnitude higher than nudge.
-    // deck->controls.platter.nudge_coeff = 10;
-    // deck->controls.platter.scratch_coeff = 700.0;
-    deck->controls.platter.nudge_coeff = 0.1;
-    deck->controls.platter.scratch_coeff = 3.0;
+    deck->controls.platter.nudge_coeff = 10;
+    deck->controls.platter.scratch_coeff = 600.0;
+    // deck->controls.platter.nudge_coeff = 0.1;
+    // deck->controls.platter.scratch_coeff = 3.0;
 
     // deck->controls.loop_state.phase = ZDJ_DECK_LOOP_PHASE_INACTIVE;
 }
 
-void zdj_clear_deck_control_flags( zdj_deck_t * deck ) {
-    memset( deck->controls.control_change_flags, 0, ZDJ_CONTROL_ID_COUNT * sizeof( uint8_t ) );
-}
-
-
 // This is invoked during the deck manager control update cycle.
 // Called on the soundcard fast audio cycle before mixdown.
 void zdj_deck_handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
-    // printf( "zdj_deck_handle_control: %d\n", event->id );
+    printf( "zdj_deck_handle_control: %p %d %d\n", deck, deck->station, event->id );
     zdj_deck_platter_t * platter = &deck->controls.platter;
 
+    zdj_soundcard_node_t * node;
+
     switch ( event->id ) {
+    case ZDJ_DECK_CONTROL_LR_VOL:
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
+        node->gain += event->i_val * 2;
+        if( node->gain > 255 ) { node->gain = 255; }
+        else if( node->gain < 0 ) { node->gain = 0; }
+        event->blocked = true;
+        break;
     case ZDJ_DECK_1_CONTROL_PLAY_PAUSE:
+    case ZDJ_DECK_2_CONTROL_PLAY_PAUSE:
         if( platter->motor.set_rate < 0.01 ) {
             platter->motor.set_rate = platter->motor.pitch_setting;
             platter->motor.state = ZDJ_PLATTER_MOTOR_RUN;
@@ -90,14 +95,17 @@ void zdj_deck_handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
         printf( "lib deck toggle play/pause: %1.3f\n", platter->motor.set_rate );
         break;
     case ZDJ_DECK_1_CONTROL_HOTCUE_START:
+    case ZDJ_DECK_2_CONTROL_HOTCUE_START:
         printf( "lib deck hotcue start\n" );
         platter->motor.set_rate = platter->motor.pitch_setting;
         break;
     case ZDJ_DECK_1_CONTROL_HOTCUE_END:
+    case ZDJ_DECK_2_CONTROL_HOTCUE_END:
         printf( "lib deck hotcue end\n" );
         platter->motor.set_rate = 0.0;
         break;
     case ZDJ_DECK_1_CONTROL_SCRUB:
+    case ZDJ_DECK_2_CONTROL_SCRUB:
         // printf( "lib deck scrub\n" );
         if( platter->motor.state == ZDJ_PLATTER_MOTOR_RUN && !platter->nudge_override
         ) {
@@ -112,8 +120,10 @@ void zdj_deck_handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
         platter->slip.sim_counter = 0;
         break;
     case ZDJ_DECK_1_CONTROL_TEMPO:
+    case ZDJ_DECK_2_CONTROL_TEMPO:
         platter->motor.pitch_setting += event->i_val * 0.02;
     case ZDJ_DECK_1_CONTROL_TEMPO_FINE:
+    case ZDJ_DECK_2_CONTROL_TEMPO_FINE:
         platter->motor.pitch_setting += event->i_val * 0.001;
         break;
     default:
@@ -198,8 +208,7 @@ void zdj_deck_update_controls ( zdj_deck_t * deck ) {
     // );
 
     int window_move = round( platter->needle.head - (double)decode_state->head_decode_addr );
-    // int window_move = platter->needle.head - (double)decode_state->head_decode_addr;
-
+    
     // if( window_move != 0 ) {
     //     printf( "needle head: %1.3f move:%d\n", platter->needle.head, window_move );
     //     deck_state->decode_node->move_window( 
@@ -207,6 +216,10 @@ void zdj_deck_update_controls ( zdj_deck_t * deck ) {
     //         window_move
     //     );
     // }
+
+    if( deck->status == ZDJ_DECK_STATUS_WAIT_SPOOLDOWN && slip->instant_val < 0.001 ) {
+        deck->safe_to_deinit = true;
+    }
 }
 
 int64_t zdj_deck_get_pcm_addr_for_decode_addr( zdj_deck_t * deck, int64_t decode_addr ) {

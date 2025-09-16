@@ -38,13 +38,9 @@ zdj_pipeline_node_t * zdj_new_library_decode_node( zdj_library_song_t * song ) {
     state->available_samples = 0;
     state->channel_count = song->audio->av_channel_count;
 
-    // Alloc output buffer - sample_count * 4 is a bit of a mystery - malloc error if it's less. 
     state->out_buffer = calloc( 10000, sizeof( float ) );
 
-    // char filepath[ 512 ];
-    // strcpy( filepath, song->audio->filepath );
-
-    av_log_set_level( AV_LOG_QUIET );
+    // av_log_set_level( AV_LOG_QUIET );
 
     // Use the open command to build the Format Context
     state->fmt_ctx = avformat_alloc_context( );
@@ -132,13 +128,16 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     }
 
     av_packet_unref( av_packet );
+    av_packet_free( &av_packet );
     av_frame_unref( av_frame );
+    av_frame_free( &av_frame );
 }
 
 static void _deinit_state( zdj_pipeline_node_t * node ) {
     zdj_library_decode_node_state_t * state = (zdj_library_decode_node_state_t*)node->state;
     if( state->fmt_ctx ) { avformat_close_input( &state->fmt_ctx ); }
     if( state->codec_ctx ) { avcodec_free_context( &state->codec_ctx ); }
+    if( state->fmt_ctx ) { avformat_free_context( state->fmt_ctx ); }
     if( state->out_buffer ) { free( state->out_buffer ); }
     // Release packet_layers
     if( state ) { node->state = NULL; free( state );  }

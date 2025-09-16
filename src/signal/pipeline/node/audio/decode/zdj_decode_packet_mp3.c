@@ -19,7 +19,7 @@
 
 void zdj_decode_add_packet_before_mp3_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer ) {
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
-    
+
     // Stand up new packet
     zdj_decode_packet_t * new_packet = calloc( 1, sizeof( zdj_decode_packet_t ) );
     new_packet->av_timebase_factor = ( node_state->song->audio->av_codec_id == AV_CODEC_ID_MP3 ) ? 320 : 1;
@@ -51,21 +51,28 @@ void zdj_decode_add_packet_before_mp3_layer( zdj_pipeline_node_t * node, zdj_dec
         return;
     } else if ( !linked_packet->has_sof ) {
         // If we're pre-pending to a normal packet
-        // FIXME: THIS WON'T WORK WITH VARIABLE WIDTH FRAME FORMATS (.flac/.aac)
         new_packet->type = ZDJ_DECODE_PACKET_TYPE_NORMAL;
-        packet_seek_timestamp = linked_packet->packet_pcm_addr - linked_packet->av_frame_sample_count;
+        // packet_seek_timestamp = linked_packet->packet_pcm_addr - linked_packet->av_frame_sample_count;
+
+
+        // Jump back 2 packets - we need to decode/discard 1 packet before our target packet to flush the decoder.
+        packet_seek_timestamp = linked_packet->packet_pcm_addr - (linked_packet->av_frame_sample_count*2);
+
         if( packet_seek_timestamp < 0 ) { printf( "zeroing ts\n" ); packet_seek_timestamp = 0; } // Catch first decode packet
         packet_seek_timestamp *= linked_packet->av_timebase_factor; // Modify timebase if mp3.
         av_seek_frame( node_state->fmt_ctx, 0, packet_seek_timestamp, AVSEEK_FLAG_BACKWARD );
-        // printf("back normal packet @seek: %ld, %ld\n", packet_seek_timestamp, linked_packet->packet_pcm_addr );
+
+        // Decode a garbage packet
+        AVPacket * av_packet = av_packet_alloc( );
+        AVFrame * av_frame = av_frame_alloc( );
+        int decode_count = zdj_decode_packet( node, new_packet, av_packet, av_frame );
+        av_packet_unref( av_packet );
+        av_packet_free( &av_packet );
+        av_frame_unref( av_frame );
+        av_frame_free( &av_frame );
     }
 
-
     // printf( "seek pcm: %ld/%ld\n", packet_seek_timestamp, packet_seek_timestamp/new_packet->av_timebase_factor );
-
-    // MP3s require a double/tripple decode after a non-contiguous seek.
-    // Back up a couple frames and keep everything we find.
-    // Fill the new packet's av_frame with the next chunk of samples.
     AVPacket * av_packet = av_packet_alloc( );
     AVFrame * av_frame = av_frame_alloc( );
     int decode_count = zdj_decode_packet( node, new_packet, av_packet, av_frame );
@@ -77,12 +84,14 @@ void zdj_decode_add_packet_before_mp3_layer( zdj_pipeline_node_t * node, zdj_dec
     int64_t packet_pcm_offset = layer->init_map_pcm - packet_pcm_addr;
     new_packet->packet_pcm_addr = packet_pcm_addr;
 
+    new_packet->packet_decode_addr = linked_packet->packet_decode_addr - (linked_packet->packet_pcm_addr -  new_packet->packet_pcm_addr);
+
     // No Discon Case
     // --------------
     if( layer->back_discon.type == ZDJ_DECODE_DISCON_INERT &&
         layer->fwd_discon.type == ZDJ_DECODE_DISCON_INERT 
     ) {
-        printf( "adding no discon packet\n" );
+        // printf( "adding no discon packet\n" );
         new_packet->core_start_addr = linked_packet->core_start_addr - new_packet->av_frame_sample_count;
         new_packet->core_end_addr = new_packet->core_start_addr + new_packet->av_frame_sample_count;
     
@@ -91,21 +100,24 @@ void zdj_decode_add_packet_before_mp3_layer( zdj_pipeline_node_t * node, zdj_dec
     } else if ( layer->back_discon.type == ZDJ_DECODE_DISCON_LOOP &&
                 layer->fwd_discon.type == ZDJ_DECODE_DISCON_LOOP 
     ) {
-        printf( "adding loop discon packet\n" );
+        // printf( "adding loop discon packet\n" );
         // If loop start/end fall inside packet, make appropriate settings
         if( zdj_decode_packet_contains_decode_addr( new_packet, layer->back_discon.depart_decode_addr ) ) {
+            // printf( "found loop start packet\n" );
             new_packet->core_start_addr = layer->back_discon.depart_decode_addr;
             new_packet->is_back_extent = true;
         } else {
+            // printf( "found loop intermediate packet\n" );
             new_packet->core_start_addr = layer->init_map_decode - packet_pcm_offset;
             new_packet->is_back_extent = false;
         }
 
         if( zdj_decode_packet_contains_decode_addr( new_packet, layer->fwd_discon.depart_decode_addr ) ) {
+            // printf( "found loop end packet\n" );
             new_packet->core_end_addr = layer->fwd_discon.depart_decode_addr;
             new_packet->is_fwd_extent = true;
         } else {
-            new_packet->core_end_addr = new_packet->core_start_addr + new_packet->av_frame_sample_count;
+            new_packet->core_end_addr = new_packet->packet_decode_addr + new_packet->av_frame_sample_count;
             new_packet->is_fwd_extent = false;
         }
         
@@ -116,10 +128,6 @@ void zdj_decode_add_packet_before_mp3_layer( zdj_pipeline_node_t * node, zdj_dec
     }
 
     new_packet->core_sample_count = new_packet->core_end_addr - new_packet->core_start_addr;
-    new_packet->packet_decode_addr = linked_packet->packet_decode_addr - new_packet->core_sample_count;
-
-    // new_packet->core_start_addr = linked_packet->core_start_addr - new_packet->av_frame_sample_count;
-    // new_packet->core_end_addr = new_packet->core_start_addr + new_packet->av_frame_sample_count;
     new_packet->lead_in_start_addr = new_packet->core_start_addr;
     new_packet->lead_out_end_addr = new_packet->core_end_addr;
     
@@ -131,22 +139,6 @@ void zdj_decode_add_packet_before_mp3_layer( zdj_pipeline_node_t * node, zdj_dec
     new_packet->next = linked_packet;
     linked_packet->prev = new_packet;
     new_packet->prev = NULL;
-
-    // printf( "linked_packet: pcm %ld dcd %ld cs %ld ce %ld\n",
-    //     linked_packet->packet_pcm_addr,
-    //     linked_packet->packet_decode_addr,
-    //     linked_packet->core_start_addr,
-    //     linked_packet->core_end_addr
-    // );
-
-    // printf( "new_packet: pts %ld pcm %ld dcd %ld cs %ld ce %ld\n",
-    //     av_packet->pts,
-    //     new_packet->packet_pcm_addr,
-    //     new_packet->packet_decode_addr,
-    //     new_packet->core_start_addr,
-    //     new_packet->core_end_addr
-    // );
-
 }
 
 void zdj_decode_add_packet_after_mp3_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer ) {
@@ -224,7 +216,7 @@ void zdj_decode_add_packet_after_mp3_layer( zdj_pipeline_node_t * node, zdj_deco
     if( layer->back_discon.type == ZDJ_DECODE_DISCON_INERT &&
         layer->fwd_discon.type == ZDJ_DECODE_DISCON_INERT 
     ) {
-        printf( "adding no discon packet\n" );
+        // printf( "adding no discon packet\n" );
         new_packet->core_start_addr = linked_packet->core_end_addr + 1;
         new_packet->core_end_addr = new_packet->core_start_addr + new_packet->av_frame_sample_count;
     
@@ -233,13 +225,12 @@ void zdj_decode_add_packet_after_mp3_layer( zdj_pipeline_node_t * node, zdj_deco
     } else if ( layer->back_discon.type == ZDJ_DECODE_DISCON_LOOP &&
                 layer->fwd_discon.type == ZDJ_DECODE_DISCON_LOOP 
     ) {
-        printf( "adding loop discon packet\n" );
+        // printf( "adding loop discon packet\n" );
         if( zdj_decode_packet_contains_decode_addr( new_packet, layer->back_discon.depart_decode_addr ) ) {
             new_packet->core_start_addr = layer->back_discon.depart_decode_addr;
             new_packet->is_back_extent = true;
         } else {
             // printf( "add packet after loop\n" );
-            // new_packet->core_start_addr = layer->init_map_decode - packet_pcm_offset;
             new_packet->core_start_addr = linked_packet->packet_decode_addr + linked_packet->av_frame_sample_count;
             new_packet->is_back_extent = false;
         }
@@ -276,7 +267,7 @@ void zdj_decode_add_packet_after_mp3_layer( zdj_pipeline_node_t * node, zdj_deco
 }
 
 void zdj_decode_add_packet_to_empty_mp3_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer ) {
-    printf( "zdj_decode_add_packet_to_empty_mp3_layer\n" );
+    // printf( "zdj_decode_add_packet_to_empty_mp3_layer\n" );
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
     
     // Stand up new packet
@@ -303,14 +294,6 @@ void zdj_decode_add_packet_to_empty_mp3_layer( zdj_pipeline_node_t * node, zdj_d
     new_packet->packet_pcm_addr = packet_pcm_addr;
     new_packet->packet_decode_addr = layer->init_map_decode + packet_pcm_offset;
 
-    // printf( "adding mp3 initial packet - req'd pcm: %ld/%ld pcm: %ld req'd decd: %ld decd: %ld\n",
-    //     packet_seek_timestamp,
-    //     packet_seek_timestamp/320,
-    //     packet_pcm_addr,
-    //     layer->init_map_decode,
-    //     layer->init_map_decode - packet_pcm_offset
-    // );
-
     // No Discon Case
     // --------------
     if( layer->back_discon.type == ZDJ_DECODE_DISCON_INERT &&
@@ -325,7 +308,7 @@ void zdj_decode_add_packet_to_empty_mp3_layer( zdj_pipeline_node_t * node, zdj_d
     } else if ( layer->back_discon.type == ZDJ_DECODE_DISCON_LOOP &&
                 layer->fwd_discon.type == ZDJ_DECODE_DISCON_LOOP 
     ) {
-        printf( "adding loop discon packet\n" );
+        // printf( "adding loop discon packet\n" );
         // If loop start/end fall inside packet, make appropriate settings
         if( zdj_decode_packet_contains_decode_addr( new_packet, layer->back_discon.depart_decode_addr ) ) {
             new_packet->core_start_addr = layer->back_discon.depart_decode_addr;

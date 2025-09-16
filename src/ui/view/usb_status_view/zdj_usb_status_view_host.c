@@ -76,15 +76,15 @@ void _zdj_usb_status_view_host_update_layout( zdj_view_t * view ) {
 
     // Add zero icon
     zdj_view_t * zero = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ZERO ], NULL );
-    zero->frame->x = 14;
-    zero->frame->y = 8;
+    zero->frame.x = 14;
+    zero->frame.y = 8;
     zdj_menu_view_add_item( menu, zero );
 
     // Add divider
     zdj_view_t * div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_NAR_H_DIV ], NULL );
-    div->frame->x = 31;
-    div->frame->y = 12;
-    div->frame->w = 53;
+    div->frame.x = 31;
+    div->frame.y = 12;
+    div->frame.w = 53;
     zdj_menu_view_add_item( menu, div );
 
     zdj_view_t * box;
@@ -92,16 +92,16 @@ void _zdj_usb_status_view_host_update_layout( zdj_view_t * view ) {
     if ( attached->count > 0 ) {
         // Add status box
         box = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BOX_1 ], NULL );
-        box->frame->x = 86;
-        box->frame->y = 3;
+        box->frame.x = 86;
+        box->frame.y = 3;
         zdj_menu_view_add_item( menu, box );
 
         // Add status label
         char device_count[ 8 ];
         snprintf( device_count, sizeof( device_count ), "%d", attached->count );
         stat_label = zdj_new_label_view( device_count, ZDJ_FONT_12, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-        stat_label->frame->x = 93;
-        stat_label->frame->y = 2;
+        stat_label->frame.x = 93;
+        stat_label->frame.y = 2;
         zdj_menu_view_add_item( menu, stat_label );
 
         zdj_menu_view_add_padding( menu, 8 );
@@ -129,8 +129,8 @@ void _zdj_usb_status_view_host_update_layout( zdj_view_t * view ) {
     } else {
         // Add empty status box
         box = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DOTTED_BOX_1 ], NULL );
-        box->frame->x = 86;
-        box->frame->y = 3;
+        box->frame.x = 86;
+        box->frame.y = 3;
         zdj_menu_view_add_item( menu, box );
 
         zdj_menu_view_add_padding( menu, 8 );

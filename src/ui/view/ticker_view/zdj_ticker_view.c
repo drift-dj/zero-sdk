@@ -80,28 +80,28 @@ void _zdj_ticker_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_ticker_state_t * state = (zdj_ticker_state_t*)view->state;
 
     // Figure out if we're scrolling - based on view width vs. width of string
-    bool is_scrolling = (view->frame->w < state->single_text_w);
+    bool is_scrolling = (view->frame.w < state->single_text_w);
 
     if( is_scrolling ) {
-        state->texture_view->frame->w = state->double_text_w;
-        state->text_w = view->frame->w;
+        state->texture_view->frame.w = state->double_text_w;
+        state->text_w = view->frame.w;
 
         // Update scroll_offset
         state->scroll_offset += state->scroll_rate;
         if( state->scroll_offset > state->single_text_w ) {
             state->scroll_offset -= state->single_text_w + 6;
         }
-        state->texture_view->frame->x = state->scroll_offset * -1;
+        state->texture_view->frame.x = state->scroll_offset * -1;
     } else {
         state->text_w = state->single_text_w;
 
         // Adjust texture_view frame within view's frame based on justify setting.
         if( state->justify == ZDJ_JUSTIFY_LEFT ) {
-            state->texture_view->frame->x = 0;
+            state->texture_view->frame.x = 0;
         } else if( state->justify == ZDJ_JUSTIFY_RIGHT ) {
-            state->texture_view->frame->x = view->frame->w - state->single_text_w;
+            state->texture_view->frame.x = view->frame.w - state->single_text_w;
         }
-        state->texture_view->frame->w = state->single_text_w;
+        state->texture_view->frame.w = state->single_text_w;
     }
 }
 
@@ -115,9 +115,9 @@ void _zdj_ticker_view_deinit_state( zdj_view_t * view ) {
 // Ticker's frame size must be set before calling this.
 int zdj_ticker_view_get_text_w( zdj_view_t * view ) {
     zdj_ticker_state_t * state = (zdj_ticker_state_t*)view->state;
-    bool is_scrolling = (view->frame->w < state->single_text_w);
+    bool is_scrolling = (view->frame.w < state->single_text_w);
     if( is_scrolling ) {
-        return view->frame->w;
+        return view->frame.w;
     } else {
         return state->single_text_w;
     }

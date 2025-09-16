@@ -44,10 +44,10 @@ zdj_view_t * zdj_new_soundcard_select_node(
     // Make menu
     zdj_view_t * menu = zdj_new_menu_view( ZDJ_VERTICAL, zdj_modal_rect( ) );
     zdj_add_subview( soundcard_select_node, menu );
-    menu->frame->x = 0;
-    menu->frame->y = 0;
-    menu->frame->w = ZDJ_MODAL_WIDTH;
-    menu->frame->h = ZDJ_MODAL_HEIGHT;
+    menu->frame.x = 0;
+    menu->frame.y = 0;
+    menu->frame.w = ZDJ_MODAL_WIDTH;
+    menu->frame.h = ZDJ_MODAL_HEIGHT;
     
     // Set up header
     zdj_view_t * menu_header = zdj_new_menu_header( 

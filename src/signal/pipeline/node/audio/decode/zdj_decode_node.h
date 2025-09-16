@@ -471,6 +471,7 @@ void zdj_decode_make_admin_packet(
     zdj_decode_node_packet_direction_t direction,
     int len 
 );
+void zdj_decode_flush_packets( zdj_pipeline_node_t * node );
 
 // Addresses
 bool zdj_decode_address_intersects_packet( 
@@ -484,16 +485,12 @@ bool zdj_pcm_address_intersects_packet(
 );
 int64_t zdj_decode_get_pcm_addr_for_decode_addr( zdj_pipeline_node_t * node, int64_t decode_address );
 
-// void zdj_decode_pcm_layer_can_add_packet_before( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, int64_t address );
 void zdj_decode_add_packet_before_pcm_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 void zdj_decode_add_packet_to_empty_pcm_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
-// void zdj_decode_pcm_layer_can_add_packet_after( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, int64_t address );
 void zdj_decode_add_packet_after_pcm_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 
-// void zdj_decode_mp3_layer_can_add_packet_before( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, int64_t address );
 void zdj_decode_add_packet_before_mp3_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 void zdj_decode_add_packet_to_empty_mp3_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
-// void zdj_decode_mp3_layer_can_add_packet_before( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, int64_t address );
 void zdj_decode_add_packet_after_mp3_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 
 // // void zdj_decode_flac_layer_can_add_packet_before( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, int64_t address );

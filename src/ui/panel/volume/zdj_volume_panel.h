@@ -18,32 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_WAVEFORM_COMP_BUILD_NODE_H
-#define ZDJ_WAVEFORM_COMP_BUILD_NODE_H
+#ifndef ZDJ_VOLUME_PANEL_H
+#define ZDJ_VOLUME_PANEL_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <semaphore.h>
-
-#include <zerodj/signal/math/zdj_signal_math.h>
-#include <zerodj/signal/pipeline/node/analysis/waveform/zdj_waveform_comp.h>
-
-typedef enum {
-    ZDJ_WAVEFORM_COMP_BUILD_PHASE_INIT,
-    ZDJ_WAVEFORM_COMP_BUILD_PHASE_RUNNING,
-    ZDJ_WAVEFORM_COMP_BUILD_PHASE_DONE
-} zdj_waveform_comp_build_phase_t;
+#include <zerodj/ui/anim/zdj_anim.h>
 
 typedef struct {
-    zdj_waveform_comp_build_phase_t phase;
-    zdj_gaussian_t * kernel;
-    zdj_pipeline_node_t * decode_node;
-    zdj_waveform_comp_header_t * header;
-} zdj_waveform_comp_build_node_state_t;
+    bool ui_init;
+    bool deployed;
+    int deploy_timer;
+    zdj_view_t * container;
+    zdj_view_t * meter;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
+} zdj_volume_panel_state_t;
 
-zdj_pipeline_node_t * zdj_new_waveform_comp_build_node( 
-    zdj_pipeline_node_t * decode_node
-);
+zdj_view_t * zdj_new_volume_panel( void );
 
 #endif

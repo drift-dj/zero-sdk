@@ -115,9 +115,13 @@ zdj_health_status_t zdj_library_close_db( void ) {
 }
 
 void zdj_library_reset_db( void ) {
-    printf( "zdj_library_reset_db\n" );
+    // printf( "zdj_library_reset_db\n" );
     // Remove existing db
     remove( ZDJ_LIBRARY_DB_PATH );
+
+    // Remove config ref
+    if( library_config ) { free( library_config ); }
+    library_config = NULL;
 
     // Create new db
     zdj_library_db = zdj_sql_open( ZDJ_LIBRARY_DB_PATH );
@@ -131,6 +135,9 @@ void zdj_library_reset_db( void ) {
 
     // Create a new Library Config record
     zdj_library_get_config( );
+
+    // Create a new Library record + store in config
+    zdj_library_new( );
 
     // Create the default Data Source records
     zdj_library_create_default_data_sources( );

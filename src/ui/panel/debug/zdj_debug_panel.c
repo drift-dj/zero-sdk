@@ -29,11 +29,11 @@ zdj_view_t * zdj_new_debug_panel( void ) {
     container_view->draw = &_zdj_debug_panel_draw;
     container_view->handle_control_event = &_zdj_debug_panel_handle_control;
 
-    container_view->frame->x = ZDJ_DEBUG_PANEL_WIDTH * -3;
-    container_view->frame->y = 0;
-    
-    container_view->in_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_SHOW );
-    container_view->out_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_HIDE );
+    container_view->frame.x = ZDJ_DEBUG_PANEL_WIDTH * -3;
+    container_view->frame.y = 0;
+
+    zdj_set_anim( &container_view->in_anim, ZDJ_ANIM_DEBUG_PANEL_SHOW );
+    zdj_set_anim( &container_view->out_anim, ZDJ_ANIM_DEBUG_PANEL_HIDE );
 
     // Add a log_view
     // zdj_view_t * log_view = zdj_new_log_view( 
@@ -119,11 +119,11 @@ void _zdj_debug_panel_deploy( zdj_view_t * view ) {
     state->event_capture = true;
     state->deployed = true;
 
-    ((anim_init_t)view->in_anim->init_fn)( 
-        view->in_anim, 
+    ((anim_init_t)view->in_anim.init_fn)( 
+        &view->in_anim, 
         view
     );
-    view->anim = view->in_anim;
+    view->anim = &view->in_anim;
 }
 
 void _zdj_debug_panel_retract( zdj_view_t * view ) {
@@ -131,9 +131,9 @@ void _zdj_debug_panel_retract( zdj_view_t * view ) {
     state->event_capture = false;
     state->deployed = false;
 
-    ((anim_init_t)view->out_anim->init_fn)( 
-        view->out_anim, 
+    ((anim_init_t)view->out_anim.init_fn)( 
+        &view->out_anim, 
         view 
     );
-    view->anim = view->out_anim;
+    view->anim = &view->out_anim;
 }

@@ -23,4 +23,22 @@
 
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
+typedef struct {
+    bool stereo;
+    int channel_count;
+    int sample_count;
+    double rate;
+    float * out_buffer;
+    zdj_pipeline_node_t * decode_node;
+    double decode_start_coord;
+    double decode_end_coord;
+    double decode_buf_ref_coord;
+} zdj_tsm_tempo_node_state_t;
+
+zdj_pipeline_node_t * zdj_new_tsm_tempo_node( 
+    bool stereo, 
+    int sample_count,
+    zdj_pipeline_node_t * decode_node 
+);
+
 #endif

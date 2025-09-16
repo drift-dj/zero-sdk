@@ -29,10 +29,12 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
     view->draw = &_zdj_text_input_view_draw;
     view->handle_control_event = _zdj_text_input_view_handle_control;
     view->deinit_state = &_zdj_text_input_view_deinit_state;
-    view->frame->x = ZDJ_MODAL_X+1;
-    view->frame->y = ZDJ_SCREEN_H;
-    view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
-    view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
+    view->frame.x = ZDJ_MODAL_X+1;
+    view->frame.y = ZDJ_SCREEN_H;
+    // view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
+    // view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
+    zdj_set_anim( &view->in_anim, ZDJ_ANIM_MODAL_SHOW );
+    zdj_set_anim( &view->out_anim, ZDJ_ANIM_MODAL_HIDE );
 
     zdj_text_input_view_state_t * view_state = calloc( 1, sizeof( zdj_text_input_view_state_t * ) );
     view_state->input_str = strdup( input );

@@ -35,8 +35,8 @@ zdj_view_t * zdj_new_text_input_keyboard_view( void ) {
     // Build the keyboard menu view
     zdj_rect_t menu_rect = {0, 0, ZDJ_MODAL_WIDTH, ZDJ_SCREEN_H-22};
     zdj_view_t * menu = zdj_new_menu_view( ZDJ_VERTICAL, &menu_rect);
-    menu->frame->w = ZDJ_MODAL_WIDTH;
-    menu->frame->y = 22;
+    menu->frame.w = ZDJ_MODAL_WIDTH;
+    menu->frame.y = 22;
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu->state;
     menu_state->scroll_enabled = false;
     _shift_key_active = false;
@@ -97,10 +97,10 @@ zdj_view_t * zdj_new_text_input_keyboard_view( void ) {
     // Add space key
     _space_key_index = menu_state->item_count;
     zdj_view_t * space_key = zdj_new_asset_menu_item( ZDJ_UI_ASSET_SPACE_KEY, ZDJ_UI_ASSET_SPACE_KEY_HI, false );
-    space_key->frame->x = 100;
-    space_key->frame->y = 2;
-    space_key->frame->w = 8;
-    space_key->frame->h = 5;
+    space_key->frame.x = 100;
+    space_key->frame.y = 2;
+    space_key->frame.w = 8;
+    space_key->frame.h = 5;
     zdj_menu_view_add_item( menu, space_key );
 
     // Add shift key
@@ -109,48 +109,48 @@ zdj_view_t * zdj_new_text_input_keyboard_view( void ) {
     zdj_menu_item_view_state_t * shift_state = (zdj_menu_item_view_state_t*)_shift_key->state;
     shift_state->init_layout = _init_shift_key_layout;
     shift_state->handles_hmi = true;
-    _shift_key->frame->x = 110;
-    _shift_key->frame->y = 1;
-    _shift_key->frame->w = 5;
-    _shift_key->frame->h = 6;
+    _shift_key->frame.x = 110;
+    _shift_key->frame.y = 1;
+    _shift_key->frame.w = 5;
+    _shift_key->frame.h = 6;
     zdj_menu_view_add_item( menu, _shift_key );
 
     // Add backspace key
     _backspace_key_index = menu_state->item_count;
     zdj_view_t * backspace_key = zdj_new_asset_menu_item( ZDJ_UI_ASSET_BACKSPACE_KEY, ZDJ_UI_ASSET_BACKSPACE_KEY_HI, false );
-    backspace_key->frame->x = 96;
-    backspace_key->frame->y = 9;
-    backspace_key->frame->w = 9;
-    backspace_key->frame->h = 7;
+    backspace_key->frame.x = 96;
+    backspace_key->frame.y = 9;
+    backspace_key->frame.w = 9;
+    backspace_key->frame.h = 7;
     zdj_menu_view_add_item( menu, backspace_key );
 
     // Add insert key
     _insert_key_index = menu_state->item_count;
     zdj_view_t * insert_key = zdj_new_asset_menu_item( ZDJ_UI_ASSET_INSERT_KEY, ZDJ_UI_ASSET_INSERT_KEY_HI, false );
-    insert_key->frame->x = 107;
-    insert_key->frame->y = 9;
-    insert_key->frame->w = 9;
-    insert_key->frame->h = 7;
+    insert_key->frame.x = 107;
+    insert_key->frame.y = 9;
+    insert_key->frame.w = 9;
+    insert_key->frame.h = 7;
     zdj_menu_view_add_item( menu, insert_key );
 
     // Add cancel btn
     _cancel_key_index = menu_state->item_count;
     zdj_view_t * cancel_key = zdj_new_menu_item( "Cancel", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     zdj_menu_item_view_state_t * cancel_state = (zdj_menu_item_view_state_t*)cancel_key->state;
-    cancel_key->frame->x = 91;
-    cancel_key->frame->y = 17;
-    cancel_key->frame->w = 26;
-    cancel_key->frame->h = 8;
+    cancel_key->frame.x = 91;
+    cancel_key->frame.y = 17;
+    cancel_key->frame.w = 26;
+    cancel_key->frame.h = 8;
     zdj_menu_view_add_item( menu, cancel_key );
 
     // Add okay btn
     _okay_key_index = menu_state->item_count;
     zdj_view_t * ok_key = zdj_new_menu_item( "Okay", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     zdj_menu_item_view_state_t * ok_state = (zdj_menu_item_view_state_t*)ok_key->state;
-    ok_key->frame->x = 94;
-    ok_key->frame->y = 25;
-    ok_key->frame->w = 23;
-    ok_key->frame->h = 8;
+    ok_key->frame.x = 94;
+    ok_key->frame.y = 25;
+    ok_key->frame.w = 23;
+    ok_key->frame.h = 8;
     zdj_menu_view_add_item( menu, ok_key );
 
     return menu;
@@ -357,39 +357,39 @@ void _init_key_layout( zdj_view_t * view ) {
     } else {
         state->hilite_view = zdj_new_view( NULL );
         zdj_add_subview( view, state->hilite_view );
-        state->hilite_view->frame->w = view->frame->w;
-        state->hilite_view->frame->h = view->frame->h;
+        state->hilite_view->frame.w = view->frame.w;
+        state->hilite_view->frame.h = view->frame.h;
     }
     if( state->normal_view ) { 
         zdj_remove_all_subviews_of( state->normal_view );
     } else {
         state->normal_view = zdj_new_view( NULL );
         zdj_add_subview( view, state->normal_view );
-        state->normal_view->frame->w = view->frame->w;
-        state->normal_view->frame->h = view->frame->h;
+        state->normal_view->frame.w = view->frame.w;
+        state->normal_view->frame.h = view->frame.h;
     }
     
     // Setup normal view
     zdj_view_t * char_label = zdj_new_label_view( title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, char_label );
-    char_label->frame->x = (ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH/2) - (char_label->frame->w/2) + 1;
-    char_label->frame->y = -1;
+    char_label->frame.x = (ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH/2) - (char_label->frame.w/2) + 1;
+    char_label->frame.y = -1;
     
     // Setup hilite view
     zdj_view_t * bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_HILITE_7_L ], NULL );
-    bg->frame->x = 1;
-    // bg->frame->y = 1;
-    bg->frame->w = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH-1;
+    bg->frame.x = 1;
+    // bg->frame.y = 1;
+    bg->frame.w = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH-1;
     zdj_add_subview( state->hilite_view, bg );
     zdj_view_t * bg_r = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_HILITE_7_R ], NULL );
-    // bg->frame->y = 1;
-    bg_r->frame->x = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH-1;
+    // bg->frame.y = 1;
+    bg_r->frame.x = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH-1;
     zdj_add_subview( state->hilite_view, bg_r );
 
     zdj_view_t * char_label_hi = zdj_new_label_view( title, ZDJ_FONT_6, ZDJ_JUSTIFY_CENTER, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, char_label_hi );
-    char_label_hi->frame->x = (ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH/2) - (char_label->frame->w/2) + 1;
-    char_label_hi->frame->y = -1;
+    char_label_hi->frame.x = (ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH/2) - (char_label->frame.w/2) + 1;
+    char_label_hi->frame.y = -1;
 
     state->needs_layout_init = false;
 }
@@ -403,16 +403,16 @@ void _init_shift_key_layout( zdj_view_t * view ) {
     } else {
         state->hilite_view = zdj_new_view( NULL );
         zdj_add_subview( view, state->hilite_view );
-        state->hilite_view->frame->w = view->frame->w;
-        state->hilite_view->frame->h = view->frame->h;
+        state->hilite_view->frame.w = view->frame.w;
+        state->hilite_view->frame.h = view->frame.h;
     }
     if( state->normal_view ) { 
         zdj_remove_all_subviews_of( state->normal_view );
     } else {
         state->normal_view = zdj_new_view( NULL );
         zdj_add_subview( view, state->normal_view );
-        state->normal_view->frame->w = view->frame->w;
-        state->normal_view->frame->h = view->frame->h;
+        state->normal_view->frame.w = view->frame.w;
+        state->normal_view->frame.h = view->frame.h;
     }
     
     if( _shift_key_active ) {
@@ -441,10 +441,10 @@ void _add_key_item( zdj_view_t * menu, zdj_keyboard_key_t * key, int row, int co
     state->init_layout = _init_key_layout;
     state->data->ptr = key;
     item->state = state;
-    item->frame->x = 1 + (col * ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH);
-    item->frame->y = (row * ZDJ_TEXT_INPUT_VIEW_ROW_HEIGHT) + 1;
-    item->frame->w = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH;
-    item->frame->h = ZDJ_TEXT_INPUT_VIEW_ROW_HEIGHT;
+    item->frame.x = 1 + (col * ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH);
+    item->frame.y = (row * ZDJ_TEXT_INPUT_VIEW_ROW_HEIGHT) + 1;
+    item->frame.w = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH;
+    item->frame.h = ZDJ_TEXT_INPUT_VIEW_ROW_HEIGHT;
     state->handles_hmi = true;
     zdj_menu_view_add_item( menu, item );
 }

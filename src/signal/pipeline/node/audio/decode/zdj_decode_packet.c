@@ -25,6 +25,8 @@ int zdj_decode_packet(
     AVPacket * av_packet, 
     AVFrame * av_frame
 ) {
+    // printf( "zdj_decode_packet: %p %p %p\n", packet, av_packet, av_frame );
+
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     int res;
 
@@ -83,6 +85,8 @@ int zdj_decode_packet(
     packet->av_packet = av_packet;
     packet->av_frame = av_frame;
 
+    // printf( "zdj_decode_packet done: %p %p %p\n", packet, av_packet, av_frame );
+
     return decoded_frame_count;
 }
 
@@ -116,8 +120,8 @@ void zdj_decode_deinit_packet( zdj_decode_packet_t * packet ) {
     }
     packet->next = NULL;
     packet->prev = NULL;
-    if( packet->av_packet ){ av_packet_unref( packet->av_packet ); }
-    if( packet->av_frame ){ av_frame_unref( packet->av_frame ); }
+    if( packet->av_packet ){ av_packet_unref( packet->av_packet ); av_packet_free( &packet->av_packet ); }
+    if( packet->av_frame ){ av_frame_unref( packet->av_frame ); av_frame_free( &packet->av_frame ); }
     free( packet );
     // printf( "zdj_packet_deinit done\n" );
 }
@@ -168,11 +172,42 @@ void zdj_decode_make_admin_packet(
 }
 
 bool zdj_decode_packet_contains_decode_addr( zdj_decode_packet_t * packet, int64_t decode_addr ) {
-    printf( "packet: %ld -> %ld contains: %ld\n", 
-        packet->packet_decode_addr,
-        packet->packet_decode_addr + packet->av_frame_sample_count,
-        decode_addr
-    );
+    // printf( "packet: %ld -> %ld contains: %ld\n", 
+    //     packet->packet_decode_addr,
+    //     packet->packet_decode_addr + packet->av_frame_sample_count,
+    //     decode_addr
+    // );
     return ( packet->packet_decode_addr < decode_addr && 
              packet->packet_decode_addr + packet->av_frame_sample_count > decode_addr );
+}
+
+void zdj_decode_flush_packets( zdj_pipeline_node_t * node ) {
+    // printf( "zdj_decode_flush_packets\n" );
+    // zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
+    // int res;
+
+    // // Submit an empty packet to put decoder into flush mode
+    // res = avcodec_send_packet( state->codec_ctx, NULL );
+    // if ( res >= 0 ) { 
+    //     // printf( "error sending flush packet\n" );
+    //     return;
+    // }
+    
+    // bool exit = false;
+    // int attempt = 0;
+    // AVFrame * av_frame = av_frame_alloc( );
+    // while ( attempt < 10 ) {
+    //     // Read until nothing comes out
+    //     attempt++;
+    //     res = avcodec_receive_frame( state->codec_ctx, av_frame );
+    //     // if ( res == AVERROR( EAGAIN ) || res == AVERROR_EOF ) {
+    //     if ( res == AVERROR_EOF ) {
+    //         // printf( "found eof after %d receives\n", attempt );
+    //         av_frame_unref( av_frame );
+    //         av_frame_free( &av_frame );
+    //         // printf( "zdj_decode_flush_packets done\n" );
+    //         return;
+    //     }
+    // }
+   
 }

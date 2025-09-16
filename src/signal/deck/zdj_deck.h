@@ -153,7 +153,6 @@ typedef struct zdj_deck_control_state_t {
     zdj_deck_platter_t platter;
     zdj_deck_control_skip_state_t skip_state;
     zdj_deck_control_loop_state_t loop_state;
-    uint8_t control_change_flags[ ZDJ_CONTROL_ID_COUNT ];
 } zdj_deck_control_state_t;
 
 typedef struct zdj_deck_t {
@@ -164,7 +163,12 @@ typedef struct zdj_deck_t {
 
     // update_state is called from the slow deck_manager thread.
     void ( *update_state )( struct zdj_deck_t * );
+    void ( *begin_teardown )( struct zdj_deck_t * );
     void ( *deinit )( struct zdj_deck_t * );
+
+    // UI load/unload CBs
+    void ( *ui_load_cb )( struct zdj_deck_t * );
+    void ( *ui_unload_cb )( struct zdj_deck_t * );
 
     // get_edge_data is called from the soundcard's fast cycle thread.
     void ( *get_edge_data )( void *, zdj_pipeline_node_t *, bool );
@@ -181,6 +185,37 @@ typedef struct zdj_deck_t {
     struct zdj_deck_t * next;
     struct zdj_deck_t * prev;
 } zdj_deck_t;
+
+typedef struct {
+    zdj_library_song_t * song;
+    
+    // Internal audio pipeline
+    zdj_pipeline_node_t * dsp_node;
+    zdj_pipeline_node_t * tsm_pitch_node;
+    zdj_pipeline_node_t * tsm_tempo_node;
+    zdj_pipeline_node_t * decode_node;
+    
+    // Thread management
+    sem_t start_cycle;
+    bool thread_ready;
+    bool exit_thread;
+
+} zdj_dj_deck_state_t;
+
+typedef struct {
+    zdj_library_song_t * song;
+    
+    // Internal audio pipeline
+    zdj_pipeline_node_t * dsp_node;
+    zdj_pipeline_node_t * tsm_node;
+    zdj_pipeline_node_t * decode_node;
+    
+    // Thread management
+    sem_t start_cycle;
+    bool thread_ready;
+    bool exit_thread;
+
+} zdj_lib_deck_state_t;
 
 typedef struct {
     zdj_library_song_t * song;
@@ -225,7 +260,7 @@ zdj_error_type_t zdj_new_plugin_deck( zdj_deck_t * deck, void * resource );
 
 void zdj_deck_init_controls( zdj_deck_t * deck );
 
-void zdj_clear_deck_control_flags( zdj_deck_t * deck );
+// void zdj_clear_deck_control_flags( zdj_deck_t * deck );
 void zdj_deck_handle_control( zdj_deck_t * deck, zdj_control_event_t * event );
 void zdj_deck_update_controls ( zdj_deck_t * deck );
 

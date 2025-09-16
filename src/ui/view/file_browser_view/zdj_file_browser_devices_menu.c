@@ -28,8 +28,8 @@ zdj_view_t * zdj_new_device_browser_menu( zdj_view_t * browser, zdj_rect_t * fra
 
     // Make menu
     zdj_view_t * menu = zdj_new_menu_view( ZDJ_HORIZONTAL, frame );
-    menu->frame->x = 0;
-    menu->frame->y = 0;
+    menu->frame.x = 0;
+    menu->frame.y = 0;
     
 
     // Add Zero item
@@ -40,10 +40,10 @@ zdj_view_t * zdj_new_device_browser_menu( zdj_view_t * browser, zdj_rect_t * fra
     zero_state->data->ptr = browser;
     zero_state->handles_hmi = true;
     zero_item->handle_control_event = &zdj_file_browser_item_hmi_delegate;
-    zero_item->frame->x = 8;
-    zero_item->frame->y = 12;
-    zero_item->frame->w = 30;
-    zero_item->frame->h = 25;
+    zero_item->frame.x = 8;
+    zero_item->frame.y = 12;
+    zero_item->frame.w = 30;
+    zero_item->frame.h = 25;
     zdj_menu_view_add_item( menu, zero_item );
 
     // Add attached MSDs
@@ -54,10 +54,10 @@ zdj_view_t * zdj_new_device_browser_menu( zdj_view_t * browser, zdj_rect_t * fra
     msd_state->data->ptr = browser;
     msd_state->handles_hmi = true;
     msd_item->handle_control_event = &zdj_file_browser_item_hmi_delegate;
-    msd_item->frame->x = 50;
-    msd_item->frame->y = 12;
-    msd_item->frame->w = 30;
-    msd_item->frame->h = 25;
+    msd_item->frame.x = 50;
+    msd_item->frame.y = 12;
+    msd_item->frame.w = 30;
+    msd_item->frame.h = 25;
     zdj_menu_view_add_item( menu, msd_item );
 
     return menu;

@@ -22,12 +22,12 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
     menu_view->handle_control_event = zdj_menu_handle_control;
     menu_view->deinit_state = &_deinit_state;
     menu_view->map = ZDJ_CONTROL_MAP_MENU_BASE;
-    menu_view->in_anim = zdj_new_anim( ZDJ_ANIM_MENU_SHOW );
-    menu_view->out_anim = zdj_new_anim( ZDJ_ANIM_MENU_HIDE );
+    zdj_set_anim( &menu_view->in_anim, ZDJ_ANIM_MENU_SHOW );
+    zdj_set_anim( &menu_view->out_anim, ZDJ_ANIM_MENU_HIDE );
 
-    menu_view->frame->y = ZDJ_SCREEN_H + 1;
-    menu_view->frame->w = frame->w;
-    menu_view->frame->h = frame->h;
+    menu_view->frame.y = ZDJ_SCREEN_H + 1;
+    menu_view->frame.w = frame->w;
+    menu_view->frame.h = frame->h;
 
     // Add a scroll_view
     zdj_view_t * menu_scroll_view = zdj_new_scroll_view( frame );
@@ -80,14 +80,14 @@ void zdj_menu_view_add_header( zdj_view_t * menu_view, zdj_view_t * header ) {
     state->header_view = header;
     state->has_back = header_state->has_back;
 
-    header->frame->w = menu_view->frame->w;
-    header->frame->h = 7;
+    header->frame.w = menu_view->frame.w;
+    header->frame.h = 7;
 
     // Move the scroll view down to make room for the header
-    state->scroll_view->frame->y = 8;
-    state->scroll_view->frame->h = menu_view->frame->h - 7;
-    state->scroll_view->frame->x = state->scroll_view_frame.x;
-    state->scroll_view->frame->w = state->scroll_view_frame.w;
+    state->scroll_view->frame.y = 8;
+    state->scroll_view->frame.h = menu_view->frame.h - 7;
+    state->scroll_view->frame.x = state->scroll_view_frame.x;
+    state->scroll_view->frame.w = state->scroll_view_frame.w;
 }
 
 void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section ) {
@@ -98,40 +98,43 @@ void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section ) {
     zdj_point_t scroll_size;
     zdj_scroll_view_get_size( state->scroll_view, &scroll_size );
    
-    if( section->frame->y == 0 ) {
-        section->frame->y = scroll_size.y;
+    if( section->frame.y == 0 ) {
+        section->frame.y = scroll_size.y;
     }    
-    section->frame->x = scroll_size.x;
-    section->frame->w = menu_view->frame->w;
-    section->frame->h = 9;
+    section->frame.x = scroll_size.x;
+    section->frame.w = menu_view->frame.w;
+    section->frame.h = 9;
     zdj_scroll_view_add_subview( state->scroll_view, section );
 }
 
 void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item ) {
+    // printf( "zdj_menu_view_add_item( %p, %p )\n", menu_view, item );
     if( !item ) { return; }
 
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
     // Align new item to menu's scroll orientation
     zdj_point_t scroll_size;
     zdj_scroll_view_get_size( menu_state->scroll_view, &scroll_size );
-    if( item->frame->y == 0 ) {
-        item->frame->y += scroll_size.y;
+    if( item->frame.y == 0 ) {
+        item->frame.y += scroll_size.y;
     }
-    if( item->frame->x == 0 ) {
-        item->frame->x += scroll_size.x;
+    if( item->frame.x == 0 ) {
+        item->frame.x += scroll_size.x;
     }
-    if( item->frame->w == 0 ) {
-        item->frame->w = menu_state->scroll_view_frame.w;
+    if( item->frame.w == 0 ) {
+        item->frame.w = menu_state->scroll_view_frame.w;
     }
-    if( item->frame->h == 0 ) {
-        item->frame->h = 9;
+    if( item->frame.h == 0 ) {
+        item->frame.h = 9;
     }
-    // item->frame->h+=1;
+    // item->frame.h+=1;
     zdj_scroll_view_add_subview( menu_state->scroll_view, item );
 
     // Set scroll_index for new item
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
     if( item->type == ZDJ_VIEW_MENU_ITEM ) {
-        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+        
+        // zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
         item_state->scroll_index = menu_state->item_count++;
         if( item_state->scroll_index == 0 ){ item_state->is_hilite = true; }
     }
@@ -183,15 +186,15 @@ void zdj_menu_view_remove_all_items( zdj_view_t * menu_view ) {
     zdj_remove_subview_of( menu_view, menu_state->scroll_view );
 
     // Add a new scroll_view
-    zdj_view_t * menu_scroll_view = zdj_new_scroll_view( menu_view->frame );
-    menu_scroll_view->frame->x = menu_state->scroll_view_frame.x;
-    menu_scroll_view->frame->w = menu_state->scroll_view_frame.w;
+    zdj_view_t * menu_scroll_view = zdj_new_scroll_view( &menu_view->frame );
+    menu_scroll_view->frame.x = menu_state->scroll_view_frame.x;
+    menu_scroll_view->frame.w = menu_state->scroll_view_frame.w;
 
     zdj_scroll_view_state_t * scroll_view_state = (zdj_scroll_view_state_t*)menu_scroll_view->state;
     scroll_view_state->scroll_dir = menu_state->scroll_dir;
     if( menu_state->header_view ) {
-        menu_scroll_view->frame->y = 8;
-        menu_scroll_view->frame->h = menu_view->frame->h - 7;
+        menu_scroll_view->frame.y = 8;
+        menu_scroll_view->frame.h = menu_view->frame.h - 7;
     }
     zdj_add_bottom_subview_to( menu_view, menu_scroll_view );
     menu_state->scroll_view = menu_scroll_view;
@@ -216,15 +219,15 @@ void zdj_menu_view_remove_all_subviews( zdj_view_t * menu_view ) {
     }
 
     // Add a new scroll_view
-    zdj_view_t * menu_scroll_view = zdj_new_scroll_view( menu_view->frame );
-    menu_scroll_view->frame->x = menu_state->scroll_view_frame.x;
-    menu_scroll_view->frame->w = menu_state->scroll_view_frame.w;
+    zdj_view_t * menu_scroll_view = zdj_new_scroll_view( &menu_view->frame );
+    menu_scroll_view->frame.x = menu_state->scroll_view_frame.x;
+    menu_scroll_view->frame.w = menu_state->scroll_view_frame.w;
 
     zdj_scroll_view_state_t * scroll_view_state = (zdj_scroll_view_state_t*)menu_scroll_view->state;
     scroll_view_state->scroll_dir = menu_state->scroll_dir;
     if( menu_state->header_view ) {
-        menu_scroll_view->frame->y = 8;
-        menu_scroll_view->frame->h = menu_view->frame->h - 7;
+        menu_scroll_view->frame.y = 8;
+        menu_scroll_view->frame.h = menu_view->frame.h - 7;
     }
 
     zdj_add_bottom_subview_to( menu_view, menu_scroll_view );
@@ -259,7 +262,7 @@ void zdj_menu_view_remove_item_at_scroll_index( zdj_view_t * menu_view, int inde
             if( item_count == index ) {
                 // printf( "removing item %d at index %d\n", subview_count, item_count );
                 zdj_remove_subview_of( menu_state->scroll_view, scroll_view_subview ); 
-                removed_view_height = scroll_view_subview->frame->h;
+                removed_view_height = scroll_view_subview->frame.h;
                 subview_index = subview_count;
             }
             item_count++;
@@ -270,7 +273,7 @@ void zdj_menu_view_remove_item_at_scroll_index( zdj_view_t * menu_view, int inde
                 zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)scroll_view_subview->state;
                 item_state->scroll_index--;
             }
-            scroll_view_subview->frame->y -= removed_view_height;
+            scroll_view_subview->frame.y -= removed_view_height;
         }
 
         subview_count++;
@@ -344,6 +347,7 @@ zdj_view_t * zdj_menu_view_get_item_for_data_c_val( zdj_view_t * menu_view, char
 }
 
 void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    // printf( "zdj_menu_handle_control\n" );
     zdj_control_event_t * e = (zdj_control_event_t *)_event; 
 
     // Ignore events which have been blocked by layers above this one.
@@ -429,7 +433,7 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
     zdj_scroll_view_state_t * scroll_state = (zdj_scroll_view_state_t*)menu_state->scroll_view->state;
 
-    // printf( "_update_scroll: %d/%d\n", new_scroll, menu_state->scroll_index );
+    // printf( "_update_scroll: %d/%d of %d\n", new_scroll, menu_state->scroll_index, menu_state->item_count );
 
     zdj_menu_item_view_state_t * prev_menu_item_state;
     zdj_menu_item_view_state_t * new_menu_item_state;
@@ -493,6 +497,7 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
             menu_state->scroll_view, 
             menu_state->scroll_index 
         );
+
         // If item isn't found in scroll_view, check menu view itself 
         // (for non-scrolling chrome items).
         bool new_menu_item_is_chrome = false;
@@ -511,14 +516,14 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
 
         // If scrolling is disabled in menu, we're done.
         if( !menu_state->scroll_enabled ){ return; }
-        
+
         // Update the scroll_view's scroll_offset.
         zdj_point_t scroll_point;
         if( menu_state->scroll_dir == ZDJ_VERTICAL ) {
             scroll_point.x = 0;
-            scroll_point.y = new_menu_item->frame->y;
+            scroll_point.y = new_menu_item->frame.y;
         } else if( menu_state->scroll_dir == ZDJ_HORIZONTAL ) {
-            scroll_point.x = new_menu_item->frame->x;
+            scroll_point.x = new_menu_item->frame.x;
             scroll_point.y = 0;
         }
         bool is_final_view;
@@ -542,7 +547,7 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
             is_final_view, 
             true 
         );
-    }    
+    }
 }
 
 static void _deinit_state( zdj_view_t * view ) {

@@ -21,14 +21,35 @@
 #ifndef ZDJ_WAVEFORM_VIEW_H
 #define ZDJ_WAVEFORM_VIEW_H
 
+#include <zerodj/signal/pipeline/node/analysis/waveform/zdj_waveform.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
-    zdj_soundcard_node_t * node;
     zdj_pipeline_node_t * pipe;
+    zdj_soundcard_node_t * node;
+    zdj_pipeline_node_t * waveform_node;
+    double prev_pcm_head;
+
+    double raw_point_head;
+    double draw_point_head;
 } zdj_live_waveform_view_state_t;
 
+typedef struct {
+    zdj_waveform_style_t style;
+    zdj_pipeline_node_t * waveform_node;
+    SDL_Texture * waveform_tex;
+} zdj_waveform_view_state_t;
+
 zdj_view_t * zdj_new_live_waveform_view( zdj_rect_t * frame, zdj_soundcard_node_t * node );
+zdj_view_t * zdj_new_playback_waveform_view( 
+    zdj_rect_t * frame, 
+    zdj_waveform_style_t style,
+    zdj_deck_t * deck,
+    zdj_library_song_t * song, 
+    double points_per_pixel,
+    bool hires
+);
+zdj_view_t * zdj_new_thumb_waveform_view( zdj_rect_t * frame, zdj_library_song_t * song );
 
 #endif

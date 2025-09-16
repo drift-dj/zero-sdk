@@ -43,43 +43,43 @@ void _zdj_usb_status_view_reboot_update_layout( zdj_view_t * view ) {
 
     // Add mode requested label
     zdj_view_t * mode_label = zdj_new_label_view( "Device Mode Requested.", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    mode_label->frame->x = 16;
-    mode_label->frame->y = 5;
+    mode_label->frame.x = 16;
+    mode_label->frame.y = 5;
     zdj_menu_view_add_item( menu, mode_label );
 
     // Add zero icon
     zdj_view_t * zero = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ZERO_REBOOT ], NULL );
-    zero->frame->x = 15;
-    zero->frame->y = 22;
+    zero->frame.x = 15;
+    zero->frame.y = 22;
     zdj_menu_view_add_item( menu, zero );
 
     // Add divider
     zdj_view_t * div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_NAR_H_DIV ], NULL );
-    div->frame->x = 34;
-    div->frame->y = 28;
-    div->frame->w = 20;
+    div->frame.x = 34;
+    div->frame.y = 28;
+    div->frame.w = 20;
     zdj_menu_view_add_item( menu, div );
 
     // Add box
     zdj_view_t * box_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TEXT_INPUT_CURSOR ], NULL );
-    box_l->frame->x = 56;
-    box_l->frame->y = 18;
-    box_l->frame->w = 2;
+    box_l->frame.x = 56;
+    box_l->frame.y = 18;
+    box_l->frame.w = 2;
     zdj_menu_view_add_item( menu, box_l );
     zdj_view_t * box_r = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TEXT_INPUT_CURSOR_R ], NULL );
-    box_r->frame->x = 102;
-    box_r->frame->y = 18;
-    box_r->frame->w = 2;
+    box_r->frame.x = 102;
+    box_r->frame.y = 18;
+    box_r->frame.w = 2;
     zdj_menu_view_add_item( menu, box_r );
 
     // Add reboot labels
     zdj_view_t * reboot_1_label = zdj_new_label_view( "Reboot Zero", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    reboot_1_label->frame->x = 60;
-    reboot_1_label->frame->y = 20;
+    reboot_1_label->frame.x = 60;
+    reboot_1_label->frame.y = 20;
     zdj_menu_view_add_item( menu, reboot_1_label );
     zdj_view_t * reboot_2_label = zdj_new_label_view( "to Activate.", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    reboot_2_label->frame->x = 60;
-    reboot_2_label->frame->y = 28;
+    reboot_2_label->frame.x = 60;
+    reboot_2_label->frame.y = 28;
     zdj_menu_view_add_item( menu, reboot_2_label );
 
     state->needs_layout_update = false;

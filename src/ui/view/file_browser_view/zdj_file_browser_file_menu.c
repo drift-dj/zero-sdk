@@ -58,10 +58,10 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
         // Nav buttons need a reference to parent browser for inserting menus
         state->data->ptr = browser;
         nav_up->handle_control_event = &zdj_file_browser_item_hmi_delegate;
-        nav_up->frame->x = 1;
-        nav_up->frame->y = 1;
-        nav_up->frame->w = 14;
-        // nav_up->frame->h = 10;
+        nav_up->frame.x = 1;
+        nav_up->frame.y = 1;
+        nav_up->frame.w = 14;
+        // nav_up->frame.h = 10;
         zdj_menu_view_add_item( menu, nav_up );
  
         // Add a 'select this dir' item
@@ -73,8 +73,8 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
             dir_select_state->data->ptr = browser;
             strcpy( dir_select_state->link, path );
             dir_select->handle_control_event = &zdj_file_browser_item_hmi_delegate;
-            dir_select->frame->y = 1;
-            // dir_select->frame->h = 10;
+            dir_select->frame.y = 1;
+            // dir_select->frame.h = 10;
             zdj_menu_view_add_item( menu, dir_select );
         }
     }

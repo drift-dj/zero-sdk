@@ -168,9 +168,9 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         while( packet ) {
             // printf( "packet\n" );
             packet_count++;
-            // if( state->accum ) { 
-            //     accum_tally += state->accum( node, packet ); 
-            // }
+            if( packet->type == ZDJ_DECODE_PACKET_TYPE_NORMAL && state->accum ) { 
+                accum_tally += state->accum( node, packet ); 
+            }
             packet = packet->next;
         }
         layer = layer->next;
@@ -207,6 +207,7 @@ static void _deinit_state( zdj_pipeline_node_t * node ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     if( state->fmt_ctx ) { avformat_close_input( &state->fmt_ctx ); }
     if( state->codec_ctx ) { avcodec_free_context( &state->codec_ctx ); }
+    if( state->fmt_ctx ) { avformat_free_context( state->fmt_ctx ); }
     if( state->out_buffer ) { free( state->out_buffer ); }
     // Release packet_layers
     if( state ) { node->state = NULL; free( state );  }
@@ -228,7 +229,6 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
     if( state->first_layer ) { state->earliest_core_sample = state->first_layer->earliest_core_sample; }
     if( state->last_layer ) { state->latest_core_sample = state->last_layer->latest_core_sample; }
 
-    // printf( "0\n" );
     // Fill existing layers
     // --------------------
     zdj_decode_layer_t * layer = state->first_layer;
@@ -238,8 +238,6 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
         zdj_decode_fill_layer( node, layer );
         layer = layer->next;
     }
-
-    // printf( "1\n" );
 
     // Add first layer if layers are empty
     // -----------------------------------
@@ -253,7 +251,6 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
         zdj_decode_fill_layer( node, layer );
     }
 
-    // printf( "2\n" );
     // Add new layers if discon state requires
     // ---------------------------------------
     // Groom backwards from first layer, prepending layers to fill window coords.
@@ -276,8 +273,6 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
             );
         }
     }
-
-    // printf( "3\n" );
 
     // Groom forward from new first layer, appending layers to fill window coords.
     while( state->latest_core_sample < state->head_win_end ) {
@@ -302,7 +297,6 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
         }
     }
 
-    // printf( "4\n" );
     // Delete empty layers
     // -------------------
     layer = state->first_layer;

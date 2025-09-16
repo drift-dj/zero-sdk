@@ -43,9 +43,9 @@ void _zdj_asset_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     SDL_RenderCopy( zdj_renderer( ), state->tex, &s, &d );
 }
 
+// Not that we don't destroy the asset's texture since it's the global asset tex.
 void _zdj_asset_view_deinit_state( zdj_view_t * view ) {
     zdj_asset_view_state_t * state = (zdj_asset_view_state_t*)view->state;
-    // SDL_DestroyTexture( state->tex );
     free( state );
     view->state = NULL;
 }

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <math.h>
@@ -13,6 +14,7 @@
 zdj_deck_manager_t * _zdj_deck_manager;
 
 static void * _zdj_deck_manager_thread_main( void * arg );
+static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_event_t * event );
 
 zdj_deck_manager_t * zdj_deck_manager( void ) {
     if( !_zdj_deck_manager ) { zdj_deck_manager_init( ); }
@@ -31,8 +33,13 @@ zdj_deck_t * zdj_deck_manager_add_deck(
     zdj_deck_station_t station,
     void * resource
 ) {
+    printf( "deck_manager loading deck station %d\n", station );
     // If there's a deck in this station, start its remove process.
     // TODO
+    zdj_deck_t * cur_deck = zdj_deck_manager_get_deck_for_station( station );
+    if( cur_deck ) {
+        zdj_deck_manager_remove_deck( cur_deck );
+    }
 
     // Stand up the deck.
     zdj_deck_t * deck = zdj_new_deck( type, station, resource );
@@ -51,10 +58,25 @@ zdj_error_type_t zdj_deck_manager_remove_deck( zdj_deck_t * deck ) {
     zdj_deck_t * d = zdj_deck_manager( )->decks;
     while( d ) {
         if( d == deck ) {
-            d->status = ZDJ_DECK_STATUS_STOP_TRANSPORT;
+            if( d->begin_teardown ) {
+                d->begin_teardown( d );
+            } else {
+                d->status = ZDJ_DECK_STATUS_STOP_TRANSPORT;
+            }
         }
         d = d->next;
     }
+}
+
+zdj_deck_t * zdj_deck_manager_get_deck_for_station( zdj_deck_station_t station ) {
+    zdj_deck_t * d = zdj_deck_manager( )->decks;
+    while( d ) {
+        if( d->station == station ) {
+            return d;
+        }
+        d = d->next;
+    }
+    return NULL;
 }
 
 // Get a new batch of mapped deck control events from the Control system.
@@ -62,19 +84,33 @@ zdj_error_type_t zdj_deck_manager_remove_deck( zdj_deck_t * deck ) {
 void zdj_deck_manager_handle_events( int start_ind, int end_ind ) {
     // Step thru each deck, handling events.
     zdj_deck_t * deck = zdj_deck_manager( )->decks;
+    zdj_control_event_t * event;
     while( deck ) {
         int i = start_ind;
         while ( i != end_ind ) {
             i++; i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
+            event = &zdj_deck_event_buf[ i ];
             // Step thru ring buffer, passing each event down into deck.
-            if( deck->handle_control_event ) {
-                deck->handle_control_event( deck, &zdj_deck_event_buf[ i ] );
+            if( _station_can_handle_event( deck->station, event ) && deck->handle_control_event ) {
+                deck->handle_control_event( deck, event );
             }
-            // Note the event's control_id in the deck's change flags.
-            deck->controls.control_change_flags[ zdj_deck_event_buf[ i ].id ] = 1;
         }
         deck = deck->next;
     }
+
+    // Capture control-change flags on the soundcard (main/cue vol, etc.)
+    int i = start_ind;
+    while ( i != end_ind ) {
+        i++; i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
+        // printf( "control change: %d\n", zdj_deck_event_buf[ i ].id );
+        // Note the event's control_id in the deck's change flags.
+        zdj_deck_manager( )->control_change_flags[ zdj_deck_event_buf[ i ].id ] = 1;
+    }
+}
+
+// Clear all control flags
+void zdj_deck_manager_clear_control_flags( zdj_deck_t * deck ) {
+    memset( zdj_deck_manager( )->control_change_flags, 0, ZDJ_CONTROL_ID_COUNT * sizeof( uint8_t ) );
 }
 
 // Called from control update cycle (~900Hz).
@@ -139,4 +175,60 @@ static void * _zdj_deck_manager_thread_main( void * arg ) {
     }
 
     return NULL;
+}
+
+static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_event_t * event ) {
+    switch ( event->id ) {
+        case ZDJ_DECK_1_CONTROL_FADE:
+        case ZDJ_DECK_1_CONTROL_TRIM:
+        case ZDJ_DECK_1_CONTROL_EQ_LO:
+        case ZDJ_DECK_1_CONTROL_EQ_MID:
+        case ZDJ_DECK_1_CONTROL_EQ_HI:
+        case ZDJ_DECK_1_CONTROL_PFL_TRIM:
+        case ZDJ_DECK_1_CONTROL_PFL_MUTE:
+        case ZDJ_DECK_1_CONTROL_FX_SELECT:
+        case ZDJ_DECK_1_CONTROL_FX_0:
+        case ZDJ_DECK_1_CONTROL_FX_1:
+        case ZDJ_DECK_1_CONTROL_FX_2:
+        case ZDJ_DECK_1_CONTROL_FX_3:
+        case ZDJ_DECK_1_CONTROL_FX_4:
+        case ZDJ_DECK_1_CONTROL_FX_5:
+        case ZDJ_DECK_1_CONTROL_SCRUB:
+        case ZDJ_DECK_1_CONTROL_TEMPO:
+        case ZDJ_DECK_1_CONTROL_TEMPO_FINE:
+        case ZDJ_DECK_1_CONTROL_PLAY_PAUSE:
+        case ZDJ_DECK_1_CONTROL_PAUSE:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_START:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_END: return station == ZDJ_DECK_STATION_1;
+
+
+        case ZDJ_DECK_2_CONTROL_FADE:
+        case ZDJ_DECK_2_CONTROL_TRIM:
+        case ZDJ_DECK_2_CONTROL_EQ_LO:
+        case ZDJ_DECK_2_CONTROL_EQ_MID:
+        case ZDJ_DECK_2_CONTROL_EQ_HI:
+        case ZDJ_DECK_2_CONTROL_PFL_TRIM:
+        case ZDJ_DECK_2_CONTROL_PFL_MUTE:
+        case ZDJ_DECK_2_CONTROL_FX_SELECT:
+        case ZDJ_DECK_2_CONTROL_FX_0:
+        case ZDJ_DECK_2_CONTROL_FX_1:
+        case ZDJ_DECK_2_CONTROL_FX_2:
+        case ZDJ_DECK_2_CONTROL_FX_3:
+        case ZDJ_DECK_2_CONTROL_FX_4:
+        case ZDJ_DECK_2_CONTROL_FX_5:
+        case ZDJ_DECK_2_CONTROL_SCRUB:
+        case ZDJ_DECK_2_CONTROL_TEMPO:
+        case ZDJ_DECK_2_CONTROL_TEMPO_FINE:
+        case ZDJ_DECK_2_CONTROL_PLAY_PAUSE:
+        case ZDJ_DECK_2_CONTROL_PAUSE:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_START:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_END: return station == ZDJ_DECK_STATION_2;
+
+
+        case ZDJ_DECK_CONTROL_LR_VOL:
+        case ZDJ_DECK_CONTROL_CUE_VOL:
+        case ZDJ_DECK_CONTROL_XFADE: return true;
+
+        default: break;
+    }
 }

@@ -48,10 +48,10 @@ zdj_view_t * zdj_new_soundcard_options( zdj_soundcard_node_config_context_t * co
     // Make menu
     zdj_view_t * menu = zdj_new_menu_view( ZDJ_VERTICAL, zdj_modal_rect( ) );
     zdj_add_subview( soundcard_options, menu );
-    menu->frame->x = 0;
-    menu->frame->y = 0;
-    menu->frame->w = ZDJ_MODAL_WIDTH;
-    menu->frame->h = ZDJ_MODAL_HEIGHT;
+    menu->frame.x = 0;
+    menu->frame.y = 0;
+    menu->frame.w = ZDJ_MODAL_WIDTH;
+    menu->frame.h = ZDJ_MODAL_HEIGHT;
     zdj_menu_view_set_scrollview_frame( menu, &(zdj_rect_t){22,0,ZDJ_MODAL_WIDTH-22,ZDJ_MODAL_HEIGHT} );
     state->menu = menu;
     
@@ -96,8 +96,8 @@ zdj_view_t * zdj_new_soundcard_options( zdj_soundcard_node_config_context_t * co
 
     // Add divider
     zdj_view_t * divider = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-    divider->frame->x = 18;
-    divider->frame->y = 9;
+    divider->frame.x = 18;
+    divider->frame.y = 9;
     zdj_add_bottom_subview_to( soundcard_options, divider );
 
     return soundcard_options;

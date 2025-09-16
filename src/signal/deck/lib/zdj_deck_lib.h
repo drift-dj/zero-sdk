@@ -28,19 +28,5 @@
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
-typedef struct {
-    zdj_library_song_t * song;
-    
-    // Internal audio pipeline
-    zdj_pipeline_node_t * dsp_node;
-    zdj_pipeline_node_t * tsm_node;
-    zdj_pipeline_node_t * decode_node;
-    
-    // Thread management
-    sem_t start_cycle;
-    bool thread_ready;
-    bool exit_thread;
-
-} zdj_lib_deck_state_t;
 
 #endif

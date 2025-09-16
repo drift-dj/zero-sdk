@@ -79,17 +79,59 @@ double zdj_signal_lowpass( double state, double input, double coeff ) {
 	return state + ((input-state) * coeff);
 }
 
-void zdj_signal_resample_audio( 
+// Naïvely re-sample audio.
+// Only interpolate between nearest samples.
+// No decimation is performed for re-sample rates > 1.0.
+// A new interpolation/decimation system is needed for better audio quality.
+void zdj_signal_naive_resample_audio( 
     float * in_buf,
     double in_start_coord,
     double in_end_coord,
+	double in_buf_ref_coord,
     int in_channel_count,
     float * out_buf,
-    double out_start_coord,
-    double out_end_coord,
+    int64_t out_sample_count,
     int out_channel_count
 ) {
 
+	double rate = (in_end_coord - in_start_coord) / (double)out_sample_count;
+
+	double cur_sample = in_start_coord - in_buf_ref_coord;
+	int left_neighbor_sample, left_neighbor_index;
+	int right_neighbor_sample, right_neighbor_index;
+	double interp_val;
+	double samp;
+
+	for( int i=0; i<out_sample_count; i++ ) {
+		// printf( "resamp: rat: %1.3f, out i %d, src cur_sam: %1.3f\n", rate, i, cur_sample );
+		// Gather neighboring samples for interpolation
+		left_neighbor_sample = floor( cur_sample );
+		right_neighbor_sample = ceil( cur_sample );
+		interp_val = cur_sample - (double)left_neighbor_sample;
+		
+		// Interpolate nearest neighbor
+		left_neighbor_index = left_neighbor_sample * in_channel_count;
+		right_neighbor_index = right_neighbor_sample * in_channel_count;
+		samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
+		samp += in_buf[ right_neighbor_index ] * interp_val;
+		out_buf[ i*out_channel_count ] = samp;
+
+		if( out_channel_count == 2 ) {
+			if( in_channel_count == 1 ) {
+				left_neighbor_index = left_neighbor_sample;
+				right_neighbor_index = right_neighbor_sample;
+			} else if( in_channel_count == 2 ) {
+				left_neighbor_index = left_neighbor_sample * in_channel_count + 1;
+				right_neighbor_index = right_neighbor_sample * in_channel_count + 1;
+			}
+			samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
+			samp += in_buf[ right_neighbor_index ] * interp_val;
+			out_buf[ i*out_channel_count+1 ] = samp;
+		}
+
+		// Increment the source sample coord by playback rate
+		cur_sample += rate;
+	}
 }
 
 float zdj_signal_gen_sine( 

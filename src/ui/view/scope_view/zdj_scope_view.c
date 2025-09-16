@@ -41,10 +41,10 @@ zdj_view_t * zdj_new_scope_view( zdj_soundcard_t * soundcard, zdj_soundcard_node
     // Make menu
     zdj_view_t * menu = zdj_new_menu_view( ZDJ_VERTICAL, zdj_modal_rect( ) );
     zdj_add_subview( scope_view, menu );
-    menu->frame->x = 0;
-    menu->frame->y = 0;
-    menu->frame->w = ZDJ_MODAL_WIDTH;
-    menu->frame->h = ZDJ_MODAL_HEIGHT;
+    menu->frame.x = 0;
+    menu->frame.y = 0;
+    menu->frame.w = ZDJ_MODAL_WIDTH;
+    menu->frame.h = ZDJ_MODAL_HEIGHT;
     state->menu = menu;
     
     // Set up header
@@ -116,13 +116,13 @@ void _zdj_scope_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) 
 
     // Add waveform frame
     zdj_view_t * frame_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TEXT_INPUT_CURSOR ], NULL );
-    frame_l->frame->x = 3;
-    frame_l->frame->y = 28;
-    frame_l->frame->w = 3;
+    frame_l->frame.x = 3;
+    frame_l->frame.y = 28;
+    frame_l->frame.w = 3;
     zdj_add_subview( menu_view, frame_l );
     zdj_view_t * frame_r = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TEXT_INPUT_CURSOR_R ], NULL );
-    frame_r->frame->x = view->frame->w - 4;
-    frame_r->frame->y = 28;
+    frame_r->frame.x = view->frame.w - 4;
+    frame_r->frame.y = 28;
     zdj_add_subview( menu_view, frame_r );
 
 

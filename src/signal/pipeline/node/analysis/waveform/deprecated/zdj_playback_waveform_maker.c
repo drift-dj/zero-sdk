@@ -17,8 +17,9 @@ static void _deinit_state( zdj_pipeline_node_t * node );
 static void _waveform_maker_prep_window( zdj_pipeline_node_t * node );
 static void _waveform_maker_wait_window( zdj_pipeline_node_t * node );
 static void _waveform_maker_capture_window( zdj_pipeline_node_t * node );
+static void _waveform_maker_build_point( zdj_pipeline_node_t * node );
 
-zdj_pipeline_node_t * zdj_new_playback_waveform_maker( 
+zdj_pipeline_node_t * zdj_new_waveform_maker( 
     zdj_pipeline_node_t * decode_node,
     char * filepath,
     int samples_per_point,
@@ -26,14 +27,14 @@ zdj_pipeline_node_t * zdj_new_playback_waveform_maker(
 ) {
     zdj_library_decode_node_state_t * decode_state = (zdj_library_decode_node_state_t*)decode_node->state;
 
-    // printf( "%s zdj_new_playback_waveform_maker\n", decode_state->song->audio->filepath );
+    // printf( "%s zdj_new_waveform_maker\n", decode_state->song->audio->filepath );
 
     zdj_pipeline_node_t * maker = zdj_new_pipeline_node( );
     maker->update_wait = &_update_wait;
     maker->deinit_state = &_deinit_state;
 
     // Set up state
-    zdj_playback_waveform_maker_state_t * state = calloc( 1, sizeof( zdj_playback_waveform_maker_state_t ) );
+    zdj_waveform_maker_state_t * state = calloc( 1, sizeof( zdj_waveform_maker_state_t ) );
     state->phase = ZDJ_WAVEFORM_MAKER_PHASE_PREP_WINDOW;
     maker->state = state;
 
@@ -57,14 +58,15 @@ zdj_pipeline_node_t * zdj_new_playback_waveform_maker(
     if( !state->waveform_fd ) { return NULL; }
     fwrite( state->waveform_header, sizeof( zdj_playback_waveform_header_t ), 1, state->waveform_fd );
 
-    // printf( "%s zdj_new_playback_waveform_maker done: %p\n", decode_state->song->audio->filepath, maker );
+    // printf( "%s zdj_new_waveform_maker done: %p\n", decode_state->song->audio->filepath, maker );
 
     return maker;
 }
 
-void zdj_close_playback_waveform_maker( zdj_pipeline_node_t * node ) {
+void zdj_close_waveform_maker( zdj_pipeline_node_t * node ) {
+    // printf( "zdj_close_waveform_maker\n" );
     // Update waveform header with point count and re-write
-    zdj_playback_waveform_maker_state_t * node_state = (zdj_playback_waveform_maker_state_t*)node->state;
+    zdj_waveform_maker_state_t * node_state = (zdj_waveform_maker_state_t*)node->state;
     node_state->waveform_header->frame_count = node_state->point_tally;
     fseek( node_state->waveform_fd, 0, SEEK_SET );
     fwrite( node_state->waveform_header, sizeof( zdj_playback_waveform_header_t ), 1, node_state->waveform_fd );
@@ -73,7 +75,7 @@ void zdj_close_playback_waveform_maker( zdj_pipeline_node_t * node ) {
 
 static void _waveform_maker_prep_window( zdj_pipeline_node_t * node ) {
     // printf( "_waveform_maker_prep_window: %p\n", node );
-    zdj_playback_waveform_maker_state_t * waveform_state = (zdj_playback_waveform_maker_state_t*)node->state;
+    zdj_waveform_maker_state_t * waveform_state = (zdj_waveform_maker_state_t*)node->state;
     zdj_library_decode_node_state_t * decode_state = (zdj_library_decode_node_state_t*)waveform_state->decode_node->state;
 
     // printf( "%s _waveform_maker_prep_window: %ld\n", decode_state->song->audio->filepath, decode_state->pcm_addr.i_val );
@@ -94,7 +96,7 @@ static void _waveform_maker_prep_window( zdj_pipeline_node_t * node ) {
 }
 
 static void _waveform_maker_wait_window( zdj_pipeline_node_t * node ) { 
-    zdj_playback_waveform_maker_state_t * node_state = (zdj_playback_waveform_maker_state_t*)node->state;
+    zdj_waveform_maker_state_t * node_state = (zdj_waveform_maker_state_t*)node->state;
     zdj_library_decode_node_state_t * decode_state = (zdj_library_decode_node_state_t*)node_state->decode_node->state;
 
 
@@ -104,63 +106,91 @@ static void _waveform_maker_wait_window( zdj_pipeline_node_t * node ) {
     //     decode_end_addr
     // );
 
-    if( decode_state->pcm_addr > node_state->window_start_pcm_addr ) {
+    if( decode_state->pcm_addr >= node_state->window_start_pcm_addr ) {
         // If decode window's pcm addr has passed the addr we're waiting for, mark and start capturing
+        node_state->previous_decode_pcm_addr = node_state->window_start_pcm_addr;
         node_state->phase = ZDJ_WAVEFORM_MAKER_PHASE_CAPTURE_WINDOW;
         _waveform_maker_capture_window( node );
     }
 }
 
 
+int test_tally = 0;
 // Note that while we're capturing, window is unlikely to fill up from a single
 // decode_node->out_buffer.  Do this statefully so we can capture as many samples
 // as required across multiple decode_node->out_buffers.
 static void _waveform_maker_capture_window( zdj_pipeline_node_t * node ) {
     // printf( "_waveform_maker_capture_window\n" );
-    zdj_playback_waveform_maker_state_t * waveform_state = (zdj_playback_waveform_maker_state_t*)node->state;
+    zdj_waveform_maker_state_t * waveform_state = (zdj_waveform_maker_state_t*)node->state;
     zdj_library_decode_node_state_t * decode_state = (zdj_library_decode_node_state_t*)waveform_state->decode_node->state;
+    
+    
+    // Find decode node start sample
+    // int decode_start_sample = decode_state->pcm_addr - waveform_state->window_start_pcm_addr;
+    int decode_start_sample = decode_state->pcm_addr - waveform_state->previous_decode_pcm_addr;
 
-    // printf( "decode_state->available_samples: %ld\n", decode_state->available_samples );
-    // printf( "decode_state->pcm_addr: %ld\n", decode_state->pcm_addr );
-    // printf( "waveform_state->window_start_pcm_addr: %ld\n", waveform_state->window_start_pcm_addr );
-    // printf( "waveform_state->window_width: %d\n", waveform_state->window_width );
-    // printf( "waveform_state->window_cur_sample: %d\n", waveform_state->window_cur_sample );
-    // Fill window from decode_node out_buffer - we've already confirmed our window address
-    // is within the bounds of the decode_node buffer.
-    // int64_t decode_end_addr = decode_state->pcm_addr;
-    // int64_t decode_start_addr = decode_end_addr - decode_state->available_samples;
-    // Move back from end of decode's available samples
-    int decode_buf_copy_sample = decode_state->available_samples - ( decode_state->pcm_addr - waveform_state->window_start_pcm_addr );
-    int decode_buf_copy_len = fmin( 
-        decode_state->available_samples - decode_buf_copy_sample, // From copy index to the decode's window end
-        waveform_state->window_width - waveform_state->window_cur_sample // From copy index to waveform's window end
-    );
+    // Find decode out_buf start index
+    int decode_start_index = decode_start_sample * decode_state->channel_count;
 
-    // printf( "capturing %d samps @%d %s\n", decode_buf_copy_len, decode_buf_copy_sample, decode_state->song->audio->filepath );
-    double val = 0.0;
-    for( int i=decode_buf_copy_sample; i<decode_buf_copy_sample+decode_buf_copy_len; i++ ) {
-        int index = (i*decode_state->channel_count);
-        waveform_state->window_buf[ waveform_state->window_cur_sample ] = fabs( decode_state->out_buffer[ index ] );
+    // Find waveform window start index
+    int waveform_start_index = waveform_state->window_cur_sample;
+
+    // Find sample count - the shorter of:
+    //  - remaining samples required to fill waveform point window
+    int remaining_waveform_samples = waveform_state->window_width - waveform_state->window_cur_sample;
+    //  - samples available in decode_node, noting possible non-zero start sample
+    int available_decode_samples = decode_state->available_samples - decode_start_sample;
+
+    int sample_count = fmin( remaining_waveform_samples, available_decode_samples );
+
+    // if( test_tally++ < 5 ) {
+    //     printf( "decode_state->pcm_addr: %ld\n", decode_state->pcm_addr );
+    //     printf( "available_decode_samples: %d\n", available_decode_samples );
+    //     printf( "waveform_state->window_start_pcm_addr: %ld\n", waveform_state->window_start_pcm_addr );
+    //     printf( "decode_start_sample: %d\n", decode_start_sample );
+    //     printf( "decode_start_index: %d\n", decode_start_index );
+    //     printf( "waveform_start_index: %d\n", waveform_start_index );
+    //     printf( "remaining_waveform_samples: %d\n", remaining_waveform_samples );
+    //     printf( "\n" );
+    // }
+
+    waveform_state->previous_decode_pcm_addr = decode_state->pcm_addr + decode_state->available_samples;
+
+    // printf( "samps: %d %d %d %ld\n", sample_count, available_decode_samples, decode_start_sample, waveform_state->window_start_pcm_addr );
+    float decode_samp;
+    for( int i=0; i<sample_count; i++ ) {
+        decode_samp = decode_state->out_buffer[ (i + decode_start_index) * decode_state->channel_count ];
+        waveform_state->window_buf[ i + waveform_start_index ] = fabs(decode_samp);
+        // printf( "decode[ %d+%d=%d ]  window[ %d+%d=%d ] = %1.3f\n", 
+        //     i, decode_start_index, i+decode_start_index,
+        //     i, waveform_start_index, i+waveform_start_index, 
+        //     waveform_state->window_buf[ i + waveform_start_index ] 
+        // );
         waveform_state->window_cur_sample++;
     }
 
-    // printf( "waveform_state->window_cur_sample: %d\n", waveform_state->window_cur_sample );
-    
-    // If the window is full, convolve using the kernel and write a new point to the file.
-    if( waveform_state->window_cur_sample == waveform_state->window_width ) {
-        double tally = 0.0;
-        // Run window thru kernel
-        for( int i=0; i<waveform_state->window_width; i++ ) {
-            tally += waveform_state->window_buf[ i ] * waveform_state->kernel->lut[ i ];
-        }
-        tally /= (double)waveform_state->window_width;
-        uint8_t point = (uint8_t)(tally * 255);
-        waveform_state->point_tally++;
-
-        // Write point to file
-        // printf( "point: %f\n", tally );
-        fwrite( &point, sizeof( uint8_t ), 1, waveform_state->waveform_fd );
+    // Exit capture once we've filled the window
+    if( waveform_state->window_cur_sample >= waveform_state->window_width ) {
+        // printf( "building point from %d samples\n", waveform_state->window_cur_sample );
+        _waveform_maker_build_point( node );
     }
+}
+
+static void _waveform_maker_build_point( zdj_pipeline_node_t * node ) {
+    zdj_waveform_maker_state_t * waveform_state = (zdj_waveform_maker_state_t*)node->state;
+    
+    double tally = 0.0;
+    // Run window thru kernel
+    for( int i=0; i<waveform_state->window_width; i++ ) {
+        // tally += waveform_state->window_buf[ i ] * waveform_state->kernel->lut[ i ];
+        tally += waveform_state->window_buf[ i ];
+    }
+    tally /= (double)waveform_state->window_width;
+    uint8_t point = (uint8_t)(tally * 255);
+
+    // Write point to file
+    // printf( "point[ %1.0f ]: %d\n", waveform_state->point_tally, point );
+    fwrite( &point, sizeof( uint8_t ), 1, waveform_state->waveform_fd );
 
     waveform_state->phase = ZDJ_WAVEFORM_MAKER_PHASE_PREP_WINDOW;
 }
@@ -168,7 +198,7 @@ static void _waveform_maker_capture_window( zdj_pipeline_node_t * node ) {
 // Note waveform maker behavior is undefined if discontinuities are present in decode_node.
 static void _update_wait( zdj_pipeline_node_t * node ) {
     // printf( "waveform_maker _update_wait\n" );
-    zdj_playback_waveform_maker_state_t * node_state = (zdj_playback_waveform_maker_state_t*)node->state;
+    zdj_waveform_maker_state_t * node_state = (zdj_waveform_maker_state_t*)node->state;
     zdj_library_decode_node_state_t * decode_state = (zdj_library_decode_node_state_t*)node_state->decode_node->state;
     node_state->input_sample_counter += decode_state->available_samples;
 
@@ -182,12 +212,15 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         case ZDJ_WAVEFORM_MAKER_PHASE_CAPTURE_WINDOW:
             _waveform_maker_capture_window( node );
             break;
+        case ZDJ_WAVEFORM_MAKER_PHASE_BUILD_POINT:
+            _waveform_maker_build_point( node );
+            break;
     }
     // printf( "waveform_maker _update_wait done\n" );
 }
 
 static void _deinit_state( zdj_pipeline_node_t * node ) {
-    zdj_playback_waveform_maker_state_t * state = (zdj_playback_waveform_maker_state_t*)node->state;
+    zdj_waveform_maker_state_t * state = (zdj_waveform_maker_state_t*)node->state;
     if( state->waveform_header ) { free( state->waveform_header ); }
     if( state->kernel ) { zdj_gaussian_free( state->kernel ); }
 }

@@ -32,7 +32,11 @@ zdj_pipeline_node_t * zdj_new_tsm_pitch_node(
     state->channel_count = stereo + 1;
     state->sample_count = sample_count;
     state->decode_node = decode_node;
-    // zdj_decode_node_capture_mono_addr( decode_node, &state->decode_mono_addr_snapshot );
+
+    // Capture starting state of decode out_buf indexes
+    zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)decode_node->state;
+    state->decode_buf_ref_coord = decode_state->head_decode_addr - decode_state->head_win_start;
+    state->decode_start_coord = 0;
 
     // Alloc output buffer
     state->out_buffer = calloc( state->sample_count * state->channel_count, sizeof( float ) );
@@ -45,44 +49,38 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     zdj_tsm_pitch_node_state_t * state = (zdj_tsm_pitch_node_state_t*)node->state;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)state->decode_node->state;
 
-    int tsm_buf_len = ZDJ_SOUNDCARD_BUF_LEN;
-    // Figure out the distance (in decode out_buf index space) covered
-    // by this buffer.  Based on current playback rate.
-    double interp_distance = state->rate * (double)tsm_buf_len;
-
-    // Ask the decode node to transform our last set of interp coords 
-    // into the new set of coords based on how far decode window has moved
-    // since our last tsm node update_wait() call.
-    // zdj_decode_node_xform_tsm_coords_for_captured_mono_addr( 
-    //     state->decode_node,
-    //     &state->decode_start_coord,
-    //     &state->decode_end_coord,
-    //     &state->decode_mono_addr_snapshot
+    // printf( "tsm update_wait decd %ld>%ld>%ld ref: %1.1f st:%1.1f en:%1.1f\n", 
+    //     decode_state->head_win_start,
+    //     decode_state->head_decode_addr,
+    //     decode_state->head_win_end,
+    //     state->decode_buf_ref_coord, 
+    //     state->decode_start_coord,
+    //     state->decode_end_coord
     // );
 
-    // Start interp from end of last interp
-    state->decode_start_coord = state->decode_end_coord;
-    // End interp by arithmetic of start coord + distance
-    state->decode_end_coord = state->decode_start_coord + interp_distance;
+    // printf( "tsm: %1.1f -> %1.1f\n", state->decode_start_coord, state->decode_end_coord );
 
     // Interp from rate-based decode buf coords to full width of tsm buf.
-    zdj_signal_resample_audio( 
+    zdj_signal_naive_resample_audio( 
         decode_state->out_buffer,
         state->decode_start_coord,
         state->decode_end_coord,
+        state->decode_buf_ref_coord,
         decode_state->channel_count,
         state->out_buffer,
-        0.0,
-        (double)tsm_buf_len,
+        ZDJ_SOUNDCARD_BUF_LEN,
         state->channel_count
     );
 
     // Naïve copy
     // printf( "--- TSM naive copy:\n" );
-    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-        state->out_buffer[ i ] = decode_state->out_buffer[ i ];
-        // printf( "%1.1f -> %1.1f\n", decode_state->out_buffer[ i ], state->out_buffer[ i ] ); 
-    }
+    // for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+    //     state->out_buffer[ i ] = decode_state->out_buffer[ i ];
+    //     // printf( "%1.1f -> %1.1f\n", decode_state->out_buffer[ i ], state->out_buffer[ i ] ); 
+    // }
+
+    // Start next interp from end of current interp
+    state->decode_start_coord = state->decode_end_coord;
 }
 
 static void _deinit_state( zdj_pipeline_node_t * node ) {

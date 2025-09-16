@@ -25,8 +25,8 @@ zdj_view_t * zdj_new_perf_panel( void ) {
     zdj_perf_init( 3000 );
 
     zdj_view_t * view = zdj_new_view( zdj_screen_rect( ) );
-    view->frame->w = ZDJ_PERF_PANEL_WIDTH;
-    view->frame->h = ZDJ_PERF_PANEL_HEIGHT;
+    view->frame.w = ZDJ_PERF_PANEL_WIDTH;
+    view->frame.h = ZDJ_PERF_PANEL_HEIGHT;
 
     // Add a container view for animations/clipping
     zdj_view_t * container_view = zdj_new_view( zdj_perf_panel_rect( ) );
@@ -35,13 +35,15 @@ zdj_view_t * zdj_new_perf_panel( void ) {
     container_view->draw = &_zdj_perf_panel_draw;
     container_view->handle_control_event = &_zdj_perf_panel_handle_control;
 
-    container_view->frame->w = ZDJ_PERF_PANEL_WIDTH;
-    container_view->frame->h = ZDJ_PERF_PANEL_HEIGHT;
-    container_view->frame->x = ZDJ_PERF_PANEL_WIDTH * -3;
-    container_view->frame->y = 0;
+    container_view->frame.w = ZDJ_PERF_PANEL_WIDTH;
+    container_view->frame.h = ZDJ_PERF_PANEL_HEIGHT;
+    container_view->frame.x = ZDJ_PERF_PANEL_WIDTH * -3;
+    container_view->frame.y = 0;
     
-    container_view->in_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_SHOW );
-    container_view->out_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_HIDE );
+    // container_view->in_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_SHOW );
+    // container_view->out_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_HIDE );
+    zdj_set_anim( &container_view->in_anim, ZDJ_ANIM_DEBUG_PANEL_SHOW );
+    zdj_set_anim( &container_view->out_anim, ZDJ_ANIM_DEBUG_PANEL_HIDE );
 
     zdj_view_t * thread_view = zdj_new_thread_view( zdj_perf_panel_rect( ) );
     zdj_add_subview( container_view, thread_view );
@@ -89,11 +91,11 @@ void _zdj_perf_panel_deploy( zdj_view_t * view ) {
 
     zdj_enable_perf( );
 
-    ((anim_init_t)view->in_anim->init_fn)( 
-        view->in_anim, 
+    ((anim_init_t)view->in_anim.init_fn)( 
+        &view->in_anim, 
         view
     );
-    view->anim = view->in_anim;
+    view->anim = &view->in_anim;
 }
 
 void _zdj_perf_panel_retract( zdj_view_t * view ) {
@@ -103,9 +105,9 @@ void _zdj_perf_panel_retract( zdj_view_t * view ) {
 
     zdj_disable_perf( );
 
-    ((anim_init_t)view->out_anim->init_fn)( 
-        view->out_anim, 
+    ((anim_init_t)view->out_anim.init_fn)( 
+        &view->out_anim, 
         view 
     );
-    view->anim = view->out_anim;
+    view->anim = &view->out_anim;
 }

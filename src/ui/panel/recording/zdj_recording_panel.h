@@ -18,19 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_WAVEFORM_THUMB_BUILD_NODE_H
-#define ZDJ_WAVEFORM_THUMB_BUILD_NODE_H
+#ifndef ZDJ_RECORDING_PANEL_H
+#define ZDJ_RECORDING_PANEL_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <semaphore.h>
+#include <zerodj/ui/anim/zdj_anim.h>
+
+typedef enum {
+    ZDJ_RECORD_PANEL_RETRACTED,
+    ZDJ_RECORD_PANEL_MINI_METER,
+    ZDJ_RECORD_PANEL_OPTIONS_VIEW
+} zdj_recording_panel_deploy_state_t;
 
 typedef struct {
-    char * comp_path;
-} zdj_waveform_thumb_build_node_state_t;
+    bool ui_init;
+    int deploy_timer;
+    zdj_recording_panel_deploy_state_t deploy_state;
+    zdj_view_t * container;
+    zdj_view_t * meter;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
+} zdj_recording_panel_state_t;
 
-zdj_pipeline_node_t * zdj_new_waveform_thumb_build_node( char * comp_path );
-zdj_error_type_t zdj_waveform_thumb_build_node_close( zdj_pipeline_node_t * node );
+zdj_view_t * zdj_new_recording_panel( void );
 
 #endif

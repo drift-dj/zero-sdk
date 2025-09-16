@@ -30,10 +30,12 @@ zdj_view_t * zdj_new_usb_status_view( void ) {
     usb_status_view->type = ZDJ_VIEW_MODAL;
     usb_status_view->handle_control_event = _zdj_usb_status_view_handle_control;
     usb_status_view->deinit_state = &_zdj_usb_status_view_deinit_state;
-    usb_status_view->frame->x = ZDJ_MODAL_X;
-    usb_status_view->frame->y = ZDJ_SCREEN_H+2;
-    usb_status_view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
-    usb_status_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
+    usb_status_view->frame.x = ZDJ_MODAL_X;
+    usb_status_view->frame.y = ZDJ_SCREEN_H+2;
+    // usb_status_view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
+    // usb_status_view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
+    zdj_set_anim( &usb_status_view->in_anim, ZDJ_ANIM_MODAL_SHOW );
+    zdj_set_anim( &usb_status_view->out_anim, ZDJ_ANIM_MODAL_HIDE );
 
     // Add a state instance
     zdj_usb_status_view_state_t * state = calloc( 1, sizeof( zdj_usb_status_view_state_t ) );
@@ -44,10 +46,10 @@ zdj_view_t * zdj_new_usb_status_view( void ) {
     // Add menu
     zdj_view_t * _menu = zdj_new_menu_view( ZDJ_VERTICAL, zdj_modal_rect( ) );
     zdj_add_subview( usb_status_view, _menu );
-    _menu->frame->x = 0;
-    _menu->frame->y = 0;
-    _menu->frame->w = ZDJ_MODAL_WIDTH;
-    _menu->frame->h = ZDJ_MODAL_HEIGHT;
+    _menu->frame.x = 0;
+    _menu->frame.y = 0;
+    _menu->frame.w = ZDJ_MODAL_WIDTH;
+    _menu->frame.h = ZDJ_MODAL_HEIGHT;
     state->menu_view = _menu;
 
     // Add header
