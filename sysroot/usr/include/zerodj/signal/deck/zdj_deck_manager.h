@@ -46,12 +46,11 @@ typedef struct zdj_deck_manager_request_t {
 } zdj_deck_manager_request_t;
 
 typedef struct {
-    // zdj_deck_manager_request_t * pending_requests;
-    // zdj_deck_manager_request_t * active_requests;
     zdj_deck_t * station_1;
     zdj_deck_t * station_2;
     zdj_deck_t * station_ext;
     zdj_deck_t * decks;
+    uint8_t control_change_flags[ ZDJ_CONTROL_ID_COUNT ];
 } zdj_deck_manager_t;
 
 zdj_error_type_t zdj_deck_manager_init( void );
@@ -64,9 +63,11 @@ zdj_deck_t * zdj_deck_manager_add_deck(
     void * resource
 );
 zdj_error_type_t zdj_deck_manager_remove_deck( zdj_deck_t * deck );
+zdj_deck_t * zdj_deck_manager_get_deck_for_station( zdj_deck_station_t station );
 
 // Receive a new batch of deck control events.
 void zdj_deck_manager_handle_events( int start_ind, int end_ind );
+void zdj_deck_manager_clear_control_flags( zdj_deck_t * deck );
 // Update the control models/sims for each active deck
 void zdj_deck_manager_control_update_cycle( void );
 

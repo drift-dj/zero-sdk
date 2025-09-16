@@ -18,15 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_DECK_LIB_H
-#define ZDJ_DECK_LIB_H
+#ifndef ZDJ_RECORDING_PANEL_H
+#define ZDJ_RECORDING_PANEL_H
 
-#include <stdbool.h>
-#include <pthread.h>
-#include <semaphore.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 
-#include <zerodj/library/zdj_library.h>
-#include <zerodj/signal/pipeline/zdj_pipeline.h>
+typedef enum {
+    ZDJ_RECORD_PANEL_RETRACTED,
+    ZDJ_RECORD_PANEL_MINI_METER,
+    ZDJ_RECORD_PANEL_OPTIONS_VIEW
+} zdj_recording_panel_deploy_state_t;
 
+typedef struct {
+    bool ui_init;
+    int deploy_timer;
+    zdj_recording_panel_deploy_state_t deploy_state;
+    zdj_view_t * container;
+    zdj_view_t * meter;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
+} zdj_recording_panel_state_t;
+
+zdj_view_t * zdj_new_recording_panel( void );
 
 #endif

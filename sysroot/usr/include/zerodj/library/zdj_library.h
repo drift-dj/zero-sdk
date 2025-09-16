@@ -314,6 +314,7 @@ void zdj_library_get_all_libraries(
     zdj_library_t ** libraries, 
     int result_limit
 );
+zdj_library_t * zdj_library_get_current( void );
 zdj_library_t * zdj_library_get_library_for_entity_id( char * library_entity_id );
 zdj_health_status_t zdj_library_new( void );
 zdj_health_status_t zdj_library_duplicate_library( char * library_entity_id );

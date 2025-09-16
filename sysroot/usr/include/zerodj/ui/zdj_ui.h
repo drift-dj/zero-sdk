@@ -156,21 +156,24 @@ typedef enum {
     ZDJ_ANIM_DJ_DECK_PAGE_SHOW,
     ZDJ_ANIM_DJ_DECK_PAGE_HIDE,
     ZDJ_ANIM_DEBUG_PANEL_SHOW,
-    ZDJ_ANIM_DEBUG_PANEL_HIDE
+    ZDJ_ANIM_DEBUG_PANEL_HIDE,
+    ZDJ_ANIM_VOLUME_PANEL_SHOW,
+    ZDJ_ANIM_VOLUME_PANEL_HIDE,
+    ZDJ_ANIM_RECORD_PANEL_SHOW,
+    ZDJ_ANIM_RECORD_PANEL_HIDE
 } zdj_anim_type_t;
 
 typedef struct {
     int frame;
     int frames;
     float val;
-    void * start_data;
-    void * end_data;
+    zdj_point_t start_point;
+    zdj_point_t end_point;
     bool alive;
     zdj_anim_type_t type;
     void * init_fn;
     void * update_fn;
     float ( *ease )( float, float );
-    void * deinit_fn;
     struct zdj_view_t * superview;
     struct zdj_view_t * view;
     void * cb_fn;
@@ -223,12 +226,12 @@ typedef struct zdj_view_t {
     struct zdj_view_t * prev;
     struct zdj_view_t * subviews;
     int subview_count;
-    zdj_view_clip_t * subview_clip;
-    zdj_rect_t * frame;
+    zdj_view_clip_t subview_clip;
+    zdj_rect_t frame;
     bool is_visible;
     zdj_anim_t * anim;
-    zdj_anim_t * in_anim;
-    zdj_anim_t * out_anim;
+    zdj_anim_t in_anim;
+    zdj_anim_t out_anim;
     bool is_deleting;
     void * state;
 } zdj_view_t;
@@ -262,8 +265,8 @@ void zdj_ui_init( void );
 void zdj_ui_deinit( void );
 void zdj_ui_update( void );
 
-void zdj_ui_start_events( void );
-void zdj_ui_stop_events( void );
+// void zdj_ui_start_events( void );
+// void zdj_ui_stop_events( void );
 
 zdj_view_t * zdj_new_view( zdj_rect_t * frame );
 void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview );

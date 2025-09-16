@@ -13,6 +13,6 @@ typedef struct {
 
 extern song_edit_view_state_t * song_edit_view_state;
 
-void push_song_edit_view( zdj_library_song_t * song );
+zdj_view_t * new_song_edit_view( zdj_library_song_t * song );
 
 #endif

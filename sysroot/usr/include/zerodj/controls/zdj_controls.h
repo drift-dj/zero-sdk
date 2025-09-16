@@ -255,6 +255,8 @@ typedef enum {
     
     ZDJ_CONTROL_MAP_SDK_TEST,
 
+    ZDJ_CONTROL_MAP_SOUNDCARD,
+
     ZDJ_CONTROL_MAP_LIB_EDIT_SONG,
     ZDJ_CONTROL_MAP_LIB_EDIT_CUEPOINT,
     ZDJ_CONTROL_MAP_LIB_EDIT_BEATGRID,
@@ -279,6 +281,41 @@ typedef enum {
 
     ZDJ_CONTROL_MAP_COUNT
 } zdj_control_map_id_t;
+
+static char * zdj_control_map_name[ ZDJ_CONTROL_MAP_COUNT ] = {
+    "None", // ZDJ_CONTROL_MAP_NONE,
+    
+    "Menu Base", // ZDJ_CONTROL_MAP_MENU_BASE,
+    "Menu DJ Root", // ZDJ_CONTROL_MAP_MENU_DJ_ROOT,
+
+    "Text Input", // ZDJ_CONTROL_MAP_TEXT_INPUT,
+    
+    "SDK Test", // ZDJ_CONTROL_MAP_SDK_TEST,
+
+    "Soundcard", // ZDJ_CONTROL_MAP_SOUNDCARD,
+
+    "Lib Edit Song", // ZDJ_CONTROL_MAP_LIB_EDIT_SONG,
+    "Lib Edit Cuepoint", // ZDJ_CONTROL_MAP_LIB_EDIT_CUEPOINT,
+    "Lib Edit Beatgrid", // ZDJ_CONTROL_MAP_LIB_EDIT_BEATGRID,
+
+    "Deck 1 Empty", // ZDJ_CONTROL_MAP_STATION_1_EMPTY,
+    "Deck 1 Mom. EQ", // ZDJ_CONTROL_MAP_STATION_1_MOM_EQ,
+    "Deck 1 EQ", // ZDJ_CONTROL_MAP_STATION_1_EQ,
+    "Deck 1 Trim", // ZDJ_CONTROL_MAP_STATION_1_TRIM,
+    "Deck 1 Loop", // ZDJ_CONTROL_MAP_STATION_1_LOOP,
+    "Deck 1 Sync", // ZDJ_CONTROL_MAP_STATION_1_SYNC,
+
+    "Deck 2 Empty", // ZDJ_CONTROL_MAP_STATION_2_EMPTY,
+    "Deck 2 Mom. EQ", // ZDJ_CONTROL_MAP_STATION_2_MOM_EQ,
+    "Deck 2 EQ", // ZDJ_CONTROL_MAP_STATION_2_EQ,
+    "Deck 2 Trim", // ZDJ_CONTROL_MAP_STATION_2_TRIM,
+    "Deck 2 Loop", // ZDJ_CONTROL_MAP_STATION_2_LOOP,
+    "Deck 2 Sync", // ZDJ_CONTROL_MAP_STATION_2_SYNC,
+    
+    "Deck Ext Mom. EQ", // ZDJ_CONTROL_MAP_STATION_EXT_MOM_EQ,
+    "Deck Ext EQ", // ZDJ_CONTROL_MAP_STATION_EXT_EQ,
+    "Deck Ext Trim"  // ZDJ_CONTROL_MAP_STATION_EXT_TRIM
+};
 
 typedef struct {
     bool controls[ ZDJ_CONTROL_ID_COUNT ];

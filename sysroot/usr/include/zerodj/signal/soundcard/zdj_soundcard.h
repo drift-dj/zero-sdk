@@ -25,6 +25,7 @@
 
 #include <sqlite3.h>
 
+#include <zerodj/controls/zdj_controls.h>
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>

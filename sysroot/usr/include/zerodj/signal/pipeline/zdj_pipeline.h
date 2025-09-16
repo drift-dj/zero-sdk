@@ -29,7 +29,6 @@
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/perf/zdj_perf.h>
 
-// #define ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE 2048
 
 typedef enum {
     ZDJ_PIPELINE_TIMEBASE_PCM_44100,

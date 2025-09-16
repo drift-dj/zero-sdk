@@ -32,7 +32,7 @@ typedef struct {
     zdj_pipeline_node_t * decode_node;
     double decode_start_coord;
     double decode_end_coord;
-    zdj_pipeline_addr_t decode_mono_addr_snapshot;
+    double decode_buf_ref_coord;
 } zdj_tsm_pitch_node_state_t;
 
 zdj_pipeline_node_t * zdj_new_tsm_pitch_node( 
