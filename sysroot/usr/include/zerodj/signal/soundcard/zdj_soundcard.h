@@ -114,17 +114,20 @@ typedef enum {
     ZDJ_SOUNDCARD_NODE_NAME_USB_OUT,
     ZDJ_SOUNDCARD_NODE_NAME_USB_IN,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT,
-    ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS,
+    ZDJ_SOUNDCARD_NODE_NAME_DECK_1_EDGE,
 
-    ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE, // 30
+    ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS, //30
+    ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT,
+    ZDJ_SOUNDCARD_NODE_NAME_DECK_2_EDGE,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT,
+    ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE,
 
-    ZDJ_SOUNDCARD_NODE_NAME_COUNT // 37
+    ZDJ_SOUNDCARD_NODE_NAME_COUNT // 40
 } zdj_soundcard_node_name_t;
 
 static char * zdj_soundcard_node_name[ ZDJ_SOUNDCARD_NODE_NAME_COUNT ] = {
@@ -159,13 +162,16 @@ static char * zdj_soundcard_node_name[ ZDJ_SOUNDCARD_NODE_NAME_COUNT ] = {
     "USB Out",// ZDJ_SOUNDCARD_NODE_NAME_USB_OUT,
     "USB In",// ZDJ_SOUNDCARD_NODE_NAME_USB_IN,
     "Deck 1 Input",// ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT,
+    "Deck 1 Edge", // ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE
     "Deck 1 Bus",// ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS,
 
     "Deck 1 Prefade",// ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE, // 30
     "Deck 2 Input",// ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT,
+    "Deck 2 Edge", // ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE
     "Deck 2 Bus",// ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS,
     "Deck 2 Prefade",// ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE,
     "Ext. Deck Input",// ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT,
+    "Ext. Deck Edge", // ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE
     "Ext. Deck Bus",// ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS,
     "Ext. Deck Prefade"// ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE,
 };
@@ -243,6 +249,7 @@ typedef struct {
 extern zdj_soundcard_t * zdj_soundcard;
 
 zdj_error_type_t zdj_soundcard_init( char * entity_id );
+zdj_error_type_t zdj_soundcard_deinit( zdj_soundcard_t * soundcard );
 zdj_error_type_t zdj_soundcard_load( zdj_soundcard_t * soundcard, char * entity_id );
 zdj_error_type_t zdj_soundcard_save( zdj_soundcard_t * soundcard, char * entity_id );
 zdj_error_type_t zdj_soundcard_save_temp( zdj_soundcard_t * soundcard );
@@ -274,6 +281,11 @@ zdj_error_type_t zdj_soundcard_link_deck(
 zdj_error_type_t zdj_soundcard_unlink_deck( 
     zdj_soundcard_t * soundcard, 
     zdj_deck_t * deck 
+);
+// Deck Events
+void zdj_soundcard_handle_deck_event(
+    zdj_soundcard_t * soundcard, 
+    zdj_control_event_t * event
 );
 
 // Node

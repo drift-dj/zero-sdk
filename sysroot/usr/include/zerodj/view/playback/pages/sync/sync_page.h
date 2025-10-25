@@ -4,9 +4,10 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
-    int id;
+    zdj_view_t * sync_chip;
+    zdj_view_t * sync_status;
 } sync_page_state_t;
 
-zdj_view_t * new_sync_page_view( void );
+zdj_view_t * new_sync_page_view( zdj_deck_t * deck );
 
 #endif

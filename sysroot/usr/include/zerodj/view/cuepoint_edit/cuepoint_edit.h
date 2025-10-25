@@ -2,8 +2,8 @@
 #define CUEPOINT_EDIT_H
 
 #include <zerodj/health/zdj_health_type.h>
-#include <zerodj/signal/deck/zdj_deck.h>
-#include <zerodj/signal/deck/lib/zdj_deck_lib.h>
+// #include <zerodj/signal/deck/zdj_deck.h>
+#include <zerodj/signal/deck/dj/zdj_deck_dj.h>
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
@@ -14,7 +14,7 @@ typedef struct {
     zdj_view_t * waveform;
     zdj_view_t * header;
     zdj_deck_t * deck;
-    zdj_lib_deck_state_t * deck_state;
+    zdj_dj_deck_state_t * deck_state;
     double zoom_val;
 } cuepoint_edit_view_state_t;
 

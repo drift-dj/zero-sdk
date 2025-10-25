@@ -32,6 +32,7 @@ zdj_view_t * zdj_root_view( void );
 zdj_view_t * zdj_widget_panel( void );
 zdj_view_t * zdj_accessibility_panel( void );
 zdj_view_t * zdj_debug_panel( void );
+zdj_view_t * zdj_perf_panel( void );
 
 void zdj_view_stack_init( void );
 void zdj_view_stack_deinit( void );

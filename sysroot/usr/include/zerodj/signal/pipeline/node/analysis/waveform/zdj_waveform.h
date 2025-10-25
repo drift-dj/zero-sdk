@@ -30,8 +30,12 @@
 // Live waveform buffer holds 1 sec audio plus extra for gaussian at edges
 #define ZDJ_LIVE_WAVEFORM_SAMPLE_COUNT 44100+1024
 
-#define ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE 2048
+// #define ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE 2048
+#define ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE 256
 #define ZDJ_THUMB_WAVEFORM_SAMPLE_STRIDE 30000
+
+extern double zdj_playback_waveform_min_zoom_val;
+extern double zdj_playback_waveform_max_zoom_val;
 
 typedef enum {
     ZDJ_WAVEFORM_PLAYBACK,
@@ -131,8 +135,10 @@ typedef struct {
 
     // Deck/control refs
     zdj_deck_t * deck;
+    zdj_pipeline_node_t * decode_node;
 
     // Renderer
+    double zoom_val;
     double render_scale;
     zdj_rect_t render_frame;
     bool needs_render;
@@ -147,16 +153,19 @@ zdj_error_type_t zdj_live_waveform_set_point_count( zdj_pipeline_node_t * wavefo
 
 zdj_pipeline_node_t * zdj_new_playback_waveform( 
     zdj_deck_t * deck,
+    zdj_pipeline_node_t * decode_node,
     zdj_waveform_style_t style,
     zdj_library_song_t * song,
-    double points_per_pixel,
-    zdj_rect_t * frame,
+    double zoom_val,
+    zdj_rect_t * tex_frame, // rect of texture which is created at new()
     bool hires
 );
 void zdj_playback_waveform_resize_window( 
     zdj_pipeline_node_t * waveform, 
-    double points_per_pixel,
-    zdj_rect_t * frame 
+    // double points_per_pixel,
+    double zoom_val,
+    // zdj_rect_t * frame 
+    float screen_w
 );
 
 zdj_pipeline_node_t * zdj_new_thumbnail_waveform( char * filepath, int pixel_width );

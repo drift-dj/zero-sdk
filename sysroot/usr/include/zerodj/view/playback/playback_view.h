@@ -6,6 +6,8 @@
 zdj_view_t * new_playback_view( void );
 handle_control_event_t playback_control_handler_for_map( zdj_control_map_id_t map );
 
+void select_song_for_playback(  zdj_deck_station_t station, zdj_library_song_t * song );
+
 void handle_init_map( zdj_view_t * view, zdj_control_event_t * event );
 
 void switch_station_1_ui( zdj_control_map_id_t map );

@@ -3,7 +3,7 @@
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/signal/deck/zdj_deck.h>
-#include <zerodj/signal/deck/lib/zdj_deck_lib.h>
+#include <zerodj/signal/deck/dj/zdj_deck_dj.h>
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
@@ -18,12 +18,13 @@ typedef struct {
     zdj_view_t * label_6;
     zdj_view_t * label_7;
     zdj_deck_t * deck;
-    zdj_lib_deck_state_t * deck_state;
+    // zdj_lib_deck_state_t * deck_state;
+    zdj_dj_deck_state_t * deck_state;
     double scale;
 } song_debug_view_state_t;
 
 extern song_debug_view_state_t * song_debug_view_state;
 
-zdj_view_t * new_song_debug_view( zdj_library_song_t * song, zdj_deck_t * deck );
+zdj_view_t * new_song_debug_view( zdj_deck_t * deck );
 
 #endif

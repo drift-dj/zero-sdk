@@ -42,6 +42,7 @@ typedef struct {
     bool build_os_kernel_image;
     bool build_os_rootfs_source;
     bool build_os_rootfs_image;
+    bool build_os_reset_image;
     bool build_os_media_image;
     bool build_os_image;
     bool re_flash;
@@ -61,12 +62,14 @@ typedef struct {
 #define ZERO_BUILD_DEV_APP_NUM 3
 #define ZERO_BUILD_LIB_APP_NUM 4
 #define ZERO_BUILD_DJ_APP_NUM 5
-#define ZERO_BUILD_SDK_TEST_APP_NUM 6
+#define ZERO_BUILD_INSTALL_APP_NUM 6
+#define ZERO_BUILD_SDK_TEST_APP_NUM 7
 
 typedef struct {
     char name[ 256 ];
     bool link;
     char path[ 1024 ];
+    char version[ 64 ];
     bool stop_workflow_on_error;
     bool bootable;
     bool make_reg_install;
@@ -123,6 +126,8 @@ typedef struct {
     char docker_image_path[ 256 ];
     bool uuu_link;
     char uuu_path[ 256 ];
+    bool installer_link;
+    char installer_path[ 256 ];
     build_status_t status;
 } toolchain_model_t;
 

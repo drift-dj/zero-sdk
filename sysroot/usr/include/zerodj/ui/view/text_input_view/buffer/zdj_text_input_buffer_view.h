@@ -24,8 +24,8 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct {
-    char * str;
-    // char str[ 256 ];
+    // char * str;
+    char str[ 256 ];
     int cursor_index;
     zdj_view_t * left_label;
     zdj_view_t * right_label;

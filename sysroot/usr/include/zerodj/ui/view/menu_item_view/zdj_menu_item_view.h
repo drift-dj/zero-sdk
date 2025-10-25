@@ -81,7 +81,8 @@ typedef void ( *update_layout_t )( zdj_view_t* );
 typedef struct {
     char title[ 256 ];
     char subtitle[ 256 ];
-    zdj_ui_data_t * data;
+    // zdj_ui_data_t * data;
+    zdj_ui_data_t data;
     zdj_menu_item_data_display_type_t data_type;
     char data_prefix[ 32 ];
     char data_suffix[ 32 ];

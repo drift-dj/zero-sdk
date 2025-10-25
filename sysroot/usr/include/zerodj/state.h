@@ -1,33 +1,36 @@
 #ifndef STATE_H
 #define STATE_H
 
+#include <zerodj/system/installer/zdj_installer.h>
 #include <zerodj/ui/zdj_ui.h>
-#include <zerodj/signal/deck/zdj_deck.h>
+
+typedef enum {
+    UI_PHASE_INIT,
+    UI_PHASE_IN_PROGRESS,
+    UI_PHASE_COMPLETE,
+    UI_PHASE_ERROR
+} ui_phase_t;
 
 typedef struct {
-    zdj_deck_station_t station;
-    zdj_view_t * view;
-    zdj_deck_t * deck;
-    zdj_control_map_id_t current_page_map;
-    zdj_control_map_id_t mom_exit_page_map;
-} station_state_t;
-
-typedef struct {
-    zdj_control_map_id_t map;
-    handle_control_event_t control_handler;
-    station_state_t station_1;
-    station_state_t station_2;
-    station_state_t station_ext;
-    zdj_view_t * menu_stack;
-    zdj_view_t * playback_view;
-    zdj_view_t * record_modal;
-    zdj_view_t * soundcard_modal;
-    zdj_view_t * vol_widget;
-    bool library_error;
-    char current_lib_id[ 64 ];
+    ui_phase_t phase;
+    zdj_view_t * menu;
+    zdj_view_t * progress_bar;
+    zdj_view_t * done_button;
+    zdj_installer_t * installer;
+    char registry_name[ 64 ];
+    char display_name[ 64 ];
+    bool is_update;
+    char current_version_string[ 64 ];
+    char installer_version_string[ 64 ];
+    char manifest_totals[ 64 ];
+    char size_suffix[ 16 ];
+    int file_count;
+    float file_size;
+    bool install_started;
+    bool install_complete;
+    bool install_error;
+    float install_percent;
 } ui_state_t;
 extern ui_state_t * ui_state;
-
-zdj_deck_station_t get_station_for_map( zdj_control_map_id_t map );
 
 #endif

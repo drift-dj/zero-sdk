@@ -51,10 +51,13 @@
 #define ZDJ_DOMAIN_BOOT_A_RPMSG_AVAIL_MASK 1 << ZDJ_DOMAIN_BOOT_A_RPMSG_AVAIL
 
 typedef struct {
+    int32_t fac_reset;
     int32_t m_avail;
     int32_t m_flags;
     int32_t a_avail;
     int32_t a_flags;
+    int32_t update_display_req;
+    int32_t flush_hmi_req;
 } zdj_domain_boot_state_t;
 
 typedef enum {

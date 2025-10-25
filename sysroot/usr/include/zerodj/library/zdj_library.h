@@ -288,6 +288,7 @@ zdj_health_status_t zdj_library_health( void );
 
 // Library DB API
 // zdj_health_status_t zdj_library_db_init( void );
+zdj_health_status_t zdj_import_db_flush( void );
 zdj_health_status_t zdj_library_db_flush( void );
 
 // Import DB
