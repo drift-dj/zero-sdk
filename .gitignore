@@ -47,3 +47,6 @@ build/
 
 # SDK path file
 *sdk_path.cmake
+
+# Don't distribute RB lib
+*rubberband*

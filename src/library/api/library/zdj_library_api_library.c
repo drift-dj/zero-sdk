@@ -61,7 +61,7 @@ zdj_library_t * zdj_library_get_library_for_entity_id( char * library_entity_id 
 
 zdj_library_t * zdj_library_get_current( void ) {
     zdj_library_config_t * config = zdj_library_get_config( );
-    printf( "zdj_library_get_current %p %s\n", config, config->current_lib_entity_id );
+    // printf( "zdj_library_get_current %p %s\n", config, config->current_lib_entity_id );
     if( !config ){ return NULL; }
     return zdj_library_get_library_for_entity_id( config->current_lib_entity_id );
 }

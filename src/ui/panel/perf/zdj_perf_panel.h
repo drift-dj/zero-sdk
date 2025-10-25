@@ -27,11 +27,16 @@
 typedef struct {
     bool deployed;
     bool event_capture;
+    zdj_view_t * container_view;
     zdj_view_t * thread_view;
     zdj_anim_t * in_anim;
     zdj_anim_t * out_anim;
 } zdj_perf_panel_state_t;
 
 zdj_view_t * zdj_new_perf_panel( void );
+
+void zdj_perf_panel_toggle( void );
+void zdj_perf_panel_deploy( void );
+void zdj_perf_panel_retract( void );
 
 #endif

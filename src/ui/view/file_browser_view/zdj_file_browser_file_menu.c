@@ -17,18 +17,12 @@
 static void _add_dir_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, char * dirname, char * path );
 static void _add_file_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, char * filepath );
 
-// void _zdj_file_browser_nav_up_layout( zdj_view_t * view );
-// void _zdj_file_browser_dir_select_layout( zdj_view_t * view );
-
-static char * _parent_dir( char * dir );
+static void _parent_dir( char * input, char * output );
 
 zdj_view_t * zdj_new_file_browser_menu_for_path( 
     zdj_view_t * browser,
     zdj_rect_t * frame, 
     char * path, 
-    bool read_only,
-    bool allow_nav,
-    zdj_file_browser_select_type_t select_type,
     char * select_dir_title
 ) {
     zdj_file_browser_view_state_t * browser_state = (zdj_file_browser_view_state_t *)browser->state;
@@ -48,15 +42,15 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
     zdj_view_t * dir_select;
     zdj_view_t * add_dir;
     // Add Top options
-    if( allow_nav ) {
+    if( browser_state->allow_nav ) {
 
         // Add and 'up one dir' item 
         zdj_view_t * nav_up = zdj_new_menu_item( "Back", ZDJ_MENU_ITEM_LAYOUT_DIR_UP );
         zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)nav_up->state;
         state->action = ZDJ_MENU_ITEM_ACTION_DIR_BACK;
-        strcpy( state->link, _parent_dir( path ) );
+        _parent_dir( path, state->link );
         // Nav buttons need a reference to parent browser for inserting menus
-        state->data->ptr = browser;
+        state->data.ptr = browser;
         nav_up->handle_control_event = &zdj_file_browser_item_hmi_delegate;
         nav_up->frame.x = 1;
         nav_up->frame.y = 1;
@@ -65,20 +59,19 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
         zdj_menu_view_add_item( menu, nav_up );
  
         // Add a 'select this dir' item
-        if( ( select_type == ZDJ_FILE_BROWSER_SELECT_TYPE_DIR ||
-              select_type == ZDJ_FILE_BROWSER_SELECT_TYPE_ANY ) && select_dir_title ) {
+        if( ( browser_state->select_type == ZDJ_FILE_BROWSER_SELECT_TYPE_DIR ||
+              browser_state->select_type == ZDJ_FILE_BROWSER_SELECT_TYPE_ANY ) ) {
             zdj_view_t * dir_select = zdj_new_menu_item( select_dir_title, ZDJ_MENU_ITEM_LAYOUT_DIR_SELECT );
             zdj_menu_item_view_state_t * dir_select_state = (zdj_menu_item_view_state_t*)dir_select->state;
             dir_select_state->action = ZDJ_MENU_ITEM_ACTION_DIR_SELECT;
-            dir_select_state->data->ptr = browser;
+            dir_select_state->data.ptr = browser;
             strcpy( dir_select_state->link, path );
             dir_select->handle_control_event = &zdj_file_browser_item_hmi_delegate;
             dir_select->frame.y = 1;
-            // dir_select->frame.h = 10;
             zdj_menu_view_add_item( menu, dir_select );
         }
     }
-    if( !read_only ) {
+    if( !browser_state->read_only ) {
         // Add a 'new dir' item
     }
     
@@ -90,11 +83,13 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
 
     // Scan dir contents, adding menu items
     DIR * dir = opendir( path );
+    printf( "file browser open dir %s: %p\n", path, dir );
     struct dirent * entry;
     int id = 0;
     if ( dir ) {
         // Look at every entry in dir.
         while ( ( entry = readdir( dir ) ) != NULL ) {
+            printf( "file browser menu entry: %s\n", entry->d_name );
             if( entry->d_name[ 0 ] == '.' ) continue;
             char dir_path[ 2048 ];
             snprintf( dir_path, sizeof( dir_path ), "%s/%s", path, entry->d_name );
@@ -113,12 +108,12 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
 }
 
 static void _add_dir_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, char * dirname, char * path ) {
-    zdj_view_t * item = zdj_new_menu_item( strdup( dirname ), ZDJ_MENU_ITEM_LAYOUT_DIR );
+    zdj_view_t * item = zdj_new_menu_item( dirname, ZDJ_MENU_ITEM_LAYOUT_DIR );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)item->state;
     item->handle_control_event = &zdj_file_browser_item_hmi_delegate;
     state->action = ZDJ_MENU_ITEM_ACTION_DIR_ENTER;
-    strcpy( state->link, strdup( path ) );
-    state->data->ptr = browser;
+    strcpy( state->link, path );
+    state->data.ptr = browser;
     zdj_menu_view_add_item( menu, item );
 }
 
@@ -128,15 +123,14 @@ static void _add_file_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, cha
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)item->state;
     item->handle_control_event = &zdj_file_browser_item_hmi_delegate;
     state->action = ZDJ_MENU_ITEM_ACTION_FILE_SELECT;
-    strcpy( state->link, strdup( filepath ) );
-    state->data->ptr = browser;
+    strcpy( state->link, filepath );
+    state->data.ptr = browser;
     zdj_menu_view_add_item( menu, item );
 }
 
-static char * _parent_dir( char * dir ) {
-    char * new_dir = strdup( dir );
+static void _parent_dir( char * input, char * output ) {
+    strcpy( output, input );
     char * pch;
-    pch = strrchr( new_dir, '/' );
-    new_dir[ pch-new_dir ] = '\0';
-    return new_dir;
+    pch = strrchr( output, '/' );
+    output[ pch-output ] = '\0';
 }

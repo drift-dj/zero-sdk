@@ -50,6 +50,13 @@ void zdj_library_put_uuid( char * str ) {
     strcpy( str, uuid_str_no_dash );
 }
 
+zdj_health_status_t zdj_import_db_flush( void ) {
+    if( zdj_library_import_db ) {
+        sqlite3_db_cacheflush( zdj_library_import_db );
+        return ZDJ_HEALTH_STATUS_OKAY;
+    }
+}
+
 zdj_health_status_t zdj_library_db_flush( void ) {
     if( zdj_library_db ) {
         sqlite3_db_cacheflush( zdj_library_db );

@@ -75,11 +75,12 @@ void _handle_soundcard_node_push( void * _waveform, zdj_pipeline_node_t * mix_bu
     zdj_live_waveform_state_t * waveform_state = (zdj_live_waveform_state_t*)waveform->state;
 
     int stride = stereo ? 2 : 1;
-    float * dest_buf = mix_buffer->get_data( mix_buffer );
+    float * in_buf = mix_buffer->get_data( mix_buffer );
+    // printf( "_handle_soundcard_node_push: %f\n", in_buf[ 2 ] );
     int dest_index = ceil( waveform_state->source_push_head );
     for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
         // If stereo, copy left channel only
-        waveform_state->source_buf[ dest_index ] = dest_buf[ i*stride ];
+        waveform_state->source_buf[ dest_index ] = in_buf[ i*stride ];
         // Advance index, bounding it within ring buf.
         dest_index++;
         dest_index %= ZDJ_LIVE_WAVEFORM_SAMPLE_COUNT;

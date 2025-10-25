@@ -9,6 +9,7 @@
 #include <zerodj/system/debug/zdj_debug.h>
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/perf/zdj_perf.h>
+#include <zerodj/system/screen_cap/zdj_screen_cap.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/panel/accessibility/zdj_accessibility_panel.h>
@@ -112,9 +113,9 @@ void zdj_view_stack_update( void ) {
     int end_ind = zdj_ui_event_buf_write;
     if( start_ind != end_ind ) {
         // Invoke any special commands before sending remaining events into stack
-        if( zdj_special_control_handler ) {
+        // if( zdj_special_control_handler ) {
             zdj_view_stack_handle_special_events( start_ind, end_ind );
-        }
+        // }
         // ...send events into views for handling.
         zdj_view_stack_handle_events( 
             start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_record_panel( ) ) 
@@ -144,6 +145,12 @@ void zdj_view_stack_update( void ) {
     _zdj_view_stack_draw( zdj_debug_panel( ) );
     _zdj_view_stack_draw( zdj_perf_panel( ) );
     zdj_view_count = zdj_new_view_count;
+
+    // If screen_cap is armed, grab it here after all drawing is complete.
+    if( zdj_screen_cap_armed ) {
+        zdj_write_screen_cap( );
+        zdj_screen_cap_armed = false;
+    }
 
     // Delete everything in the delete stack
     zdj_view_t * delete_view = zdj_delete_stack;
@@ -177,10 +184,13 @@ void zdj_view_stack_handle_special_events( int start_ind, int end_ind ) {
         i++;
         i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
         // printf( "zdj_view_stack_handle_special_events ui_event_buf[ %d ].id:%d\n", i, zdj_ui_event_buf[ i ].id );
-        if( zdj_ui_event_buf[ i ].id == zdj_special_control_handler->id &&
-            zdj_special_control_handler->cb 
-        ) {
-            zdj_special_control_handler->cb( &zdj_ui_event_buf[ i ] );
+        // Loop thru all 5 special event slots
+        for( int e=0; e<5; e++ ) {
+            if( zdj_ui_event_buf[ i ].id == zdj_special_control_handlers[ e ].id &&
+                zdj_special_control_handlers[ e ].cb 
+            ) {
+                zdj_special_control_handlers[ e ].cb( &zdj_ui_event_buf[ i ] );
+            }
         }
     }
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
@@ -218,7 +228,7 @@ void zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view
 void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Build view count by counting every draw invocation.
     zdj_new_view_count++;
-    // printf( "zdj_view_stack_draw\n" );
+    // printf( "zdj_view_stack_draw %p\n", view );
     // Claim any errors for debugging.
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_VIEW_DRAW;
 
@@ -227,11 +237,13 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         ((anim_update_t)view->anim->update_fn)( view->anim, view ); 
     }
 
+    // printf( "zdj_view_stack_draw 0 %p\n", view );
     // Update metrics passed to subviews based on that clipping.
     view->update_subview_clip( view, clip );
     // Draw this view's pixels
     if( view->is_visible ) {
-        if( view->draw ) {
+        if( !view->is_deleting && view->draw ) {
+            // printf( "zdj_view_stack_draw 1 %p\n", view );
             view->draw( view, &view->subview_clip );
         }
 
@@ -239,15 +251,18 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         // Note, during draw(), view may have been moved to the delete stack.
         // Be sure we're not drawing the delete stack here.
         if( !view->is_deleting && view->subviews ) {
+            // printf( "zdj_view_stack_draw -> subviews %p\n", view );
             zdj_view_stack_draw( view->subviews, &view->subview_clip );
         }
     }
 
+    // printf( "zdj_view_stack_draw 2 %p\n", view );
     // Step up the view stack and continue drawing
     if( view->next ) {
         zdj_view_stack_draw( view->next, clip );
     }
 
+    // printf( "zdj_view_stack_draw 3 %p\n", view );
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
 }
 

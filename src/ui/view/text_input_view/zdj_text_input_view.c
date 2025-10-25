@@ -37,7 +37,8 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
     zdj_set_anim( &view->out_anim, ZDJ_ANIM_MODAL_HIDE );
 
     zdj_text_input_view_state_t * view_state = calloc( 1, sizeof( zdj_text_input_view_state_t * ) );
-    view_state->input_str = strdup( input );
+    // view_state->input_str = strdup( input );
+    strcpy( view_state->input_str, input );
     view_state->cb = cb;
     view_state->shift_key_active = false;
     view->state = view_state;
@@ -151,7 +152,6 @@ void _zdj_text_input_view_handle_control( zdj_view_t * view, zdj_control_event_t
 
 void _zdj_text_input_view_deinit_state( zdj_view_t * view ) {
     zdj_text_input_view_state_t * state = (zdj_text_input_view_state_t*)view->state;
-    // free( state->input_str );
     free( state );
     view->state = NULL;
 }

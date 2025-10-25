@@ -35,7 +35,7 @@ zdj_pipeline_node_t * zdj_new_tsm_pitch_node(
 
     // Capture starting state of decode out_buf indexes
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)decode_node->state;
-    state->decode_buf_ref_coord = decode_state->head_decode_addr - decode_state->head_win_start;
+    // FIXME: state->decode_buf_ref_coord = decode_state->head_decode_addr - decode_state->head_win_start;
     state->decode_start_coord = 0;
 
     // Alloc output buffer
@@ -46,6 +46,7 @@ zdj_pipeline_node_t * zdj_new_tsm_pitch_node(
 
 // Calculate this buffer's start/stop address and interpolate decode samples into out_buffer
 static void _update_wait( zdj_pipeline_node_t * node ) {
+    // printf( "pitch_node _update_wait\n" );
     zdj_tsm_pitch_node_state_t * state = (zdj_tsm_pitch_node_state_t*)node->state;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)state->decode_node->state;
 
@@ -59,6 +60,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     // );
 
     // printf( "tsm: %1.1f -> %1.1f\n", state->decode_start_coord, state->decode_end_coord );
+    // printf( "------------------\n" );
 
     // Interp from rate-based decode buf coords to full width of tsm buf.
     zdj_signal_naive_resample_audio( 
@@ -79,8 +81,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     //     // printf( "%1.1f -> %1.1f\n", decode_state->out_buffer[ i ], state->out_buffer[ i ] ); 
     // }
 
-    // Start next interp from end of current interp
-    state->decode_start_coord = state->decode_end_coord;
+    // printf( "pitch_node _update_wait done\n" );
 }
 
 static void _deinit_state( zdj_pipeline_node_t * node ) {

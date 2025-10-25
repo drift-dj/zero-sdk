@@ -170,22 +170,22 @@ void _zdj_usb_status_view_device_update_layout( zdj_view_t * view ) {
     zdj_view_t * uac_btn = zdj_new_menu_item( "Audio (UAC2)", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
     uac_btn->handle_control_event = &_handle_uac_btn;
     zdj_menu_item_view_state_t * uac_state = (zdj_menu_item_view_state_t*)uac_btn->state;
-    uac_state->data->b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/uac2.usb0", F_OK ) == 0 );
-    uac_state->data->ptr = view;
+    uac_state->data.b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/uac2.usb0", F_OK ) == 0 );
+    uac_state->data.ptr = view;
     zdj_menu_view_add_item( menu, uac_btn );
 
     zdj_view_t * midi_btn = zdj_new_menu_item( "MIDI", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
     midi_btn->handle_control_event = &_handle_midi_btn;
     zdj_menu_item_view_state_t * midi_state = (zdj_menu_item_view_state_t*)midi_btn->state;
-    midi_state->data->b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/midi.usb0", F_OK ) == 0 );
-    midi_state->data->ptr = view;
+    midi_state->data.b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/midi.usb0", F_OK ) == 0 );
+    midi_state->data.ptr = view;
     zdj_menu_view_add_item( menu, midi_btn );
 
     zdj_view_t * drive_btn = zdj_new_menu_item( "Drive", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
     drive_btn->handle_control_event = &_handle_drive_btn;
     zdj_menu_item_view_state_t * drive_state = (zdj_menu_item_view_state_t*)drive_btn->state;
-    drive_state->data->b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0", F_OK ) == 0 );
-    drive_state->data->ptr = view;
+    drive_state->data.b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0", F_OK ) == 0 );
+    drive_state->data.ptr = view;
     zdj_menu_view_add_item( menu, drive_btn );
 
     zdj_view_t * controller_btn = zdj_new_menu_item( "Controller", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
@@ -197,8 +197,8 @@ void _zdj_usb_status_view_device_update_layout( zdj_view_t * view ) {
     zdj_view_t * shell_btn = zdj_new_menu_item( "Shell", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
     shell_btn->handle_control_event = &_handle_shell_btn;
     zdj_menu_item_view_state_t * shell_state = (zdj_menu_item_view_state_t*)shell_btn->state;
-    shell_state->data->b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/acm.ttyGS0", F_OK ) == 0 );
-    shell_state->data->ptr = view;
+    shell_state->data.b_val = ( access( "/sys/kernel/config/usb_gadget/g1/functions/acm.ttyGS0", F_OK ) == 0 );
+    shell_state->data.ptr = view;
     zdj_menu_view_add_item( menu, shell_btn );
 
 
@@ -209,14 +209,14 @@ void _zdj_usb_status_view_device_update_layout( zdj_view_t * view ) {
     zdj_view_t * host_btn = zdj_new_menu_item( "Host Mode", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     host_btn->handle_control_event = &zdj_usb_status_view_handle_host_mode_btn;
     zdj_menu_item_view_state_t * host_state = (zdj_menu_item_view_state_t*)host_btn->state;
-    host_state->data->ptr = view;
+    host_state->data.ptr = view;
     zdj_menu_view_add_item( menu, host_btn );
 
     // Add Offline
     zdj_view_t * offline_btn = zdj_new_menu_item( "Offline", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     offline_btn->handle_control_event = &zdj_usb_status_view_handle_offline_btn;
     zdj_menu_item_view_state_t * offline_state = (zdj_menu_item_view_state_t*)offline_btn->state;
-    offline_state->data->ptr = view;
+    offline_state->data.ptr = view;
     zdj_menu_view_add_item( menu, offline_btn );
 
     state->needs_layout_update = false;
@@ -315,7 +315,7 @@ static void _zdj_usb_status_view_device_error_update_layout( zdj_view_t * view )
 
 static void _handle_uac_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
 
     zdj_usb_status->gadget_config.uac2 = !zdj_usb_status->gadget_config.uac2;
@@ -341,7 +341,7 @@ static void _handle_uac_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 
 static void _handle_midi_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
 
     zdj_usb_status->gadget_config.midi = !zdj_usb_status->gadget_config.midi;
@@ -372,7 +372,7 @@ static void _handle_midi_btn( zdj_view_t * view, zdj_control_event_t * _event ) 
 
 static void _handle_drive_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
 
     zdj_usb_status->gadget_config.mass_storage = !zdj_usb_status->gadget_config.mass_storage;
@@ -403,7 +403,7 @@ static void _handle_drive_btn( zdj_view_t * view, zdj_control_event_t * _event )
 
 static void _handle_controller_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
 
     zdj_usb_status->gadget_config.hid = !zdj_usb_status->gadget_config.hid;
@@ -434,7 +434,7 @@ static void _handle_controller_btn( zdj_view_t * view, zdj_control_event_t * _ev
 
 static void _handle_shell_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
 
     zdj_usb_status->gadget_config.shell = !zdj_usb_status->gadget_config.shell;

@@ -54,7 +54,7 @@ void zdj_menu_item_launch_big_init_layout( zdj_view_t * view ) {
     // app_name_hi->frame.w = view->frame.w - 8;
     app_name_hi->frame.h = 18;
 
-    zdj_view_t * launch_str_hi = zdj_new_label_view( "launch", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * launch_str_hi = zdj_new_label_view( state->data.c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, launch_str_hi );
     launch_str_hi->frame.x = 3;
     launch_str_hi->frame.y = 11;

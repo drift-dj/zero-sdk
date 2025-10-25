@@ -90,8 +90,8 @@ zdj_view_t * zdj_new_soundcard_select_node(
         );
         item->handle_control_event = &_zdj_soundcard_select_node_handle_remove;
         zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
-        item_state->data->ptr = context; // Store config context for handling selection
-        item_state->data->i_val = edit_node_name; // Store this menu item's node name str
+        item_state->data.ptr = context; // Store config context for handling selection
+        item_state->data.i_val = edit_node_name; // Store this menu item's node name str
         zdj_menu_view_add_item( menu, item );
 
         zdj_menu_view_add_padding( menu, 2 );
@@ -133,12 +133,12 @@ void _zdj_soundcard_select_node_handle_back( zdj_view_t * menu_view ) {
 
 void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * node_state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)node_state->data->ptr;
+    zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)node_state->data.ptr;
 
     // Store the node linkage selection for use during callbacks
     context->new_node_selection = zdj_soundcard_get_node_for_name( 
         context->soundcard, 
-        node_state->data->i_val 
+        node_state->data.i_val 
     );
     context->remove_node_selection = NULL;
     // printf( "_zdj_soundcard_select_node_handle_select: %s %p %p %p\n",
@@ -162,12 +162,12 @@ void _zdj_soundcard_select_node_handle_select( zdj_view_t * view, zdj_control_ev
 
 void _zdj_soundcard_select_node_handle_remove( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * node_state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)node_state->data->ptr;
+    zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)node_state->data.ptr;
     
     // Store the node linkage selection for use during callbacks
     context->remove_node_selection = zdj_soundcard_get_node_for_name( 
         context->soundcard, 
-        node_state->data->i_val 
+        node_state->data.i_val 
     );
     context->new_node_selection = NULL;
     // printf( "_zdj_soundcard_select_node_handle_remove: %s %p %p %p\n",
@@ -214,8 +214,8 @@ zdj_error_type_t _zdj_soundcard_add_select_menu_item(
     );
     item->handle_control_event = &_zdj_soundcard_select_node_handle_select;
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
-    item_state->data->ptr = context; // Store config context for handling selection
-    item_state->data->i_val = name; // Store this menu item's node name
+    item_state->data.ptr = context; // Store config context for handling selection
+    item_state->data.i_val = name; // Store this menu item's node name
     zdj_menu_view_add_item( menu, item );
 }
 

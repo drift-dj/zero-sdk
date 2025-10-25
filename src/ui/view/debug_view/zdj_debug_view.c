@@ -43,7 +43,7 @@ zdj_view_t * zdj_new_debug_view( zdj_rect_t * frame ) {
     state->mem_label->frame.h = 7;
     zdj_add_subview( view, state->mem_label );
     zdj_menu_item_view_state_t * mem_state = (zdj_menu_item_view_state_t*)state->mem_label->state;
-    strcpy( mem_state->data->c_val, "..." );
+    strcpy( mem_state->data.c_val, "..." );
 
     // Add View counter
     state->view_label = zdj_new_data_menu_item( "Views", ZDJ_MENU_ITEM_LAYOUT_DATA_R, ZDJ_MENU_ITEM_DATA_TYPE_CHAR, NULL, NULL );
@@ -53,7 +53,7 @@ zdj_view_t * zdj_new_debug_view( zdj_rect_t * frame ) {
     state->view_label->frame.h = 7;
     zdj_add_subview( view, state->view_label );
     zdj_menu_item_view_state_t * view_state = (zdj_menu_item_view_state_t*)state->view_label->state;
-    strcpy( view_state->data->c_val, "..." );
+    strcpy( view_state->data.c_val, "..." );
 
     return view;
 }
@@ -97,12 +97,12 @@ void _zdj_debug_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) 
     }
     fclose( state->mem_fd );
     zdj_menu_item_view_state_t * mem_state = (zdj_menu_item_view_state_t*)state->mem_label->state;
-    strcpy( mem_state->data->c_val, str );
+    strcpy( mem_state->data.c_val, str );
     mem_state->needs_layout_init = true;
 
     snprintf( str, sizeof( str ), "%d", zdj_view_count );
     zdj_menu_item_view_state_t * view_state = (zdj_menu_item_view_state_t*)state->view_label->state;
-    strcpy( view_state->data->c_val, str );
+    strcpy( view_state->data.c_val, str );
     view_state->needs_layout_init = true;
 }
 

@@ -87,6 +87,7 @@ zdj_view_t * zdj_new_usb_drive_view( void ) {
     _zdj_usb_drive_view_state->menu_view = _menu;
     _zdj_usb_drive_view_state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ENABLE;
     _zdj_usb_drive_view_state->needs_layout_update = true;
+    _zdj_usb_drive_view_state->sync_counter = 0;
     view->state = _zdj_usb_drive_view_state;
 
     // Store previous USB gadget state for use after transfer mode exits.
@@ -165,6 +166,9 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE:
+        state->sync_counter++;
+        state->sync_counter %= 100;
+        if( state->sync_counter == 0 ) { sync( ); }
         if( zdj_usb_has_port_partner_update( ) ) { 
             state->needs_layout_update = true;
         }

@@ -27,6 +27,7 @@
 #include <zerodj/system/registry/zdj_registry.h>
 
 #define ZDJ_INSTALLER_HEADER_START 4000 // Byte location of installer header in binary
+#define ZDJ_INSTALLER_REQUEST_PATH "/etc/zero-sdk/install_req"
 #define ZDJ_INSTALLER_EXTRACT_DIR "/etc/zero-sdk/installer"
 #define ZDJ_INSTALLER_ROLLBACK_DIR "/etc/zero-sdk/rollback"
 #define ZDJ_INSTALLER_MANIFEST_PATH "/etc/zero-sdk/installer/manifest_db"

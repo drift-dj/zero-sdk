@@ -25,21 +25,21 @@ zdj_error_type_t zdj_meter_view_set_label(
 zdj_soundcard_meter_label_t zdj_meter_label_for_node( zdj_soundcard_node_t * node ) {
     switch ( node->name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0: 
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_1; }
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_1; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_2; }
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_2; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_3; }
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3: return ZDJ_SOUNDCARD_LABEL_ANALOG_4;
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_4; }
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_3; }
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3: return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_4;
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_4; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_1; }
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_1; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_2; }
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_2; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_3; }
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_3; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3:
-            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_4; }
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_4; }
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: return ZDJ_SOUNDCARD_LABEL_MAIN_BUS;
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS: return ZDJ_SOUNDCARD_LABEL_CUE_BUS;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: return ZDJ_SOUNDCARD_LABEL_ANNOT_BUS;
@@ -68,12 +68,18 @@ zdj_ui_asset_t zdj_meter_asset_for_label( zdj_soundcard_meter_label_t label ) {
         case ZDJ_SOUNDCARD_LABEL_CUE_BUS: return ZDJ_UI_ASSET_MIXER_CUE_BUS;
         case ZDJ_SOUNDCARD_LABEL_ANNOT_BUS: return ZDJ_UI_ASSET_MIXER_ANNOT_BUS;
         case ZDJ_SOUNDCARD_LABEL_RECORD_BUS: return ZDJ_UI_ASSET_MIXER_RECORD_BUS;
-        case ZDJ_SOUNDCARD_LABEL_ANALOG_12: return ZDJ_UI_ASSET_MIXER_ANA_IO_12;
-        case ZDJ_SOUNDCARD_LABEL_ANALOG_34: return ZDJ_UI_ASSET_MIXER_ANA_IO_34;
-        case ZDJ_SOUNDCARD_LABEL_ANALOG_1: return ZDJ_UI_ASSET_MIXER_ANA_IO_1;
-        case ZDJ_SOUNDCARD_LABEL_ANALOG_2: return ZDJ_UI_ASSET_MIXER_ANA_IO_2;
-        case ZDJ_SOUNDCARD_LABEL_ANALOG_3: return ZDJ_UI_ASSET_MIXER_ANA_IO_3;
-        case ZDJ_SOUNDCARD_LABEL_ANALOG_4: return ZDJ_UI_ASSET_MIXER_ANA_IO_4;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_IN_12: return ZDJ_UI_ASSET_MIXER_ANA_IN_12;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_IN_34: return ZDJ_UI_ASSET_MIXER_ANA_IN_34;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_IN_1: return ZDJ_UI_ASSET_MIXER_ANA_IN_1;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_IN_2: return ZDJ_UI_ASSET_MIXER_ANA_IN_2;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_IN_3: return ZDJ_UI_ASSET_MIXER_ANA_IN_3;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_IN_4: return ZDJ_UI_ASSET_MIXER_ANA_IN_4;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_12: return ZDJ_UI_ASSET_MIXER_ANA_OUT_12;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_34: return ZDJ_UI_ASSET_MIXER_ANA_OUT_34;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_1: return ZDJ_UI_ASSET_MIXER_ANA_OUT_1;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_2: return ZDJ_UI_ASSET_MIXER_ANA_OUT_2;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_3: return ZDJ_UI_ASSET_MIXER_ANA_OUT_3;
+        case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_4: return ZDJ_UI_ASSET_MIXER_ANA_OUT_4;
         case ZDJ_SOUNDCARD_LABEL_USB_12: return ZDJ_UI_ASSET_MIXER_USB_IO_12;
         case ZDJ_SOUNDCARD_LABEL_USB_34: return ZDJ_UI_ASSET_MIXER_USB_IO_34;
         case ZDJ_SOUNDCARD_LABEL_USB_1: return ZDJ_UI_ASSET_MIXER_USB_IO_1;

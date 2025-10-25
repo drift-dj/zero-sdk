@@ -14,20 +14,24 @@
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 
+double zdj_playback_waveform_min_zoom_val = 0.01;
+double zdj_playback_waveform_max_zoom_val = 60;
+
 static void _update_wait( zdj_pipeline_node_t * node );
 static void _deinit_state( zdj_pipeline_node_t * node );
 
 static void _render( zdj_pipeline_node_t * node, zdj_rect_t * frame );
 
-static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset );
-static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, uint32_t address );
+static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset );
+static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double address );
 
 zdj_pipeline_node_t * zdj_new_playback_waveform( 
     zdj_deck_t * deck,
+    zdj_pipeline_node_t * decode_node,
     zdj_waveform_style_t style,
     zdj_library_song_t * song,
-    double points_per_pixel,
-    zdj_rect_t * frame,
+    double zoom_val,
+    zdj_rect_t * tex_frame,
     bool hires
 ) {
     // printf( "loading waveform: %s\n", filepath );
@@ -50,7 +54,9 @@ zdj_pipeline_node_t * zdj_new_playback_waveform(
     state->style = style;
     state->render = &_render;
     state->deck = deck;
+    state->decode_node = decode_node;
     state->has_hires = hires;
+    state->zoom_val = zoom_val;
     state->needs_render = false;
     state->needs_full_render = false;
     state->render_new_pixels = 0;
@@ -67,7 +73,8 @@ zdj_pipeline_node_t * zdj_new_playback_waveform(
     // Set up initial window params
     // ----------------------------
     // Gather coordinate-space scaling factors
-    state->points_per_pixel = points_per_pixel;
+    // state->points_per_pixel = points_per_pixel;
+    state->points_per_pixel = state->zoom_val * (double)ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE;
     state->samples_per_point = (double)state->waveform_header->samples_per_point;
 
     // Set pcm/point/pixel heads based on reference pcm head * scale factor
@@ -77,18 +84,46 @@ zdj_pipeline_node_t * zdj_new_playback_waveform(
     state->win_pixel_head = state->win_point_head * state->points_per_pixel;
 
     // Fill in window sizes
-    zdj_playback_waveform_resize_window( waveform, points_per_pixel, frame );
+    zdj_playback_waveform_resize_window( 
+        waveform, 
+        zoom_val, 
+        tex_frame->w 
+    );
     
     return waveform;
 }
 
 static void _update_wait( zdj_pipeline_node_t * node ) {
     zdj_waveform_state_t * state = (zdj_waveform_state_t*)node->state;
+    zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)state->decode_node->state;
     // printf( "playback_waveform _update_wait\n" );
 
+    // // Move the point window with deck's needle head.
+    // if( decode_state->first_layer ) {
+    //     zdj_decode_layer_t * layer = zdj_decode_get_layer_under_head( state->decode_node );
+    //     zdj_decode_packet_t * packet = zdj_decode_get_packet_under_head( state->decode_node, layer );
+    //     if( layer && packet ) {
+    //         // Take offset from decode head to packet decode start addr.
+    //         int64_t head_offset = decode_state->head_decode_addr - packet->packet_decode_addr;
+    //         // Offset the packet's pcm start addr to get head pcm addr.
+    //         int64_t head_pcm_addr = packet->packet_pcm_addr + head_offset;
+    //         // Move the window
+    //         double win_move = (double)head_pcm_addr - state->win_pcm_sample_head;
+    //         node->move_window( node, round( win_move ) );
+    //     }
+    // } else {
+    //     // Bug out early if we catch the thread with no layers
+    //     return;
+    // }
+
     // Move the point window with deck's needle head.
-    double win_move = state->deck->controls.platter.needle.head - state->win_pcm_sample_head;
-    node->move_window( node, round( win_move ) );
+    if( decode_state->first_layer ) {
+        double win_move = decode_state->head.origin_d - state->win_pcm_sample_head;
+        node->move_window( node, round( win_move ) );
+    } else {
+        // Bug out early if we catch the thread with no layers
+        return;
+    }
     
     // Fill buffer using current window settings
     int point_buf_index = 0;
@@ -124,6 +159,9 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     //     seek_target+read_count
     // );
 
+    // If we scroll off the end of the points, don't attempt to read.
+    if( seek_target+read_count < 1 ){ return; }
+
     // Fill the point buffer from file.
     // FIXME: We are hitting the FS every frame.  This is extremely inefficient and dumb.
     fseek( state->waveform_fd, seek_target + sizeof( zdj_waveform_header_t ), SEEK_SET );
@@ -134,7 +172,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
 }
 
 static void _render( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
-    // printf( "playback waveform _render\n" );
+    // printf( "playback waveform _render: %1.1f\n", frame->h );
     zdj_waveform_state_t * state = (zdj_waveform_state_t*)node->state;
     
     if( state->needs_full_render ) {
@@ -238,10 +276,13 @@ static void _render( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
 
     state->needs_render = false;
     state->needs_full_render = false;
+
+    // printf( "playback waveform _render done\n" );
 }
 
 // NOTE: window move/reset op addresses are in song PCM space, NOT waveform point space.
-static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
+static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset ) {
+    // printf( "playback waveform _move_window: %d\n", offset );
     zdj_waveform_state_t * state = (zdj_waveform_state_t*)node->state;
 
     state->win_pcm_sample_head += offset;
@@ -250,7 +291,21 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
     state->win_point_head = state->win_pcm_sample_head / state->samples_per_point;
 
     // Convert point coord to pixel coord
+    state->points_per_pixel = (state->zoom_val * (double)ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE) / (double)ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE;
+    state->samples_per_point = (double)state->waveform_header->samples_per_point;
+
+    // Set pixel window dimensions
+    // state->win_back_pixel_count = view->frame->w / 2;
+    // state->win_fwd_pixel_count = view->frame->w / 2;
+    // state->win_pixel_count = state->win_back_pixel_count + state->win_fwd_pixel_count;
+
+    // Set point window dimensions
+    state->win_back_point_count = state->win_back_pixel_count * state->points_per_pixel;
+    state->win_fwd_point_count = state->win_fwd_pixel_count * state->points_per_pixel;
+    state->win_point_count = state->win_back_point_count + state->win_fwd_point_count;
+
     double new_win_pixel_head = round( state->win_point_head / state->points_per_pixel );
+
     // Move pixel window if needed
     if( (int)new_win_pixel_head != (int)state->win_pixel_head ) {
         // printf( "move pixel head by: %d/%1.0f point: %1.1f, %1.1f\n", 
@@ -266,25 +321,25 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, int offset ) {
     }    
 }
 
-static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, uint32_t address ) {
+static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double address ) {
 
 }
 
 void zdj_playback_waveform_resize_window( 
     zdj_pipeline_node_t * waveform, 
-    double points_per_pixel,
-    zdj_rect_t * frame 
+    double zoom_val,
+    float screen_w
 ) {
-    printf( "zdj_playback_waveform_resize_window: %1.0f\n", points_per_pixel );
+    // printf( "zdj_playback_waveform_resize_window: %1.1f\n", zoom_val );
     zdj_waveform_state_t * state = (zdj_waveform_state_t*)waveform->state;
-    
-    // Gather coordinate-space scaling factors
-    state->points_per_pixel = points_per_pixel;
+
+    state->zoom_val = zoom_val;
+    state->points_per_pixel = (state->zoom_val * (double)ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE) / (double)ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE;
     state->samples_per_point = (double)state->waveform_header->samples_per_point;
 
     // Set pixel window dimensions
-    state->win_back_pixel_count = frame->w / 2;
-    state->win_fwd_pixel_count = frame->w / 2;
+    state->win_back_pixel_count = round(screen_w / 2.0);
+    state->win_fwd_pixel_count = round(screen_w / 2.0);
     state->win_pixel_count = state->win_back_pixel_count + state->win_fwd_pixel_count;
 
     // Set point window dimensions

@@ -589,12 +589,15 @@ bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2:
         case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_EDGE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_EDGE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return true;
         default: return false;

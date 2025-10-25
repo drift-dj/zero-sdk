@@ -28,13 +28,14 @@ zdj_library_performance_t * zdj_library_fetch_current_performance_dto_for_song(
     );
 
     int _eid_col = 0;
-    int _dseid_col = 1;
-    int _lis_col = 2;
-    int _k_col = 3;
-    int _bpm_col = 3;
-    int _hbg_col = 3;
-    int _bgs_col = 3;
-    int _cl_col = 3;
+    int _sid_col = 1;
+    int _dseid_col = 2;
+    int _lis_col = 3;
+    int _k_col = 4;
+    int _bpm_col = 5;
+    int _hbg_col = 6;
+    int _bgs_col = 7;
+    int _cl_col = 8;
     zdj_library_performance_t * performance = NULL;
 
     sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
@@ -43,6 +44,9 @@ zdj_library_performance_t * zdj_library_fetch_current_performance_dto_for_song(
             performance = calloc( 1, sizeof( zdj_library_performance_t ) );
             strcpy( performance->entity_id, (char*)sqlite3_column_text ( stmt, _eid_col ) );
             
+            char * song_entity_id = (char*)sqlite3_column_text ( stmt, _sid_col );
+            if( song_entity_id ) { strcpy( performance->song_entity_id, song_entity_id ); }
+
             char * data_source_entity_id = (char*)sqlite3_column_text ( stmt, _dseid_col );
             if( data_source_entity_id ) { strcpy( performance->data_source_entity_id, data_source_entity_id ); }
 
@@ -76,16 +80,17 @@ zdj_health_status_t zdj_library_store_performance(
     char sql[ 4096 ];
     snprintf( sql, sizeof( sql ), 
         // Insert new record
-        "INSERT INTO %s(entity_id,data_source_entity_id,length_in_samples,key,bpm,has_beat_grid,beat_grid_start_sample,cuepoint_links,error) VALUES(\'%s\',\'%s\',%d,%d,%f,%d,%d,\'%s\',%d)\n"
+        "INSERT INTO %s(entity_id,song_entity_id,data_source_entity_id,length_in_samples,key,bpm,has_beat_grid,beat_grid_start_sample,cuepoint_links,error) VALUES(\'%s\',\'%s\',\'%s\',%d,%d,%f,%d,%d,\'%s\',%d)\n"
 
         // Or update existing record
-        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',data_source_entity_id=\'%s\',length_in_samples=%d,key=%d,bpm=%f,has_beat_grid=%d,beat_grid_start_sample=%d,cuepoint_links=\'%s\',error=%d",
+        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',song_entity_id=\'%s\',data_source_entity_id=\'%s\',length_in_samples=%d,key=%d,bpm=%f,has_beat_grid=%d,beat_grid_start_sample=%d,cuepoint_links=\'%s\',error=%d",
 
         // Table name
         ZDJ_LIBRARY_TABLE_PERFORMANCE_DATA,
  
         // Insert new record
         performance->entity_id,
+        performance->song_entity_id,
         performance->data_source_entity_id,
         performance->sample_length,
         performance->key,
@@ -97,6 +102,7 @@ zdj_health_status_t zdj_library_store_performance(
 
         // Update existing record
         performance->entity_id,
+        performance->song_entity_id,
         performance->data_source_entity_id,
         performance->sample_length,
         performance->key,

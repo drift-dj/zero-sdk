@@ -29,8 +29,8 @@ zdj_view_t * zdj_new_text_input_buffer_view( char * input_str ) {
     buffer_state->has_valid_layout = false;
     buffer_state->cursor_counter = 0;
     buffer_view->state = buffer_state;
-    buffer_state->str = strdup( input_str );
-    // strcpy( buffer_state->str, input_str );
+    // buffer_state->str = strdup( input_str );
+    strcpy( buffer_state->str, input_str );
     return buffer_view;
 }
 
@@ -181,7 +181,6 @@ void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip ) {
 
 void _zdj_text_input_buffer_view_deinit_state( zdj_view_t * view ) {
     zdj_text_input_buffer_view_state_t * state = (zdj_text_input_buffer_view_state_t*)view->state;
-    free( state->str );
     free( state );
     view->state = NULL;
 }

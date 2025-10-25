@@ -96,6 +96,16 @@ zdj_error_type_t zdj_io_analog_stop( zdj_pipeline_node_t * node ) {
     zdj_m7_shared_msg_buffer( )->deactivate_audio_req = true;
 }
 
+zdj_error_type_t zdj_io_analog_silence( zdj_pipeline_node_t * node ) {
+    zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t *)node->state;
+    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+        state->shared_dac_buffer[ i*4+0 ] = 0;
+        state->shared_dac_buffer[ i*4+1 ] = 0;
+        state->shared_dac_buffer[ i*4+2 ] = 0;
+        state->shared_dac_buffer[ i*4+3 ] = 0;
+    }
+}
+
 // Transform samples from soundcard audio buffers to shared M7 buffer
 zdj_error_type_t zdj_analog_io_push_samples( zdj_pipeline_node_t * node ) {
     zdj_io_analog_node_state_t * state = (zdj_io_analog_node_state_t *)node->state;
@@ -121,7 +131,6 @@ zdj_error_type_t zdj_analog_io_pull_samples( zdj_pipeline_node_t * node ) {
     zdj_audio_buffer_node_state_t * in_1_state = (zdj_audio_buffer_node_state_t*)state->in_1_buffer->state;
     zdj_audio_buffer_node_state_t * in_2_state = (zdj_audio_buffer_node_state_t*)state->in_2_buffer->state;
 
-
     // Add system here to pull data into individual mono channels based on node linkage.
     double INT24_MAX = 8388607;
     double xfrm = 0;
@@ -135,6 +144,8 @@ zdj_error_type_t zdj_analog_io_pull_samples( zdj_pipeline_node_t * node ) {
         xfrm = (double)((int32_t)state->shared_adc_buffer[ i*8+4 ] >> 8) / INT24_MAX;
         in_2_state->buffer[ i*2+1 ] = (float)xfrm;
     }
+
+    // printf( "zdj_analog_io_pull_samples: %f\n", in_1_state->buffer[ 2 ] );
 }
 
 void _zdj_io_analog_node_deinit_state( zdj_pipeline_node_t * node ) {

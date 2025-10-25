@@ -66,6 +66,12 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     return ZDJ_ERROR_OKAY;
 }
 
+zdj_error_type_t zdj_soundcard_deinit( zdj_soundcard_t * soundcard ) {
+    // Silence DAC buffers
+    zdj_io_analog_stop( soundcard->analog_io_node );
+    zdj_io_analog_silence( soundcard->analog_io_node );
+}
+
 // Re-init the soundcard with a saved record in the db.
 zdj_error_type_t zdj_soundcard_load( zdj_soundcard_t * soundcard, char * entity_id ) {
 
@@ -144,7 +150,8 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     if( !ana_out_3->stereo ) { zdj_soundcard_mix_input( zdj_soundcard, ana_out_3 ); }
 
     // Explicitly mix inputs to persistent nodes - Main bus, Cue, Decks, etc.
-    for( int i=ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
+    // for( int i=ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
+    for( int i=ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
         zdj_soundcard_node_t * bus = zdj_soundcard_get_node_for_name( zdj_soundcard, i );
         zdj_soundcard_mix_input( zdj_soundcard, bus );
     }

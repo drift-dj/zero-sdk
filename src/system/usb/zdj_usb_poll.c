@@ -10,14 +10,14 @@
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/usb/zdj_usb.h>
 
-typedef struct {
-    bool run;
-    bool has_update;
-    int line_count;
-} zdj_sysfs_devices_thread_state_t;
-static zdj_sysfs_devices_thread_state_t * _zdj_sysfs_devices_thread_state = NULL;
-static pthread_t _zdj_usb_sysfs_devices_thread;
-static void * _zdj_sysfs_devices_thread_main( void * arg );
+// typedef struct {
+//     bool run;
+//     bool has_update;
+//     int line_count;
+// } zdj_sysfs_devices_thread_state_t;
+// static zdj_sysfs_devices_thread_state_t * _zdj_sysfs_devices_thread_state = NULL;
+// static pthread_t _zdj_usb_sysfs_devices_thread;
+// static void * _zdj_sysfs_devices_thread_main( void * arg );
 
 typedef struct {
     bool run;
@@ -105,74 +105,96 @@ static void * _zdj_port_partner_thread_main( void * arg ) {
     }
 }
 
-bool zdj_usb_has_sysfs_devices_update( void ) {
-    if ( _zdj_sysfs_devices_thread_state &&
-         _zdj_sysfs_devices_thread_state->has_update 
-    ) {
-        _zdj_sysfs_devices_thread_state->has_update = false;
+
+bool zdj_usb_host_has_devices_update( void ) {
+//     if ( _zdj_sysfs_devices_thread_state &&
+//          _zdj_sysfs_devices_thread_state->has_update 
+//     ) {
+//         _zdj_sysfs_devices_thread_state->has_update = false;
+//         return true;
+//     } else {
+//         return false;
+//     }
+
+    // Count lines in devices output.
+    int line_count = 0;
+    FILE * fp = popen( "cat /sys/kernel/debug/usb/devices", "r" );
+    if ( fp == NULL ) {
+        printf( "couldn't open usb devices\n" );
+    } else {
+        char line[ 256 ];
+        while( fgets( line, sizeof( line ), fp ) ) {
+            line_count++;
+        }
+    }
+    pclose( fp );
+
+    // If line_count doesn't match last time, flag.
+    if( line_count != zdj_usb_status->devices_line_count ) {
+        zdj_usb_status->devices_line_count = line_count;
         return true;
     } else {
         return false;
     }
 }
 
-zdj_error_type_t zdj_usb_start_sysfs_devices_poll( void ) {
-    if ( !_zdj_sysfs_devices_thread_state ) {
-        _zdj_sysfs_devices_thread_state = calloc( 1, sizeof( _zdj_sysfs_devices_thread_state ) );
-    }
+// zdj_error_type_t zdj_usb_start_sysfs_devices_poll( void ) {
+//     if ( !_zdj_sysfs_devices_thread_state ) {
+//         _zdj_sysfs_devices_thread_state = calloc( 1, sizeof( _zdj_sysfs_devices_thread_state ) );
+//     }
 
-    _zdj_sysfs_devices_thread_state->run = true;
-    _zdj_sysfs_devices_thread_state->has_update = false;
-    _zdj_sysfs_devices_thread_state->line_count = 0;
+//     _zdj_sysfs_devices_thread_state->run = true;
+//     _zdj_sysfs_devices_thread_state->has_update = false;
+//     _zdj_sysfs_devices_thread_state->line_count = 0;
 
-    pthread_create( 
-        &_zdj_usb_sysfs_devices_thread, 
-        NULL, 
-        _zdj_sysfs_devices_thread_main, 
-        (void*)_zdj_sysfs_devices_thread_state 
-    );
+//     pthread_create( 
+//         &_zdj_usb_sysfs_devices_thread, 
+//         NULL, 
+//         _zdj_sysfs_devices_thread_main, 
+//         (void*)_zdj_sysfs_devices_thread_state 
+//     );
 
-    return ZDJ_ERROR_OKAY;
-}
+//     return ZDJ_ERROR_OKAY;
+// }
 
-zdj_error_type_t zdj_usb_stop_sysfs_devices_poll( void ) {
-    if ( _zdj_sysfs_devices_thread_state ) {
-        _zdj_sysfs_devices_thread_state->run = false;
-    }
+// zdj_error_type_t zdj_usb_stop_sysfs_devices_poll( void ) {
+//     if ( _zdj_sysfs_devices_thread_state ) {
+//         _zdj_sysfs_devices_thread_state->run = false;
+//     }
 
-    return ZDJ_ERROR_OKAY;
-}
+//     return ZDJ_ERROR_OKAY;
+// }
 
-void * _zdj_sysfs_devices_thread_main( void * arg ) {
-    zdj_sysfs_devices_thread_state_t * state = (zdj_sysfs_devices_thread_state_t*)arg;
+// void * _zdj_sysfs_devices_thread_main( void * arg ) {
+//     zdj_sysfs_devices_thread_state_t * state = (zdj_sysfs_devices_thread_state_t*)arg;
 
-    int line_count;
-    while( 1 ) {
-        // Check if we should exit.
-        if( state->run ) {
-            // Count lines in devices output.
-            line_count = 0;
-            FILE * fp = popen( "cat /sys/kernel/debug/usb/devices", "r" );
-            if ( fp == NULL ) {
-                printf( "couldn't open usb devices\n" );
-            } else {
-                char line[ 256 ];
-                while( fgets( line, sizeof( line ), fp ) ) {
-                    line_count++;
-                }
-            }
-            pclose( fp );
+//     int line_count;
+//     while( 1 ) {
+//         // Check if we should exit.
+//         if( state->run ) {
+//             // Count lines in devices output.
+//             line_count = 0;
+//             FILE * fp = popen( "cat /sys/kernel/debug/usb/devices", "r" );
+//             if ( fp == NULL ) {
+//                 printf( "couldn't open usb devices\n" );
+//             } else {
+//                 char line[ 256 ];
+//                 while( fgets( line, sizeof( line ), fp ) ) {
+//                     line_count++;
+//                 }
+//             }
+//             pclose( fp );
 
-            // If line_count doesn't match last time, flag.
-            if( line_count != state->line_count ) {
-                sleep( 3 ); // give udev a sec to mount any msd devices
-                state->has_update = true;
-                state->line_count = line_count;
-            }
-        } else {
-            return NULL;
-        }
+//             // If line_count doesn't match last time, flag.
+//             if( line_count != state->line_count ) {
+//                 sleep( 3 ); // give udev a sec to mount any msd devices
+//                 state->has_update = true;
+//                 state->line_count = line_count;
+//             }
+//         } else {
+//             return NULL;
+//         }
 
-        sleep( 1 );
-    }
-}
+//         sleep( 1 );
+//     }
+// }

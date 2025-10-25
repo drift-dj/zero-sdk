@@ -4,6 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -46,10 +47,12 @@ zdj_view_t * zdj_new_file_browser_view(
 
     // Add a state instance
     zdj_file_browser_view_state_t * state = calloc( 1, sizeof( zdj_file_browser_view_state_t ) );
-    state->path = path;
+    strcpy( state->path, path );
     state->read_only = read_only;
     state->allow_nav = allow_nav;
-    state->select_dir_title = select_dir_title;
+    state->select_type = select_type;
+    state->usb_host_counter = 0;
+    strcpy( state->select_dir_title, select_dir_title );
     browser_view->state = state;
 
     // Add header view
@@ -75,11 +78,8 @@ zdj_view_t * zdj_new_file_browser_view(
     zdj_view_t * menu = zdj_new_file_browser_menu_for_path( 
         browser_view,
         &(zdj_rect_t){frame->x, frame->y, ZDJ_MODAL_WIDTH, frame->h-9}, 
-        path, 
-        read_only, 
-        allow_nav, 
-        select_type,
-        select_dir_title
+        state->path, 
+        state->select_dir_title
     );
     zdj_push_subview( menu_container, menu, false );
 
@@ -87,7 +87,32 @@ zdj_view_t * zdj_new_file_browser_view(
 }
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    zdj_file_browser_view_state_t * state = (zdj_file_browser_view_state_t*)view->state;
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
+
+    if( zdj_usb_status->mode == ZDJ_USB_MODE_HOST ) {
+        state->usb_host_counter++;
+        state->usb_host_counter %= 100;
+
+        // if( state->usb_host_counter == 0 ) { printf( "file browser host-mode check\n" ); }
+
+        // Check for attach/detach of USB drive
+        if ( state->usb_host_counter == 0 && zdj_usb_host_has_devices_update( ) ) {
+            // If we're looking at the devices menu, refresh the menu
+            if( state->is_device_menu ) {
+                // printf( "file browser host-mode device update\n" );
+                // state.menu_stack->top_subview().needs_refresh = true
+
+            // If we're looking at a file menu,
+            } else {
+                // if we're inside an external drive, and the drive is no longer available,
+                // if( zdj_fs_path_is_external( xxx ) && !access( path ) ) {
+                // Assume -the drive has been detached, force the browser modal to close.
+                // }
+            }
+
+        }
+    }
 }
 
 // Pass appropriate hmi events down into the top menu_view
@@ -105,9 +130,7 @@ static void _handle_control( zdj_view_t * browser, zdj_control_event_t * _event 
     if( (top_menu_state->scroll_index == -1 && e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0) ||
          e->id == ZDJ_UI_CONTROL_NAV_RELEASE_0
     ) {
-        zdj_file_browser_exit_context_t exit_context = {
-            ZDJ_FILE_BROWSER_EXIT_STATUS_CANCEL, NULL
-        };
+        zdj_file_browser_exit_context_t exit_context = { ZDJ_FILE_BROWSER_EXIT_STATUS_CANCEL };
         browser_state->handle_file_browser_exit( browser, &exit_context );
         e->blocked = true;
         return;
@@ -154,36 +177,37 @@ static void _deinit_state( zdj_view_t * view ) {
 void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * browser;
-    zdj_file_browser_view_state_t * browser_state;
-
-    // printf( "zdj_file_browser_item_hmi_delegate\n" );
+    zdj_file_browser_view_state_t * browser_state;    
 
     switch ( item_state->action ) {
         case ZDJ_MENU_ITEM_ACTION_DIR_BACK:
             // Note that the back button carries a pointer to the browser in its data struct
-            if( item_state->link && item_state->data->ptr ) {
+            if( item_state->data.ptr ) {
                 // If there's no menu behind the current one, we'll need to create it.
                 // It will be either a parent directory, or the device list if we're 
                 // already at the root of /media/internal
-                browser = item_state->data->ptr;
+                browser = item_state->data.ptr;
                 browser_state = (zdj_file_browser_view_state_t*)browser->state;
+                browser_state->is_device_menu = false;
 
                 zdj_view_t * current_menu = zdj_view_stack_top_subview_of( browser_state->menu_container );
                 if( !current_menu->prev ) { // cur menu has no previous menu
                     if( !strcmp( "/media", item_state->link ) ) {
-                        // Make a new device menu
-                        zdj_view_t * new_menu = zdj_new_device_browser_menu( browser, &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10} );
-                        // Insert it behind the current menu
-                        zdj_push_subview_behind( browser_state->menu_container, current_menu, new_menu, true );
+                        if( zdj_usb_status->mode == ZDJ_USB_MODE_HOST ) {
+                            // Make a new device menu
+                            zdj_view_t * new_menu = zdj_new_device_browser_menu( browser, &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10} );
+                            // Insert it behind the current menu
+                            zdj_push_subview_behind( browser_state->menu_container, current_menu, new_menu, true );
+                            // Set device menu to true so we track device attach/detach
+                            browser_state->is_device_menu = true;
+                        }
                     } else {
+                        printf( "browser dir_back: %s\n", item_state->link );
                         // Make a new file menu
                         zdj_view_t * new_menu = zdj_new_file_browser_menu_for_path( 
                             browser, 
                             &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10}, 
-                            strdup( item_state->link ), 
-                            browser_state->read_only, 
-                            browser_state->allow_nav, 
-                            browser_state->select_type,
+                            item_state->link, 
                             browser_state->select_dir_title
                         );
                         // Insert it behind the current menu
@@ -196,50 +220,41 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
             }
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_ENTER: // push menu w/path
-            browser = item_state->data->ptr;
+            printf( "browser dir_enter: %s\n", item_state->link );
+            browser = item_state->data.ptr;
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
+            browser_state->is_device_menu = false;
             zdj_view_t * new_menu = zdj_new_file_browser_menu_for_path( 
                 browser, 
                 &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10}, 
-                strdup( item_state->link ), 
-                browser_state->read_only, 
-                browser_state->allow_nav, 
-                browser_state->select_type,
+                item_state->link, 
                 browser_state->select_dir_title
             );
             zdj_push_subview( browser_state->menu_container, new_menu, true );
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_SELECT: // exit browser w/dir path
-            browser = (zdj_view_t*)item_state->data->ptr;
+        printf( "browser dir_select: %s\n", item_state->link );
+            browser = (zdj_view_t*)item_state->data.ptr;
             if( !browser ){ break; }
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
+            browser_state->is_device_menu = false;
             if( browser_state->handle_file_browser_exit ) {
-                zdj_file_browser_exit_context_t exit_context = {
-                    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, 
-                    // strdup( browser_state->path ), 
-                    strdup( item_state->link ),
-                    NULL, 
-                    // strdup( browser_state->path )
-                    strdup( item_state->link )
-                };
+                zdj_file_browser_exit_context_t exit_context = { ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT };
+                strcpy( exit_context.dir, item_state->link );
+                strcpy( exit_context.filepath, item_state->link );
                 browser_state->handle_file_browser_exit( browser, &exit_context );
             }
             break;
         case ZDJ_MENU_ITEM_ACTION_FILE_SELECT: // exit browser w/file path
-            browser = (zdj_view_t*)item_state->data->ptr;
+            browser = (zdj_view_t*)item_state->data.ptr;
             if( !browser ){ break; }
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
+            browser_state->is_device_menu = false;
             if( browser_state->handle_file_browser_exit ) {
-                char * filepath = strdup( item_state->link );
-                char * dir = strdup( browser_state->path );
-                // char filepath[1024];
-                // snprintf( filepath, sizeof( filepath ), "%s/%s", dir, filename );
-                zdj_file_browser_exit_context_t exit_context = {
-                    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT, 
-                    dir, 
-                    strdup( basename( filepath ) ), 
-                    strdup( filepath )
-                };
+                zdj_file_browser_exit_context_t exit_context = { ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT };
+                strcpy( exit_context.dir, browser_state->path );
+                strcpy( exit_context.filename, basename( item_state->link ) );
+                strcpy( exit_context.filepath, item_state->link );
                 browser_state->handle_file_browser_exit( browser, &exit_context );
             }
             break;

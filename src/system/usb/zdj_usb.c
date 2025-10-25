@@ -19,6 +19,7 @@ void * _zdj_usb_status_thread_loop( void * arg );
 zdj_error_type_t zdj_usb_init_frontend( void ) {
     // Bringup inital status
     zdj_usb_status = calloc( 1, sizeof( zdj_usb_status_t ) );
+    zdj_usb_status->devices_line_count = 0;
     FILE * fd = fopen( ZDJ_USB_STATUS_PATH, "r" );
     if( !fd ) { 
         exit( 1 ); 

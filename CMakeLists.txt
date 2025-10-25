@@ -27,15 +27,18 @@ add_library(zerodj
     src/library/api/song/zdj_library_api_song_graph.c
     src/library/api/song/zdj_library_api_song.c
     src/signal/deck/zdj_deck.c
-    src/signal/deck/zdj_deck_loop_skip.c
     src/signal/deck/zdj_deck_manager.c
-    src/signal/deck/cv/zdj_deck_cv.c
     src/signal/deck/dj/zdj_deck_dj.c
+    src/signal/deck/dj/zdj_deck_dj_controls.c
+    src/signal/deck/dj/zdj_deck_dj_loop_skip.c
+    src/signal/deck/dj/zdj_deck_dj_soundcard.c
+    src/signal/deck/dj/zdj_deck_dj_sync.c
+    src/signal/deck/dj/zdj_deck_dj_transport.c
     src/signal/deck/extern/zdj_deck_extern.c
-    src/signal/deck/lib/zdj_deck_lib.c
-    src/signal/deck/live_loop/zdj_deck_live_loop.c
-    src/signal/deck/plugin/zdj_deck_plugin.c
-    src/signal/deck/test/zdj_deck_test.c
+    # src/signal/deck/lib/zdj_deck_lib.c
+    # src/signal/deck/live_loop/zdj_deck_live_loop.c
+    # src/signal/deck/plugin/zdj_deck_plugin.c
+    # src/signal/deck/test/zdj_deck_test.c
     src/signal/math/zdj_signal_math.c
     src/signal/pipeline/zdj_pipeline.c
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
@@ -45,17 +48,24 @@ add_library(zerodj
     src/signal/pipeline/node/analysis/waveform/playback/zdj_playback_waveform.c
     src/signal/pipeline/node/analysis/waveform/thumbnail/zdj_thumbnail_waveform.c
     src/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.c
+    src/signal/pipeline/node/audio/deck_dsp/zdj_deck_dsp_node.c
+    src/signal/pipeline/node/audio/deck_dsp/eq/zdj_basic_eq_node.c
+    src/signal/pipeline/node/audio/deck_dsp/filter/zdj_bimodal_filter_node.c
     src/signal/pipeline/node/audio/decode/zdj_decode_node.c
-    src/signal/pipeline/node/audio/decode/zdj_decode_layer.c
-    src/signal/pipeline/node/audio/decode/zdj_decode_packet.c
-    src/signal/pipeline/node/audio/decode/zdj_decode_packet_mp3.c
-    src/signal/pipeline/node/audio/decode/zdj_decode_packet_pcm.c
-    src/signal/pipeline/node/audio/decode/zdj_decode_accum.c
+    # src/signal/pipeline/node/audio/decode/accum/zdj_decode_accum.c
+    src/signal/pipeline/node/audio/decode/addr/zdj_decode_addr.c
+    src/signal/pipeline/node/audio/decode/discon/zdj_decode_discon.c
+    src/signal/pipeline/node/audio/decode/layer/zdj_decode_layer.c
+    src/signal/pipeline/node/audio/decode/layer/zdj_decode_layer_addr.c
+    src/signal/pipeline/node/audio/decode/layer/zdj_decode_layer_fill.c
+    src/signal/pipeline/node/audio/decode/layer/zdj_decode_layer_packet.c
+    src/signal/pipeline/node/audio/decode/packet/zdj_decode_packet.c
     src/signal/pipeline/node/audio/io/zdj_io_analog_node.c
     src/signal/pipeline/node/audio/io/zdj_io_usb_node.c
     src/signal/pipeline/node/audio/library_decode/zdj_library_decode_node.c
     src/signal/pipeline/node/audio/record/zdj_audio_record_node.c
     src/signal/pipeline/node/audio/tsm/zdj_tsm_pitch_node.c
+    src/signal/pipeline/node/audio/tsm/zdj_tsm_tempo_node.c
     src/signal/pipeline/node/file/zdj_file_read_node.c
     src/signal/pipeline/node/file/zdj_file_write_node.c
     src/signal/soundcard/zdj_soundcard.c
@@ -73,6 +83,7 @@ add_library(zerodj
     src/system/perf/zdj_perf.c
     src/system/registry/zdj_registry_install.c
     src/system/registry/zdj_registry_launch_req.c
+    src/system/screen_cap/zdj_screen_cap.c
     src/system/thread/zdj_thread.c
     src/system/sql/zdj_sql.c
     src/system/usb/zdj_usb.c
@@ -104,6 +115,9 @@ add_library(zerodj
     src/ui/panel/widget/zdj_widget_panel.c
     src/ui/view/zdj_view_stack.c
     src/ui/view/asset_view/zdj_asset_view.c
+    src/ui/view/beatgrid_view/zdj_beatgrid_view.c
+    src/ui/view/beatgrid_view/zdj_edit_beatgrid_view.c
+    src/ui/view/beatgrid_view/zdj_playback_beatgrid_view.c
     src/ui/view/cue_point_view/zdj_cue_point_view.c
     src/ui/view/debug_view/zdj_debug_view.c
     src/ui/view/device_settings_menu_view/zdj_device_settings_menu_view.c
@@ -113,6 +127,7 @@ add_library(zerodj
     src/ui/view/file_browser_view/zdj_file_browser_file_menu.c
     src/ui/view/label_view/zdj_label_view.c
     src/ui/view/log_view/zdj_log_view.c
+    src/ui/view/loop_view/zdj_loop_view.c
     src/ui/view/menu_view/zdj_menu_view.c
     src/ui/view/menu_view/zdj_menu_view_scroll_filter.c
     src/ui/view/menu_header_view/zdj_menu_header_view.c
@@ -206,6 +221,7 @@ target_link_options(
 target_link_libraries(
     zerodj
     PUBLIC
+    m
     stdc++
     SDL2
     SDL2_ttf
@@ -216,7 +232,7 @@ target_link_libraries(
     uuid
     mpg123
     mhash
-    m
+    rubberband
 )
 
 # add_custom_command(

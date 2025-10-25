@@ -14,7 +14,7 @@
 #include <zerodj/system/thread/zdj_thread.h>
 
 zdj_control_active_state_t zdj_control_active_state;
-zdj_special_control_handler_t * zdj_special_control_handler;
+zdj_special_control_handler_t zdj_special_control_handlers[ 5 ];
 
 // Increment and bound and return write head.
 int zdj_get_next_deck_event_ind( void ) {
@@ -39,6 +39,7 @@ volatile int zdj_ui_event_buf_read;
 zdj_error_type_t zdj_controls_init( void ) {
     zdj_control_hmi_input_init( );
     zdj_clear_controls( );
+    memset( &zdj_special_control_handlers, 0, sizeof( zdj_special_control_handler_t )*5 );
     // Stand up control cycle thread
     zdj_thread_launch_control_cycle( zdj_control_cycle_thread_main, NULL );
 }
@@ -70,11 +71,10 @@ zdj_error_type_t zdj_deactivate_all_controls( void ) {
 }
 
 // Register a special control cb which is called regardles of control map state.
-void zdj_register_special_control_handler( zdj_control_id_t control_id, zdj_special_control_cb cb ) {
-    zdj_special_control_handler = calloc( 1, sizeof( zdj_special_control_handler_t ) );
-    zdj_special_control_handler->id = control_id;
-    zdj_special_control_handler->cb = cb;
-
+void zdj_register_special_control_handler( int index, zdj_control_id_t control_id, zdj_special_control_cb cb ) {
+    zdj_special_control_handlers[ index ].id = control_id;
+    zdj_special_control_handlers[ index ].cb = cb;
+    zdj_special_control_handlers[ index ].active = true;
     zdj_activate_control( control_id );
 }
 

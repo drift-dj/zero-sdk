@@ -41,7 +41,7 @@ zdj_error_type_t zdj_usb_msd_device_set_mount_path( zdj_usb_device_t * device ) 
                 // Grab the dev path
                 char dev_path[ 64 ];
                 strncpy( dev_path, findmnt_line, space_index );
-                zdj_usb_device_cleanup_str( &dev_path, sizeof( dev_path ) );
+                zdj_usb_device_cleanup_str( dev_path, sizeof( dev_path ) );
                 printf( "dev_path: %s\n", dev_path );
                 
                 // Look at udevadm for a matching serial number
@@ -69,18 +69,17 @@ zdj_error_type_t zdj_usb_msd_device_set_mount_path( zdj_usb_device_t * device ) 
                             // Get the serial number from the line
                             char serial[ 128 ];
                             strcpy( serial, udev_line+19 );
-                            zdj_usb_device_cleanup_str( &serial, sizeof( serial ) );
+                            zdj_usb_device_cleanup_str( serial, sizeof( serial ) );
                             printf( "looking for serial %s/%s\n", serial, device->serial );
-
 
                             // Check serial against the device DTO
                             if( !strcmp( serial, device->serial ) ) {
                                 // If there's a serial number match, read the second field 
                                 // of the findmnt output to get the mount path.
                                 char mount_path[ 128 ];
-                                strcpy( mount_path, space_ptr+1 );
-                                printf( "mount_path: %s\n", mount_path );
-                                device->mount_path = strdup( mount_path );
+                                strcpy( device->mount_path, space_ptr+1 );
+                                zdj_usb_device_cleanup_str( device->mount_path, sizeof( device->mount_path ) );
+                                printf( "mount_path: %s\n", device->mount_path );
                             }
                         }
                     }

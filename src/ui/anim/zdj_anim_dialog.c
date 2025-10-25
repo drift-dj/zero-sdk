@@ -30,7 +30,10 @@ void zdj_anim_update_dialog( zdj_anim_t * anim, zdj_view_t * view ) {
         anim->alive = false;
         view->frame.x = anim->end_point.x;
         view->frame.y = anim->end_point.y;
-        if( anim->cb_fn ) { ((anim_cb_t)anim->cb_fn)( anim->superview, anim->view ); }
+        if( anim->cb_fn ) { 
+            // printf( "calling dialog exit cb\n" );
+            ((anim_cb_t)anim->cb_fn)( anim->superview, anim->view ); 
+        }
     } else {
         anim->frame++;
         // Run animation update alogrithm

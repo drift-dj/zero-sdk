@@ -71,8 +71,6 @@ typedef struct {
 zdj_pipeline_node_t * zdj_new_audio_record_node( zdj_soundcard_node_t * soundcard_node );
 
 void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node );
-void zdj_enable_audio_record_capture( zdj_pipeline_node_t * record_node );
-void zdj_disable_audio_record_capture( zdj_pipeline_node_t * record_node );
 void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save );
 
 

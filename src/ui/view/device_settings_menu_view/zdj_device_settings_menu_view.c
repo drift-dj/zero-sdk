@@ -8,6 +8,7 @@
 #include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/panel/perf/zdj_perf_panel.h>
 #include <zerodj/ui/view/device_settings_menu_view/zdj_device_settings_menu_view.h>
 #include <zerodj/ui/view/dialog_view/zdj_dialog_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
@@ -17,6 +18,7 @@
 #include <zerodj/ui/view/soundcard_view/zdj_soundcard_view.h>
 #include <zerodj/ui/view/usb_drive_view/zdj_usb_drive_view.h>
 #include <zerodj/ui/view/usb_status_view/zdj_usb_status_view.h>
+#include <zerodj/ui/view/zdj_view_stack.h>
 
 
 static void _handle_usb_btn( zdj_view_t * view, zdj_control_event_t * _event );
@@ -24,6 +26,7 @@ static void _handle_usb_drive_btn( zdj_view_t * view, zdj_control_event_t * _eve
 static void _handle_soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_drop_lib_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _drop_library_dialog_exit( zdj_view_t * view, void * data, bool selection );
+static void _handle_perf_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_dumper_btn( zdj_view_t * view, zdj_control_event_t * _event );
 
 zdj_view_t * zdj_new_device_settings_menu( zdj_rect_t * frame ) {
@@ -78,6 +81,14 @@ zdj_view_t * zdj_new_device_settings_menu( zdj_rect_t * frame ) {
         zdj_menu_view_add_item( menu, usb_btn );
     }
 
+    // Perf
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Perf" ) );
+
+    zdj_view_t * perf_btn = zdj_new_menu_item( "Perf panel", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    perf_btn->handle_control_event = &_handle_perf_btn;
+    zdj_menu_view_add_item( menu, perf_btn );
+
+
     // Danger
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "DANGER" ) );
 
@@ -129,6 +140,12 @@ static void _drop_library_dialog_exit( zdj_view_t * view, void * data, bool sele
     zdj_pop_subview_of( zdj_root_view( ), true );
 }
 
+static void _handle_perf_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
+    printf( "_handle_perf_btn\n" );
+    zdj_perf_panel_toggle( );
+    printf( "_handle_perf_btn done\n" );
+}
+
 // Copy lib to shared drive and launch drive mode
 static void _handle_dumper_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_fs_remove_dir( "/media/internal/zdj_dump" );
@@ -139,6 +156,6 @@ static void _handle_dumper_btn( zdj_view_t * view, zdj_control_event_t * _event 
     sync( );
 
     // Launch drive mode
-    zdj_view_t * drive_view = zdj_new_usb_drive_view( );
-    zdj_push_subview( zdj_root_view( ), drive_view, true );
+    // zdj_view_t * drive_view = zdj_new_usb_drive_view( );
+    // zdj_push_subview( zdj_root_view( ), drive_view, true );
 }

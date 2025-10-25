@@ -89,14 +89,14 @@ void _zdj_usb_status_view_offline_update_layout( zdj_view_t * view ) {
     zdj_view_t * host_btn = zdj_new_menu_item( "Host Mode", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     host_btn->handle_control_event = &zdj_usb_status_view_handle_host_mode_btn;
     zdj_menu_item_view_state_t * host_state = (zdj_menu_item_view_state_t*)host_btn->state;
-    host_state->data->ptr = view;
+    host_state->data.ptr = view;
     zdj_menu_view_add_item( menu, host_btn );
 
     // Add Enable Device
     zdj_view_t * device_btn = zdj_new_menu_item( "Device Mode", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     device_btn->handle_control_event = &zdj_usb_status_view_handle_device_mode_btn;
     zdj_menu_item_view_state_t * device_state = (zdj_menu_item_view_state_t*)device_btn->state;
-    device_state->data->ptr = view;
+    device_state->data.ptr = view;
     zdj_menu_view_add_item( menu, device_btn );
 
     state->needs_layout_update = false;

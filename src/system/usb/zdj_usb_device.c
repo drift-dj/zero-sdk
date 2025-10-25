@@ -36,7 +36,7 @@ zdj_error_type_t _zdj_usb_clear_attached_devices( void );
 // Match discovered devices against existing records
 // in the device.db, or create new records for devices
 // we haven't seen before.
-zdj_usb_attached_devices_t * zdj_usb_get_attached_devices( void ) {
+zdj_usb_attached_devices_t * zdj_usb_get_attached_devices( zdj_usb_device_filter_t type ) {
     if( !_zdj_usb_attached_devices ) {
         _zdj_usb_attached_devices = calloc( 1, sizeof( zdj_usb_attached_devices_t ) );
         _zdj_usb_attached_devices->count = 0;
@@ -125,17 +125,52 @@ zdj_usb_attached_devices_t * zdj_usb_get_attached_devices( void ) {
                 has_msd = true;
             }
         }
-        // Capture remaining state to a device
-        _zdj_usb_add_attached_device( 
-            usb_vendor,
-            usb_product_id,
-            manufacturer,
-            product,
-            serial_number,
-            has_audio,
-            has_msd,
-            has_hid
-        );
+
+        if( type == ZDJ_USB_TYPE_ANY ) {
+            _zdj_usb_add_attached_device( 
+                usb_vendor,
+                usb_product_id,
+                manufacturer,
+                product,
+                serial_number,
+                has_audio,
+                has_msd,
+                has_hid
+            );
+        } else if ( type == ZDJ_USB_TYPE_MSD && has_msd ) {
+            _zdj_usb_add_attached_device( 
+                usb_vendor,
+                usb_product_id,
+                manufacturer,
+                product,
+                serial_number,
+                has_audio,
+                has_msd,
+                has_hid
+            );
+        } else if ( type == ZDJ_USB_TYPE_AUDIO && has_audio ) {
+            _zdj_usb_add_attached_device( 
+                usb_vendor,
+                usb_product_id,
+                manufacturer,
+                product,
+                serial_number,
+                has_audio,
+                has_msd,
+                has_hid
+            );
+        } else if ( type == ZDJ_USB_TYPE_HID && has_hid ) {
+            _zdj_usb_add_attached_device( 
+                usb_vendor,
+                usb_product_id,
+                manufacturer,
+                product,
+                serial_number,
+                has_audio,
+                has_msd,
+                has_hid
+            );
+        }
     }
     pclose( fp );
 
@@ -168,14 +203,14 @@ zdj_usb_device_t * zdj_usb_device_create_dto(
     char * name_user
 ) {
     zdj_usb_device_t * device = calloc( 1, sizeof( zdj_usb_device_t ) );
-    device->entity_id = zdj_usb_device_get_uuid( );
-    device->hash = strdup( crc );
-    device->usb_vendor_id = strdup( usb_vendor );
-    device->usb_product_id = strdup( usb_product_id );
-    device->manufacturer = strdup( manufacturer );
-    device->product = strdup( product );
-    device->serial = strdup( serial );
-    device->name_user = strdup( name_user );
+    strcpy( device->entity_id, zdj_usb_device_get_uuid( ) );
+    strcpy( device->hash, crc );
+    strcpy( device->usb_vendor_id, usb_vendor );
+    strcpy( device->usb_product_id, usb_product_id );
+    strcpy( device->manufacturer, manufacturer );
+    strcpy( device->product, product );
+    strcpy( device->serial, serial );
+    strcpy( device->name_user, name_user );
     return device;  
 }
 
@@ -210,14 +245,15 @@ zdj_usb_device_t * zdj_usb_device_fetch_dto_for_entity_id( char * entity_id, sql
         while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
 
             device = calloc( 1, sizeof( zdj_usb_device_t ) );
-            device->entity_id = strdup( (char*)sqlite3_column_text ( stmt, _eid_col ) );
-            device->hash = strdup( (char*)sqlite3_column_text ( stmt, _hsh_col ) );
-            device->usb_vendor_id = strdup( (char*)sqlite3_column_text ( stmt, _uid_col ) );
-            device->usb_product_id = strdup( (char*)sqlite3_column_text ( stmt, _up_col ) );
-            device->name_user = strdup( (char*)sqlite3_column_text ( stmt, _nu_col ) );
-            device->manufacturer = strdup( (char*)sqlite3_column_text ( stmt, _man_col ) );
-            device->product = strdup( (char*)sqlite3_column_text ( stmt, _prd_col ) );
-            device->serial = strdup( (char*)sqlite3_column_text ( stmt, _ser_col ) );
+            strcpy( device->entity_id, (char*)sqlite3_column_text ( stmt, _eid_col ) );
+            strcpy( device->hash, strdup( (char*)sqlite3_column_text ( stmt, _hsh_col ) ) );
+            strcpy( device->usb_vendor_id, (char*)sqlite3_column_text ( stmt, _uid_col ) );
+            strcpy( device->usb_product_id, (char*)sqlite3_column_text ( stmt, _up_col ) );
+            strcpy( device->name_user, (char*)sqlite3_column_text ( stmt, _nu_col ) );
+            strcpy( device->manufacturer, (char*)sqlite3_column_text ( stmt, _man_col ) );
+            strcpy( device->product, (char*)sqlite3_column_text ( stmt, _prd_col ) );
+            strcpy( device->serial, (char*)sqlite3_column_text ( stmt, _ser_col ) );
+            
             device->attached = false;
             device->has_audio = false;
             device->has_hid = false;
@@ -255,14 +291,14 @@ zdj_usb_device_t * zdj_usb_device_fetch_dto_for_hash( char * hash, sqlite3 * db 
         while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
 
             device = calloc( 1, sizeof( zdj_usb_device_t ) );
-            device->entity_id = strdup( (char*)sqlite3_column_text ( stmt, _eid_col ) );
-            device->hash = strdup( (char*)sqlite3_column_text ( stmt, _hsh_col ) );
-            device->usb_vendor_id = strdup( (char*)sqlite3_column_text ( stmt, _uid_col ) );
-            device->usb_product_id = strdup( (char*)sqlite3_column_text ( stmt, _up_col ) );
-            device->name_user = strdup( (char*)sqlite3_column_text ( stmt, _nu_col ) );
-            device->manufacturer = strdup( (char*)sqlite3_column_text ( stmt, _man_col ) );
-            device->product = strdup( (char*)sqlite3_column_text ( stmt, _prd_col ) );
-            device->serial = strdup( (char*)sqlite3_column_text ( stmt, _ser_col ) );
+            strcpy( device->entity_id, (char*)sqlite3_column_text ( stmt, _eid_col ) );
+            strcpy( device->hash, strdup( (char*)sqlite3_column_text ( stmt, _hsh_col ) ) );
+            strcpy( device->usb_vendor_id, (char*)sqlite3_column_text ( stmt, _uid_col ) );
+            strcpy( device->usb_product_id, (char*)sqlite3_column_text ( stmt, _up_col ) );
+            strcpy( device->name_user, (char*)sqlite3_column_text ( stmt, _nu_col ) );
+            strcpy( device->manufacturer, (char*)sqlite3_column_text ( stmt, _man_col ) );
+            strcpy( device->product, (char*)sqlite3_column_text ( stmt, _prd_col ) );
+            strcpy( device->serial, (char*)sqlite3_column_text ( stmt, _ser_col ) );
             device->attached = false;
             device->has_audio = false;
             device->has_hid = false;
@@ -383,14 +419,6 @@ zdj_error_type_t _zdj_usb_clear_attached_devices( void ) {
     zdj_usb_device_t * device = _zdj_usb_attached_devices->devices;
     while( device ) {
         zdj_usb_device_t * next_device = device->next;
-        free( device->entity_id );
-        free( device->hash );
-        free( device->usb_product_id );
-        free( device->usb_vendor_id );
-        free( device->manufacturer );
-        free( device->product );
-        free( device->serial );
-        free( device->name_user );
         // free( device );
         device = next_device;
     } 

@@ -29,6 +29,8 @@ zdj_error_type_t zdj_soundcard_clear_buffer(
 }
 
 zdj_error_type_t zdj_soundcard_mix_input( zdj_soundcard_t * soundcard, zdj_soundcard_node_t * node ) {  
+    
+    // printf( "zdj_soundcard_mix_input: %s\n", zdj_soundcard_node_name[ node->name ] );
     // If this node has already run its mix/dsp cycle, we're done.
     // This happens when multiple nodes have input to from a single node.
     // We don't need to do recursion/dsp on a node twice.
@@ -72,6 +74,7 @@ zdj_error_type_t zdj_soundcard_mix_input( zdj_soundcard_t * soundcard, zdj_sound
 
     // If soundcard's o-scope is looking at this node, push samples to waveform pipe.
     if( soundcard->scope_node_name == node->name ) {
+        // printf( "soundcard pushing %s to scope\n", zdj_soundcard_node_name[ node->name ] );
         zdj_live_waveform_state_t * scope_state = (zdj_live_waveform_state_t*)soundcard->scope_waveform->state;
         scope_state->handle_soundcard_node_push( soundcard->scope_waveform, node->data_pipe, node->stereo );
     }
@@ -115,9 +118,9 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
 
     bool accum_pan = false;
     if( node->stereo && input_node->stereo ) {
-        // printf( "accum: st %s <- st %s\n", 
-        //     zdj_soundcard_node_name[ node->name ],
-        //     zdj_soundcard_node_name[ input_node->name ] 
+        // printf( "accum: st %s/%p <- st %s/%p\n", 
+        //     zdj_soundcard_node_name[ node->name ], dest_buf,
+        //     zdj_soundcard_node_name[ input_node->name ], source_buf
         // );
         map.dest_channel_stride = 2;
         map.dest_channel_count = 2;

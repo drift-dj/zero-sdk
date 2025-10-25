@@ -9,7 +9,7 @@
 TTF_Font * zdj_font_6 = NULL;
 TTF_Font * zdj_font_6_caps = NULL;
 TTF_Font * zdj_font_6_bold;
-TTF_Font * zdj_font_9;
+TTF_Font * zdj_font_9 = NULL;
 TTF_Font * zdj_font_9_bold;
 TTF_Font * zdj_font_12;
 TTF_Font * zdj_font_12_caps;
@@ -20,6 +20,7 @@ int zdj_font_init( void ) {
     TTF_Init( );
     zdj_font_6 = TTF_OpenFont( "/root/res/fonts/pixelated.ttf", 8 );
     zdj_font_6_caps = TTF_OpenFont( "/root/res/fonts/pixelsix14.ttf", 8 );
+    zdj_font_9 = TTF_OpenFont( "/root/res/fonts/lo-res09-nar.ttf", 9 );
     zdj_font_12 = TTF_OpenFont( "/root/res/fonts/pixelated.ttf", 16 );
     zdj_font_12_caps = TTF_OpenFont( "/root/res/fonts/pixelsix14.ttf", 16 );
     zdj_font_18 = TTF_OpenFont( "/root/res/fonts/pixelated.ttf", 24 );
@@ -38,6 +39,9 @@ TTF_Font * zdj_font( zdj_font_t font_name ) {
         break;
     case ZDJ_FONT_6_CAPS:
         return ( zdj_font_6_caps ) ? zdj_font_6_caps : zdj_font_6;
+        break;
+    case ZDJ_FONT_9:
+        return zdj_font_9;
         break;
     case ZDJ_FONT_12:
         return zdj_font_12;

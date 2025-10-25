@@ -21,6 +21,8 @@
 #ifndef ZDJ_TSM_TEMPO_NODE_H
 #define ZDJ_TSM_TEMPO_NODE_H
 
+#include <rubberband-c.h>
+
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
 typedef struct {
@@ -28,11 +30,21 @@ typedef struct {
     int channel_count;
     int sample_count;
     double rate;
+    bool has_rate_update;
     float * out_buffer;
+
+    RubberBandState rb;
+    // float **rb_in_ptrs; // Array of 2 [float] pointers containing input de-interleaved stereo PCM data
+    // float **rb_out_ptrs; // Array of 2 [float] pointers containing processed de-interleaved stereo PCM
+    const float *rb_in_ptrs[2]; // Array of 2 [float] pointers containing input de-interleaved stereo PCM data
+    const float *rb_out_ptrs[2]; // Array of 2 [float] pointers containing processed de-interleaved stereo PCM
+    size_t rb_start_delay;
+    size_t rb_preferred_start_pad;
+
     zdj_pipeline_node_t * decode_node;
-    double decode_start_coord;
-    double decode_end_coord;
-    double decode_buf_ref_coord;
+    double decode_coord;
+    int64_t prev_decode_buf_start_addr;
+
 } zdj_tsm_tempo_node_state_t;
 
 zdj_pipeline_node_t * zdj_new_tsm_tempo_node( 
@@ -40,5 +52,7 @@ zdj_pipeline_node_t * zdj_new_tsm_tempo_node(
     int sample_count,
     zdj_pipeline_node_t * decode_node 
 );
+
+void zdj_reset_tsm_tempo_node( zdj_pipeline_node_t * node );
 
 #endif

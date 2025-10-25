@@ -119,9 +119,12 @@ typedef struct zdj_pipeline_node_t {
     void ( *deinit_state )( struct zdj_pipeline_node_t * );
 
     zdj_pipeline_window_state_t * window_state;
-    zdj_error_type_t ( *move_window )( struct zdj_pipeline_node_t *, int );
-    zdj_error_type_t ( *reset_window )( struct zdj_pipeline_node_t *, uint32_t );
-    zdj_error_type_t ( *resize_window )( struct zdj_pipeline_node_t *, uint32_t, uint32_t );
+    // zdj_error_type_t ( *move_window )( struct zdj_pipeline_node_t *, int );
+    // zdj_error_type_t ( *reset_window )( struct zdj_pipeline_node_t *, uint32_t );
+    // zdj_error_type_t ( *resize_window )( struct zdj_pipeline_node_t *, uint32_t, uint32_t );
+    zdj_error_type_t ( *move_window )( struct zdj_pipeline_node_t *, double );
+    zdj_error_type_t ( *reset_window )( struct zdj_pipeline_node_t *, double );
+    zdj_error_type_t ( *resize_window )( struct zdj_pipeline_node_t *, double, uint32_t );
 
     float * ( *get_data )( struct zdj_pipeline_node_t * );
 

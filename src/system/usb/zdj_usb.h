@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <sqlite3.h>
 
@@ -132,24 +133,33 @@ typedef struct {
     zdj_usb_submode_switch_state_t switch_state;
     bool has_frontend_update;
     bool requires_reboot;
+    int devices_line_count;
 } zdj_usb_status_t;
 
 typedef struct zdj_usb_device_t {
-    char * entity_id;
-    char * hash;
-    char * usb_vendor_id;
-    char * usb_product_id;
-    char * manufacturer;
-    char * product;
-    char * serial;
-    char * name_user;
-    char * mount_path;
+    char entity_id[ 64 ];
+    char hash[ 64 ];
+    char usb_vendor_id[ 64 ];
+    char usb_product_id[ 64 ];
+    char manufacturer[ 64 ];
+    char product[ 64 ];
+    char serial[ 64 ];
+    char name_user[ 128 ];
+    char mount_path[ 256 ];
     bool attached;
     bool has_audio;
     bool has_msd;
     bool has_hid;
     struct zdj_usb_device_t * next;
 } zdj_usb_device_t;
+
+typedef enum {
+    ZDJ_USB_TYPE_ANY,
+    ZDJ_USB_TYPE_AUDIO,
+    ZDJ_USB_TYPE_HID,
+    ZDJ_USB_TYPE_MIDI,
+    ZDJ_USB_TYPE_MSD
+} zdj_usb_device_filter_t;
 
 typedef struct {
     int count;
@@ -172,12 +182,13 @@ bool zdj_usb_has_port_partner( void );
 bool zdj_usb_has_port_partner_update( void );
 zdj_error_type_t zdj_usb_start_port_partner_poll( void );
 zdj_error_type_t zdj_usb_stop_port_partner_poll( void );
-bool zdj_usb_has_sysfs_devices_update( void );
-zdj_error_type_t zdj_usb_start_sysfs_devices_poll( void );
-zdj_error_type_t zdj_usb_stop_sysfs_devices_poll( void );
+bool zdj_usb_host_has_devices_update( void );
+// bool zdj_usb_has_sysfs_devices_update( void );
+// zdj_error_type_t zdj_usb_start_sysfs_devices_poll( void );
+// zdj_error_type_t zdj_usb_stop_sysfs_devices_poll( void );
 
-// USB Device API
-zdj_usb_attached_devices_t * zdj_usb_get_attached_devices( void );
+// USB Device Private API
+zdj_usb_attached_devices_t * zdj_usb_get_attached_devices( zdj_usb_device_filter_t type );
 zdj_usb_device_t * zdj_usb_device_create_dto( 
     char * crc,
     char * usb_vendor,

@@ -71,7 +71,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         // printf( "Wrote %d samples\n", bw );
 
     } else if ( record_state->status == ZDJ_AUDIO_RECORD_FINISH ) {
-        // printf( "ZDJ_AUDIO_RECORD_FINISH\n" );
+        printf( "ZDJ_AUDIO_RECORD_FINISH\n" );
         // Close tmp data file and prep for handoff to the post-processing thread.
         fclose( record_state->tmp_fp );
         record_state->status = ZDJ_AUDIO_RECORD_PROCESSING;
@@ -116,7 +116,8 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         fwrite( hdr, sizeof( record_wav_header_t ), 1, record_state->tmp_fp );
 
         // Start up in inactive state
-        record_state->status = ZDJ_AUDIO_RECORD_INACTIVE;
+        // record_state->status = ZDJ_AUDIO_RECORD_INACTIVE;
+        record_state->status = ZDJ_AUDIO_RECORD_ACTIVE;
     }
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
@@ -135,20 +136,6 @@ void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node ) {
     zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
     // Create tmp file to store sample data.
     record_state->status = ZDJ_AUDIO_RECORD_BEGIN;
-}
-
-void zdj_enable_audio_record_capture( zdj_pipeline_node_t * record_node ) {
-    // printf( "zdj_enable_audio_record_capture\n" );
-    zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
-    // Begin capturing samples from soundcard to tmp file.
-    record_state->status = ZDJ_AUDIO_RECORD_ACTIVE;
-}
-
-void zdj_disable_audio_record_capture( zdj_pipeline_node_t * record_node ) {
-    // printf( "zdj_disable_audio_record_capture\n" );
-    zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
-    // Pause capturing samples from soundcard to tmp file.
-    record_state->status = ZDJ_AUDIO_RECORD_INACTIVE;
 }
 
 void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save ) {

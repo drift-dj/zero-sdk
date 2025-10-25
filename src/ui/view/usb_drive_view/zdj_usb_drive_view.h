@@ -39,6 +39,7 @@ typedef struct {
     zdj_usb_drive_view_mode_t mode;
     bool needs_layout_update;
     zdj_usb_gadget_config_t prev_config;
+    int sync_counter;
 } zdj_usb_drive_view_state_t;
 
 zdj_view_t * zdj_new_usb_drive_view( void );

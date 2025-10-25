@@ -9,6 +9,7 @@
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/analysis/waveform/zdj_waveform.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
@@ -40,12 +41,12 @@ zdj_view_t * zdj_new_live_waveform_view( zdj_rect_t * frame, zdj_soundcard_node_
 void _zdj_live_waveform_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
 
+    // printf( "_zdj_live_waveform_view_draw: %f\n", view->frame.h );
+
     zdj_live_waveform_view_state_t * view_state = (zdj_live_waveform_view_state_t*)view->state;
     zdj_live_waveform_state_t * waveform_state = (zdj_live_waveform_state_t*)view_state->pipe->state;
 
     waveform_state->render( view_state->pipe );
-
-    
 
     // Make a new texture instance for drawing
     SDL_Texture * waveform_tex = SDL_CreateTexture(

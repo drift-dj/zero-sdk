@@ -314,8 +314,8 @@ zdj_view_t * zdj_menu_view_get_item_for_data_ptr( zdj_view_t * menu_view, void *
     while( scroll_view_subview ) {
         if( scroll_view_subview->type == ZDJ_VIEW_MENU_ITEM ) {
             zdj_menu_item_view_state_t * item_state = ( zdj_menu_item_view_state_t* )scroll_view_subview->state;
-            if( item_state->data->ptr &&
-                item_state->data->ptr == ptr 
+            if( item_state->data.ptr &&
+                item_state->data.ptr == ptr 
             ) {
                 return scroll_view_subview;
             }
@@ -335,7 +335,7 @@ zdj_view_t * zdj_menu_view_get_item_for_data_c_val( zdj_view_t * menu_view, char
     while( scroll_view_subview ) {
         if( scroll_view_subview->type == ZDJ_VIEW_MENU_ITEM ) {
             zdj_menu_item_view_state_t * item_state = ( zdj_menu_item_view_state_t* )scroll_view_subview->state;
-            if( !strcmp( item_state->data->c_val, c_val )
+            if( !strcmp( item_state->data.c_val, c_val )
             ) {
                 return scroll_view_subview;
             }

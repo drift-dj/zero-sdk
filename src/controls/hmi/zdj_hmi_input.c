@@ -97,25 +97,24 @@ void zdj_control_hmi_input_init( void ) {
     // Pot 0 - Ch 1 Fade
     zdj_hmi_input_state_t * fade_1_pot = calloc( sizeof( zdj_hmi_input_state_t ), 1 );
     fade_1_pot->id = ZDJ_HMI_POT_0_CH_1;
+    fade_1_pot->adjust_hyst_val = zdj_hmi_m7_state_model->fade_1_state;
+    fade_1_pot->adjust_prev_val = zdj_hmi_m7_state_model->fade_1_state;
     zdj_hmi_input_states[ ZDJ_HMI_POT_0_CH_1 ] = fade_1_pot;
     // Pot 1 - Ch 2 Fade
     zdj_hmi_input_state_t * fade_2_pot = calloc( sizeof( zdj_hmi_input_state_t ), 1 );
     fade_2_pot->id = ZDJ_HMI_POT_1_CH_2;
+    fade_2_pot->adjust_hyst_val = zdj_hmi_m7_state_model->fade_2_state;
+    fade_2_pot->adjust_prev_val = zdj_hmi_m7_state_model->fade_2_state;
     zdj_hmi_input_states[ ZDJ_HMI_POT_1_CH_2 ] = fade_2_pot;
     // Pot 2 - Crossfade
     zdj_hmi_input_state_t * xfade_pot = calloc( sizeof( zdj_hmi_input_state_t ), 1 );
     xfade_pot->id = ZDJ_HMI_POT_2_XFADE;
+    xfade_pot->adjust_hyst_val = zdj_hmi_m7_state_model->xfade_state;
+    xfade_pot->adjust_prev_val = zdj_hmi_m7_state_model->xfade_state;
     zdj_hmi_input_states[ ZDJ_HMI_POT_2_XFADE ] = xfade_pot;
 }
 
 void zdj_control_process_hmi_input( void ) {
-
-    // printf( "pots: %d %d %d\n", 
-    //     zdj_hmi_m7_state_model->fade_1_state,
-    //     zdj_hmi_m7_state_model->fade_2_state,
-    //     zdj_hmi_m7_state_model->xfade_state
-    // );
-
     // Read the most recent m7 HMI state model and generate events for changes
     zdj_control_process_hmi_digital_input( 
         zdj_hmi_input_states[ ZDJ_HMI_ENCO_1_VOL ], 

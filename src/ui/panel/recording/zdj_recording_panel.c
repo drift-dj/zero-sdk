@@ -4,6 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -55,6 +56,18 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_recording_panel_state_t * state = (zdj_recording_panel_state_t*)view->state;
     // Draw box and border
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
+
+    // This doesn't work since draw isn't called when we're offscreen
+    // if( zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_TOGGLE_RECORD ] ) {
+    //     zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_TOGGLE_RECORD ] = false;
+    //     if( state->deploy_state == ZDJ_RECORD_PANEL_RETRACTED ) { 
+    //         printf( "showing mini-meter\n" );
+    //         // Show meter view if nothing is on-screen
+    //         _deploy( view );
+    //         state->deploy_state = ZDJ_RECORD_PANEL_MINI_METER;
+    //     }
+    //     state->deploy_timer = 0;
+    // }
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
@@ -65,6 +78,7 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
     
     // Capture events for deploy/retract and focus/un-focus.
     if( event->id == ZDJ_UI_CONTROL_FN_1_RELEASE_2 ) {
+        printf( "Recording Panel Deploy Toggle\n" );
         event->blocked = true;
         switch ( state->deploy_state ) {
         case ZDJ_RECORD_PANEL_RETRACTED:

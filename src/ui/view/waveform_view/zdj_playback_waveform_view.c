@@ -21,15 +21,19 @@ zdj_view_t * zdj_new_playback_waveform_view(
     zdj_rect_t * frame, 
     zdj_waveform_style_t style,
     zdj_deck_t * deck,
+    zdj_pipeline_node_t * decode_node,
     zdj_library_song_t * song, 
-    double points_per_pixel,
+    double zoom_val,
     bool hires 
 ) {
     // printf( "zdj_new_playback_waveform_view\n" );
     
     // Build a playback waveform
+    // zdj_pipeline_node_t * waveform_node = zdj_new_playback_waveform( 
+    //     deck, style, song, points_per_pixel, frame, hires
+    // );
     zdj_pipeline_node_t * waveform_node = zdj_new_playback_waveform( 
-        deck, style, song, points_per_pixel, frame, hires
+        deck, decode_node, style, song, zoom_val, frame, hires
     );
     if( !waveform_node ) { return NULL; }
 
@@ -42,6 +46,7 @@ zdj_view_t * zdj_new_playback_waveform_view(
     zdj_waveform_view_state_t * state = calloc( 1, sizeof( zdj_waveform_view_state_t ) );
     view->state = state;
     state->waveform_node = waveform_node;
+    state->zoom_val = zoom_val;
 
     // Make a new texture instance for drawing
     state->waveform_tex = SDL_CreateTexture(
@@ -57,7 +62,7 @@ zdj_view_t * zdj_new_playback_waveform_view(
 }
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    // printf( "playback_waveform_view draw\n" );
+    // printf( "playback_waveform_view draw: %1.1f\n", view->frame.h );
     zdj_waveform_view_state_t * view_state = (zdj_waveform_view_state_t*)view->state;
     zdj_waveform_state_t * waveform_node_state = (zdj_waveform_state_t*)view_state->waveform_node->state;
 
@@ -67,6 +72,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Render the thumbnail points into the texture
     if( waveform_node_state->needs_render ) {
         SDL_SetRenderTarget( zdj_renderer( ), view_state->waveform_tex );
+        waveform_node_state->zoom_val = view_state->zoom_val;
         waveform_node_state->render( view_state->waveform_node, &view->frame );
         SDL_SetRenderTarget( zdj_renderer( ), NULL );
     }

@@ -41,6 +41,7 @@ zdj_pipeline_node_t * zdj_new_io_analog_node( void );
 zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node );
 zdj_error_type_t zdj_io_analog_run( zdj_pipeline_node_t * node );
 zdj_error_type_t zdj_io_analog_stop( zdj_pipeline_node_t * node );
+zdj_error_type_t zdj_io_analog_silence( zdj_pipeline_node_t * node );
 
 zdj_pipeline_node_t * zdj_new_io_usb_node( );
 zdj_error_type_t zdj_io_update_usb_config( zdj_pipeline_node_t * node );

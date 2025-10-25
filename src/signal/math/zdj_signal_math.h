@@ -23,6 +23,8 @@
 
 #include <zerodj/system/error/zdj_error.h>
 
+extern double zdj_eps;
+
 typedef struct {
     double sigma;
     int width;
@@ -61,4 +63,8 @@ float zdj_signal_gen_sine(
 	double scale 
 );
 
+float zdj_signal_accum_floats( float val_1, float val_2 );
+
+double zdj_signal_pcm_count_for_beatgrid_count( double beatgrid_count, double bpm, int sample_rate );
+double zdj_signal_beatgrid_count_for_pcm_count( double pcm_count, int sample_rate, double bpm );
 #endif

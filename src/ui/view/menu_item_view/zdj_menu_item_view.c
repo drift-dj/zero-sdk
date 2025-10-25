@@ -29,7 +29,7 @@ zdj_view_t * zdj_new_menu_item( char * title, zdj_menu_item_view_layout_t layout
     menu_item->state = (void*)state;
     if( title ) { strcpy( state->title, title ); } else { strcpy( state->title, "Undefined" ); }
     state->layout = layout;
-    state->data = calloc( 1, sizeof( zdj_ui_data_t ) );
+    state->data.ptr = NULL;
     state->needs_layout_init = true;
     state->init_layout = NULL;
     state->needs_layout_update = false;
@@ -151,18 +151,12 @@ void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_cli
 
 void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    if( state->data ) {
-        free( state->data->tag );
-        free( state->data );
-        state->data = NULL;
-    }
     free( state );
     view->state = NULL;
 }
 
 void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout_t layout ) {
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
-    
     switch ( layout ) {
         case ZDJ_MENU_ITEM_LAYOUT_BASIC_L:
             item_state->init_layout = zdj_menu_item_basic_l_init_layout;

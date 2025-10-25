@@ -18,6 +18,7 @@ static void _handle_control( zdj_view_t * menu_stack, zdj_control_event_t * _eve
 static void _handle_cancel( zdj_view_t * view );
 static void _deinit_state( zdj_view_t * dialog_view );
 static void _okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event );
+static void _cancel_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event );
 
 zdj_view_t * zdj_new_dialog_view( 
     zdj_dialog_view_type_t type,
@@ -30,6 +31,7 @@ zdj_view_t * zdj_new_dialog_view(
     dialog_view->draw = &_draw;
     dialog_view->handle_control_event = _handle_control;
     dialog_view->deinit_state = &_deinit_state;
+    dialog_view->map = ZDJ_CONTROL_MAP_MENU_BASE;
 
     dialog_view->frame.x = ZDJ_DIALOG_X;
     dialog_view->frame.y = ZDJ_SCREEN_H+2;
@@ -67,24 +69,43 @@ zdj_view_t * zdj_new_dialog_view(
     }
 
     // Add buttons
+
+    if( type == ZDJ_DIALOG_VIEW_TYPE_SAVE_DISCARD ) {
+        zdj_view_t * discard_btn = zdj_new_menu_item( "Discard", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+        zdj_menu_item_view_state_t * discard_btn_state = (zdj_menu_item_view_state_t*)discard_btn->state;
+        discard_btn_state->data.ptr = dialog_view;
+        discard_btn->handle_control_event = &_cancel_btn_handle_event;
+        discard_btn->frame.x = 40;
+        discard_btn->frame.y = 28;
+        discard_btn->frame.w = 29;
+        discard_btn->frame.h = 10;
+        zdj_menu_view_add_item( _menu, discard_btn );
+    }
+
     char btn_title[ 16 ];
     switch( type ){ 
         case ZDJ_DIALOG_VIEW_TYPE_OKAY:
+        case ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL:
             strcpy( btn_title, "Okay" );
             break;
         case ZDJ_DIALOG_VIEW_TYPE_GULP:
             strcpy( btn_title, "GULP" );
             break;
+        case ZDJ_DIALOG_VIEW_TYPE_SAVE_DISCARD:
+            strcpy( btn_title, "Save" );
+            break;
     }
     zdj_view_t * okay_btn = zdj_new_menu_item( btn_title, ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     zdj_menu_item_view_state_t * okay_btn_state = (zdj_menu_item_view_state_t*)okay_btn->state;
-    okay_btn_state->data->ptr = dialog_view;
+    okay_btn_state->data.ptr = dialog_view;
     okay_btn->handle_control_event = &_okay_btn_handle_event;
     okay_btn->frame.x = 73;
     okay_btn->frame.y = 28;
     okay_btn->frame.w = 21;
     okay_btn->frame.h = 10;
     zdj_menu_view_add_item( _menu, okay_btn );
+
+    
 
     // Add header
     zdj_view_t * menu_header = zdj_new_menu_header( 
@@ -119,15 +140,27 @@ static void _handle_control( zdj_view_t * dialog_view, zdj_control_event_t * _ev
     // Send events down into the subview stack
     zdj_view_t * top_subview = zdj_view_stack_top_subview_of( dialog_view );
     top_subview->handle_control_event( top_subview, _event );
+
+    e->blocked = true;
 }
 
 static void _okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * view_state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * dialog = view_state->data->ptr;
+    zdj_view_t * dialog = view_state->data.ptr;
     zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
     if( dialog_state->handle_dialog_exit && dialog_state->selection_data ) {
         printf( "handling dialog_exit okay: %p, %p, %p\n", dialog, dialog_state->handle_dialog_exit, dialog_state->selection_data );
         dialog_state->handle_dialog_exit( dialog, dialog_state->selection_data, true );
+    }
+}
+
+static void _cancel_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_menu_item_view_state_t * view_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * dialog = view_state->data.ptr;
+    zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
+    if( dialog_state->handle_dialog_exit && dialog_state->selection_data ) {
+        printf( "handling dialog_exit okay: %p, %p, %p\n", dialog, dialog_state->handle_dialog_exit, dialog_state->selection_data );
+        dialog_state->handle_dialog_exit( dialog, dialog_state->selection_data, false );
     }
 }
 

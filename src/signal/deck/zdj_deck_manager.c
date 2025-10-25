@@ -10,11 +10,13 @@
 
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 zdj_deck_manager_t * _zdj_deck_manager;
 
 static void * _zdj_deck_manager_thread_main( void * arg );
 static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_event_t * event );
+static bool _is_soundcard_event( zdj_control_event_t * event );
 
 zdj_deck_manager_t * zdj_deck_manager( void ) {
     if( !_zdj_deck_manager ) { zdj_deck_manager_init( ); }
@@ -23,6 +25,11 @@ zdj_deck_manager_t * zdj_deck_manager( void ) {
 
 zdj_error_type_t zdj_deck_manager_init( void ) {
     _zdj_deck_manager = calloc( 1, sizeof( zdj_deck_manager_t ) );
+    
+    // Set sync initial conditions
+    _zdj_deck_manager->sync.enabled = true;
+    _zdj_deck_manager->sync.locked = false;
+    _zdj_deck_manager->sync.set_bpm = 120.0f;
 
     // Start update thread
     zdj_thread_launch_deck_manager_cycle( &_zdj_deck_manager_thread_main, _zdj_deck_manager );
@@ -33,7 +40,7 @@ zdj_deck_t * zdj_deck_manager_add_deck(
     zdj_deck_station_t station,
     void * resource
 ) {
-    printf( "deck_manager loading deck station %d\n", station );
+    // printf( "deck_manager loading deck station %d type: %d\n", station, type );
     // If there's a deck in this station, start its remove process.
     // TODO
     zdj_deck_t * cur_deck = zdj_deck_manager_get_deck_for_station( station );
@@ -43,12 +50,13 @@ zdj_deck_t * zdj_deck_manager_add_deck(
 
     // Stand up the deck.
     zdj_deck_t * deck = zdj_new_deck( type, station, resource );
-    
+
     // Link the deck into the manager.
     if( zdj_deck_manager( )->decks ) { zdj_deck_manager( )->decks->prev = deck; }
     deck->next = zdj_deck_manager( )->decks;
     zdj_deck_manager( )->decks = deck;
 
+    // printf( "deck_manager loading deck done\n" );
     return deck;
 }
 
@@ -82,29 +90,69 @@ zdj_deck_t * zdj_deck_manager_get_deck_for_station( zdj_deck_station_t station )
 // Get a new batch of mapped deck control events from the Control system.
 // Called from control update cycle (~900Hz).
 void zdj_deck_manager_handle_events( int start_ind, int end_ind ) {
-    // Step thru each deck, handling events.
-    zdj_deck_t * deck = zdj_deck_manager( )->decks;
+    // printf( "zdj_deck_manager_handle_events\n" );
     zdj_control_event_t * event;
-    while( deck ) {
-        int i = start_ind;
-        while ( i != end_ind ) {
-            i++; i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
-            event = &zdj_deck_event_buf[ i ];
-            // Step thru ring buffer, passing each event down into deck.
-            if( _station_can_handle_event( deck->station, event ) && deck->handle_control_event ) {
-                deck->handle_control_event( deck, event );
-            }
-        }
-        deck = deck->next;
-    }
-
-    // Capture control-change flags on the soundcard (main/cue vol, etc.)
+    
     int i = start_ind;
     while ( i != end_ind ) {
         i++; i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
-        // printf( "control change: %d\n", zdj_deck_event_buf[ i ].id );
+        event = &zdj_deck_event_buf[ i ];
+
+        // Handle events for each deck
+        zdj_deck_t * deck = zdj_deck_manager( )->decks;
+        while( deck ) {
+            if( _station_can_handle_event( deck->station, event ) && deck->handle_control_event ) {
+                deck->handle_control_event( deck, event );
+            }
+            deck = deck->next;
+        }
+
+        // Handle soundcard events
+        if( _is_soundcard_event( event ) ) {
+            zdj_soundcard_handle_deck_event( zdj_soundcard, event );
+        } 
+    } 
+
+    // Capture control-change flags on the soundcard (main/cue vol, etc.)
+    i = start_ind;
+    while ( i != end_ind ) {
+        i++; i %= ZDJ_CONTROL_EVENT_BUF_LEN; // Loop i in ring buffer
+        // printf( "control change flag[ %d ] = 1\n", zdj_deck_event_buf[ i ].id );
         // Note the event's control_id in the deck's change flags.
         zdj_deck_manager( )->control_change_flags[ zdj_deck_event_buf[ i ].id ] = 1;
+    }
+    // printf( "zdj_deck_manager_handle_events done\n" );
+}
+
+void zdj_deck_manager_enable_sync( double bpm ) {
+    zdj_deck_manager( )->sync.enabled = true;
+    // Adopt source_deck's bpm as root bpm.
+    zdj_deck_manager( )->sync.set_bpm = bpm;
+    // Loop thru all decks - if syncable, update set_bpm to root bpm
+    zdj_deck_t * deck = zdj_deck_manager( )->decks;
+    while( deck ) {
+        if( deck->can_sync ) { deck->set_sync_bpm( deck, bpm ); }
+        deck = deck->next;
+    }
+}
+
+void zdj_deck_manager_disable_sync( void ) {
+    zdj_deck_manager( )->sync.enabled = false;
+}
+
+void zdj_deck_manager_update_sync_bpm( double offset ) {
+    printf( "zdj_deck_manager_update_sync_bpm: %f\n", offset );
+    if( zdj_deck_manager( )->sync.enabled ) {
+        zdj_deck_manager( )->sync.set_bpm += offset;
+        // Set locked to true in case we're updating from eg. an external deck
+        // which has no source bpm so won't lock tempo on load.
+        zdj_deck_manager( )->sync.locked = true;
+        // Update all decks' bpm
+        zdj_deck_t * deck = zdj_deck_manager( )->decks;
+        while( deck ) {
+            if( deck->can_sync ) { deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm ); }
+            deck = deck->next;
+        }
     }
 }
 
@@ -118,11 +166,13 @@ void zdj_deck_manager_clear_control_flags( zdj_deck_t * deck ) {
 // Used to control transport state, run physics sim
 // for jog wheel, etc.
 void zdj_deck_manager_control_update_cycle( void ) {
+    // printf( "zdj_deck_manager_control_update_cycle\n" );
     zdj_deck_t * deck = zdj_deck_manager( )->decks;
     while( deck ) {
-        deck->update_controls( deck );
+        if( deck->update_transport ){ deck->update_transport( deck ); }
         deck = deck->next;
     }
+    // printf( "zdj_deck_manager_control_update_cycle done\n" );
 }
 
 // Deck manager thread runs on a slow sleep cycle and handles
@@ -142,7 +192,7 @@ static void * _zdj_deck_manager_thread_main( void * arg ) {
     // Set core affinity to Core #1;
     cpu_set_t cpuset;
 	CPU_ZERO( &cpuset );
-	CPU_SET( 2,&cpuset );
+	CPU_SET( 0,&cpuset );
 	int err = sched_setaffinity( syscall(SYS_gettid), sizeof(cpu_set_t), &cpuset );
     if( err != 0 ) {
         perror( "set affinity failed" );
@@ -155,6 +205,8 @@ static void * _zdj_deck_manager_thread_main( void * arg ) {
     while( 1 ) {
         // Sleep thread until next check
         nanosleep( &cycle_delay, NULL );
+
+        // printf( "deck_manager thread start\n" );
 
         // Update state for all the decks
         zdj_error_state( )->marker = ZDJ_ERROR_MARKER_DECK_UPDATE;
@@ -170,7 +222,7 @@ static void * _zdj_deck_manager_thread_main( void * arg ) {
             }
             deck = next_deck;
         }
-        
+        // printf( "deck_manager thread done\n" );
         zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
     }
 
@@ -185,7 +237,17 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_EQ_MID:
         case ZDJ_DECK_1_CONTROL_EQ_HI:
         case ZDJ_DECK_1_CONTROL_PFL_TRIM:
-        case ZDJ_DECK_1_CONTROL_PFL_MUTE:
+        case ZDJ_DECK_1_CONTROL_PFL_TOGGLE_MUTE:
+        case ZDJ_DECK_1_CONTROL_LOOP_TOGGLE:
+        case ZDJ_DECK_1_CONTROL_LOOP_ON:
+        case ZDJ_DECK_1_CONTROL_LOOP_OFF:
+        case ZDJ_DECK_1_CONTROL_LOOP_START:
+        case ZDJ_DECK_1_CONTROL_LOOP_END:
+        case ZDJ_DECK_1_CONTROL_LOOP_LENGTH:
+        case ZDJ_DECK_1_CONTROL_SKIP:
+        case ZDJ_DECK_1_CONTROL_SKIP_LENGTH:
+        case ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN:
+        case ZDJ_DECK_1_CONTROL_SKIP_RESET_TO_ORIGIN:
         case ZDJ_DECK_1_CONTROL_FX_SELECT:
         case ZDJ_DECK_1_CONTROL_FX_0:
         case ZDJ_DECK_1_CONTROL_FX_1:
@@ -193,6 +255,7 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_FX_3:
         case ZDJ_DECK_1_CONTROL_FX_4:
         case ZDJ_DECK_1_CONTROL_FX_5:
+        case ZDJ_DECK_1_CONTROL_SYNC_MULT:
         case ZDJ_DECK_1_CONTROL_SCRUB:
         case ZDJ_DECK_1_CONTROL_TEMPO:
         case ZDJ_DECK_1_CONTROL_TEMPO_FINE:
@@ -208,7 +271,17 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_EQ_MID:
         case ZDJ_DECK_2_CONTROL_EQ_HI:
         case ZDJ_DECK_2_CONTROL_PFL_TRIM:
-        case ZDJ_DECK_2_CONTROL_PFL_MUTE:
+        case ZDJ_DECK_2_CONTROL_PFL_TOGGLE_MUTE:
+        case ZDJ_DECK_2_CONTROL_LOOP_TOGGLE:
+        case ZDJ_DECK_2_CONTROL_LOOP_ON:
+        case ZDJ_DECK_2_CONTROL_LOOP_OFF:
+        case ZDJ_DECK_2_CONTROL_LOOP_START:
+        case ZDJ_DECK_2_CONTROL_LOOP_END:
+        case ZDJ_DECK_2_CONTROL_LOOP_LENGTH:
+        case ZDJ_DECK_2_CONTROL_SKIP:
+        case ZDJ_DECK_2_CONTROL_SKIP_LENGTH:
+        case ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN:
+        case ZDJ_DECK_2_CONTROL_SKIP_RESET_TO_ORIGIN:
         case ZDJ_DECK_2_CONTROL_FX_SELECT:
         case ZDJ_DECK_2_CONTROL_FX_0:
         case ZDJ_DECK_2_CONTROL_FX_1:
@@ -216,6 +289,7 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_FX_3:
         case ZDJ_DECK_2_CONTROL_FX_4:
         case ZDJ_DECK_2_CONTROL_FX_5:
+        case ZDJ_DECK_2_CONTROL_SYNC_MULT:
         case ZDJ_DECK_2_CONTROL_SCRUB:
         case ZDJ_DECK_2_CONTROL_TEMPO:
         case ZDJ_DECK_2_CONTROL_TEMPO_FINE:
@@ -224,11 +298,22 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_HOTCUE_START:
         case ZDJ_DECK_2_CONTROL_HOTCUE_END: return station == ZDJ_DECK_STATION_2;
 
-
-        case ZDJ_DECK_CONTROL_LR_VOL:
-        case ZDJ_DECK_CONTROL_CUE_VOL:
+        // Everyone hears xfade
+        case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
+        case ZDJ_DECK_CONTROL_SYNC_ENABLE:
+        case ZDJ_DECK_CONTROL_SYNC_DISABLE:
         case ZDJ_DECK_CONTROL_XFADE: return true;
 
-        default: break;
+        default: return false;
+    }
+}
+
+static bool _is_soundcard_event( zdj_control_event_t * event ) {
+    switch ( event->id ) {
+        case ZDJ_DECK_CONTROL_LR_VOL:
+        case ZDJ_DECK_CONTROL_CUE_VOL:
+        case ZDJ_DECK_CONTROL_TOGGLE_RECORD: return true;
+
+        default: return false;
     }
 }

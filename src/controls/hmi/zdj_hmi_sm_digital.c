@@ -18,9 +18,11 @@ void zdj_control_process_hmi_digital_input(
     zdj_hmi_input_state_t * input, 
     int32_t enco_val, 
     int32_t pb_state 
-    ) {
-    // zdj_control_event_t * event;
+) {
     zdj_hmi_input_event_t * event;
+
+    // Reset input's is_modified state if the mod key has been released.
+    if( !zdj_hmi_mod_bitmap ) { input->is_modified = false; }
     
     switch ( input->current_state ) {
     case ZDJ_HMI_STATE_IDLE:
@@ -35,7 +37,9 @@ void zdj_control_process_hmi_digital_input(
             }
             event = &zdj_hmi_input_event_buf[ zdj_get_next_hmi_input_event_ind( ) ];
             event->id = input->id;
-            event->type = ZDJ_HMI_EVENT_ADJUST;
+            // event->type = ZDJ_HMI_EVENT_ADJUST;
+            if( input->is_modified ) { event->type = ZDJ_HMI_EVENT_MOD_ADJUST; } 
+            else { event->type = ZDJ_HMI_EVENT_ADJUST; }
             event->i_val = enco_val;
         }
         // Look for press
@@ -43,6 +47,11 @@ void zdj_control_process_hmi_digital_input(
             // Promote any controls in press state to modifiers
             _zdj_hmi_promote_mods_for_control( input );
             input->current_state = ZDJ_HMI_STATE_PRESS;
+
+            // If this is an enco, capture the adjust val at press.
+            // Use this to detect press-turn condition.
+            input->adjust_hyst_val = 0;
+
             // If modifier keys are present, set modified
             // printf( "mod bmp: %d\n", zdj_hmi_mod_bitmap );
             if( zdj_hmi_mod_bitmap ) {
@@ -51,7 +60,7 @@ void zdj_control_process_hmi_digital_input(
         }
         break;
     case ZDJ_HMI_STATE_TURN:
-        // printf( "%s ZDJ_HMI_STATE_TURN\n", zdj_hmi_input_name[ input->id ] );
+        // printf( "%s ZDJ_HMI_STATE_TURN: is_mod=%d\n", zdj_hmi_input_name[ input->id ], input->is_modified );
         // increment turn-press debounce timer
         input->turn_press_timer++;
         input->turn_hyst_timer++;
@@ -60,7 +69,8 @@ void zdj_control_process_hmi_digital_input(
             // Emit ADJUST
             event = &zdj_hmi_input_event_buf[ zdj_get_next_hmi_input_event_ind( ) ];
             event->id = input->id;
-            event->type = ZDJ_HMI_EVENT_ADJUST;
+            if( input->is_modified ) { event->type = ZDJ_HMI_EVENT_MOD_ADJUST; } 
+            else { event->type = ZDJ_HMI_EVENT_ADJUST; }
             event->i_val = enco_val;
             // Reset hysteresis timer every time there's an update
             input->turn_hyst_timer = 0;
@@ -73,21 +83,25 @@ void zdj_control_process_hmi_digital_input(
             input->current_state = ZDJ_HMI_STATE_PRESS;
         break;
     case ZDJ_HMI_STATE_PRESS: // First press
-        // printf( "%s ZDJ_HMI_STATE_PRESS: %d\n", zdj_hmi_input_name[ input->id ], input->id );
+        // printf( "%s ZDJ_HMI_STATE_PRESS: %d turn: %d/%d\n", zdj_hmi_input_name[ input->id ], input->id );
         input->long_press_timer++; 
         // Emit PRESS only once
         if( !input->press_emitted ) {
             input->press_emitted = true;
             event = &zdj_hmi_input_event_buf[ zdj_get_next_hmi_input_event_ind( ) ];
             event->id = input->id;
-            event->type = ZDJ_HMI_EVENT_PRESS;
+            if( input->is_modified ) { event->type = ZDJ_HMI_EVENT_MOD_PRESS; } 
+            else { event->type = ZDJ_HMI_EVENT_PRESS; }
         }
         // If turn magnitude rises above threshold while pressing -- Enter PRESS_TURN
-        if( abs(enco_val) > ZDJ_HMI_THRESH_TURN )
+        input->adjust_hyst_val += enco_val;
+        if( abs(input->adjust_hyst_val) > ZDJ_HMI_THRESH_TURN )
             input->current_state = ZDJ_HMI_STATE_PRESS_TURN;
         // If long-press timer expires while pressing -- Enter LONG_PRESS
         if( input->long_press_timer > ZDJ_HMI_WINDOW_LONG_PRESS )
-            input->current_state = ZDJ_HMI_STATE_LONG_PRESS;
+            // input->current_state = ZDJ_HMI_STATE_LONG_PRESS;
+            if( input->is_modified ) { input->current_state = ZDJ_HMI_STATE_MOD_LONG_PRESS; } 
+            else { input->current_state = ZDJ_HMI_STATE_LONG_PRESS; }
         // Look for release -- Enter UP
         if( pb_state == false )
             input->current_state = ZDJ_HMI_STATE_UP;
@@ -104,6 +118,8 @@ void zdj_control_process_hmi_digital_input(
         break;
     case ZDJ_HMI_STATE_MOD_PRESS:
         // printf( "%s ZDJ_HMI_STATE_MOD_PRESS\n", zdj_hmi_input_name[ input->id ] );
+        input->long_press_timer++; 
+
         if( pb_state == false )
             input->current_state = ZDJ_HMI_STATE_MOD_UP;
         break;
@@ -125,6 +141,8 @@ void zdj_control_process_hmi_digital_input(
             event->id = input->id;
             event->i_val = enco_val;
             event->type = ZDJ_HMI_EVENT_PRESS_ADJUST;
+            if( input->is_modified ) { event->type = ZDJ_HMI_EVENT_MOD_PRESS_ADJUST; } 
+            else { event->type = ZDJ_HMI_EVENT_PRESS_ADJUST; }
         }
         // Look for release -- Emit ADJUST_RELEASE and enter DEBOUNCE
         if( pb_state == false ) {
@@ -150,6 +168,19 @@ void zdj_control_process_hmi_digital_input(
         if( pb_state == false )
             input->current_state = ZDJ_HMI_STATE_LONG_PRESS_UP;
         break;
+    case ZDJ_HMI_STATE_MOD_LONG_PRESS:
+        // printf( "%s ZDJ_HMI_STATE_MOD_LONG_PRESS\n", zdj_hmi_input_name[ input->id ] );
+        // Emit PRESS only once
+        if( !input->long_press_emitted ) {
+            input->long_press_emitted = true;
+            event = &zdj_hmi_input_event_buf[ zdj_get_next_hmi_input_event_ind( ) ];
+            event->id = input->id;
+            event->type = ZDJ_HMI_EVENT_MOD_LONG_PRESS;
+        }
+        // Look for release -- Enter LONG_PRESS_UP
+        if( pb_state == false )
+            input->current_state = ZDJ_HMI_STATE_MOD_LONG_PRESS_UP;
+        break;
     case ZDJ_HMI_STATE_LONG_PRESS_UP:
         // printf( "%s ZDJ_HMI_STATE_LONG_PRESS_UP\n", zdj_hmi_input_name[ input->id ] );
         // Emit LONG_RELEASE
@@ -159,8 +190,17 @@ void zdj_control_process_hmi_digital_input(
         // Enter DEBOUNCE
         input->current_state = ZDJ_HMI_STATE_DEBOUNCE;
         break;
+    case ZDJ_HMI_STATE_MOD_LONG_PRESS_UP:
+        // printf( "%s ZDJ_HMI_STATE_MOD_LONG_PRESS_UP\n", zdj_hmi_input_name[ input->id ] );
+        // Emit LONG_RELEASE
+        event = &zdj_hmi_input_event_buf[ zdj_get_next_hmi_input_event_ind( ) ];
+        event->id = input->id;
+        event->type = ZDJ_HMI_EVENT_MOD_LONG_RELEASE;
+        // Enter DEBOUNCE
+        input->current_state = ZDJ_HMI_STATE_DEBOUNCE;
+        break;
     case ZDJ_HMI_STATE_DEBOUNCE:
-        // printf( "%s ZDJ_HMI_STATE_DEBOUNCE\n", zdj_hmi_control_name[ input->id ] );
+        // printf( "%s ZDJ_HMI_STATE_DEBOUNCE\n", zdj_hmi_input_name[ input->id ] );
         // Wait for debounce timer to expire
         input->debounce_timer++;
         // Clear PRESS emitted flag
@@ -206,7 +246,7 @@ void _zdj_hmi_promote_mods_for_control( zdj_hmi_input_state_t * input ) {
             c->is_modifier = true;
             c->is_modified = false;
             zdj_hmi_mod_bitmap |= (1 << i);
-            // printf( "promoting %s to mod:%d\n", zdj_hmi_input_name[ i ], zdj_hmi_mod_bitmap );
+            printf( "promoting %s to mod:%d\n", zdj_hmi_input_name[ i ], zdj_hmi_mod_bitmap );
         }
     }
 }

@@ -4,7 +4,6 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/signal/deck/zdj_deck_controls.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
@@ -59,7 +58,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     // Check for a change in the main volume knob and restart the timer
     if( zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_LR_VOL ] ) {
-        printf( "vol change\n" );
+        // printf( "vol change\n" );
         zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_LR_VOL ] = false;
         if( !state->deployed ) { _deploy( state->container, state ); }
         state->deploy_timer = 0;
@@ -79,7 +78,7 @@ static void _draw_container( zdj_view_t * view, zdj_view_clip_t * clip ) {
 }
 
 static void _deploy( zdj_view_t * view, zdj_volume_panel_state_t * panel_state ) {
-    printf( "volume deploy\n" );
+    // printf( "volume deploy\n" );
 
     // Lazy-load the meter
     _init_ui( view, panel_state );
@@ -95,7 +94,7 @@ static void _deploy( zdj_view_t * view, zdj_volume_panel_state_t * panel_state )
 }
 
 static void _retract( zdj_view_t * view, zdj_volume_panel_state_t * panel_state ) {
-    printf( "volume retract\n" );
+    // printf( "volume retract\n" );
     panel_state->deployed = false;
 
     ((anim_init_t)view->out_anim.init_fn)( 
@@ -109,8 +108,6 @@ static void _retract( zdj_view_t * view, zdj_volume_panel_state_t * panel_state 
 static void _init_ui( zdj_view_t * view, zdj_volume_panel_state_t * panel_state ) {
     // If soundcard isn't up yet, cancel the UI bringup
     if( !zdj_soundcard || panel_state->ui_init ){ return; }
-
-    printf( "init_ui\n" );
 
     // Add LR bus meter
     zdj_soundcard_node_t * lr_node = zdj_soundcard_get_node_for_name( 

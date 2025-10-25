@@ -14,8 +14,8 @@
 
 static void _zdj_file_read_node_update_wait( zdj_pipeline_node_t * node );
 static void _zdj_file_read_node_deinit_state( zdj_pipeline_node_t * node );
-static zdj_error_type_t _zdj_file_read_node_move_window( zdj_pipeline_node_t * node, int offset );
-static zdj_error_type_t _zdj_file_read_node_reset_window( zdj_pipeline_node_t * node, uint32_t address );
+static zdj_error_type_t _zdj_file_read_node_move_window( zdj_pipeline_node_t * node, double _offset );
+static zdj_error_type_t _zdj_file_read_node_reset_window( zdj_pipeline_node_t * node, double _address );
 zdj_error_type_t _zdj_file_read_node_open( zdj_pipeline_node_t * node );
 zdj_error_type_t _zdj_file_read_node_close( zdj_pipeline_node_t * node );
 
@@ -151,9 +151,10 @@ void _zdj_file_read_node_deinit_state( zdj_pipeline_node_t * node ) {
     free( state );
 }
 
-zdj_error_type_t _zdj_file_read_node_move_window( zdj_pipeline_node_t * node, int offset ) {
+zdj_error_type_t _zdj_file_read_node_move_window( zdj_pipeline_node_t * node, double _offset ) {
     zdj_file_read_node_state_t * node_state = (zdj_file_read_node_state_t*)node->state;
 
+    int offset = round( _offset );
     // If we're moving formward in the file, make sure EOF flag hasn't been set.
     if( offset > 0 && node_state->at_eof ) { return ZDJ_ERROR_OKAY; }
     
@@ -194,6 +195,7 @@ zdj_error_type_t _zdj_file_read_node_move_window( zdj_pipeline_node_t * node, in
     return ZDJ_ERROR_OKAY;
 }
 
-zdj_error_type_t _zdj_file_read_node_reset_window( zdj_pipeline_node_t * node, uint32_t address ) {
+zdj_error_type_t _zdj_file_read_node_reset_window( zdj_pipeline_node_t * node, double _address ) {
+    int64_t address = round( _address );
     zdj_pipeline_window_state_reset( node->window_state, address );
 }

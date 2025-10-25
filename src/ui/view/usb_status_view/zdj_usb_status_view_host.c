@@ -66,7 +66,7 @@ void _zdj_usb_status_view_host_update_layout( zdj_view_t * view ) {
     zdj_menu_view_remove_all_items( state->menu_view );
 
     // Get all attached devices
-    zdj_usb_attached_devices_t * attached = zdj_usb_get_attached_devices( );
+    zdj_usb_attached_devices_t * attached = zdj_usb_get_attached_devices( ZDJ_USB_TYPE_ANY );
 
     // Set header title
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state;
@@ -121,7 +121,7 @@ void _zdj_usb_status_view_host_update_layout( zdj_view_t * view ) {
                 device->has_hid ? "controller" : " ",
                 device->has_msd ? "drive" : " "
             );
-            strcpy( attached_state->data->c_val, type_str );
+            strcpy( attached_state->data.c_val, type_str );
             zdj_menu_view_add_item( menu, attached_device );
 
             device = device->next;
@@ -143,14 +143,14 @@ void _zdj_usb_status_view_host_update_layout( zdj_view_t * view ) {
     zdj_view_t * device_btn = zdj_new_menu_item( "Device Mode", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     device_btn->handle_control_event = &zdj_usb_status_view_handle_device_mode_btn;
     zdj_menu_item_view_state_t * device_state = (zdj_menu_item_view_state_t*)device_btn->state;
-    device_state->data->ptr = view;
+    device_state->data.ptr = view;
     zdj_menu_view_add_item( menu, device_btn );
 
     // Add Offline
     zdj_view_t * offline_btn = zdj_new_menu_item( "Offline", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     offline_btn->handle_control_event = &zdj_usb_status_view_handle_offline_btn;
     zdj_menu_item_view_state_t * offline_state = (zdj_menu_item_view_state_t*)offline_btn->state;
-    offline_state->data->ptr = view;
+    offline_state->data.ptr = view;
     zdj_menu_view_add_item( menu, offline_btn );
 
     state->needs_layout_update = false;

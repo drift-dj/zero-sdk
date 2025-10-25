@@ -34,7 +34,7 @@ void zdj_menu_item_toggle_init_layout( zdj_view_t * view ) {
     }
 
     view->frame.h = 7;
-    bool toggle_state = state->data->b_val;
+    bool toggle_state = state->data.b_val;
     
     // Setup normal view
     zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );

@@ -115,7 +115,7 @@ void _zdj_usb_status_view_deinit_state( zdj_view_t * usb_status_view ) {
 
 void zdj_usb_status_view_handle_host_mode_btn( zdj_view_t * view, zdj_control_event_t * _event ) { 
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
 
     zdj_usb_mode_request_t request;
@@ -132,7 +132,7 @@ void zdj_usb_status_view_handle_host_mode_btn( zdj_view_t * view, zdj_control_ev
 
 void zdj_usb_status_view_handle_device_mode_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
 
     // Mode switch will require a reboot.
@@ -161,7 +161,7 @@ void zdj_usb_status_view_handle_device_mode_btn( zdj_view_t * view, zdj_control_
 
 void zdj_usb_status_view_handle_offline_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * status_view = (zdj_view_t*)state->data->ptr;
+    zdj_view_t * status_view = (zdj_view_t*)state->data.ptr;
     zdj_usb_status_view_state_t * status_state = (zdj_usb_status_view_state_t*)status_view->state;
     zdj_usb_mode_request_t request;
     // Copy over pre-existing gadget state

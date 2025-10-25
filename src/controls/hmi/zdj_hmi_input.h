@@ -61,24 +61,34 @@ static char * zdj_hmi_input_name[ ZDJ_HMI_CONTROL_ID_COUNT ] = {
 
 typedef enum {
     ZDJ_HMI_EVENT_PRESS,
+    ZDJ_HMI_EVENT_MOD_PRESS,
     ZDJ_HMI_EVENT_RELEASE,
     ZDJ_HMI_EVENT_MOD_RELEASE,
     ZDJ_HMI_EVENT_LONG_PRESS,
+    ZDJ_HMI_EVENT_MOD_LONG_PRESS,
     ZDJ_HMI_EVENT_LONG_RELEASE,
+    ZDJ_HMI_EVENT_MOD_LONG_RELEASE,
     ZDJ_HMI_EVENT_ADJUST,
+    ZDJ_HMI_EVENT_MOD_ADJUST,
     ZDJ_HMI_EVENT_PRESS_ADJUST,
+    ZDJ_HMI_EVENT_MOD_PRESS_ADJUST,
     ZDJ_HMI_EVENT_PRESS_ADJUST_RELEASE,
     ZDJ_HMI_EVENT_TYPE_COUNT
 } zdj_hmi_input_event_type_t;
 
 static char * zdj_hmi_input_event_name[ ZDJ_HMI_EVENT_TYPE_COUNT ] = {
     "Press",// ZDJ_HMI_EVENT_PRESS,
+    "Mod Press",// ZDJ_HMI_EVENT_MOD_RELEASE,
     "Release",// ZDJ_HMI_EVENT_RELEASE,
     "Mod Release",// ZDJ_HMI_EVENT_MOD_RELEASE,
     "Long Press",// ZDJ_HMI_EVENT_LONG_PRESS,
+    "Mod Long Press",// ZDJ_HMI_EVENT_MOD_LONG_PRESS
     "Long Release",// ZDJ_HMI_EVENT_LONG_RELEASE,
+    "Mod Long Release",// ZDJ_HMI_EVENT_MOD_LONG_RELEASE
     "Adjust",// ZDJ_HMI_EVENT_ADJUST,
+    "Mod Adjust",// ZDJ_HMI_EVENT_MOD_ADJUST
     "Press Adjust",// ZDJ_HMI_EVENT_PRESS_ADJUST,
+    "Mod Press Adjust", // ZDJ_HMI_EVENT_MOD_PRESS_ADJUST
     "Press Adjust Release"// ZDJ_HMI_EVENT_PRESS_ADJUST_RELEASE
 };
 
@@ -100,7 +110,9 @@ typedef enum {
     ZDJ_HMI_STATE_MOD_UP,
     ZDJ_HMI_STATE_PRESS_TURN,
     ZDJ_HMI_STATE_LONG_PRESS,
+    ZDJ_HMI_STATE_MOD_LONG_PRESS,
     ZDJ_HMI_STATE_LONG_PRESS_UP,
+    ZDJ_HMI_STATE_MOD_LONG_PRESS_UP,
     ZDJ_HMI_STATE_TURN,
     ZDJ_HMI_STATE_DEBOUNCE,
 } zdj_hmi_input_state_type_t;
@@ -114,6 +126,8 @@ typedef struct {
     bool long_press_emitted;
     uint16_t turn_press_timer;
     uint16_t turn_hyst_timer;
+    int16_t adjust_hyst_val;
+    uint16_t adjust_prev_val;
     uint16_t long_press_timer;
     uint16_t debounce_timer;
 } zdj_hmi_input_state_t;

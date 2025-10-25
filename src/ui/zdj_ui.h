@@ -79,7 +79,7 @@ typedef struct {
 } zdj_rect_t;
 
 typedef struct {
-    char * tag;
+    // char tag[ 8 ];
     char c_val[ 32 ];
     int i_val;
     float f_val;
@@ -199,7 +199,8 @@ typedef enum {
     ZDJ_VIEW_PROGRESS,
     ZDJ_VIEW_DIALOG,
     ZDJ_VIEW_WAVEFORM,
-    ZDJ_VIEW_DJ_DECK_PAGE
+    ZDJ_VIEW_DJ_DECK_PAGE,
+    ZDJ_VIEW_BEATGRID
 } zdj_view_type_t;
 
 typedef enum {
@@ -242,11 +243,13 @@ typedef void ( *anim_update_t )( zdj_anim_t*, zdj_view_t* );
 typedef void ( *anim_cb_t )( zdj_view_t*, zdj_view_t* );
 
 extern uint32_t * zdj_ui_pixels;
+extern SDL_Surface* zdj_display_surface;
 extern SDL_Renderer* zdj_display_renderer;
 extern zdj_view_t * zdj_delete_stack;
 extern zdj_rect_t * zdj_screen_rect_priv;
 extern int zdj_view_count;
 extern int zdj_new_view_count;
+extern bool zdj_screen_cap_armed;
 SDL_Renderer * zdj_renderer( void );
 zdj_rect_t * zdj_screen_rect( void );
 zdj_rect_t * zdj_modal_rect( void );

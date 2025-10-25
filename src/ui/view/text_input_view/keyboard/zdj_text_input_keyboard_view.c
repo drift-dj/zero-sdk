@@ -348,7 +348,7 @@ static zdj_keyboard_key_t * _get_current_keyboard_key( zdj_view_t * keyboard_men
 
 void _init_key_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_keyboard_key_t * key = state->data->ptr;
+    zdj_keyboard_key_t * key = state->data.ptr;
     char title[ 2 ] = { key->chars[ key->cur_char ].ascii_char, '\0' };
 
     // Clear out the normal/hilite views' subviews
@@ -439,7 +439,7 @@ void _add_key_item( zdj_view_t * menu, zdj_keyboard_key_t * key, int row, int co
     zdj_view_t * item = zdj_new_menu_item( title, ZDJ_MENU_ITEM_LAYOUT_CUSTOM );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)item->state;
     state->init_layout = _init_key_layout;
-    state->data->ptr = key;
+    state->data.ptr = key;
     item->state = state;
     item->frame.x = 1 + (col * ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH);
     item->frame.y = (row * ZDJ_TEXT_INPUT_VIEW_ROW_HEIGHT) + 1;

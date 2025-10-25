@@ -6,6 +6,9 @@
 
 #include <zerodj/signal/math/zdj_signal_math.h>
 
+// Epsilon val for float equality comparisons.
+double zdj_eps = 0.00001;
+
 static double _gaussian_pdf( double x, double mu, double sigma ) {
     return ( 1.0 / (sigma * sqrt(2 * M_PI))) * exp(-0.5 * pow((x - mu) / sigma, 2) );
 }
@@ -93,8 +96,9 @@ void zdj_signal_naive_resample_audio(
     int64_t out_sample_count,
     int out_channel_count
 ) {
-
 	double rate = (in_end_coord - in_start_coord) / (double)out_sample_count;
+
+	// printf( "zdj_signal_naive_resample_audio rate: %1.3f\n", rate );
 
 	double cur_sample = in_start_coord - in_buf_ref_coord;
 	int left_neighbor_sample, left_neighbor_index;
@@ -109,14 +113,22 @@ void zdj_signal_naive_resample_audio(
 		right_neighbor_sample = ceil( cur_sample );
 		interp_val = cur_sample - (double)left_neighbor_sample;
 		
+		// printf( "1\n" );
+
 		// Interpolate nearest neighbor
 		left_neighbor_index = left_neighbor_sample * in_channel_count;
 		right_neighbor_index = right_neighbor_sample * in_channel_count;
+
+		// printf( "1.1: %1.1f %d %d %1.3f\n", rate, left_neighbor_index, right_neighbor_index, interp_val );
+		
 		samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
 		samp += in_buf[ right_neighbor_index ] * interp_val;
+		// printf( "1.2\n" );
 		out_buf[ i*out_channel_count ] = samp;
 
+		// printf( "1.3\n" );
 		if( out_channel_count == 2 ) {
+			// printf( "2\n" );
 			if( in_channel_count == 1 ) {
 				left_neighbor_index = left_neighbor_sample;
 				right_neighbor_index = right_neighbor_sample;
@@ -127,11 +139,13 @@ void zdj_signal_naive_resample_audio(
 			samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
 			samp += in_buf[ right_neighbor_index ] * interp_val;
 			out_buf[ i*out_channel_count+1 ] = samp;
+			// printf( "3\n" );
 		}
 
 		// Increment the source sample coord by playback rate
 		cur_sample += rate;
 	}
+	// printf( "zdj_signal_naive_resample_audio done\n" );
 }
 
 float zdj_signal_gen_sine( 
@@ -153,4 +167,28 @@ float zdj_signal_gen_sine(
         // printf( "%1.2f/%1.0f\n", p, v );
     }
     return p;
+}
+
+float zdj_signal_accum_floats( float val_1, float val_2 ) {
+	val_1 += val_2;
+	if( val_1 > 1.0f ) { val_1 = 1.0f; }
+	if( val_1 < -1.0f ) { val_1 = -1.0f; }
+	return val_1;
+}
+
+// Beatgrid count is specified in bars.  So a quarter note would be 0.250 in beatgrid-space.
+double zdj_signal_pcm_count_for_beatgrid_count( double beatgrid_count, double bpm, int sample_rate ) {
+	double bars_per_minute = bpm / 4.0;
+	double samples_per_minute = sample_rate * 60.0;
+
+	double samples_per_bar = samples_per_minute / bars_per_minute;
+	return samples_per_bar * beatgrid_count;
+}
+
+double zdj_signal_beatgrid_count_for_pcm_count( double pcm_count, int sample_rate, double bpm ) {
+	double bars_per_minute = bpm / 4.0;
+	double samples_per_minute = sample_rate * 60.0;
+
+	double samples_per_bar = samples_per_minute / bars_per_minute;
+	return pcm_count / samples_per_bar;
 }

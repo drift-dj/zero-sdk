@@ -80,42 +80,42 @@ void zdj_menu_item_inert_data_update_layout( zdj_view_t * view ) {
     case ZDJ_MENU_ITEM_DATA_TYPE_CHAR:
         snprintf( data_str, sizeof( data_str ), "%s%s%s", 
             state->data_prefix,
-            state->data->c_val,
+            state->data.c_val,
             state->data_suffix
         );
         break;
     case ZDJ_MENU_ITEM_DATA_TYPE_BOOL:
         snprintf( data_str, sizeof( data_str ), "%s%s%s", 
             state->data_prefix,
-            ( state->data->b_val ) ? "Yes" : "No",
+            ( state->data.b_val ) ? "Yes" : "No",
             state->data_suffix
         );
         break;
     case ZDJ_MENU_ITEM_DATA_TYPE_INT:
         snprintf( data_str, sizeof( data_str ), "%s%d%s", 
             state->data_prefix,
-            state->data->i_val,
+            state->data.i_val,
             state->data_suffix
         );
         break;
     case ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_0:
         snprintf( data_str, sizeof( data_str ), "%s%1.0f%s", 
             state->data_prefix,
-            state->data->f_val,
+            state->data.f_val,
             state->data_suffix
         );
         break;
     case ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_1:
         snprintf( data_str, sizeof( data_str ), "%s%1.0f%s", 
             state->data_prefix,
-            state->data->f_val,
+            state->data.f_val,
             state->data_suffix
         );
         break;
     case ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_2:
         snprintf( data_str, sizeof( data_str ), "%s%1.0f%s", 
             state->data_prefix,
-            state->data->f_val,
+            state->data.f_val,
             state->data_suffix
         );
         break;
@@ -150,7 +150,7 @@ void zdj_menu_item_inert_status_init_layout( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( view );
 
     // Setup normal view
-    state->title_view = zdj_new_label_view( state->data->c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    state->title_view = zdj_new_label_view( state->data.c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, state->title_view );
 
     state->needs_layout_init = false;
@@ -163,7 +163,7 @@ void zdj_menu_item_inert_status_update_layout( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( view );
 
     // Setup normal view
-    state->title_view = zdj_new_label_view( state->data->c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    state->title_view = zdj_new_label_view( state->data.c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, state->title_view );
 
     state->needs_layout_update = false;

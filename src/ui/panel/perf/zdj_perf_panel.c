@@ -14,6 +14,8 @@
 #include <zerodj/ui/view/scroll_view/zdj_scroll_view.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
+zdj_perf_panel_state_t * _zdj_perf_panel_state;
+
 static void _zdj_perf_panel_draw( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _zdj_perf_panel_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _zdj_perf_panel_deploy( zdj_view_t * view );
@@ -40,8 +42,6 @@ zdj_view_t * zdj_new_perf_panel( void ) {
     container_view->frame.x = ZDJ_PERF_PANEL_WIDTH * -3;
     container_view->frame.y = 0;
     
-    // container_view->in_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_SHOW );
-    // container_view->out_anim = zdj_new_anim( ZDJ_ANIM_DEBUG_PANEL_HIDE );
     zdj_set_anim( &container_view->in_anim, ZDJ_ANIM_DEBUG_PANEL_SHOW );
     zdj_set_anim( &container_view->out_anim, ZDJ_ANIM_DEBUG_PANEL_HIDE );
 
@@ -49,10 +49,11 @@ zdj_view_t * zdj_new_perf_panel( void ) {
     zdj_add_subview( container_view, thread_view );
 
     // Add state
-    zdj_perf_panel_state_t * state = calloc( 1, sizeof( zdj_perf_panel_state_t ) );
-    container_view->state = state;
-    state->thread_view = thread_view;
-    state->event_capture = false;
+    _zdj_perf_panel_state = calloc( 1, sizeof( zdj_perf_panel_state_t ) );
+    container_view->state = _zdj_perf_panel_state;
+    _zdj_perf_panel_state->container_view = container_view;
+    _zdj_perf_panel_state->thread_view = thread_view;
+    _zdj_perf_panel_state->event_capture = false;
     
     return view;
 }
@@ -67,47 +68,46 @@ void _zdj_perf_panel_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 void _zdj_perf_panel_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_perf_panel_state_t * state = (zdj_perf_panel_state_t*)view->state;
-
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
     
     // Capture events for deploy/retract and focus/un-focus.
     if( e->id == ZDJ_UI_CONTROL_FN_2_PRESS_1 ) {
         e->blocked = true;
-        if( !state->deployed ) { 
-            // Show debug panel
-            _zdj_perf_panel_deploy( view );
-        } else {
-            // Hide debug panel
-            _zdj_perf_panel_retract( view );
-        }
+        zdj_perf_panel_toggle( );
     } 
 }
 
-void _zdj_perf_panel_deploy( zdj_view_t * view ) {
-    zdj_perf_panel_state_t * state = (zdj_perf_panel_state_t*)view->state;
-    state->event_capture = true;
-    state->deployed = true;
+void zdj_perf_panel_toggle( void ) {
+    if( _zdj_perf_panel_state->deployed ) {
+        zdj_perf_panel_retract( );
+    } else {
+        zdj_perf_panel_deploy( );
+    }
+}
+
+void zdj_perf_panel_deploy( void ) {
+    _zdj_perf_panel_state->event_capture = true;
+    _zdj_perf_panel_state->deployed = true;
 
     zdj_enable_perf( );
 
-    ((anim_init_t)view->in_anim.init_fn)( 
-        &view->in_anim, 
-        view
+    ((anim_init_t)_zdj_perf_panel_state->container_view->in_anim.init_fn)( 
+        &_zdj_perf_panel_state->container_view->in_anim, 
+        _zdj_perf_panel_state->container_view
     );
-    view->anim = &view->in_anim;
+    _zdj_perf_panel_state->container_view->anim = &_zdj_perf_panel_state->container_view->in_anim;
 }
 
-void _zdj_perf_panel_retract( zdj_view_t * view ) {
-    zdj_perf_panel_state_t * state = (zdj_perf_panel_state_t*)view->state;
-    state->event_capture = false;
-    state->deployed = false;
+void zdj_perf_panel_retract( void ) {
+    _zdj_perf_panel_state->event_capture = false;
+    _zdj_perf_panel_state->deployed = false;
 
     zdj_disable_perf( );
 
-    ((anim_init_t)view->out_anim.init_fn)( 
-        &view->out_anim, 
-        view 
+    ((anim_init_t)_zdj_perf_panel_state->container_view->out_anim.init_fn)( 
+        &_zdj_perf_panel_state->container_view->out_anim, 
+        _zdj_perf_panel_state->container_view
     );
-    view->anim = &view->out_anim;
+    _zdj_perf_panel_state->container_view->anim = &_zdj_perf_panel_state->container_view->out_anim;
 }

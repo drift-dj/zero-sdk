@@ -48,8 +48,7 @@ zdj_view_t * zdj_new_label_view(
 }
 
 void _zdj_label_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    zdj_label_state_t * label_state = (zdj_label_state_t*)view->state;    
-    
+    zdj_label_state_t * label_state = (zdj_label_state_t*)view->state;        
     
     // Draw the label
     SDL_Rect s = { clip->src.x, clip->src.y, clip->src.w, clip->src.h };

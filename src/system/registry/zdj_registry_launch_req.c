@@ -17,6 +17,7 @@ zdj_launch_req_t * zdj_registry_create_launch_req(
     char * app_install_name, 
     char * fallback_install_name 
 ) {
+    printf( "zdj_registry_create_launch_req\n" );
     zdj_launch_req_t * req = calloc( 1, sizeof( zdj_launch_req_t ) );
     req->health = ZDJ_HEALTH_STATUS_UNKNOWN;
 
@@ -34,7 +35,7 @@ zdj_launch_req_t * zdj_registry_create_launch_req(
     if( fallback_install ) {
         memcpy(&req->fallback_install, fallback_install, sizeof( zdj_install_t ));
     }
-    
+    printf( "zdj_registry_create_launch_req done\n" );
     return req;
 }
 

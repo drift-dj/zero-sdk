@@ -38,7 +38,7 @@ void zdj_menu_item_song_import_update_layout( zdj_view_t * view ) {
         zdj_add_subview( view, state->hilite_view );
     }
 
-    zdj_library_song_t * song = (zdj_library_song_t*)state->data->ptr;
+    zdj_library_song_t * song = (zdj_library_song_t*)state->data.ptr;
     if( state->hilite_view && song ) {
         zdj_progress_bar_view_state_t * progress_state = (zdj_progress_bar_view_state_t*)state->hilite_view->state;
         progress_state->val = song->analysis_progress;

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
+#include <execinfo.h>
 
 #include <zerodj/system/error/zdj_error.h>
 
@@ -52,13 +53,29 @@ static char * _zdj_error_marker_string[ ZDJ_ERROR_MARKER_COUNT ] = {
     "decode update", // ZDJ_ERROR_MARKER_DECODE_UPDATE,
     "decode window", // ZDJ_ERROR_MARKER_DECODE_WINDOW,
     "event handling", // ZDJ_ERROR_MARKER_HANDLE_EVENT,
+    "record update", // ZDJ_ERROR_MARKER_RECORD_UPDATE,
     "debug" // ZDJ_ERROR_MARKER_DEBUG,
 };
 
 // Print (hopefully) helpful info and exit.
 void _zdj_error_sig( int code ) {
     if( code == SIGSEGV ) {
+        // printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
+        
+        int max_frames = 100;
+        void *callstack[ max_frames ];
+        int frames;
+        char **strings;
+       
+        frames = backtrace( callstack, max_frames );
+        strings = backtrace_symbols( callstack, frames );
+
+        for (int i = 0; i < frames; ++i) {
+            printf("%s\n", strings[i]);
+        }
+        
         printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
+        
         exit( code );
     }
 }

@@ -3,6 +3,8 @@ ROOT_DIR=$(realpath $DIR/..)
 BUILD_DIR=$ROOT_DIR/build
 CONFIG_FLAGS=" -G Ninja -S $ROOT_DIR -B $BUILD_DIR --toolchain $DIR/../cmake/toolchain.cmake"
 BUILD_FLAGS="--config Release --target all --parallel"
+# CONFIG_FLAGS=" -G Ninja -S $ROOT_DIR -B $BUILD_DIR --toolchain $DIR/../cmake/toolchain.cmake"
+# BUILD_FLAGS="--config Debug --target all --parallel"
 
 # Parse input arguments
 while getopts "c" opt; do

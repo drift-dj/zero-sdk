@@ -35,12 +35,15 @@ uint64_t zdj_soundcard_dto_get_linkmap_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_CV_2: return dto->cv_2_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_CV_3: return dto->cv_3_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT: return dto->deck_1_input_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_EDGE: return dto->deck_1_edge_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS: return dto->deck_1_bus_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE: return dto->deck_1_prefade_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT: return dto->deck_2_input_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_EDGE: return dto->deck_2_edge_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS: return dto->deck_2_bus_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE: return dto->deck_2_prefade_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT: return dto->deck_ext_input_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE: return dto->deck_ext_edge_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS: return dto->deck_ext_bus_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return dto->deck_ext_prefade_link_map;
         default: return 0;
@@ -72,12 +75,15 @@ int zdj_soundcard_dto_set_linkmap_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_CV_2: dto->cv_2_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_CV_3: dto->cv_3_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT: dto->deck_1_input_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_EDGE: dto->deck_1_edge_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS: dto->deck_1_bus_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE: dto->deck_1_prefade_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT: dto->deck_2_input_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_EDGE: dto->deck_2_edge_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS: dto->deck_2_bus_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE: dto->deck_2_prefade_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT: dto->deck_ext_input_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE: dto->deck_ext_edge_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS: dto->deck_ext_bus_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: dto->deck_ext_prefade_link_map = link_map; break;
         default: break;
@@ -238,12 +244,15 @@ int zdj_soundcard_dto_get_stereo_for_node_name(
     if( !dto ) { return 0; }
     switch ( name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_EDGE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_EDGE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return 1;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0: return dto->ana_out_0_stereo;
@@ -512,14 +521,17 @@ zdj_error_type_t zdj_soundcard_fetch_dto( char * entity_id, zdj_soundcard_dto_t 
             dto->record_bus_stereo = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_COL_RECORD_BUS_STEREO );
 
             dto->deck_1_input_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_1_INPUT_LINK );
+            dto->deck_1_edge_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_1_EDGE_LINK );
             dto->deck_1_bus_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_1_BUS_LINK );
             dto->deck_1_prefade_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_1_PREFADE_LINK );
 
             dto->deck_2_input_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_2_INPUT_LINK );
+            dto->deck_2_edge_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_2_EDGE_LINK );
             dto->deck_2_bus_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_2_BUS_LINK );
             dto->deck_2_prefade_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_2_PREFADE_LINK );
 
             dto->deck_ext_input_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_INPUT_LINK );
+            dto->deck_ext_edge_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_EDGE_LINK );
             dto->deck_ext_bus_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_BUS_LINK );
             dto->deck_ext_prefade_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_PREFADE_LINK );
 
@@ -614,10 +626,10 @@ zdj_error_type_t zdj_soundcard_store_dto( char * entity_id, zdj_soundcard_dto_t 
     // Set up for prepared stmt w/binds to use built-in string escaping.
     snprintf( sql, sizeof( sql ), 
         // Insert new record
-        "INSERT INTO %s VALUES(\'%s\',\'%s\',%d,%d,%d,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%lu,%d,%d,%lu,%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d)\n"
+        "INSERT INTO %s VALUES(\'%s\',\'%s\',%d,%d,%d,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%lu,%d,%d,%lu,%d,%d,%d,%d,%d,%d,%d,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d,%d,%lu,%d,%d,%d,%d)\n"
 
         // Or update existing record
-        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',name=\'%s\',ana_out_0_sig=%d,ana_out_0_stereo=%d,ana_out_1_sig=%d,ana_out_1_stereo=%d,ana_out_2_sig=%d,ana_out_2_stereo=%d,ana_out_3_sig=%d,ana_out_3_stereo=%d,ana_in_0_link=%lu,ana_in_0_sig=%d,ana_in_0_trim=%d,ana_in_0_pan=%d,ana_in_0_stereo=%d,ana_in_0_mute=%d,ana_in_1_link=%lu,ana_in_1_sig=%d,ana_in_1_trim=%d,ana_in_1_pan=%d,ana_in_1_stereo=%d,ana_in_1_mute=%d,ana_in_2_link=%lu,ana_in_2_sig=%d,ana_in_2_trim=%d,ana_in_2_pan=%d,ana_in_2_stereo=%d,ana_in_2_mute=%d,ana_in_3_link=%lu,ana_in_3_sig=%d,ana_in_3_trim=%d,ana_in_3_pan=%d,ana_in_3_stereo=%d,ana_in_3_mute=%d,main_bus_link=%lu,main_bus_stereo=%d,main_bus_mute=%d,cue_bus_link=%lu,cue_bus_stereo=%d,cue_bus_mute=%d,annot_bus_link=%lu,annot_bus_trim=%d,annot_bus_pan=%d,annot_bus_stereo=%d,annot_bus_mute=%d,record_bus_trim=%d,record_bus_pan=%d,record_bus_stereo=%d,deck_1_input_link=%lu,deck_1_bus_link=%lu,deck_1_prefade_link=%lu,deck_2_input_link=%lu,deck_2_bus_link=%lu,deck_2_prefade_link=%lu,deck_ext_input_link=%lu,deck_ext_bus_link=%lu,deck_ext_prefade_link=%lu,aux_bus_0_link=%lu,aux_bus_0_trim=%d,aux_bus_0_pan=%d,aux_bus_0_stereo=%d,aux_bus_0_mute=%d,aux_bus_1_link=%lu,aux_bus_1_trim=%d,aux_bus_1_pan=%d,aux_bus_1_stereo=%d,aux_bus_1_mute=%d,aux_bus_2_link=%lu,aux_bus_2_trim=%d,aux_bus_2_pan=%d,aux_bus_2_stereo=%d,aux_bus_2_mute=%d,aux_bus_3_link=%lu,aux_bus_3_trim=%d,aux_bus_3_pan=%d,aux_bus_3_stereo=%d,aux_bus_3_mute=%d,clock_0_sig=%d,clock_0_link=%lu,clock_0_source=%d,clock_0_val=%d,clock_1_sig=%d,clock_1_link=%lu,clock_1_source=%d,clock_1_val=%d,clock_2_sig=%d,clock_2_link=%lu,clock_2_source=%d,clock_2_val=%d,clock_3_sig=%d,clock_3_link=%lu,clock_3_source=%d,clock_3_val=%d,cv_0_sig=%d,cv_0_link=%lu,cv_0_source=%d,cv_0_invert=%d,cv_0_gain=%d,cv_0_mute=%d,cv_1_sig=%d,cv_1_link=%lu,cv_1_source=%d,cv_1_invert=%d,cv_1_gain=%d,cv_1_mute=%d,cv_2_sig=%d,cv_2_link=%lu,cv_2_source=%d,cv_2_invert=%d,cv_2_gain=%d,cv_2_mute=%d,cv_3_sig=%d,cv_3_link=%lu,cv_3_source=%d,cv_3_invert=%d,cv_3_gain=%d,cv_3_mute=%d",
+        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',name=\'%s\',ana_out_0_sig=%d,ana_out_0_stereo=%d,ana_out_1_sig=%d,ana_out_1_stereo=%d,ana_out_2_sig=%d,ana_out_2_stereo=%d,ana_out_3_sig=%d,ana_out_3_stereo=%d,ana_in_0_link=%lu,ana_in_0_sig=%d,ana_in_0_trim=%d,ana_in_0_pan=%d,ana_in_0_stereo=%d,ana_in_0_mute=%d,ana_in_1_link=%lu,ana_in_1_sig=%d,ana_in_1_trim=%d,ana_in_1_pan=%d,ana_in_1_stereo=%d,ana_in_1_mute=%d,ana_in_2_link=%lu,ana_in_2_sig=%d,ana_in_2_trim=%d,ana_in_2_pan=%d,ana_in_2_stereo=%d,ana_in_2_mute=%d,ana_in_3_link=%lu,ana_in_3_sig=%d,ana_in_3_trim=%d,ana_in_3_pan=%d,ana_in_3_stereo=%d,ana_in_3_mute=%d,main_bus_link=%lu,main_bus_stereo=%d,main_bus_mute=%d,cue_bus_link=%lu,cue_bus_stereo=%d,cue_bus_mute=%d,annot_bus_link=%lu,annot_bus_trim=%d,annot_bus_pan=%d,annot_bus_stereo=%d,annot_bus_mute=%d,record_bus_trim=%d,record_bus_pan=%d,record_bus_stereo=%d,deck_1_input_link=%lu,deck_1_edge_link=%lu,deck_1_bus_link=%lu,deck_1_prefade_link=%lu,deck_2_input_link=%lu,deck_2_edge_link=%lu,deck_2_bus_link=%lu,deck_2_prefade_link=%lu,deck_ext_input_link=%lu,deck_ext_edge_link=%lu,deck_ext_bus_link=%lu,deck_ext_prefade_link=%lu,aux_bus_0_link=%lu,aux_bus_0_trim=%d,aux_bus_0_pan=%d,aux_bus_0_stereo=%d,aux_bus_0_mute=%d,aux_bus_1_link=%lu,aux_bus_1_trim=%d,aux_bus_1_pan=%d,aux_bus_1_stereo=%d,aux_bus_1_mute=%d,aux_bus_2_link=%lu,aux_bus_2_trim=%d,aux_bus_2_pan=%d,aux_bus_2_stereo=%d,aux_bus_2_mute=%d,aux_bus_3_link=%lu,aux_bus_3_trim=%d,aux_bus_3_pan=%d,aux_bus_3_stereo=%d,aux_bus_3_mute=%d,clock_0_sig=%d,clock_0_link=%lu,clock_0_source=%d,clock_0_val=%d,clock_1_sig=%d,clock_1_link=%lu,clock_1_source=%d,clock_1_val=%d,clock_2_sig=%d,clock_2_link=%lu,clock_2_source=%d,clock_2_val=%d,clock_3_sig=%d,clock_3_link=%lu,clock_3_source=%d,clock_3_val=%d,cv_0_sig=%d,cv_0_link=%lu,cv_0_source=%d,cv_0_invert=%d,cv_0_gain=%d,cv_0_mute=%d,cv_1_sig=%d,cv_1_link=%lu,cv_1_source=%d,cv_1_invert=%d,cv_1_gain=%d,cv_1_mute=%d,cv_2_sig=%d,cv_2_link=%lu,cv_2_source=%d,cv_2_invert=%d,cv_2_gain=%d,cv_2_mute=%d,cv_3_sig=%d,cv_3_link=%lu,cv_3_source=%d,cv_3_invert=%d,cv_3_gain=%d,cv_3_mute=%d",
 
         // Table Name
         "Linkage",
@@ -670,12 +682,15 @@ zdj_error_type_t zdj_soundcard_store_dto( char * entity_id, zdj_soundcard_dto_t 
         dto->record_bus_pan,
         dto->record_bus_stereo,
         dto->deck_1_input_link_map,
+        dto->deck_1_edge_link_map,
         dto->deck_1_bus_link_map,
         dto->deck_1_prefade_link_map,
         dto->deck_2_input_link_map,
+        dto->deck_2_edge_link_map,
         dto->deck_2_bus_link_map,
         dto->deck_2_prefade_link_map,
         dto->deck_ext_input_link_map,
+        dto->deck_ext_edge_link_map,
         dto->deck_ext_bus_link_map,
         dto->deck_ext_prefade_link_map,
         dto->aux_bus_0_link_map,
@@ -788,12 +803,15 @@ zdj_error_type_t zdj_soundcard_store_dto( char * entity_id, zdj_soundcard_dto_t 
         dto->record_bus_pan,
         dto->record_bus_stereo,
         dto->deck_1_input_link_map,
+        dto->deck_1_edge_link_map,
         dto->deck_1_bus_link_map,
         dto->deck_1_prefade_link_map,
         dto->deck_2_input_link_map,
+        dto->deck_2_edge_link_map,
         dto->deck_2_bus_link_map,
         dto->deck_2_prefade_link_map,
         dto->deck_ext_input_link_map,
+        dto->deck_ext_edge_link_map,
         dto->deck_ext_bus_link_map,
         dto->deck_ext_prefade_link_map,
         dto->aux_bus_0_link_map,

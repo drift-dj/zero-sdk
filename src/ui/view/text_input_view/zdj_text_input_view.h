@@ -33,7 +33,7 @@ typedef enum {
 typedef void ( *zdj_text_input_callback_t )( zdj_text_input_view_action_t, char * );
 
 typedef struct {
-    char * input_str;
+    char input_str[ 256 ];
     zdj_text_input_callback_t cb;
     zdj_view_t * input_buffer;
     zdj_view_t * keyboard_menu;

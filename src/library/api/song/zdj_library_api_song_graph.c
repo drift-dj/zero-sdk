@@ -142,7 +142,7 @@ zdj_library_song_t * zdj_library_fetch_file_import_song_graph(
     // Fetch Performance DTO - it may not exist during first stages of import scan
     song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db );
     if( !song->performance ) {
-        printf( "catalog failed to load for %p\n", song );
+        printf( "performance failed to load for %p\n", song );
     }
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
@@ -183,7 +183,30 @@ zdj_library_song_t * zdj_library_fetch_playback_song_graph(
     zdj_library_song_t * song, 
     sqlite3 * db 
 ) {
+    // Fetch Audio DTO
+    if( !song->audio ){ song->audio = zdj_library_fetch_current_audio_dto_for_song( song, db ); }
+    if( !song->audio ) {
+        printf( "audio failed to load for %p\n", song );
+        song->has_error = true;
+    }
+    
+    // Fetch Catalog DTO
+    if( !song->catalog ){ song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db ); }
+    if( !song->catalog ) {
+        printf( "catalog failed to load for %p\n", song );
+    }
 
+    // Fetch Curation DTO
+    if( !song->curation ){ song->curation = zdj_library_fetch_current_curation_dto_for_song( song, db ); }
+    if( !song->curation ) {
+        printf( "curation failed to load for %p\n", song );
+    }
+
+    // Fetch Performance DTO
+    if( !song->performance ){ song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db ); }
+    if( !song->performance ) {
+        printf( "performance failed to load for %p\n", song );
+    }
 }
 
 zdj_library_song_t * zdj_library_fetch_edit_song_graph( 

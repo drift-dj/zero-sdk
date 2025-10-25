@@ -18,6 +18,7 @@ static int zdj_view_stack_id = 0;
 zdj_view_t * zdj_delete_stack;
 int zdj_view_count;
 int zdj_new_view_count;
+bool zdj_screen_cap_armed;
 
 void _zdj_view_deinit( struct zdj_view_t * view );
 
@@ -53,6 +54,7 @@ void zdj_ui_init( void ) {
     }
 
     zdj_view_count = 0;
+    zdj_screen_cap_armed = false;
 
     // Bringup the display stack
     zdj_view_stack_init( ); 
@@ -296,6 +298,7 @@ void zdj_pop_n_subviews_of( zdj_view_t * view, int count, bool animated ) {
     zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
     for( int n=0; n<count; n++ ) {
         if( subview ) {
+            // printf( "starting out anim: %p\n", subview );
             ((anim_init_t)subview->out_anim.init_fn)( &subview->out_anim, subview );
             subview->out_anim.view = subview;
             subview->out_anim.superview = view;

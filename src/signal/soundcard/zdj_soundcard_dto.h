@@ -84,14 +84,17 @@ typedef enum {
 	ZDJ_SOUNDCARD_COL_RECORD_BUS_STEREO,
 
 	ZDJ_SOUNDCARD_COL_DECK_1_INPUT_LINK,
+	ZDJ_SOUNDCARD_COL_DECK_1_EDGE_LINK,
 	ZDJ_SOUNDCARD_COL_DECK_1_BUS_LINK,
 	ZDJ_SOUNDCARD_COL_DECK_1_PREFADE_LINK,
 
 	ZDJ_SOUNDCARD_COL_DECK_2_INPUT_LINK,
+	ZDJ_SOUNDCARD_COL_DECK_2_EDGE_LINK,
 	ZDJ_SOUNDCARD_COL_DECK_2_BUS_LINK,
 	ZDJ_SOUNDCARD_COL_DECK_2_PREFADE_LINK,
 
 	ZDJ_SOUNDCARD_COL_DECK_EXT_INPUT_LINK,
+	ZDJ_SOUNDCARD_COL_DECK_EXT_EDGE_LINK,
 	ZDJ_SOUNDCARD_COL_DECK_EXT_BUS_LINK,
 	ZDJ_SOUNDCARD_COL_DECK_EXT_PREFADE_LINK,
 
@@ -238,16 +241,19 @@ typedef struct {
 
     // Deck 1 Busses //
     uint64_t deck_1_input_link_map;
+	uint64_t deck_1_edge_link_map;
 	uint64_t deck_1_bus_link_map;
 	uint64_t deck_1_prefade_link_map;
 
     // Deck 2 Busses //
 	uint64_t deck_2_input_link_map;
+	uint64_t deck_2_edge_link_map;
 	uint64_t deck_2_bus_link_map;
 	uint64_t deck_2_prefade_link_map;
 
     // External Deck Busses //
 	uint64_t deck_ext_input_link_map;
+	uint64_t deck_ext_edge_link_map;
 	uint64_t deck_ext_bus_link_map;
 	uint64_t deck_ext_prefade_link_map;
 
