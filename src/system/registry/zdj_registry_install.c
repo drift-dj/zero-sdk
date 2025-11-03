@@ -167,3 +167,16 @@ void zdj_registry_remove_install( zdj_install_t * install ) {
 void zdj_registry_free_install( zdj_install_t * install ) {
 
 }
+
+void zdj_registry_put_system_install_str( char * str ) {
+    zdj_install_t * system_install = zdj_registry_install_for_filepath( ZDJ_REGISTRY_OS_SYSREG_PATH );
+    if( system_install ) {
+        snprintf( str, -1, "%s  (%d.%d.%d)", 
+            system_install->version.desc,    
+            system_install->version.major,
+            system_install->version.minor,
+            system_install->version.hotfix
+        );
+        free( system_install );
+    }
+}

@@ -6,6 +6,7 @@
 
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/registry/zdj_registry.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/panel/perf/zdj_perf_panel.h>
@@ -80,6 +81,14 @@ zdj_view_t * zdj_new_device_settings_menu( zdj_rect_t * frame ) {
         usb_btn->handle_control_event = &_handle_usb_btn;
         zdj_menu_view_add_item( menu, usb_btn );
     }
+
+    // System
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Version" ) );
+
+    char system_install_str[ 64 ];
+    zdj_registry_put_system_install_str( system_install_str );
+    zdj_view_t * version_item = zdj_new_menu_item( system_install_str, ZDJ_MENU_ITEM_LAYOUT_INERT );
+    zdj_menu_view_add_item( menu, version_item );
 
     // Perf
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Perf" ) );

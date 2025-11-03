@@ -42,7 +42,22 @@ void _zdj_usb_status_view_reboot_update_layout( zdj_view_t * view ) {
     header_state->has_valid_display = false;
 
     // Add mode requested label
-    zdj_view_t * mode_label = zdj_new_label_view( "Device Mode Requested.", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    char mode_str[ 128 ];
+    switch ( zdj_usb_status->mode ) {
+    case ZDJ_USB_MODE_HOST:
+        strcpy( mode_str, "Host Mode Requested." );
+        break;
+    case ZDJ_USB_MODE_GADGET:
+        strcpy( mode_str, "Device Mode Requested." );
+        break;
+    case ZDJ_USB_MODE_OFFLINE:
+        strcpy( mode_str, "Offline Mode Requested." );
+        break;
+    default:
+        strcpy( mode_str, "Unknown Mode Requested." );
+        break;
+    }
+    zdj_view_t * mode_label = zdj_new_label_view( mode_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     mode_label->frame.x = 16;
     mode_label->frame.y = 5;
     zdj_menu_view_add_item( menu, mode_label );

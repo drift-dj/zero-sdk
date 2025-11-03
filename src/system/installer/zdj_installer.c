@@ -62,6 +62,7 @@ int zdj_installer_file_count( zdj_installer_t * installer ) {
 }
 
 bool zdj_installer_extract_manifest( zdj_installer_t * installer ) {
+    printf( "zdj_installer_extract_manifest\n" );
     // Seek to start of manifest db
     if( !installer->fd ) { 
         installer->valid = false;
@@ -85,6 +86,9 @@ bool zdj_installer_extract_manifest( zdj_installer_t * installer ) {
 
     // Open db + return
     installer->manifest_db = zdj_sql_open( ZDJ_INSTALLER_MANIFEST_PATH );
+    
+    printf( "zdj_installer_extract_manifest done\n" );
+    
     return installer->manifest_db;
 }
 
@@ -148,8 +152,12 @@ void _zdj_installer_extract_file_cb( zdj_installer_manifest_item_t * item, void 
 
 // Write out all files in manifest_db to extract dir
 bool zdj_installer_extract_files( zdj_installer_t * installer ) {
+    printf( "zdj_installer_extract_files\n" );
     // Read manifest records and extract files from bin blob to tmp
     zdj_installer_iterate_manifest( installer, _zdj_installer_extract_file_cb, installer );
+    
+    printf( "zdj_installer_extract_files done\n" );
+    
     return installer->valid;
 }
 
@@ -171,10 +179,14 @@ void _zdj_installer_validate_file_cb( zdj_installer_manifest_item_t * item, void
 // Validate all files in the manifest against a set of criteria
 // before the commit phase to catch any potential errors early.
 bool zdj_installer_validate_files( zdj_installer_t * installer ) {
+    printf( "zdj_installer_validate_files\n" );
     installer->valid = true;
     // Test all copy operations for source + dest
     zdj_installer_iterate_manifest( installer, _zdj_installer_validate_file_cb, installer );
     // Return success
+
+    printf( "zdj_installer_validate_files done: %d\n", installer->valid );
+
     return installer->valid;
 }
 

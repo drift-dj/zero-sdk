@@ -26,6 +26,7 @@
 #include <zerodj/zdj_data_type.h>
 #include <zerodj/health/zdj_health_type.h>
 
+#define ZDJ_REGISTRY_OS_SYSREG_PATH "/etc/registry/os/drift-os"
 #define ZDJ_REGISTRY_LAUNCH_REQ_PATH "/etc/registry/launch-req/launch_req"
 #define ZDJ_REGISTRY_PREV_LAUNCH_REQ_PATH "/etc/registry/launch-req/prev_launch_req"
 #define ZDJ_REGISTRY_NEW_LAUNCH_REQ_PATH "/etc/registry/launch-req/new_launch_req"
@@ -87,5 +88,7 @@ void zdj_registry_launch_req_switch_to_fallback( zdj_launch_req_t * launch_req )
 // Get/Set normal_req app
 bool zdj_registry_install_is_normal_req( zdj_install_t * install );
 zdj_health_status_t zdj_registry_set_normal_req( zdj_install_t * install );
+
+void zdj_registry_put_system_install_str( char * str );
 
 #endif

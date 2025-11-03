@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
@@ -115,7 +116,9 @@ static void _handle_exit( zdj_view_t * view ) {
     printf( "_drive view handle_exit\n" );
     zdj_usb_drive_view_state_t * state = (zdj_usb_drive_view_state_t *)view->state;
     // Sync the filesystem before we leave to ensure new files appear
-    sync( );
+    int fd = open("/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", O_RDONLY);
+    fsync( fd );
+    close( fd );
     zdj_usb_stop_port_partner_poll( );
     _zdj_usb_drive_view_state->mode = ZDJ_USB_DRIVE_VIEW_MODE_DISABLE;
     _zdj_usb_drive_view_state->needs_layout_update = true;
@@ -166,9 +169,9 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE:
-        state->sync_counter++;
-        state->sync_counter %= 100;
-        if( state->sync_counter == 0 ) { sync( ); }
+        // state->sync_counter++;
+        // state->sync_counter %= 100;
+        // if( state->sync_counter == 0 ) { sync( ); }
         if( zdj_usb_has_port_partner_update( ) ) { 
             state->needs_layout_update = true;
         }

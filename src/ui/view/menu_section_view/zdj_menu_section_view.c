@@ -51,8 +51,8 @@ void zdj_menu_section_static_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         // Update divider asset's frame based on view's frame/ticker width
         if( state->divider ) {
             int ticker_w = zdj_ticker_view_get_text_w( state->title_ticker );
-            state->divider->frame.w = view->frame.w - ticker_w - 2;
-            state->divider->frame.x = ticker_w + 2;
+            state->divider->frame.w = view->frame.w - ticker_w + 5;
+            state->divider->frame.x = ticker_w - 5;
         }
     }
 }
