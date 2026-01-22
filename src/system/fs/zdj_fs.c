@@ -68,6 +68,7 @@ zdj_health_status_t zdj_fs_extract_file_from_binary(
     unsigned long long len, 
     bool overwrite
 ) {
+    printf( "extract %s to %s @%lld/%lld\n", bin, dst, offset, len );
     // Delete existing if overwrite
     if( overwrite ) { remove( dst ); }
 
@@ -75,7 +76,8 @@ zdj_health_status_t zdj_fs_extract_file_from_binary(
 
     FILE * bin_fd = fopen( bin, "r" );
     if( !bin_fd ) { return ZDJ_HEALTH_STATUS_MISSING; }
-    fseek( bin_fd, offset, SEEK_SET );
+    int err = fseek( bin_fd, offset, SEEK_SET );
+    if( err ){ return ZDJ_HEALTH_STATUS_BAD_FILESIZE; }
     FILE * dst_fd = fopen( dst, "w" );
     if( !dst_fd ) { return ZDJ_HEALTH_STATUS_BAD_DIR; }
     int i=0;
@@ -136,6 +138,12 @@ bool zdj_fs_path_is_audio_filename( char * path ) {
     if( !strcmp( ext, "mp3" ) || !strcmp( ext, "MP3" ) ) {
         return true;
     } else if( !strcmp( ext, "wav" ) || !strcmp( ext, "WAV" ) ) {
+        return true;
+    } else if( !strcmp( ext, "flac" ) || !strcmp( ext, "FLAC" ) ) {
+        return true;
+    } else if( !strcmp( ext, "aac" ) || !strcmp( ext, "AAC" ) ) {
+        return true;
+    } else if( !strcmp( ext, "m4a" ) || !strcmp( ext, "M4A" ) ) {
         return true;
     }
     return false;

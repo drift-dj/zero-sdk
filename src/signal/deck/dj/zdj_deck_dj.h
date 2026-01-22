@@ -24,11 +24,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-// #include <zerodj/controls/zdj_controls.h>
-// #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/deck/zdj_deck.h>
-// #include <zerodj/signal/pipeline/zdj_pipeline.h>
-
 
 typedef enum {
     ZDJ_DECK_TSM_SOURCE_PITCH,
@@ -39,10 +35,10 @@ typedef struct {
     zdj_library_song_t * song;
     
     // Internal audio pipeline
-    zdj_pipeline_node_t * dsp_node;
     zdj_pipeline_node_t * tsm_pitch_node;
     zdj_pipeline_node_t * tsm_tempo_node;
     zdj_pipeline_node_t * decode_node;
+    int decode_win_buf_count;
 
     // TSM engine management
     bool tempo_tsm_enabled;
@@ -59,39 +55,23 @@ typedef struct {
     // Internal non-threadsafe loop/skip API
     void ( *handle_new_loop_req )( struct zdj_deck_t * );
     void ( *handle_disable_loop_req )( struct zdj_deck_t * );
-    void ( *handle_move_loop_req )( struct zdj_deck_t *, int64_t, bool );
-    void ( *handle_resize_loop_req )( struct zdj_deck_t *, int64_t, bool );
+    void ( *handle_move_loop_req )( struct zdj_deck_t * );
+    void ( *handle_resize_loop_req )( struct zdj_deck_t * );
     void ( *stage_skip_req )( struct zdj_deck_t * );
     void ( *update_skip_req )( struct zdj_deck_t * );
+    void ( *stage_hyperscrub_req )( struct zdj_deck_t * );
+    void ( *update_hyperscrub_req )( struct zdj_deck_t * );
+    void ( *stage_needledrop_req )( struct zdj_deck_t * );
+    void ( *update_needledrop_req )( struct zdj_deck_t * );
 } zdj_dj_deck_state_t;
 
-zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource );
+zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource, int win_buf_count );
 void zdj_deck_dj_init_soundcard( zdj_deck_t * deck );
 void zdj_deck_dj_init_controls( zdj_deck_t * deck );
 void zdj_deck_dj_init_transport( zdj_deck_t * deck );
-void zdj_deck_dj_init_loop_skip( zdj_deck_t * deck );
+void zdj_deck_dj_init_discon( zdj_deck_t * deck );
 void zdj_deck_dj_init_sync( zdj_deck_t * deck );
 
-// void zdj_dj_deck_handle_controls( zdj_deck_t * deck, zdj_control_event_t * event );
 void zdj_dj_deck_reset_platter( zdj_deck_platter_t * platter, double addr );
-// void zdj_dj_deck_set_sync_bpm( zdj_deck_t * deck, double offset );
-// void zdj_dj_deck_offset_sync_bpm( zdj_deck_t * deck, double offset );
-
-// void zdj_deck_new_loop_req( zdj_deck_t * deck, int64_t len, bool quant );
-// void zdj_deck_enable_loop_req( zdj_deck_t * deck, zdj_library_cuepoint_t * cuepoint );
-// void zdj_deck_disable_loop_req( zdj_deck_t * deck );
-// void zdj_deck_move_loop( zdj_deck_t * deck, int64_t distance, bool quant );
-// void zdj_deck_resize_loop( zdj_deck_t * deck, int64_t offset, bool quant );
-
-// void zdj_deck_new_loop( zdj_deck_t * deck );
-// void zdj_deck_enable_loop( zdj_deck_t * deck, zdj_library_cuepoint_t * cuepoint );
-// void zdj_deck_disable_loop( zdj_deck_t * deck );
-// void zdj_deck_move_loop( zdj_deck_t * deck, int64_t distance, bool quant );
-// void zdj_deck_resize_loop( zdj_deck_t * deck, int64_t offset, bool quant );
-
-// void zdj_deck_new_skip_req( zdj_deck_t * deck, double units );
-// void zdj_deck_stage_skip( zdj_deck_t * deck );
-// void zdj_deck_update_skip( zdj_deck_t * deck );
-// void zdj_deck_new_skip( zdj_deck_t * deck );
 
 #endif

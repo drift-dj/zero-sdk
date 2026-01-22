@@ -20,7 +20,7 @@ zdj_view_t * zdj_new_modal_view( zdj_rect_t * frame ) {
     modal_view->deinit_state = &_zdj_modal_view_deinit_state;
 
     modal_view->frame.x = ZDJ_MODAL_X;
-    modal_view->frame.y = ZDJ_SCREEN_H;
+    modal_view->frame.y = ZDJ_SCREEN_H+1;
     
     zdj_set_anim( &modal_view->in_anim, ZDJ_ANIM_MODAL_SHOW );
     zdj_set_anim( &modal_view->out_anim, ZDJ_ANIM_MODAL_HIDE );

@@ -16,34 +16,36 @@ int zdj_library_query_count_all_playlists(
 	char * library_entity_id, 
 	sqlite3 * db 
 ) {
-    
+	printf( "zdj_library_query_count_all_playlists\n" );
+    return 0;
 }
 
 zdj_error_type_t zdj_library_query_all_playlists( 
 	char * library_entity_id, 
-	zdj_library_playlist_t ** playlists, 
+	char ** playlist_eids, 
+	int count,
 	sqlite3 * db 
 ) {
-
+	return ZDJ_ERROR_OKAY;
 }
 
-int zdj_library_query_count_songs_in_playlist( 
-	char * library_entity_id, 
-	zdj_library_playlist_t * playlist,
-	sqlite3 * db 
-) {
+// int zdj_library_query_count_songs_in_playlist( 
+// 	char * library_entity_id, 
+// 	zdj_library_playlist_t * playlist,
+// 	sqlite3 * db 
+// ) {
 
-}
+// }
 
-zdj_error_type_t zdj_library_query_songs_in_playlist( 
-	char * library_entity_id, 
-	zdj_library_playlist_t * playlist,
-	zdj_library_song_t ** songs, 
-	int count, 
-	sqlite3 * db 
-) {
+// zdj_error_type_t zdj_library_query_songs_in_playlist( 
+// 	char * library_entity_id, 
+// 	zdj_library_playlist_t * playlist,
+// 	zdj_library_song_t ** songs, 
+// 	int count, 
+// 	sqlite3 * db 
+// ) {
 
-}
+// }
 
 // SELECT * from Song_Entity where entity_id IN (SELECT entity_id from Song_Links_6cc78253d5a4445d8950558b2123e895)
 // "select distinct Artist from Songs order by Artist"

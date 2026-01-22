@@ -10,23 +10,26 @@
 #include <zerodj/system/perf/zdj_perf.h>
 #include <zerodj/system/thread/zdj_thread.h>
 
-static bool _zdj_perf_enabled;
-static uint32_t _zdj_perf_tag_max;
+bool _zdj_perf_enabled;
+uint32_t _zdj_perf_tag_max;
 
-static zdj_perf_tag_t * _zdj_perf_hmi_scan_tags;
-static int32_t _zdj_perf_hmi_scan_tag_index;
+zdj_perf_tag_t * _zdj_perf_hmi_scan_tags;
+int32_t _zdj_perf_hmi_scan_tag_index;
 
-static zdj_perf_tag_t * _zdj_perf_hmi_process_tags;
-static int32_t _zdj_perf_hmi_process_tag_index;
+zdj_perf_tag_t * _zdj_perf_hmi_process_tags;
+int32_t _zdj_perf_hmi_process_tag_index;
 
-static zdj_perf_tag_t * _zdj_perf_ui_tags;
-static int32_t _zdj_perf_ui_tag_index;
+zdj_perf_tag_t * _zdj_perf_ui_tags;
+int32_t _zdj_perf_ui_tag_index;
 
-static zdj_perf_tag_t * _zdj_perf_soundcard_fast_cycle_tags;
-static int32_t _zdj_perf_soundcard_fast_cycle_tag_index;
+zdj_perf_tag_t * _zdj_perf_soundcard_fast_cycle_tags;
+int32_t _zdj_perf_soundcard_fast_cycle_tag_index;
 
-static zdj_perf_tag_t * _zdj_perf_soundcard_slow_cycle_tags;
-static int32_t _zdj_perf_soundcard_slow_cycle_tag_index;
+zdj_perf_tag_t * _zdj_perf_soundcard_slow_cycle_tags;
+int32_t _zdj_perf_soundcard_slow_cycle_tag_index;
+
+zdj_perf_tag_t * _zdj_perf_deck_audio_cycle_tags;
+int32_t _zdj_perf_deck_audio_cycle_tag_index;
 
 uint64_t zdj_perf_time( void ) {
     struct timespec ts;
@@ -51,14 +54,21 @@ zdj_error_type_t zdj_perf_init( uint32_t tag_count ) {
 
     _zdj_perf_soundcard_slow_cycle_tags = calloc( tag_count, sizeof( zdj_perf_tag_t ) );
     _zdj_perf_soundcard_slow_cycle_tag_index = 0;
+
+    _zdj_perf_deck_audio_cycle_tags = calloc( tag_count, sizeof( zdj_perf_tag_t ) );
+    _zdj_perf_deck_audio_cycle_tag_index = 0;
+
+    return ZDJ_ERROR_OKAY;
 }
 
 zdj_error_type_t zdj_enable_perf( void ) {
     _zdj_perf_enabled = true;
+    return ZDJ_ERROR_OKAY;
 }
 
 zdj_error_type_t zdj_disable_perf( void ) {
     _zdj_perf_enabled = false;
+    return ZDJ_ERROR_OKAY;
 }
 
 zdj_error_type_t zdj_reset_perf( void ) {
@@ -67,6 +77,8 @@ zdj_error_type_t zdj_reset_perf( void ) {
     _zdj_perf_ui_tag_index = 0;
     _zdj_perf_soundcard_fast_cycle_tag_index = 0;
     _zdj_perf_soundcard_slow_cycle_tag_index = 0;
+    _zdj_perf_deck_audio_cycle_tag_index = 0;
+    return ZDJ_ERROR_OKAY;
 }
 
 bool zdj_perf_enabled( void ) {
@@ -76,6 +88,7 @@ bool zdj_perf_enabled( void ) {
 // Return the next available tag for a given thread.
 // Always return the last tag in the array once we max out.
 zdj_perf_tag_t * zdj_new_perf_tag_for_thread( zdj_system_thread_t thread ) {
+    printf( "new tag\n" );
     uint32_t ind = _zdj_perf_tag_max;
     switch ( thread ) {
         case ZDJ_SYSTEM_THREAD_CONTROL:
@@ -90,6 +103,11 @@ zdj_perf_tag_t * zdj_new_perf_tag_for_thread( zdj_system_thread_t thread ) {
             if( _zdj_perf_soundcard_fast_cycle_tag_index < _zdj_perf_tag_max ) { ind = _zdj_perf_soundcard_fast_cycle_tag_index; }
             _zdj_perf_soundcard_fast_cycle_tag_index++;
             return &_zdj_perf_soundcard_fast_cycle_tags[ ind ];
+        case ZDJ_SYSTEM_THREAD_DECK_AUDIO_CYCLE:
+            if( _zdj_perf_deck_audio_cycle_tag_index < _zdj_perf_tag_max ) { ind = _zdj_perf_deck_audio_cycle_tag_index; }
+            _zdj_perf_deck_audio_cycle_tag_index++;
+            return &_zdj_perf_deck_audio_cycle_tags[ ind ];
+
     }
 }
 
@@ -222,6 +240,17 @@ zdj_perf_report_t * zdj_perf_make_cycle_timing_report( void ) {
                 report, 
                 &_zdj_perf_soundcard_slow_cycle_tags[ i ],
                 &_zdj_perf_soundcard_slow_cycle_tags[ i+1 ] 
+            ); 
+        }
+    }
+
+    len = fmin( _zdj_perf_deck_audio_cycle_tag_index-1, _zdj_perf_tag_max-2 );
+    if( len > 0 ) {
+        for( i=0; i<len; i++ ) { 
+            zdj_perf_report_add_tag( 
+                report, 
+                &_zdj_perf_deck_audio_cycle_tags[ i ],
+                &_zdj_perf_deck_audio_cycle_tags[ i+1 ] 
             ); 
         }
     }

@@ -43,6 +43,8 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
     state->scroll_dir = scroll_dir;
     state->scroll_enabled = true;
     state->scroll_animated = true;
+    state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
+    state->edit_enabled = false;
     menu_view->state = state;
 
     // Add a scroll filter to process jog wheel inputs
@@ -133,8 +135,6 @@ void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item ) {
     // Set scroll_index for new item
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
     if( item->type == ZDJ_VIEW_MENU_ITEM ) {
-        
-        // zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
         item_state->scroll_index = menu_state->item_count++;
         if( item_state->scroll_index == 0 ){ item_state->is_hilite = true; }
     }
@@ -162,6 +162,60 @@ void zdj_menu_view_insert_item( zdj_view_t * menu_view, zdj_view_t * item, int i
     
         // Move x/y by inserted item's size or standard item size if not specified
         // Increment scroll_index
+}
+
+// Move an item up or down in the menu
+void zdj_menu_view_move_item( zdj_view_t * menu_view, zdj_view_t * item, int dir ) {
+    // printf( "zdj_menu_view_move_item: %d\n", dir );
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+
+    // Bug out early if we're constrained
+    if( item_state->scroll_index >= menu_state->edit_item_move_bottom_index && dir > 0 ) { 
+        return;
+    } else if ( item_state->scroll_index <= menu_state->edit_item_move_top_index && dir < 0 ) { 
+        return; 
+    }
+
+    if( dir > 0 ) {
+        menu_state->move_item_index += 0.21;
+    } else {
+        menu_state->move_item_index -= 0.21;
+    }
+
+    if( menu_state->move_item_index > menu_state->edit_item_move_bottom_index ) {
+        menu_state->move_item_index = (double)menu_state->edit_item_move_bottom_index;
+    } else if( menu_state->move_item_index < menu_state->edit_item_move_top_index ) {
+        menu_state->move_item_index = (double)menu_state->edit_item_move_top_index;
+    }
+
+    int item_index = item_state->scroll_index;
+    int target_scroll_index = (int)round( menu_state->move_item_index );
+    
+
+    zdj_view_t * target_item = NULL;
+    zdj_menu_item_view_state_t * target_item_state;
+    if( target_scroll_index != item_index ) {
+        target_item = zdj_menu_view_item_at_scroll_index( menu_view, target_scroll_index );
+        target_item_state = (zdj_menu_item_view_state_t*)target_item->state;
+        // printf( "found target_item @:%1.3f/%d w/%d\n", menu_state->move_item_index, target_scroll_index, target_item_state->scroll_index );
+    }
+
+    if( target_item ) {
+        target_item_state = (zdj_menu_item_view_state_t*)target_item->state;
+
+        // Swap item/target indexes
+        float target_y = target_item->frame.y;
+        float item_y = item->frame.y;
+        
+        item_state->scroll_index = target_scroll_index;
+        item->frame.y = target_y;
+        
+        target_item_state->scroll_index = item_index;
+        target_item->frame.y = item_y;
+        
+        zdj_menu_view_set_scroll_index( menu_view, item_state->scroll_index );
+    }
 }
 
 // Add n pixels of padding to the scroll_view
@@ -295,14 +349,17 @@ zdj_view_t * zdj_menu_view_item_at_scroll_index( zdj_view_t * menu_view, int ind
 
     // Iterate thru scroll_view's subviews, ignoring non-menu_items
     zdj_view_t * scroll_view_subview = menu_state->scroll_view->subviews;
+    zdj_menu_item_view_state_t * item_state;
     int item_count = 0;
     while( scroll_view_subview ) {
         if( scroll_view_subview->type == ZDJ_VIEW_MENU_ITEM ) {
-            if( item_count == index ) { return scroll_view_subview; }
+            item_state = (zdj_menu_item_view_state_t*)scroll_view_subview->state;
+            if( item_state->scroll_index == index ) { return scroll_view_subview; }
             item_count++;
         }
         scroll_view_subview = scroll_view_subview->next;
     }
+    return NULL;
 }
 
 zdj_view_t * zdj_menu_view_get_item_for_data_ptr( zdj_view_t * menu_view, void * ptr ) {
@@ -360,72 +417,154 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
     if( menu_state->header_view ){ 
         menu_header_state = (zdj_menu_header_view_state_t*)menu_state->header_view->state; 
     }
-
-    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) { 
-        // Add the event's value to the scroll filter.
-        // The scroll filter simulation runs in the draw loop,
-        // therefore, menu_update_scroll happens during the draw loop.
-        zdj_menu_view_add_scroll_filter_input( view, e->i_val );
-        // Prevent views/menus below this one from getting jog wheel events
-        e->blocked = true;
+    // Get the menu_item @ current scroll_index
+    zdj_view_t * menu_item = zdj_menu_item_for_scroll_index( 
+        menu_state->scroll_view, 
+        menu_state->scroll_index 
+    );
+    zdj_menu_item_view_state_t * menu_item_state = NULL;
+    if( menu_item ) {
+        menu_item_state = (zdj_menu_item_view_state_t*)menu_item->state;
     }
 
+    if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) { 
+        if( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_NORMAL ) {
+            // Add the event's value to the scroll filter.
+            // The scroll filter simulation runs in the draw loop,
+            // therefore, menu_update_scroll happens during the draw loop.
+            zdj_menu_view_add_scroll_filter_input( view, e->i_val );
+            // Prevent views/menus below this one from getting jog wheel events
+        } else if( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS ) {
+            // printf( "scroll item options\n" );
+            zdj_menu_item_scroll_options(
+                zdj_menu_item_for_scroll_index( 
+                    menu_state->scroll_view, 
+                    menu_state->scroll_index 
+                ),
+                e->i_val
+            );
+        } else if( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_EDIT_ITEM_POSITION ) {
+            zdj_menu_view_move_item( view, menu_item, e->i_val );
+        }
+        
+        e->blocked = true;
+    
     // Release, mod-scroll, long-press, etc. should invoke hmi handler of menu_item @scroll_index
-    if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ||
+    } else if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ||
         e->id == ZDJ_UI_CONTROL_JOG_RELEASE_1 ||
         e->id == ZDJ_UI_CONTROL_JOG_RELEASE_2 ||
         e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ||
         e->id == ZDJ_UI_CONTROL_JOG_ADJUST_2 ||
-        e->id == ZDJ_UI_CONTROL_JOG_PRESS_1
+        e->id == ZDJ_UI_CONTROL_JOG_PRESS_2
     ) {
+        
         if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
-            printf( "handling back jog release\n" );
+            // printf( "handling back jog release\n" );
             // Blink the back btn
             menu_header_state->is_blinking = true;
             menu_header_state->blink_timer = 0;
 
             // Call the back btn handler
             menu_header_state->handle_back( view );
+       
         } else {
-            // Get the menu_item @ current scroll_index
-            zdj_view_t * menu_item = zdj_menu_item_for_scroll_index( 
-                menu_state->scroll_view, 
-                menu_state->scroll_index 
-            );
 
-            // Blink the selected menu_item if this is a button press
-            if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
+            // Catch long-press-to-edit entry into edit mode
+            if( menu_item_state->edit_enabled &&
+                menu_state->edit_enabled && 
+                menu_state->long_press_to_edit &&
+                menu_state->input_mode == ZDJ_MENU_INPUT_MODE_NORMAL &&
+                e->id == ZDJ_UI_CONTROL_JOG_PRESS_2 
+            ) {
+                // Enter edit mode
+                menu_state->input_mode = ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS;
+                menu_state->edit_item = menu_item;
+                zdj_menu_item_enter_edit_mode( menu_item );
+
+            // Check release-to-edit entry into edit
+            } else if( menu_item_state->edit_enabled &&
+                       menu_state->edit_enabled && 
+                       e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 
+            ) {
+                
+                if( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_NORMAL &&            
+                    !menu_state->long_press_to_edit 
+                ) {
+                    // Enter edit mode if not currently editing
+                    menu_state->input_mode = ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS;
+                    menu_state->edit_item = menu_item;
+                    zdj_menu_item_enter_edit_mode( menu_item );
+                } else if ( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS ) {
+                    
+                    if( menu_item_state->edit_action == ZDJ_MENU_ITEM_ACTION_START_MOVE ) {
+                        // Call into handle_control_event set by front-end so it can
+                        // enter menu item move mode with appropriate constraints
+                        if( menu_item->handle_control_event ) {
+                            menu_item->handle_control_event( menu_item, e );
+                        }
+                    } else {
+                        
+                        // Select edit option if currently editing
+                        // Call into handle_control_event set by front-end
+                        if( menu_item->handle_control_event ) {
+                            menu_item->handle_control_event( menu_item, e );
+                        }
+                        menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
+                        zdj_menu_item_exit_edit_mode( menu_item );
+                    }
+                } else if ( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_EDIT_ITEM_POSITION ) {
+                    // If move is selected, put menu into move item mode
+                    // zdj_menu_item_exit_move_mode( menu_item );
+                    // menu_state->input_mode = ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS;
+                    menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
+                    zdj_menu_item_exit_edit_mode( menu_item );
+                }
+                
+               
+            } else if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
+                // Call the menu item's select handler
                 zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)menu_item->state;
                 state->is_blinking = true;
                 state->blink_timer = 0;
-            }
             
-            // Call into handle_control_event set by front-end
-            if( menu_item->handle_control_event ) {
-                menu_item->handle_control_event( menu_item, e );
+                // Call into handle_control_event set by front-end
+                if( menu_item->handle_control_event ) {
+                    menu_item->handle_control_event( menu_item, e );
+                }
             }
         }
+
         // Prevent views/menus below this one from getting jog wheel events
         e->blocked = true;
 
     // Handle nav back button
     } else if( e->id == ZDJ_UI_CONTROL_NAV_RELEASE_0 && menu_header_state ) {
-        printf( "handling nav release\n" );
         // Blink the back btn
         menu_header_state->is_blinking = true;
         menu_header_state->blink_timer = 0;
 
         // Call the back btn handler
         if( menu_header_state->handle_back ) {
-            printf( "handle_back\n" );
             menu_header_state->handle_back( view );
         }
         // Prevent views/menus below this one from getting bav release
         e->blocked = true;
+    } else {
+        printf( "sending non-standard\n" );
+        // If menu accepts more than standard nav controls, send those in as well
+        if( menu_state->scroll_index > -1 && menu_item && menu_item_state && menu_item_state->captures_all_events ) {
+            if( menu_item->handle_control_event ) {
+                menu_item->handle_control_event( menu_item, e );
+            }
+        }
     }
+
+    // printf( "zdj_menu_handle_control done\n" );
 }
 
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index ) {
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu_view->state;
+    menu_state->scroll_filter->position = index;
     _update_scroll( menu_view, index );
 }
 
@@ -450,10 +589,10 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
         }
         return;
     }
-
     // Check the new value against the previous value.
     // Only start updating things if the value has changed.
     if( new_scroll != menu_state->scroll_index ) { 
+
         // Clear hilite state of the previous selected item.
         // If it was the header's back item, hide the header's back view.
         // If it was a menu_item, clear menu_item->is_hilite and force
@@ -479,7 +618,7 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
             prev_menu_item_state = prev_menu_item->state;
             prev_menu_item_state->is_hilite = false;
         }
-        
+
         // Grab a scroll direction and update the scroll index
         bool scroll_dir = new_scroll > menu_state->scroll_index;
         menu_state->scroll_index = new_scroll;
@@ -526,6 +665,7 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
             scroll_point.x = new_menu_item->frame.x;
             scroll_point.y = 0;
         }
+
         bool is_final_view;
         if( new_menu_item_state->scroll_index == 0 ||
             new_menu_item_state->scroll_index == menu_state->item_count-1 
@@ -540,6 +680,7 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
             // );
             is_final_view = false;
         }
+
         zdj_scroll_view_to_view( 
             menu_state->scroll_view, 
             new_menu_item, 
@@ -548,6 +689,8 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
             true 
         );
     }
+
+    // printf( "update scroll done\n" );
 }
 
 static void _deinit_state( zdj_view_t * view ) {

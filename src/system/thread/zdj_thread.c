@@ -13,6 +13,7 @@ pthread_t _zdj_thread_ui;
 pthread_t _zdj_thread_deck_manager;
 
 pthread_t _zdj_thread_deck_station_1;
+// pthread_t * _zdj_thread_deck_station_1;
 bool zdj_thread_deck_1_station_available = true;
 
 pthread_t _zdj_thread_deck_station_2;

@@ -41,7 +41,8 @@ typedef enum {
     ZDJ_BEATGRID_STYLE_EDIT,
     ZDJ_BEATGRID_STYLE_STATION_1_PLAYBACK,
     ZDJ_BEATGRID_STYLE_STATION_2_PLAYBACK,
-    ZDJ_BEATGRID_STYLE_STATION_EXT_PLAYBACK
+    ZDJ_BEATGRID_STYLE_STATION_EXT_PLAYBACK,
+    ZDJ_BEATGRID_STYLE_XPORT
 } zdj_beatgrid_style_t;
 
 typedef struct {
@@ -64,6 +65,13 @@ zdj_view_t * zdj_new_playback_beatgrid_view(
     zdj_beatgrid_style_t style,
     zdj_deck_t * deck,
     zdj_library_song_t * song,
+    double zoom_val
+);
+
+zdj_view_t * zdj_new_xport_beatgrid_view( 
+    zdj_rect_t * frame, 
+    zdj_beatgrid_style_t style,
+    zdj_deck_t * deck,
     double zoom_val
 );
 

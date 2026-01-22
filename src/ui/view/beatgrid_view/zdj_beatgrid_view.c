@@ -22,7 +22,7 @@ zdj_beatgrid_mark_t zdj_beatgrid_mark_for_count( double beatgrid_count ) {
 
     } else if( fabs( floor( beatgrid_count ) - beatgrid_count ) < zdj_eps ) {
         // If count is near whole bar near 16-bar boundary, bar n
-        if( (int)floor( beatgrid_count ) % 16 == 0 ) { 
+        if( (int)floor( beatgrid_count ) % 8 == 0 ) { 
             // printf( "bar n\n" );
             return ZDJ_BEATGRID_MARK_BAR_N; 
         } 

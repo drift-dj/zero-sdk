@@ -29,18 +29,18 @@ zdj_error_type_t zdj_usb_init_frontend( void ) {
         fclose( fd );
     }
 
-    printf( "usb front-end at boot: %s, %s, %d\n", 
-            zdj_usb_mode_name[ zdj_usb_status->mode ],
-            zdj_usb_submode_name[ zdj_usb_status->submode ],
-            zdj_usb_status->requires_reboot
-        );
-        printf( "gadget_config: au:%d mid:%d msd:%d hid:%d shl:%d\n",
-            zdj_usb_status->gadget_config.uac2,
-            zdj_usb_status->gadget_config.midi,
-            zdj_usb_status->gadget_config.mass_storage,
-            zdj_usb_status->gadget_config.hid,
-            zdj_usb_status->gadget_config.shell
-        );
+    // printf( "usb front-end at boot: %s, %s, %d\n", 
+    //         zdj_usb_mode_name[ zdj_usb_status->mode ],
+    //         zdj_usb_submode_name[ zdj_usb_status->submode ],
+    //         zdj_usb_status->requires_reboot
+    //     );
+    // printf( "gadget_config: au:%d mid:%d msd:%d hid:%d shl:%d\n",
+    //     zdj_usb_status->gadget_config.uac2,
+    //     zdj_usb_status->gadget_config.midi,
+    //     zdj_usb_status->gadget_config.mass_storage,
+    //     zdj_usb_status->gadget_config.hid,
+    //     zdj_usb_status->gadget_config.shell
+    // );
 
     // Bringup inotify thread to detect status change from zero-usb backend
     pthread_create( &_zdj_usb_status_thread, NULL, _zdj_usb_status_thread_loop, zdj_usb_status );

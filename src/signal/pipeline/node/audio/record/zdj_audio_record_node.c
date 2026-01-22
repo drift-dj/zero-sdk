@@ -19,6 +19,7 @@
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/settings/zdj_settings.h>
 
 static void _update_wait( zdj_pipeline_node_t * node );
 static void _deinit_state( zdj_pipeline_node_t * node );
@@ -37,6 +38,7 @@ zdj_pipeline_node_t * zdj_new_audio_record_node( zdj_soundcard_node_t * soundcar
     node->state = state;
     state->soundcard_node = soundcard_node;
     state->status = ZDJ_AUDIO_RECORD_INIT;
+    state->sample_count = 0;
    
     return node;
 }
@@ -69,6 +71,8 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
             }
         }
         // printf( "Wrote %d samples\n", bw );
+        // Keep track of total samples for UI timer
+        record_state->sample_count += pipe_state->sample_count;
 
     } else if ( record_state->status == ZDJ_AUDIO_RECORD_FINISH ) {
         printf( "ZDJ_AUDIO_RECORD_FINISH\n" );
@@ -82,8 +86,11 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         // Initialize the tmp wav file.
         char uuid[ 256 ];
         zdj_library_put_uuid( uuid );
-        snprintf( record_state->tmp_filepath, sizeof( record_state->tmp_filepath ), "%s/%s.wav", 
-            ZDJ_RECORDING_TEMP_DIR, uuid 
+
+        int recording_num = zdj_setting_increment_int( ZDJ_SETTING_RECORDING_COUNTER );
+
+        snprintf( record_state->tmp_filepath, sizeof( record_state->tmp_filepath ), "%s/recording_%03d.wav", 
+            ZDJ_RECORDING_TEMP_DIR, recording_num 
         );
         record_state->tmp_fp = fopen( record_state->tmp_filepath, "w" );
         
@@ -115,6 +122,9 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
 
         fwrite( hdr, sizeof( record_wav_header_t ), 1, record_state->tmp_fp );
 
+        // Zero the sample counter for the UI timer
+        record_state->sample_count = 0;
+
         // Start up in inactive state
         // record_state->status = ZDJ_AUDIO_RECORD_INACTIVE;
         record_state->status = ZDJ_AUDIO_RECORD_ACTIVE;
@@ -143,10 +153,13 @@ void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool sa
     zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
     // Teardown the tmp capture system and transition to post-processing.
     record_state->status = ZDJ_AUDIO_RECORD_FINISH;
+    record_state->sample_count = 0;
 
     // Launch post-processing thread
     // printf( "launching record post-processing thread\n" );
-    zdj_thread_launch_record_post_proc_cycle( &_zdj_audio_record_processing_thread_main, record_node );
+    if( save ) {
+        zdj_thread_launch_record_post_proc_cycle( &_zdj_audio_record_processing_thread_main, record_node );
+    }
 }
 
 static void * _zdj_audio_record_processing_thread_main( void * arg ) {
@@ -159,8 +172,6 @@ static void * _zdj_audio_record_processing_thread_main( void * arg ) {
     snprintf( out_filename, sizeof( out_filename ), "%s/%s", 
         ZDJ_RECORDING_DIR, basename( record_state->tmp_filepath ) 
     );
-
-    
 
     // Populate tags from current state.
     // Write tmp data thru AVContext to output file.

@@ -104,6 +104,8 @@ zdj_health_status_t zdj_library_store_song(
     );
     zdj_sql_exec( sql, db );
     
+    zdj_sql_db_flush( db );
+    
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 

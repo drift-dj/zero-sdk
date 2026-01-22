@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include <SDL2/SDL2_gfxPrimitives.h>
+
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/system/display/zdj_display.h>
@@ -10,7 +12,9 @@
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/font/zdj_font.h>
+#include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
+#include <zerodj/ui/widget/zdj_ui_widget.h>
 
 SDL_Surface* zdj_display_surface;
 uint32_t * zdj_ui_pixels = NULL;
@@ -57,10 +61,17 @@ void zdj_ui_init( void ) {
     zdj_screen_cap_armed = false;
 
     // Bringup the display stack
-    zdj_view_stack_init( ); 
+    zdj_view_stack_init( );
+    zdj_ui_panel_init( );
+    zdj_ui_widget_init( );
 }
 
 void zdj_ui_deinit( void ) {
+    // Clear the screen and put up the snoozer icon
+    boxColor( zdj_renderer( ), 0,0,128,64, 0xFF000000 );
+    SDL_RenderCopy( zdj_renderer( ), zdj_asset_atlas( ), &zdj_ui_assets[ ZDJ_UI_ASSET_SNOOZE ], &(SDL_Rect){60,29,7,7} );
+    zdj_display_m7_push( );
+    // Quit
     SDL_Quit( );
 }
 

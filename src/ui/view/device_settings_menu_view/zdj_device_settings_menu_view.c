@@ -5,28 +5,34 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/registry/zdj_registry.h>
+#include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
-#include <zerodj/ui/panel/perf/zdj_perf_panel.h>
+#include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/view/device_settings_menu_view/zdj_device_settings_menu_view.h>
 #include <zerodj/ui/view/dialog_view/zdj_dialog_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/menu_section_view/zdj_menu_section_view.h>
-#include <zerodj/ui/view/soundcard_view/zdj_soundcard_view.h>
 #include <zerodj/ui/view/usb_drive_view/zdj_usb_drive_view.h>
 #include <zerodj/ui/view/usb_status_view/zdj_usb_status_view.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 
+static void _handle_soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _handle_recording_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_usb_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_usb_drive_btn( zdj_view_t * view, zdj_control_event_t * _event );
-static void _handle_soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_drop_lib_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _drop_library_dialog_exit( zdj_view_t * view, void * data, bool selection );
+static void _handle_drop_settings_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _drop_settings_dialog_exit( zdj_view_t * view, void * data, bool selection );
+static void _handle_drop_soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event );
+static void _drop_soundcard_dialog_exit( zdj_view_t * view, void * data, bool selection );
 static void _handle_perf_btn( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_dumper_btn( zdj_view_t * view, zdj_control_event_t * _event );
 
@@ -45,12 +51,14 @@ zdj_view_t * zdj_new_device_settings_menu( zdj_rect_t * frame ) {
     );
     zdj_menu_view_add_header( menu, header );
 
-    // Soundcard
-    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Soundcard" ) );
-
-    zdj_view_t * soundcard_btn = zdj_new_menu_item( "Open Soundcard", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    // Panels
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Panels" ) );
+    zdj_view_t * soundcard_btn = zdj_new_menu_item( "Soundcard", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
     soundcard_btn->handle_control_event = &_handle_soundcard_btn;
     zdj_menu_view_add_item( menu, soundcard_btn );
+    zdj_view_t * recording_btn = zdj_new_menu_item( "Recording", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    recording_btn->handle_control_event = &_handle_recording_btn;
+    zdj_menu_view_add_item( menu, recording_btn );
 
     // USB
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "USB" ) );
@@ -111,7 +119,25 @@ zdj_view_t * zdj_new_device_settings_menu( zdj_rect_t * frame ) {
     drop_btn->handle_control_event = &_handle_drop_lib_btn;
     zdj_menu_view_add_item( menu, drop_btn );
 
+    // Add 'drop settings tables item'
+    zdj_view_t * drop_settings_btn = zdj_new_menu_item( "Drop Settings Tables", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    drop_settings_btn->handle_control_event = &_handle_drop_settings_btn;
+    zdj_menu_view_add_item( menu, drop_settings_btn );
+
+    // Add 'drop soundcard tables item'
+    zdj_view_t * drop_soundcard_btn = zdj_new_menu_item( "Drop Soundcard Tables", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    drop_soundcard_btn->handle_control_event = &_handle_drop_soundcard_btn;
+    zdj_menu_view_add_item( menu, drop_soundcard_btn );
+
     return menu;
+}
+
+static void _handle_soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_ui_panel_toggle_soundcard( );
+}
+
+static void _handle_recording_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_ui_panel_toggle_recording( );
 }
 
 static void _handle_usb_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
@@ -121,11 +147,6 @@ static void _handle_usb_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 static void _handle_usb_drive_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_view_t * drive_view = zdj_new_usb_drive_view( );
     zdj_push_subview( zdj_root_view( ), drive_view, true );
-}
-
-static void _handle_soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
-    zdj_view_t * soundcard_view = zdj_new_soundcard_view( zdj_soundcard );
-    zdj_push_subview( zdj_root_view( ), soundcard_view, true );
 }
 
 // Drop Lib Tables
@@ -149,9 +170,54 @@ static void _drop_library_dialog_exit( zdj_view_t * view, void * data, bool sele
     zdj_pop_subview_of( zdj_root_view( ), true );
 }
 
+static void _handle_drop_settings_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
+    // Launch drop lib confirm dialog
+    zdj_view_t * dialog = zdj_new_dialog_view( 
+        ZDJ_DIALOG_VIEW_TYPE_OKAY,
+        "Confirm",
+        "XXX DROP SETTINGS TABLES XXX",
+        "Please do not do this."
+    );
+    zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
+    dialog_state->handle_dialog_exit = &_drop_settings_dialog_exit;
+    dialog_state->selection_data = view;
+    zdj_push_subview( zdj_root_view( ), dialog, true );
+}
+
+static void _drop_settings_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
+    // printf( "_drop_settings_dialog_exit %d\n", selection );
+    zdj_drop_settings( );
+    zdj_pop_subview_of( zdj_root_view( ), true );
+}
+
+static void _handle_drop_soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
+    // Launch drop lib confirm dialog
+    zdj_view_t * dialog = zdj_new_dialog_view( 
+        ZDJ_DIALOG_VIEW_TYPE_OKAY,
+        "Confirm",
+        "XXX DROP SOUNDCARD TABLES XXX",
+        "Please do not do this."
+    );
+    zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
+    dialog_state->handle_dialog_exit = &_drop_soundcard_dialog_exit;
+    dialog_state->selection_data = view;
+    zdj_push_subview( zdj_root_view( ), dialog, true );
+}
+
+static void _drop_soundcard_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
+    if( selection ) {
+        printf( "dropping soundcard\n" );
+        zdj_drop_soundcard( );
+        printf( "init soundcard\n" );
+        zdj_soundcard_init( "__temp__" );
+    }
+    zdj_pop_subview_of( zdj_root_view( ), true );
+}
+
+
 static void _handle_perf_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
     printf( "_handle_perf_btn\n" );
-    zdj_perf_panel_toggle( );
+    // zdj_perf_panel_toggle( );
     printf( "_handle_perf_btn done\n" );
 }
 

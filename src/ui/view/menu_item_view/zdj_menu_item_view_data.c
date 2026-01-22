@@ -14,6 +14,8 @@
 void zdj_menu_item_data_l_init_layout( zdj_view_t * view ) { }
 
 void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
+
+    printf( "data item layout init\n" );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
     // Clear out the normal/hilite views' subviews
@@ -90,6 +92,8 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
 
     zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, data_label_norm );
+    // zdj_menu_item_view_state_t * data_label_state = (zdj_menu_item_view_state_t*)data_label_norm->state;
+    // float data_label_w = data_label_state->title_view
     data_label_norm->frame.x = view->frame.w - data_label_norm->frame.w;
     data_label_norm->frame.y = -1;
     

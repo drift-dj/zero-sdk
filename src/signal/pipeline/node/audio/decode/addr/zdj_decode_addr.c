@@ -30,6 +30,8 @@ static bool _win_contains_addr(
 static float _get_head_percent( zdj_pipeline_node_t * node );
 static double _get_head_sec( zdj_pipeline_node_t * node );
 
+static double _get_quantized_head_origin_bg( zdj_pipeline_node_t * node, double quant_val );
+
 static void _set_addr_transport_i_coord( 
     zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, int64_t val
 );
@@ -72,6 +74,7 @@ static zdj_decode_layer_t * _get_layer_containing_addr(
     zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, zdj_decode_addr_coord_t ref_coord
 );
 static double _get_beatgrid_coord_for_d_coord( zdj_pipeline_node_t * node, double coord );
+static double _get_d_offset_for_beatgrid_dist( zdj_pipeline_node_t * node, double dist );
 
 static void _get_earliest_core_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t * addr );
 static void _get_latest_core_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t * addr );
@@ -104,6 +107,7 @@ void zdj_decode_init_node_addr_api( zdj_pipeline_node_t * node ) {
     
     state->get_head_percent = &_get_head_percent;
     state->get_head_sec = &_get_head_sec;
+    state->get_quantized_head_origin_bg = &_get_quantized_head_origin_bg;
 
     state->set_addr_transport_i_coord = &_set_addr_transport_i_coord;
     state->set_addr_transport_d_coord = &_set_addr_transport_d_coord;
@@ -123,6 +127,7 @@ void zdj_decode_init_node_addr_api( zdj_pipeline_node_t * node ) {
 
     state->get_layer_containing_addr = &_get_layer_containing_addr;
     state->get_beatgrid_coord_for_d_coord = &_get_beatgrid_coord_for_d_coord;
+    state->get_d_offset_for_beatgrid_dist = &_get_d_offset_for_beatgrid_dist;
 
     state->get_earliest_core_addr = &_get_earliest_core_addr;
     state->get_latest_core_addr = &_get_latest_core_addr;
@@ -164,7 +169,13 @@ static bool _win_contains_addr(
     zdj_decode_addr_coord_t ref_coord
 ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
-    return false;
+    zdj_decode_addr_t win_start;
+    state->get_win_start_addr( node, &win_start );
+    zdj_decode_addr_t win_end;
+    state->get_win_end_addr( node, &win_end );
+
+    return addr->greater_than( addr, &win_start, ZDJ_ADDR_COORD_TRANSPORT ) &&
+           addr->less_than( addr, &win_end, ZDJ_ADDR_COORD_TRANSPORT );
 }
 
 static float _get_head_percent( zdj_pipeline_node_t * node ) {
@@ -173,6 +184,18 @@ static float _get_head_percent( zdj_pipeline_node_t * node ) {
 
 static double _get_head_sec( zdj_pipeline_node_t * node ) {
     return 0.0f;
+}
+
+static double _get_quantized_head_origin_bg( zdj_pipeline_node_t * node, double quant_val ) {
+    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
+    if( state->song->performance &&
+        state->song->performance->bpm 
+    ) {
+        return (double)round( state->head.origin_bg / quant_val ) * quant_val;
+    } else {
+        printf( "get_quantized_head_origin_bg CALLED W/O BPM\n" );
+        return state->head.origin_d;
+    }
 }
 
 static void _set_addr_transport_i_coord( 
@@ -281,7 +304,20 @@ static void _offset_addr_by_transport_d_coord(
 static void _offset_addr_by_transport_bg_coord( 
     zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, double offset
 ) {
-    
+    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
+    if( !state->song->performance || !state->song->audio ) { 
+        printf( "_offset_addr_by_transport_bg_coord w/o song data\n" );
+        return; 
+    }
+    double bpm = state->song->performance->bpm;
+    double sample_rate = state->song->audio->av_sample_rate;
+    double bars_per_minute = bpm / 4.0;
+	double samples_per_minute = sample_rate * 60.0;
+	double samples_per_bar = samples_per_minute / bars_per_minute;
+
+    double d_coord_offset = offset * samples_per_bar;
+
+    state->offset_addr_by_transport_d_coord( node, addr, d_coord_offset );
 }
 
 
@@ -336,7 +372,7 @@ static void _addr_for_transport_d_coord(
 static void _addr_for_transport_bg_coord( 
     zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, double coord
 ) {
-
+    printf( "_addr_for_transport_bg_coord called with no implementation!!!\n" );
 }
 
 static void _addr_for_origin_i_coord_in_layer( 
@@ -386,7 +422,7 @@ static void _addr_for_origin_d_coord_in_layer(
 static void _addr_for_origin_bg_coord_in_layer( 
     zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, zdj_decode_addr_t * addr, double coord
 ) {
-
+    printf( "_addr_for_origin_bg_coord_in_layer called with no implementation!!!\n" );
 }
 
 static zdj_decode_layer_t * _get_layer_containing_addr( 
@@ -395,7 +431,7 @@ static zdj_decode_layer_t * _get_layer_containing_addr(
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
     zdj_decode_layer_t * layer = node_state->first_layer;
     while( layer ) {
-        if( layer->contains_addr( layer, addr, ref_coord ) ) {
+        if( layer->contains_core_addr( layer, addr, ref_coord ) ) {
             return layer;
         }
         layer = layer->next;
@@ -405,13 +441,28 @@ static zdj_decode_layer_t * _get_layer_containing_addr(
 
 static double _get_beatgrid_coord_for_d_coord( zdj_pipeline_node_t * node, double coord ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
+    // printf( "_get_beatgrid_coord_for_d_coord song:%p %p %p\n", state->song, state->song->performance, state->song->audio );
     if( !state->song->performance || !state->song->audio ) { return 0.0; }
     double bpm = state->song->performance->bpm;
     double sample_rate = state->song->audio->av_sample_rate;
     double bars_per_minute = bpm / 4.0;
 	double samples_per_minute = sample_rate * 60.0;
 	double samples_per_bar = samples_per_minute / bars_per_minute;
-	return coord / samples_per_bar;
+
+    double pcm_offset = coord - state->song->performance->beat_grid_start_sample;
+	return pcm_offset / samples_per_bar;
+}
+
+static double _get_d_offset_for_beatgrid_dist( zdj_pipeline_node_t * node, double dist ) {
+    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
+    if( !state->song->performance || !state->song->audio ) { return 0.0; }
+    double bpm = state->song->performance->bpm;
+    double sample_rate = state->song->audio->av_sample_rate;
+    double bars_per_minute = bpm / 4.0;
+	double samples_per_minute = sample_rate * 60.0;
+	double samples_per_bar = samples_per_minute / bars_per_minute;
+
+	return samples_per_bar * dist;
 }
 
 static void _get_earliest_core_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t * addr ) {
@@ -422,7 +473,7 @@ static void _get_earliest_core_addr( zdj_pipeline_node_t * node, zdj_decode_addr
 
 static void _get_latest_core_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t * addr ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
-    if( !state->last_layer ) { return; }
+    if( !state->last_layer ) { printf( "_get_latest_core_addr missing last_layer\n" ); return; }
     state->last_layer->core_end.copy( &state->last_layer->core_end, addr );
 }
 

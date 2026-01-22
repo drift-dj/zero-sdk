@@ -30,13 +30,16 @@ typedef enum {
 } zdj_recording_panel_deploy_state_t;
 
 typedef struct {
-    bool ui_init;
-    int deploy_timer;
-    zdj_recording_panel_deploy_state_t deploy_state;
-    zdj_view_t * container;
-    zdj_view_t * meter;
-    zdj_anim_t * in_anim;
-    zdj_anim_t * out_anim;
+    // bool ui_init;
+    // int deploy_timer;
+    // zdj_recording_panel_deploy_state_t deploy_state;
+    // zdj_view_t * container;
+    // zdj_view_t * meter;
+    // zdj_anim_t * in_anim;
+    // zdj_anim_t * out_anim;
+    zdj_view_t * menu;
+    bool view_needs_refresh;
+    bool has_open_recording;
 } zdj_recording_panel_state_t;
 
 zdj_view_t * zdj_new_recording_panel( void );

@@ -37,9 +37,6 @@ zdj_error_type_t zdj_gaussian_convolve( zdj_gaussian_t * kernel, float * data );
 
 zdj_error_type_t zdj_gaussian_free( zdj_gaussian_t * g );
 
-double zdj_calc_fader_gain( double travel );
-double zdj_calc_fader_db( double travel );
-
 double zdj_signal_lowpass( double state, double input, double coeff );
 
 void zdj_signal_naive_resample_audio( 
@@ -67,4 +64,9 @@ float zdj_signal_accum_floats( float val_1, float val_2 );
 
 double zdj_signal_pcm_count_for_beatgrid_count( double beatgrid_count, double bpm, int sample_rate );
 double zdj_signal_beatgrid_count_for_pcm_count( double pcm_count, int sample_rate, double bpm );
+
+float zdj_signal_db_for_gain( float gain );
+float zdj_signal_lo_xover_hz_for_unit_val( float unit_val );
+float zdj_signal_hi_xover_hz_for_unit_val( float unit_val );
+
 #endif

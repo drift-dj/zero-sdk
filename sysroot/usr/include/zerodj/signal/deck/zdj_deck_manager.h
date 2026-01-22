@@ -46,7 +46,8 @@ typedef struct zdj_deck_manager_request_t {
 } zdj_deck_manager_request_t;
 
 typedef struct {
-    bool enabled;
+    bool preferred;
+    bool active;
     bool locked;
     double set_bpm;
 } zdj_deck_manager_sync_t;
@@ -67,14 +68,17 @@ zdj_deck_manager_t * zdj_deck_manager( void );
 zdj_deck_t * zdj_deck_manager_add_deck( 
     zdj_deck_type_t type,
     zdj_deck_station_t station,
-    void * resource
+    void * resource,
+    int win_buf_count
 );
 zdj_error_type_t zdj_deck_manager_remove_deck( zdj_deck_t * deck );
 zdj_deck_t * zdj_deck_manager_get_deck_for_station( zdj_deck_station_t station );
 
 // Sync
-void zdj_deck_manager_enable_sync( double bpm );
-void zdj_deck_manager_disable_sync( void );
+void zdj_deck_manager_set_prefer_sync( bool prefer );
+bool zdj_deck_manager_can_activate_sync( void );
+void zdj_deck_manager_set_sync( double bpm );
+void zdj_deck_manager_deactivate_sync( void );
 void zdj_deck_manager_update_sync_bpm( double offset );
 
 // Receive a new batch of deck control events.

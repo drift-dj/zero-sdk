@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sqlite3.h>
 
@@ -28,13 +29,19 @@ int zdj_sql_close( sqlite3 * db ) {
     return 0;
 }
 
+int zdj_sql_db_flush( sqlite3 * db ) {
+    int res = sqlite3_db_cacheflush( db );
+    sync( );
+    return res;
+}
+
 int zdj_sql_exec( char * sql, sqlite3 * db ) {
     char * err_msg;
     // printf( "zdj_sql_exec: %s\n", sql );
     int rc = sqlite3_exec( db, sql, NULL, NULL, &err_msg);
     if ( rc != SQLITE_OK ) {
-        // printf( "SQL ERROR ===> rc: %d, SQL error: %s\n", rc, err_msg );
-        // printf( "sql: %s\n", sql );
+        printf( "SQL ERROR ===> rc: %d, SQL error: %s\n", rc, err_msg );
+        printf( "sql: %s\n", sql );
     }
     return rc;
 }
@@ -62,7 +69,7 @@ int zdj_sql_rows_in_table ( char * table, char * distinct, sqlite3 * db ) {
 }
 
 sqlite3_stmt * zdj_sql_prep_row_stepper( char * sql, sqlite3 * db ) {
-    sqlite3_stmt *stmt;
+    sqlite3_stmt * stmt;
     int res = sqlite3_prepare_v2( db, sql, -1, &stmt, NULL );
     int result_number = 0;
     if ( res != SQLITE_OK ){ 

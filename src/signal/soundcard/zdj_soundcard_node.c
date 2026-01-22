@@ -8,7 +8,7 @@
 #include <zerodj/signal/pipeline/node/audio/io/zdj_io_node.h>
 #include <zerodj/signal/pipeline/node/analysis/meter/zdj_meter_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
-#include <zerodj/signal/soundcard/zdj_soundcard_dto.h>
+#include <zerodj/signal/soundcard/db/zdj_soundcard_dto.h>
 #include <zerodj/system/sql/zdj_sql.h>
 
 zdj_soundcard_node_t * zdj_soundcard_create_node( zdj_soundcard_node_name_t name ) {
@@ -20,26 +20,29 @@ zdj_soundcard_node_t * zdj_soundcard_create_node( zdj_soundcard_node_name_t name
     // Get props from the dto
     node->link_map = zdj_soundcard_dto_get_linkmap_for_node_name( &zdj_soundcard->dto, name );
     node->signal_type = zdj_soundcard_dto_get_sigtype_for_node_name( &zdj_soundcard->dto, name );
-    node->gain = zdj_soundcard_dto_get_gain_for_node_name( &zdj_soundcard->dto, name );
-    node->pan = zdj_soundcard_dto_get_pan_for_node_name( &zdj_soundcard->dto, name );
     node->stereo = zdj_soundcard_dto_get_stereo_for_node_name( &zdj_soundcard->dto, name );
     node->mute = zdj_soundcard_dto_get_mute_for_node_name( &zdj_soundcard->dto, name );
-    node->source = zdj_soundcard_dto_get_source_for_node_name( &zdj_soundcard->dto, name );
+    node->direction = zdj_soundcard_dto_get_source_for_node_name( &zdj_soundcard->dto, name );
     node->val = zdj_soundcard_dto_get_val_for_node_name( &zdj_soundcard->dto, name );
-    node->invert = zdj_soundcard_dto_get_invert_for_node_name( &zdj_soundcard->dto, name );
 
     // Add signal/meter nodes
     if( zdj_soundcard_node_name_is_audio( name ) ) {
         // Add a buffer if applicable
         node->data_pipe = zdj_new_audio_buffer_node( ZDJ_SOUNDCARD_BUF_LEN, node->stereo+1 );
         node->meter_pipe = zdj_new_meter_node( ZDJ_METER_NODE_TYPE_AUDIO, node->stereo+1 );
+        node->dsp_dto = zdj_soundcard_dto_get_dsp_for_node_name( &zdj_soundcard->dto, name );
+        // printf( "Adding dto: %p to %s\n", node->dsp_dto, zdj_soundcard_node_name[ name ] );
     } else if( zdj_soundcard_node_name_is_cv( name ) ) {
         node->data_pipe = zdj_new_audio_buffer_node( ZDJ_SOUNDCARD_BUF_LEN, node->stereo+1 );
         node->meter_pipe = zdj_new_meter_node( ZDJ_METER_NODE_TYPE_CV, node->stereo+1 );
+        node->dsp_dto = zdj_soundcard_dto_get_dsp_for_node_name( &zdj_soundcard->dto, name );
     } else if( zdj_soundcard_node_name_is_clock( name ) ) {
         node->data_pipe = zdj_new_audio_buffer_node( ZDJ_SOUNDCARD_BUF_LEN, node->stereo+1 );
         node->meter_pipe = zdj_new_meter_node( ZDJ_METER_NODE_TYPE_CLOCK, node->stereo+1 );
     }
+
+    // Add DSP operators
+    // node->dsp = zdj_soundcard_get_dsp_for_node_name( name );
 
     // Process the linkmap into links
     zdj_soundcard_pull_node_links_from_dto( zdj_soundcard, node );
@@ -134,10 +137,10 @@ zdj_error_type_t zdj_soundcard_link_source_node_to_dest_node(
     zdj_soundcard_node_t * source_node,
     zdj_soundcard_node_t * dest_node
 ) {
-    // printf( "zdj_soundcard_link_source_node_to_dest_node: %s -> %s\n",
-    //     zdj_soundcard_node_name[ source_node->name ],
-    //     zdj_soundcard_node_name[ dest_node->name ]
-    // );
+    printf( "zdj_soundcard_link_source_node_to_dest_node: %s -> %s\n",
+        zdj_soundcard_node_name[ source_node->name ],
+        zdj_soundcard_node_name[ dest_node->name ]
+    );
     zdj_soundcard_link_bitmap_t source_link_map;
     zdj_soundcard_link_bitmap_t dest_node_mask;
 
@@ -171,10 +174,10 @@ zdj_error_type_t zdj_soundcard_unlink_source_node_from_dest_node(
     zdj_soundcard_node_t * source_node,
     zdj_soundcard_node_t * dest_node
 ) {
-    // printf( "zdj_soundcard_unlink_source_node_from_dest_node %s x-> %s\n",
-    //     zdj_soundcard_node_name[ source_node->name ],
-    //     zdj_soundcard_node_name[ dest_node->name ] 
-    // );
+    printf( "zdj_soundcard_unlink_source_node_from_dest_node %s x-> %s\n",
+        zdj_soundcard_node_name[ source_node->name ],
+        zdj_soundcard_node_name[ dest_node->name ] 
+    );
     zdj_soundcard_link_bitmap_t source_link_map;
     zdj_soundcard_link_bitmap_t dest_node_mask;
 
@@ -209,7 +212,7 @@ zdj_error_type_t zdj_soundcard_pull_node_links_from_dto(
     zdj_soundcard_node_t * node
 ) {
     uint64_t node_mask = 0;
-
+    // printf( "%s\n", zdj_soundcard_node_name[ node->name ] );
     // Build input links by scanning all node linkmaps for links to this node.
     int n = zdj_soundcard_count_input_nodes_to_node_name( &soundcard->dto, node->name );
     node->input_link_count = n;
@@ -220,9 +223,13 @@ zdj_error_type_t zdj_soundcard_pull_node_links_from_dto(
             zdj_soundcard_link_bitmap_t link_map = zdj_soundcard_dto_get_linkmap_for_node_name( 
                 &soundcard->dto, i 
             );
+            // printf( "n: %s ln: %s lnm: %lu\n", 
+            //     zdj_soundcard_node_name[ node->name ],
+            //     zdj_soundcard_node_name[ i ],
+            //     link_map
+            // );
             if ( link_map & node_mask ) { 
-                // printf( "setting input link: %s<-%s\n", 
-                //     zdj_soundcard_node_name[ node->name ],
+                // printf( "  in:  < %s\n", 
                 //     zdj_soundcard_node_name[ i ]
                 // );
                 node->input_links[cur_link].source_node = i;
@@ -242,8 +249,7 @@ zdj_error_type_t zdj_soundcard_pull_node_links_from_dto(
         for ( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
             node_mask = 1ULL << i;
             if ( node->link_map & node_mask ) { 
-                // printf( "setting output link: %s->%s\n", 
-                //     zdj_soundcard_node_name[ node->name ], 
+                // printf( "  out: > %s\n", 
                 //     zdj_soundcard_node_name[ i ] 
                 // );
                 node->output_links[ cur_link ].source_node = node->name;
@@ -252,6 +258,10 @@ zdj_error_type_t zdj_soundcard_pull_node_links_from_dto(
             }
         }
     }
+
+    // if( node->input_link_count == 0 && node->output_link_count == 0 ) { 
+    //     printf( "  empty\n" );
+    // }
 }
 
 // Scan all linkmaps in the dto for any pointing to the given node name
@@ -259,6 +269,7 @@ int zdj_soundcard_count_input_nodes_to_node_name(
     zdj_soundcard_dto_t * dto,
     zdj_soundcard_node_name_t name 
 ) {
+    // printf( "zdj_soundcard_count_input_nodes_to_node_name %p\n", dto );
     int i;
     int linked_node_count = 0;
     zdj_soundcard_link_bitmap_t link_map;
@@ -442,10 +453,11 @@ bool zdj_soundcard_can_add_aux_bus( zdj_soundcard_t * soundcard ) {
 }
 
 bool zdj_soundcard_can_add_clock_bus( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->output_link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->output_link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 )->output_link_count ||
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 )->output_link_count 
+    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 )->output_link_count ||
+        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_1 )->output_link_count 
+        // ||
+        // !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_2 )->output_link_count ||
+        // !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_3 )->output_link_count 
     ) {
         return true;
     } else {
@@ -497,22 +509,23 @@ zdj_soundcard_node_t * zdj_soundcard_get_available_aux_bus_node( zdj_soundcard_t
 }
 
 zdj_soundcard_node_t * zdj_soundcard_get_available_clock_bus_node( zdj_soundcard_t * soundcard ) {
-    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->output_link_count 
+    if( !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 )->output_link_count 
     ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 );
+        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 );
     } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->output_link_count 
+        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_1 )->output_link_count 
     ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 )->output_link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2 );
-    } else if( 
-        !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 )->output_link_count 
-    ) {
-        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3 );
-    }
+        return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_1 );
+    } 
+    // else if( 
+    //     !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_2 )->output_link_count 
+    // ) {
+    //     return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_2 );
+    // } else if( 
+    //     !zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_3 )->output_link_count 
+    // ) {
+    //     return zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_3 );
+    // }
 }
 
 zdj_soundcard_node_t * zdj_soundcard_get_available_cv_bus_node( zdj_soundcard_t * soundcard ) {
@@ -548,14 +561,23 @@ zdj_error_type_t zdj_soundcard_cycle_pad_for_io_node(
             &soundcard->dto, node->name 
         );
         switch ( sig_type ){
+            case ZDJ_SOUNDCARD_SIGNAL_MINUS_10_DBV:
+                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_CON_0_DBV;
+                break;
             case ZDJ_SOUNDCARD_SIGNAL_CON_0_DBV:
                 node->signal_type = ZDJ_SOUNDCARD_SIGNAL_PRO_PLUS_4_DBU;
                 break;
             case ZDJ_SOUNDCARD_SIGNAL_PRO_PLUS_4_DBU:
-                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_EURO_AUDIO;
+                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_LOW;
                 break;
-            case ZDJ_SOUNDCARD_SIGNAL_EURO_AUDIO:
-                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_CON_0_DBV;
+            case ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_LOW:
+                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_HI;
+                break;
+            case ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_HI:
+                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_AUDIO_RAIL_TO_RAIL;
+                break;
+            case ZDJ_SOUNDCARD_SIGNAL_AUDIO_RAIL_TO_RAIL:
+                node->signal_type = ZDJ_SOUNDCARD_SIGNAL_MINUS_10_DBV;
                 break;
         } 
         zdj_soundcard_dto_set_sigtype_for_node_name( 
@@ -590,16 +612,21 @@ bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_EDGE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_CUE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_EDGE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return true;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE: 
+        case ZDJ_SOUNDCARD_NODE_NAME_XFADE_A: 
+        case ZDJ_SOUNDCARD_NODE_NAME_XFADE_B: return true;
         default: return false;
     }
 }
@@ -689,6 +716,21 @@ bool zdj_soundcard_node_name_is_internal_bus( zdj_soundcard_node_name_t name ) {
     }
 }
 
+bool zdj_soundcard_node_name_is_dj_deck( zdj_soundcard_node_name_t name ) {
+    switch ( name ) {
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE: return true;
+        default: return false;
+    }
+}
+
+bool zdj_soundcard_node_name_is_ext_deck( zdj_soundcard_node_name_t name ) {
+    switch ( name ) {
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return true;
+        default: return false;
+    }
+}
+
 bool zdj_soundcard_node_name_is_aux_bus( zdj_soundcard_node_name_t name ) {
     switch ( name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0:
@@ -701,10 +743,10 @@ bool zdj_soundcard_node_name_is_aux_bus( zdj_soundcard_node_name_t name ) {
 
 bool zdj_soundcard_node_name_is_clock( zdj_soundcard_node_name_t name ) {
     switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0:
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_2:
-        case ZDJ_SOUNDCARD_NODE_NAME_CLOCK_3: return true;
+        case ZDJ_SOUNDCARD_NODE_NAME_XPORT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_XPORT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_XPORT_2:
+        case ZDJ_SOUNDCARD_NODE_NAME_XPORT_3: return true;
         default: return false;
     }
 }
@@ -738,5 +780,15 @@ bool zdj_soundcard_node_name_is_right_channel( zdj_soundcard_node_name_t name ) 
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return true;
         default: return false;
+    }
+}
+
+bool zdj_soundcard_node_name_should_show_fader( zdj_soundcard_node_name_t name ) {
+    switch ( name ) {
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3: return false;
+        default: return true;
     }
 }

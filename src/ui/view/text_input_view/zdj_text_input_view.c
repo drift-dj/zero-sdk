@@ -31,13 +31,10 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
     view->deinit_state = &_zdj_text_input_view_deinit_state;
     view->frame.x = ZDJ_MODAL_X+1;
     view->frame.y = ZDJ_SCREEN_H;
-    // view->in_anim = zdj_new_anim( ZDJ_ANIM_MODAL_SHOW );
-    // view->out_anim = zdj_new_anim( ZDJ_ANIM_MODAL_HIDE );
     zdj_set_anim( &view->in_anim, ZDJ_ANIM_MODAL_SHOW );
     zdj_set_anim( &view->out_anim, ZDJ_ANIM_MODAL_HIDE );
 
-    zdj_text_input_view_state_t * view_state = calloc( 1, sizeof( zdj_text_input_view_state_t * ) );
-    // view_state->input_str = strdup( input );
+    zdj_text_input_view_state_t * view_state = calloc( 1, sizeof( zdj_text_input_view_state_t ) );
     strcpy( view_state->input_str, input );
     view_state->cb = cb;
     view_state->shift_key_active = false;
@@ -50,7 +47,8 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
     zdj_view_t * keyboard_menu = zdj_new_text_input_keyboard_view( );
     view_state->keyboard_menu = keyboard_menu;
     zdj_add_subview( view, keyboard_menu );
-    
+
+    zdj_text_input_keyboard_set_current_chrome( keyboard_menu, ZDJ_KEYBOARD_CHROME_SPACE ); 
 
     // Add Input buffer view
     zdj_view_t * input_buffer = zdj_new_text_input_buffer_view( input );
@@ -59,6 +57,8 @@ zdj_view_t * zdj_new_text_input_view( zdj_text_input_callback_t cb, char * input
 
     // Active controls
     zdj_activate_control_map( ZDJ_CONTROL_MAP_TEXT_INPUT );
+
+    
 
     return view;
 }
@@ -70,6 +70,7 @@ void _zdj_text_input_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Update input buffer based on keyboard menu's selected key
     int keyboard_char = zdj_text_input_keyboard_get_current_char( view_state->keyboard_menu );
     if( keyboard_char != input_buffer_state->cursor_char ) {
+        // printf( "keyboard char: \'%c\' cursor char: \'%c\'\n", keyboard_char, input_buffer_state->cursor_char );
         input_buffer_state->cursor_char = keyboard_char;
         input_buffer_state->has_valid_layout = false;
     }
@@ -91,7 +92,7 @@ void _zdj_text_input_view_handle_control( zdj_view_t * view, zdj_control_event_t
     } else if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ) {
         _zdj_text_input_view_handle_key_release( view );
     } else if( e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ) { 
-        printf( "tone 1 adjust\n" );
+        // printf( "tone 1 adjust\n" );
         // Scroll input cursor 1 char right/left.
         if( e->i_val > 0 ) {
             _zdj_text_input_view_next_char( view );
@@ -101,7 +102,7 @@ void _zdj_text_input_view_handle_control( zdj_view_t * view, zdj_control_event_t
     } else if( e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ) {
         _zdj_text_input_view_handle_key_release( view );
     } else if( e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0 ) { 
-            printf( "tone 2 adjust\n" ); 
+            // printf( "tone 2 adjust\n" ); 
             // Scroll keyboard to next/prev key
             // Make a fake event to send into menu
             zdj_control_event_t * fake_e = calloc( 1, sizeof( zdj_control_event_t ) );
@@ -122,24 +123,24 @@ void _zdj_text_input_view_handle_control( zdj_view_t * view, zdj_control_event_t
         // Delete char at cursor and move cursor to prev char.
     
     } else if( e->id == ZDJ_UI_CONTROL_PLAY_RELEASE_0 ) {
-        printf( "play btn\n" ); 
+        // printf( "play btn\n" ); 
         _zdj_text_input_view_handle_key_release( view );
 
     } else if( e->id == ZDJ_UI_CONTROL_FN_1_RELEASE_0 ) {
-        printf( "fn 1 btn\n" );
+        // printf( "fn 1 btn\n" );
         _zdj_text_input_view_prev_char( view );
     } else if( e->id == ZDJ_UI_CONTROL_FN_2_RELEASE_0 ) {
-        printf( "fn 2 btn\n" );
+        // printf( "fn 2 btn\n" );
     } else if( e->id == ZDJ_UI_CONTROL_FN_3_RELEASE_0 ) {
-        printf( "fn 3 btn\n" );
+        // printf( "fn 3 btn\n" );
         _zdj_text_input_view_next_char( view );
     } else if( e->id == ZDJ_UI_CONTROL_NAV_RELEASE_0 ) {
-        printf( "nav btn\n" );
+        // printf( "nav btn\n" );
         // Scroll-to+blink cancel button if not already there.
         // Exit w/cancel action if cancel is selected.
         zdj_keyboard_chrome_item_t current_chrome = zdj_text_input_keyboard_get_current_chrome( view_state->keyboard_menu );
         // if( current_chrome == ZDJ_KEYBOARD_CHROME_CANCEL ) {
-            view_state->cb( ZDJ_TEXT_INPUT_ACTION_CANCEL, NULL );
+            if( view_state->cb ) { view_state->cb( ZDJ_TEXT_INPUT_ACTION_CANCEL, NULL ); }
         // } else {
         //     zdj_text_input_keyboard_set_current_chrome( view_state->keyboard_menu, ZDJ_KEYBOARD_CHROME_CANCEL );
         // }
@@ -157,6 +158,7 @@ void _zdj_text_input_view_deinit_state( zdj_view_t * view ) {
 }
 
 static void _zdj_text_input_view_next_char( zdj_view_t * view ) {
+    printf( "_zdj_text_input_view_next_char\n" );
     zdj_text_input_view_state_t * view_state = (zdj_text_input_view_state_t*)view->state;
     zdj_text_input_buffer_view_state_t * input_buffer_state = (zdj_text_input_buffer_view_state_t*)view_state->input_buffer->state;
     zdj_view_t * keyboard_menu = view_state->keyboard_menu;
@@ -171,6 +173,7 @@ static void _zdj_text_input_view_next_char( zdj_view_t * view ) {
 }
 
 static void _zdj_text_input_view_prev_char( zdj_view_t * view ) {
+    printf( "_zdj_text_input_view_prev_char\n" );
     zdj_text_input_view_state_t * view_state = (zdj_text_input_view_state_t*)view->state;
     zdj_text_input_buffer_view_state_t * input_buffer_state = (zdj_text_input_buffer_view_state_t*)view_state->input_buffer->state;
     // zdj_view_t * keyboard_menu = view_state->keyboard_menu;
@@ -185,6 +188,7 @@ static void _zdj_text_input_view_prev_char( zdj_view_t * view ) {
 }
 
 static void _zdj_text_input_view_update_keyboard_char( zdj_view_t * view ) {
+    printf( "_zdj_text_input_view_update_keyboard_char\n" );
     zdj_text_input_view_state_t * view_state = (zdj_text_input_view_state_t*)view->state;
     zdj_text_input_buffer_view_state_t * input_buffer_state = (zdj_text_input_buffer_view_state_t*)view_state->input_buffer->state;
     zdj_view_t * keyboard_menu = view_state->keyboard_menu;
@@ -192,7 +196,7 @@ static void _zdj_text_input_view_update_keyboard_char( zdj_view_t * view ) {
     // Set keyboard to cursor char
     char c;
     if( input_buffer_state->cursor_index == strlen( input_buffer_state->str ) ) {
-        c = 'a';
+        c = ' ';
     } else {
         c = input_buffer_state->str[ input_buffer_state->cursor_index ];
     }
@@ -243,10 +247,10 @@ void _zdj_text_input_view_handle_key_release( zdj_view_t * view ) {
                 input_buffer_state->has_valid_layout = false;
                 break;
             case ZDJ_KEYBOARD_CHROME_CANCEL:
-                view_state->cb( ZDJ_TEXT_INPUT_ACTION_CANCEL, NULL );
+                if( view_state->cb ) { view_state->cb( ZDJ_TEXT_INPUT_ACTION_CANCEL, NULL ); }
                 break;
             case ZDJ_KEYBOARD_CHROME_OKAY:
-                view_state->cb( ZDJ_TEXT_INPUT_ACTION_OKAY, input_buffer_state->str );
+                if( view_state->cb ) { view_state->cb( ZDJ_TEXT_INPUT_ACTION_OKAY, input_buffer_state->str ); }
                 break;
             default:
                 break;

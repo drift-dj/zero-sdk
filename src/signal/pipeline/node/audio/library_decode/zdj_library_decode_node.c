@@ -80,6 +80,10 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
 
     decode_count = _decode( node, av_packet, av_frame );
 
+    state->pcm_addr += decode_count;
+    state->song->audio->duration_pcm = (double)state->pcm_addr;
+    state->song->analysis_progress = ((float)state->pcm_addr / (float)state->song->audio->av_sample_rate) / (float)state->song->audio->duration_sec;
+
     state->available_samples = decode_count;
 
     if( decode_count == 0 ) { 
@@ -90,8 +94,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         state->song->analysis_state = ZDJ_LIBRARY_ANALYSIS_STATE_DONE; 
     }
 
-    state->pcm_addr += decode_count;
-    state->song->analysis_progress = ((float)state->pcm_addr / (float)state->song->audio->av_sample_rate) / (float)state->song->audio->duration;
+    
 
     int16_t * frame_buf_s16;
     int32_t * frame_buf_s32;

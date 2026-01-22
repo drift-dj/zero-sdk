@@ -21,14 +21,15 @@
 #ifndef ZDJ_DEBUG_PANEL_H
 #define ZDJ_DEBUG_PANEL_H
 
-#include <zerodj/ui/anim/zdj_anim.h>
+#include <zerodj/system/perf/zdj_perf.h>
 
 typedef struct {
-    bool deployed;
-    bool event_capture;
-    zdj_view_t * debug_view;
-    zdj_anim_t * in_anim;
-    zdj_anim_t * out_anim;
+    zdj_view_t * menu;
+    bool view_needs_refresh;
+    int perf_counter;
+    zdj_perf_report_t * report;
+    zdj_perf_report_line_t * line;
+    char line_str[ 64 ];
 } zdj_debug_panel_state_t;
 
 zdj_view_t * zdj_new_debug_panel( void );

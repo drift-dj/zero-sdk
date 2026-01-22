@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/library/zdj_library.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
@@ -37,6 +38,7 @@ zdj_view_t * zdj_new_menu_item( char * title, zdj_menu_item_view_layout_t layout
     state->is_blinking = false;
     state->blink_timer = 0;
     state->handles_hmi = false;
+    state->edit_enabled = false;
     zdj_menu_item_set_layout( menu_item, state->layout );
 
     return menu_item;
@@ -84,10 +86,17 @@ zdj_view_t * zdj_new_data_menu_item(
     return menu_item;
 }
 
+zdj_view_t * zdj_new_cuepoint_menu_item( char * name, char * cuepoint_eid ) {
+    zdj_view_t * menu_item = zdj_new_menu_item( name, ZDJ_MENU_ITEM_LAYOUT_CUEPOINT );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    strcpy( item_state->title, name );
+    strcpy( item_state->data.c_val, cuepoint_eid );
+    return menu_item;
+}
+
 // March through any view's subviews, looking for a menu_item_view
 // with a matching scroll_index.
 zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index ) {
-    // printf( "zdj_menu_item_for_scroll_index: %d\n", index );
     zdj_view_t * subview = view->subviews;
     while( subview ) {
         if( subview->type == ZDJ_VIEW_MENU_ITEM ) { 
@@ -101,6 +110,65 @@ zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index ) {
         subview = subview->next;
     }
     return NULL;
+}
+
+// Update the selected option in an editiable menu item
+void zdj_menu_item_scroll_options( zdj_view_t * item, int dir ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+    item_state->edit_option_index += dir * 0.2;
+    if( item_state->edit_option_index < 0.0 ) { item_state->edit_option_index = 0.0; }
+    double edit_option_count;
+    switch (item_state->edit_options_type ) {
+        case ZDJ_MENU_ITEM_OPTIONS_LIB_PLAYLIST:
+            edit_option_count = 3;
+            break;
+        case ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST:
+            edit_option_count = 3;
+            break;
+        default:
+            edit_option_count = 0;
+            break;
+    }
+    if( item_state->edit_option_index > edit_option_count ) { item_state->edit_option_index = edit_option_count; }
+    // printf( "zdj_menu_item_scroll_options: %d %1.1f %1.0f\n", dir, item_state->edit_option_index, round( item_state->edit_option_index ) );
+    item_state->needs_layout_update = true;
+}
+
+void zdj_menu_item_enter_edit_mode( zdj_view_t * item ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+    
+    // Update layout to first edit option state
+    item_state->edit_active = true;
+    item_state->edit_option_index = 0.0f;
+    item_state->needs_layout_update = true;
+}
+
+void zdj_menu_item_exit_edit_mode( zdj_view_t * item ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+    
+    // Update layout to normal state
+    item_state->edit_active = false;
+    item_state->needs_layout_init = true;    
+    item_state->edit_action = ZDJ_MENU_ITEM_ACTION_SELECT;
+}
+
+void zdj_menu_item_enter_move_mode( zdj_view_t * item ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+
+    item_state->edit_active = true;
+    item_state->needs_layout_update = true;
+    item_state->edit_action = ZDJ_MENU_ITEM_ACTION_END_MOVE;
+}
+
+void zdj_menu_item_exit_move_mode( zdj_view_t * item ) {
+    printf( "zdj_menu_item_exit_move_mode\n" );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+
+    // item_state->edit_active = true;
+    // item_state->edit_option_index = 3.0f;
+    // item_state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
+    // item_state->needs_layout_update = true;
+    zdj_menu_item_exit_edit_mode( item );
 }
 
 // Get a matching draw function for a menu_item node's layout attribute
@@ -218,6 +286,11 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             item_state->init_layout = zdj_menu_item_launch_sm_init_layout;
             item_state->handles_hmi = true;
             break;
+        case ZDJ_MENU_ITEM_LAYOUT_PLAYLIST:
+            item_state->init_layout = zdj_menu_item_playlist_init_layout;
+            item_state->update_layout = zdj_menu_item_playlist_update_layout;
+            item_state->handles_hmi = true;
+            break;
         case ZDJ_MENU_ITEM_LAYOUT_SLIDER:
             item_state->init_layout = zdj_menu_item_slider_init_layout;
             item_state->update_layout = zdj_menu_item_slider_update_layout;
@@ -235,6 +308,10 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             break;
         case ZDJ_MENU_ITEM_LAYOUT_ASSET:
             item_state->init_layout = zdj_menu_item_asset_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_CUEPOINT:
+            item_state->init_layout = zdj_menu_item_cuepoint_init_layout;
             item_state->handles_hmi = true;
             break;
     }

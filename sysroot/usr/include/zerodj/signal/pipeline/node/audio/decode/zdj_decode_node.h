@@ -78,6 +78,11 @@ typedef enum {
 } zdj_decode_packet_type_t;
 
 typedef enum {
+    ZDJ_DECODE_JUSTIFY_LEFT,
+    ZDJ_DECODE_JUSTIFY_RIGHT
+} zdj_decode_packet_justify_t;
+
+typedef enum {
     ZDJ_DECODE_DIR_FWD,
     ZDJ_DECODE_DIR_BACK,
 } zdj_decode_dir_t;
@@ -85,6 +90,7 @@ typedef enum {
 typedef struct zdj_decode_packet_t {
     int64_t id;
     zdj_decode_packet_type_t type;
+    zdj_decode_packet_justify_t justify;
 
     AVPacket * av_packet; // libav's holder for a chunk of raw, undecoded data
     AVFrame * av_frame; // libav's holder for a chunk of decoded PCM data
@@ -118,16 +124,16 @@ typedef enum {
     ZDJ_DECODE_DISCON_LOOP
 } zdj_decode_discon_type_t;
 
-typedef struct {
-    zdj_decode_discon_type_t type;
-    // int64_t depart_pcm_addr;
-    // int64_t depart_decode_addr;
-    // int64_t dest_pcm_addr;
-    // int64_t dest_decode_addr;
-    zdj_decode_addr_t depart_addr;
-    zdj_decode_addr_t dest_addr;
-    int64_t length;
-} zdj_decode_layer_discon_t;
+// typedef struct {
+//     zdj_decode_discon_type_t type;
+//     // int64_t depart_pcm_addr;
+//     // int64_t depart_decode_addr;
+//     // int64_t dest_pcm_addr;
+//     // int64_t dest_decode_addr;
+//     // zdj_decode_addr_t depart_addr;
+//     // zdj_decode_addr_t dest_addr;
+//     int64_t length;
+// } zdj_decode_layer_discon_t;
 
 typedef struct zdj_decode_layer_t {
     // The address given when initializing any type of layer.
@@ -151,13 +157,18 @@ typedef struct zdj_decode_layer_t {
     int64_t lead_out_sample_count;
 
     // Layer address API
+    bool ( *contains_core_addr )( struct zdj_decode_layer_t *, zdj_decode_addr_t *, zdj_decode_addr_coord_t );
     bool ( *contains_addr )( struct zdj_decode_layer_t *, zdj_decode_addr_t *, zdj_decode_addr_coord_t );
     void ( *update_buf_coords_for_head )( struct zdj_decode_layer_t *, zdj_pipeline_node_t * );
     double ( *origin_d_coord_for_transport_d_coord )( struct zdj_decode_layer_t *, double );
 
     // Discon state
-    zdj_decode_layer_discon_t fwd_discon;
-    zdj_decode_layer_discon_t back_discon;
+    void * _loop_state;
+    void * _skip_state;
+    zdj_decode_discon_type_t fwd_discon_type;
+    zdj_decode_discon_type_t back_discon_type;
+    void ( *truncate )( zdj_pipeline_node_t *, struct zdj_decode_layer_t *, void *, double, zdj_decode_discon_type_t, void * );
+    void ( *untruncate )( zdj_pipeline_node_t *, struct zdj_decode_layer_t * );
 
     // Packet decoding
     void ( *fill )( struct zdj_decode_layer_t *, zdj_pipeline_node_t * );
@@ -170,6 +181,7 @@ typedef struct zdj_decode_layer_t {
         int64_t, 
         int, 
         zdj_decode_dir_t, 
+        zdj_decode_packet_justify_t,
         int, 
         bool 
     );
@@ -186,6 +198,7 @@ typedef struct zdj_decode_layer_t {
     // Packet address API
     void ( *get_first_packet_addr )( struct zdj_decode_layer_t *, zdj_decode_addr_t * );
     void ( *get_last_packet_addr )( struct zdj_decode_layer_t *, zdj_decode_addr_t * );
+    zdj_decode_packet_t * ( *get_packet_containing_addr )( struct zdj_decode_layer_t *, zdj_decode_addr_t *, zdj_decode_addr_coord_t );
 
     // Accumulator
     enum AVSampleFormat accum_fmt;
@@ -344,8 +357,9 @@ typedef struct zdj_decode_layer_t {
 typedef struct {
     // Song details
     zdj_library_song_t * song;
-    double song_pcm_duration; 
+    double song_pcm_duration; // Empirical value - calculated during library import
     int channel_count;
+    int64_t layer_fade_len;
 
     zdj_decode_node_status_t status;
 
@@ -401,17 +415,22 @@ typedef struct {
 
     zdj_decode_addr_t head;
 
+    // Calculate and copy the window start addr into the given addr
     void ( *get_win_start_addr )( zdj_pipeline_node_t *, zdj_decode_addr_t * );
+    // Calculate and copy the window end addr into the given addr
     void ( *get_win_end_addr )( zdj_pipeline_node_t *, zdj_decode_addr_t * );
     bool ( *win_contains_addr )( zdj_pipeline_node_t *, zdj_decode_addr_t *, zdj_decode_addr_coord_t);
     
     float ( *get_head_percent )( zdj_pipeline_node_t * ); // 0 -> 1, percent of head position in file
     double ( *get_head_sec )( zdj_pipeline_node_t * ); // PCM head position in seconds
+    double ( *get_quantized_head_origin_bg )( zdj_pipeline_node_t *, double ); // Head addr. quantized to nearest beatgrid based on quantize value
     
+    // Update an addr's coords based on a given coord
     void ( *set_addr_transport_i_coord )( zdj_pipeline_node_t *, zdj_decode_addr_t *, int64_t );
     void ( *set_addr_transport_d_coord )( zdj_pipeline_node_t *, zdj_decode_addr_t *, double );
     void ( *set_addr_transport_bg_coord )( zdj_pipeline_node_t *, zdj_decode_addr_t *, double );
 
+    // Move all of an addr's coords by a given offset
     void ( *offset_addr_by_transport_i_coord )( zdj_pipeline_node_t *, zdj_decode_addr_t *, int64_t );
     void ( *offset_addr_by_transport_d_coord )( zdj_pipeline_node_t *, zdj_decode_addr_t *, double );
     void ( *offset_addr_by_transport_bg_coord )( zdj_pipeline_node_t *, zdj_decode_addr_t *, double );
@@ -455,6 +474,7 @@ typedef struct {
     double ( *get_beatgrid_dist_between_addrs )( 
         zdj_pipeline_node_t *, zdj_decode_addr_t *, zdj_decode_addr_t * 
     );
+    double ( *get_d_offset_for_beatgrid_dist )( zdj_pipeline_node_t *, double );
     
     // Layout example:
     // win_back_sample_count = 2;
@@ -475,12 +495,15 @@ typedef struct {
     // Discontinuity API //
     ///////////////////////
 
-    bool ( *discon_is_active ) ( zdj_pipeline_node_t * );
-    void ( *add_loop_discon ) ( zdj_pipeline_node_t *, void * );
+    bool discon_is_active;
+    void ( *enable_loop_discon ) ( zdj_pipeline_node_t *, void * );
     void ( *release_loop_discon ) ( zdj_pipeline_node_t *, void * );
     void ( *move_loop_discon ) ( zdj_pipeline_node_t *, void * );
+    bool ( *move_loop_discon_will_move_head ) ( zdj_pipeline_node_t *, void * );
     void ( *resize_loop_discon ) ( zdj_pipeline_node_t *, void * );
+    void ( *refresh_loop_discon_layers ) ( zdj_pipeline_node_t *, void * );
     void ( *add_skip_discon ) ( zdj_pipeline_node_t *, void * );
+    void ( *add_hyperscrub_discon ) ( zdj_pipeline_node_t *, void * );
 } zdj_decode_node_state_t;
 
 // Node
@@ -502,13 +525,18 @@ zdj_decode_layer_t * zdj_new_decode_continuous_layer(
 zdj_decode_layer_t * zdj_new_decode_loop_layer( 
     zdj_pipeline_node_t * node, 
     zdj_decode_addr_t * loop_start_addr, 
-    int64_t loop_len
+    void * _loop_state
 );
 zdj_decode_layer_t * zdj_new_decode_skip_layer( 
     zdj_pipeline_node_t * node,  
-    zdj_decode_addr_t * depart_addr, 
-    zdj_decode_addr_t * dest_addr 
+    zdj_decode_addr_t * depart_addr
 );
+zdj_decode_layer_t * zdj_new_decode_hyperscrub_layer( 
+    zdj_pipeline_node_t * node,  
+    zdj_decode_addr_t * depart_addr,
+    zdj_decode_dir_t dir
+);
+
 
 // Discon
 void zdj_decode_init_node_discon_api( zdj_pipeline_node_t * node );
@@ -519,7 +547,8 @@ zdj_decode_packet_t * zdj_decode_packet(
     zdj_decode_layer_t * layer,
     AVFormatContext * fmt_ctx,
     AVCodecContext * codec_ctx,
-    int av_timebase_factor
+    int av_timebase_factor,
+    zdj_decode_packet_justify_t justify
 );
 void zdj_decode_garbage_packet( 
     zdj_pipeline_node_t * node,
@@ -534,7 +563,7 @@ void zdj_decode_init_node_addr_api( zdj_pipeline_node_t * node );
 void zdj_decode_init_addr( zdj_decode_addr_t * addr );
 
 // Accumulators
-void zdj_decode_init_accum( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
+// void zdj_decode_init_accum( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 
 int zdj_decode_node_accum_u8( zdj_pipeline_node_t * node, zdj_decode_packet_t * packet );
 int zdj_decode_node_accum_s16( zdj_pipeline_node_t * node, zdj_decode_packet_t * packet );

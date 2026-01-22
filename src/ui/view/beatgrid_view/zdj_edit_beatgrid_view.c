@@ -14,6 +14,9 @@
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
 #include <zerodj/ui/view/beatgrid_view/zdj_beatgrid_view.h>
+#include <zerodj/ui/view/flag_view/zdj_flag_view.h>
+// #include <zerodj/ui/view/label_view/zdj_label_view.h>
+
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _deinit_state( zdj_view_t * view );
@@ -48,13 +51,13 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // printf( "edit_beatgrid_view draw\n" );
     zdj_beatgrid_view_state_t * view_state = (zdj_beatgrid_view_state_t*)view->state;
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)view_state->deck->state;
+    zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
 
     // Remove grid markers
     zdj_remove_all_subviews_of( view );
 
-    // Convert deck needle head to song PCM space
-    // double pcm_head = (double)zdj_deck_get_pcm_addr_for_needle_head( view_state->deck, deck_state->decode_node );
-    double pcm_head = view_state->deck->controls.platter.needle.head;
+    // Get decode head origin coord
+    double pcm_head = decode_state->head.origin_d;
     // printf( "needle pcm addr: %ld\n", pcm_addr );
     // Convert song PCM space to beatgrid count
     double pcm_offset = pcm_head - view_state->song->performance->beat_grid_start_sample;
@@ -83,104 +86,111 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     double earliest_beatgrid_count = beatgrid_head - (half_window*beats_per_pixel);
 
     // Find latest beatgrid count in window
-    double latest_beatgrid_count = beatgrid_head + (half_window*beats_per_pixel);
+    double song_beatgrid_pcm_length = view_state->song->audio->duration_pcm - view_state->song->performance->beat_grid_start_sample;
+    double latest_song_beatgrid_count = zdj_signal_beatgrid_count_for_pcm_count( 
+        song_beatgrid_pcm_length,
+        view_state->song->audio->av_sample_rate,
+        view_state->song->performance->bpm
+    );
+    double latest_window_beatgrid_count = beatgrid_head + (half_window*beats_per_pixel);
+    double latest_beatgrid_count = fmin( latest_song_beatgrid_count, latest_window_beatgrid_count );
 
     // Manually map quantiziation to zoom level.
     // Adjust values to suit.
     double zoom_coeff = view_state->zoom_val / zdj_playback_waveform_max_zoom_val;
-    double quant_coeff = zoom_coeff * zoom_coeff * zoom_coeff * 64.0f;
+    double quant_coeff = zoom_coeff * zoom_coeff * zoom_coeff;
     double quant_div;
-    if( quant_coeff < 0.003f ) {
+    if( zoom_coeff < 0.001032f ) {
         // Lower bound at 16nd notes
         quant_div = 1.0 / 16.0;
-    } else if( quant_coeff < 0.01f ) {
+    } else if( zoom_coeff < 0.002074f ) {
         // Lower bound at 8th notes
         quant_div = 1.0 / 8.0;
-    } else if( quant_coeff < 0.02f ) {
+    } else if( zoom_coeff < 0.004900f ) {
         // Lower bound at quarter
         quant_div = 1.0 / 4.0;
-    } else if( quant_coeff < 0.4f ) {
-        // Lower bound at half notes
-        quant_div = 1.0 / 2.0;
-    } else if( quant_coeff < 0.2f ) {
+    } else if( zoom_coeff < 0.023f ) {
         // Lower bound at bars
         quant_div = 1.0;
+    } else if( zoom_coeff < 0.125f ) {
+        // Lower bound at bars
+        quant_div = 4.0;
+    } else if( zoom_coeff < 0.303 ) {
+        // Lower bound at bars
+        quant_div = 16.0;
+    } else if( zoom_coeff < 0.535 ) {
+        // Lower bound at bars
+        quant_div = 32.0;
     } else {
-        quant_div = ceil( quant_coeff / 8.0 ) * 8.0;
+        // quant_div = ceil( quant_coeff / 2.0 ) * 2.0;
+        // quant_div = 1.0;
+        quant_div = 64.0;
     }
-
-    // printf( "quant c:%f div:%f\n", quant_coeff, quant_div );
-
     // Quantize earliest count based on zoom level
     double quant_earliest_count = ceil( earliest_beatgrid_count / quant_div ) * quant_div;
     if( quant_earliest_count < 0.0001f ) { quant_earliest_count = 0.0f; }
     // Walk forward thru counts based on zoom level, adding divisions
-
-    // printf( "bg win: [ %f | %f/%1.1f | %f ]\n",
-    //     earliest_beatgrid_count,
-    //     beatgrid_head,
-    //     pcm_head,
-    //     latest_beatgrid_count
-    // );
-    // printf( "quant_div: %f early: %f quant early: %f\n", quant_div, earliest_beatgrid_count, quant_earliest_count );
-
     double count = quant_earliest_count;
     while( count < latest_beatgrid_count ) {
         // Get pixel x for quantized beatgrid div
-        double div_x = half_window - ( (beatgrid_head - count) / beats_per_pixel );
+        double div_x = view->frame.x + half_window - ( (beatgrid_head - count) / beats_per_pixel );
         
+        char str[ 4 ];
+
         zdj_view_t * zero_div = NULL;
+        zdj_view_t * zero_div_top = NULL;
+        zdj_view_t * zero_div_bot = NULL;
+        zdj_view_t * n_bar_label = NULL;
+        zdj_view_t * n_bar_bg = NULL;
         
+        float view_top = view->frame.y + 3;
+        float view_bottom = view_top+view->frame.h;
         
 
         // Get beat for div
         switch( zdj_beatgrid_mark_for_count( count ) ) {
             case ZDJ_BEATGRID_MARK_ORIGIN:
-                // printf( "origin\n" );
-                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_NAR_V_DIV ], NULL );
-                zero_div->frame.x = div_x-1;
-                zero_div->frame.y = 1;
-                zero_div->frame.h = 29;
+                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BG_MARK_ORIGIN ], NULL );
+                zero_div->frame.x = round(div_x-1);
                 break;
             case ZDJ_BEATGRID_MARK_32ND:
                 break;
             case ZDJ_BEATGRID_MARK_16TH:
-                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-                zero_div->frame.x = div_x;
-                zero_div->frame.y = 12;
-                zero_div->frame.h = 6;
+                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BG_MARK_ARROW ], NULL );
+                zero_div->frame.x = round(div_x-2);
                 break;
             case ZDJ_BEATGRID_MARK_8TH:
-                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-                zero_div->frame.x = div_x;
-                zero_div->frame.y = 12;
-                zero_div->frame.h = 6;
+                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BG_MARK_ARROW ], NULL );
+                zero_div->frame.x = round(div_x-2);
                 break;
             case ZDJ_BEATGRID_MARK_QUARTER:
-                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-                zero_div->frame.x = div_x;
-                zero_div->frame.y = 10;
-                zero_div->frame.h = 14;
+                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BG_MARK_ARROW ], NULL );
+                zero_div->frame.x = round(div_x-2);
                 break;
             case ZDJ_BEATGRID_MARK_HALF:
+                break;
             case ZDJ_BEATGRID_MARK_WHOLE:
                 // printf( "whole\n" );
-                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_NAR_V_DIV ], NULL );
-                zero_div->frame.x = div_x-1;
-                zero_div->frame.y = 10;
-                zero_div->frame.h = 14;
+                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BG_MARK_ARROW ], NULL );
+                zero_div->frame.x = round(div_x-2);
                 break;
             case ZDJ_BEATGRID_MARK_BAR_N:
                 // printf( "bar n\n" );
-                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_NAR_V_DIV ], NULL );
-                zero_div->frame.x = div_x-1;
-                zero_div->frame.y = 5;
-                zero_div->frame.h = 19;
+                zero_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BG_MARK_BAR ], NULL );
+                zero_div->frame.x = round(div_x-2);
+                zero_div->frame.y = -1;
+
+                snprintf( str, sizeof( str ), "%d", (int)count+1 );
+                n_bar_label = zdj_new_flag_view( ZDJ_FLAG_TYPE_BAR, str );
+                n_bar_label->frame.x = round(div_x-1);
+                n_bar_label->frame.y = round(view->frame.h/2) - 6;
+                n_bar_label->frame.w = 21;
                 break;
             default: break;
         }
         
         if( zero_div ){ zdj_add_subview( view, zero_div ); }
+        if( n_bar_label ){ zdj_add_subview( view, n_bar_label ); }
         count += quant_div;
     }
 

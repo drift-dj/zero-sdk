@@ -44,6 +44,8 @@ typedef struct {
     zdj_pipeline_node_t * waveform_node;
     SDL_Texture * waveform_tex;
     double zoom_val;
+    double ( *get_center_ratio )( zdj_view_t * );
+    double ( *get_zoom_ratio )( zdj_view_t * );
 } zdj_waveform_view_state_t;
 
 zdj_view_t * zdj_new_live_waveform_view( zdj_rect_t * frame, zdj_soundcard_node_t * node );

@@ -44,7 +44,8 @@ zdj_library_audio_t * zdj_library_fetch_current_audio_dto_for_song(
     int _sf_col = 10;
     int _cc_col = 11;
     int _dur_col = 12;
-    int _tb_col = 13;
+    int _durp_col = 13;
+    int _tb_col = 14;
     zdj_library_audio_t * audio = NULL;
 
     sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
@@ -66,7 +67,8 @@ zdj_library_audio_t * zdj_library_fetch_current_audio_dto_for_song(
             audio->av_sample_rate = sqlite3_column_int ( stmt, _br_col );
             audio->av_sample_format = sqlite3_column_int ( stmt, _sf_col );
             audio->av_channel_count = sqlite3_column_int ( stmt, _cc_col );
-            audio->duration = sqlite3_column_double ( stmt, _dur_col );
+            audio->duration_sec = sqlite3_column_double ( stmt, _dur_col );
+            audio->duration_pcm = sqlite3_column_int ( stmt, _durp_col );
             audio->timebase = sqlite3_column_double ( stmt, _tb_col );
         }
         sqlite3_finalize( stmt );
@@ -92,10 +94,10 @@ zdj_health_status_t zdj_library_store_audio(
     // Set up for prepared stmt w/binds to use built-in string escaping.
     snprintf( sql, sizeof( sql ), 
         // Insert new record
-        "INSERT INTO %s VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)\n"
+        "INSERT INTO %s VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)\n"
 
         // Or update existing record
-        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=?,song_entity_id=?,data_source_entity_id=?,filepath=?,file_checksum=?,has_procedural_edit=?,procedural_edit_filepath=?,av_codec_id=?,av_stream_index=?,av_sample_rate=?,av_sample_format=?,av_channel_count=?,duration=?,timebase=?,error=?",
+        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=?,song_entity_id=?,data_source_entity_id=?,filepath=?,file_checksum=?,has_procedural_edit=?,procedural_edit_filepath=?,av_codec_id=?,av_stream_index=?,av_sample_rate=?,av_sample_format=?,av_channel_count=?,duration_sec=?,duration_pcm=?,timebase=?,error=?",
 
         // Table Name
         ZDJ_LIBRARY_TABLE_AUDIO_DATA
@@ -143,60 +145,66 @@ zdj_health_status_t zdj_library_store_audio(
     if( sqlite3_bind_int( audio->store_stmt, 12, audio->av_channel_count ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_double( audio->store_stmt, 13, audio->duration ) != SQLITE_OK ) {
+    if( sqlite3_bind_double( audio->store_stmt, 13, audio->duration_sec ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_double( audio->store_stmt, 14, audio->timebase ) != SQLITE_OK ) {
+    if( sqlite3_bind_int64( audio->store_stmt, 14, audio->duration_pcm ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 15, audio->error ) != SQLITE_OK ) {
+    if( sqlite3_bind_double( audio->store_stmt, 15, audio->timebase ) != SQLITE_OK ) {
+        return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
+    }
+    if( sqlite3_bind_int( audio->store_stmt, 16, audio->error ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
 
     // Update Binds
-    if( sqlite3_bind_text( audio->store_stmt, 16, audio->entity_id, -1, SQLITE_STATIC ) != SQLITE_OK ) {
+    if( sqlite3_bind_text( audio->store_stmt, 17, audio->entity_id, -1, SQLITE_STATIC ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_text( audio->store_stmt, 17, audio->song_entity_id, -1, SQLITE_STATIC ) != SQLITE_OK ) {
+    if( sqlite3_bind_text( audio->store_stmt, 18, audio->song_entity_id, -1, SQLITE_STATIC ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_text( audio->store_stmt, 18, audio->data_source_entity_id, -1, SQLITE_STATIC ) != SQLITE_OK ) {
+    if( sqlite3_bind_text( audio->store_stmt, 19, audio->data_source_entity_id, -1, SQLITE_STATIC ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_text( audio->store_stmt, 19, audio->filepath, -1, SQLITE_STATIC ) != SQLITE_OK ) {
+    if( sqlite3_bind_text( audio->store_stmt, 20, audio->filepath, -1, SQLITE_STATIC ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_text( audio->store_stmt, 20, audio->file_checksum, -1, SQLITE_STATIC ) != SQLITE_OK ) {
+    if( sqlite3_bind_text( audio->store_stmt, 21, audio->file_checksum, -1, SQLITE_STATIC ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 21, audio->has_procedural_edit ) != SQLITE_OK ) {
+    if( sqlite3_bind_int( audio->store_stmt, 22, audio->has_procedural_edit ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_text( audio->store_stmt, 22, audio->procedural_edit_filepath, -1, SQLITE_STATIC ) != SQLITE_OK ) {
+    if( sqlite3_bind_text( audio->store_stmt, 23, audio->procedural_edit_filepath, -1, SQLITE_STATIC ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 23, audio->av_codec_id ) != SQLITE_OK ) {
+    if( sqlite3_bind_int( audio->store_stmt, 24, audio->av_codec_id ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 24, audio->av_stream_index ) != SQLITE_OK ) {
+    if( sqlite3_bind_int( audio->store_stmt, 25, audio->av_stream_index ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 25, audio->av_sample_rate ) != SQLITE_OK ) {
+    if( sqlite3_bind_int( audio->store_stmt, 26, audio->av_sample_rate ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 26, audio->av_sample_format ) != SQLITE_OK ) {
+    if( sqlite3_bind_int( audio->store_stmt, 27, audio->av_sample_format ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 27, audio->av_channel_count ) != SQLITE_OK ) {
+    if( sqlite3_bind_int( audio->store_stmt, 28, audio->av_channel_count ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_double( audio->store_stmt, 28, audio->duration ) != SQLITE_OK ) {
+    if( sqlite3_bind_double( audio->store_stmt, 29, audio->duration_sec ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_double( audio->store_stmt, 29, audio->timebase ) != SQLITE_OK ) {
+    if( sqlite3_bind_int64( audio->store_stmt, 30, audio->duration_pcm ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
-    if( sqlite3_bind_int( audio->store_stmt, 30, audio->error ) != SQLITE_OK ) {
+    if( sqlite3_bind_double( audio->store_stmt, 31, audio->timebase ) != SQLITE_OK ) {
+        return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
+    }
+    if( sqlite3_bind_int( audio->store_stmt, 32, audio->error ) != SQLITE_OK ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR;
     }
 
@@ -206,6 +214,8 @@ zdj_health_status_t zdj_library_store_audio(
     }
     
     sqlite3_finalize( audio->store_stmt );
+    
+    zdj_sql_db_flush( db );
     
     audio->store_stmt = NULL;
 

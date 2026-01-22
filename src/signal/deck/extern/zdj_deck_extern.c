@@ -7,8 +7,9 @@
 
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck.h>
+#include <zerodj/signal/deck/extern/zdj_deck_extern.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
-#include <zerodj/signal/pipeline/node/audio/deck_dsp/zdj_deck_dsp_node.h>
+// #include <zerodj/signal/pipeline/node/audio/deck_dsp/zdj_deck_dsp_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 static void _update_state ( zdj_deck_t * deck );
@@ -30,9 +31,9 @@ zdj_error_type_t zdj_new_extern_deck( zdj_deck_t * deck ) {
     
     zdj_ext_deck_state_t * state = calloc( 1, sizeof( zdj_ext_deck_state_t ) );
     deck->state = state;
-    state->dsp_node = zdj_new_deck_dsp_node( );
+    // state->dsp_node = zdj_new_deck_dsp_node( );
 
-    // sem_init( &state->start_cycle, 0, 0 );
+    sem_init( &state->start_cycle, 0, 0 );
 
     // Reset deck controls
     // zdj_deck_init_controls( deck );
@@ -42,13 +43,11 @@ zdj_error_type_t zdj_new_extern_deck( zdj_deck_t * deck ) {
 
 static void _deinit( zdj_deck_t * deck ) {
     zdj_ext_deck_state_t * deck_state = (zdj_ext_deck_state_t*)deck->state;
-    deck_state->dsp_node->deinit( deck_state->dsp_node );
+    // deck_state->dsp_node->deinit( deck_state->dsp_node );
 }
 
 // Called from the slow deck update thread (~.25Hz).
 static void _update_state ( zdj_deck_t * deck ) {
-    // printf( "lib deck _update_state\n" );
-
     // Early exit if we're up and running.
     if( deck->status == ZDJ_DECK_STATUS_RUNNING ) { return; }
     
@@ -57,13 +56,13 @@ static void _update_state ( zdj_deck_t * deck ) {
     switch ( deck->status ) {
 
         case ZDJ_DECK_STATUS_NEW:
-            printf( "ZDJ_DECK_STATUS_NEW\n" );
+            // printf( "ZDJ_EXT_DECK_STATUS_NEW\n" );
             deck->status = ZDJ_DECK_STATUS_MAKE_PIPELINE;
             break;
 
         // Stand up pipeline nodes.
         case ZDJ_DECK_STATUS_MAKE_PIPELINE:
-            printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE\n" );
+            // printf( "ZDJ_EXT_DECK_STATUS_MAKE_PIPELINE\n" );
             deck->status = ZDJ_DECK_STATUS_WAIT_THREAD_AVAIL;
             break;
             
@@ -71,13 +70,13 @@ static void _update_state ( zdj_deck_t * deck ) {
         // If it does, assume it's in the process of exiting,
         // and keep polling here until it becomes available.
         case ZDJ_DECK_STATUS_WAIT_THREAD_AVAIL:
-            printf( "ZDJ_DECK_STATUS_WAIT_THREAD_AVAIL\n" );
+            // printf( "ZDJ_EXT_DECK_STATUS_WAIT_THREAD_AVAIL\n" );
             deck->status = ZDJ_DECK_STATUS_WAIT_THREAD_READY;
             break;
 
         // Wait for new deck thread to finish filling its buffers.
         case ZDJ_DECK_STATUS_WAIT_THREAD_READY:
-            printf( "EXTERN ZDJ_DECK_STATUS_WAIT_THREAD_READY\n" );             
+            // printf( "ZDJ_EXT_DECK_STATUS_WAIT_THREAD_READY\n" );             
             // Start serving deck samples to soundcard.
             zdj_soundcard_link_deck( zdj_soundcard, deck );
             // Accept control events when we're ready for playback
@@ -130,7 +129,7 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
     zdj_ext_deck_state_t * deck_state = (zdj_ext_deck_state_t*)deck->state;
     // printf( "ext get edge data: %p->%p\n", deck_state, deck_state->dsp_node );
     // Exit early if we haven't stood up the dsp node yet.
-    if( !deck_state->dsp_node ) { return; }
+    // if( !deck_state->dsp_node ) { return; }
 
     // Get a reference to external deck input node's buffer
     zdj_soundcard_node_t * ext_input_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
@@ -141,7 +140,7 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
     float * out_buf = data_pipe->get_data( data_pipe );
 
     // Push the input samples through the DSP node to the output buffer
-    zdj_deck_dsp_node_pull_buffer( deck_state->dsp_node, out_buf, stereo+1, ZDJ_SOUNDCARD_BUF_LEN );
+    // zdj_deck_dsp_node_pull_buffer( deck_state->dsp_node, out_buf, stereo+1, ZDJ_SOUNDCARD_BUF_LEN );
 
     // printf( "data pipe out: %f\n", out_buf[ 4 ] );
 
@@ -157,7 +156,7 @@ static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool
     zdj_ext_deck_state_t * deck_state = (zdj_ext_deck_state_t*)deck->state;
     // printf( "ext push edge data: %p->%p\n", deck_state, deck_state->dsp_node );
     // Exit early if we haven't stood up the dsp node yet.
-    if( !deck_state->dsp_node ) { return; }
+    // if( !deck_state->dsp_node ) { return; }
 
     // Get a reference to the soundcard deck edge buffer with samples.
     float * in_buf = data_pipe->get_data( data_pipe );
@@ -165,7 +164,7 @@ static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool
     // printf( "data pipe in: %f\n", in_buf[ 4 ] );
 
     // Push the input samples into the DSP node to the output buffer
-    zdj_deck_dsp_node_push_buffer( deck_state->dsp_node, in_buf, stereo+1, ZDJ_SOUNDCARD_BUF_LEN );
+    // zdj_deck_dsp_node_push_buffer( deck_state->dsp_node, in_buf, stereo+1, ZDJ_SOUNDCARD_BUF_LEN );
 
     // printf( "dj get edge data done\n" );
     // Release another cycle of the pipeline_thread_main below.
@@ -174,8 +173,11 @@ static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool
 
 
 static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
+    // printf( "extern _handle_control\n" );
     zdj_ext_deck_state_t * deck_state = (zdj_ext_deck_state_t*)deck->state;
     zdj_soundcard_node_t * node;
+    zdj_soundcard_dsp_dto_t * dsp_dto;
+    zdj_soundcard_dsp_stage_dto_t * dsp_stage;
 
     switch ( event->id ) {
 
@@ -185,17 +187,13 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 
     case ZDJ_DECK_CONTROL_LR_VOL:
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
-        node->gain += event->i_val * 2;
-        if( node->gain > 255 ) { node->gain = 255; }
-        else if( node->gain < 0 ) { node->gain = 0; }
+        node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
 
     case ZDJ_DECK_CONTROL_CUE_VOL:
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
-        node->gain += event->i_val * 2;
-        if( node->gain > 255 ) { node->gain = 255; }
-        else if( node->gain < 0 ) { node->gain = 0; }
+        node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
 
@@ -233,25 +231,23 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     ///////////  
 
     case ZDJ_DECK_EXT_CONTROL_TEMPO:
-        // printf( "tempo: %1.2f\n", platter->motor.pitch_setting );
-        // platter->motor.pitch_setting += event->i_val * 0.02;
-        // deck->update_sync_tempo( deck, event->i_val * 0.02 );
-        if( zdj_deck_manager( )->sync.enabled ) {
-            zdj_deck_manager_update_sync_bpm( event->i_val * 1 );
-        } else {
-            deck->offset_sync_bpm( deck, event->i_val * 1 );
-        }
+        // Tempo will ultimately control ext. deck buffer playback
+        // if( zdj_deck_manager( )->sync.active ) {
+        //     // If we're synced, update the overall tempo
+        //     zdj_deck_manager_update_sync_bpm( event->i_val * 1 );
+        // } else {
+        //     deck->offset_sync_bpm( deck, event->i_val * 1 );
+        // }
         break;
 
     case ZDJ_DECK_EXT_CONTROL_TEMPO_FINE:
-        // printf( "tempo: fine %1.2f\n", platter->motor.pitch_setting );
-        // platter->motor.pitch_setting += event->i_val * 0.001;
-        // deck->update_sync_tempo( deck, event->i_val * 0.001 );
-        if( zdj_deck_manager( )->sync.enabled ) {
-            zdj_deck_manager_update_sync_bpm( event->i_val * 0.01 );
-        } else {
-            deck->offset_sync_bpm( deck, event->i_val * 0.01 );
-        }
+        // Tempo will ultimately control ext. deck buffer playback
+        // if( zdj_deck_manager( )->sync.active ) {
+        //     // If we're synced, update the overall tempo
+        //     zdj_deck_manager_update_sync_bpm( event->i_val * 0.01 );
+        // } else {
+        //     deck->offset_sync_bpm( deck, event->i_val * 0.01 );
+        // }
         break;
 
 
@@ -260,19 +256,31 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     /////////////////
 
     case ZDJ_DECK_EXT_CONTROL_EQ_LO:
-        printf( "ext deck eq lo\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        dsp_dto = node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 0, event->i_val ); }
+        // printf( "dj deck ext eq lo\n" );
         break;
     
     case ZDJ_DECK_EXT_CONTROL_EQ_MID:
-        printf( "ext deck eq mid\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        dsp_dto = node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 1, event->i_val ); }
+        // printf( "ext deck eq mid\n" );
         break;
 
     case ZDJ_DECK_EXT_CONTROL_EQ_HI:
-        printf( "ext deck eq hi\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        dsp_dto = node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 2, event->i_val ); }
+        // printf( "ext deck eq hi\n" );
         break;
 
     case ZDJ_DECK_EXT_CONTROL_FILTER_0:
-        printf( "ext deck filter\n" );
+        // printf( "ext deck filter\n" );
         break;
 
 

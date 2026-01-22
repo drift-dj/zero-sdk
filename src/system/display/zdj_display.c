@@ -13,7 +13,7 @@
 uint32_t * zdj_vid_buffer;
 
 void zdj_display_init( void ) {
-    printf( "zdj_display_init\n" );
+    // printf( "zdj_display_init\n" );
     // Grab references to the shared (M7+A53) memory.
     // See zero kernel 'drift-a106.dtsi' reserved-memory section.
 	int mem_fd = open( "/dev/mem", O_RDWR );

@@ -11,31 +11,40 @@
 
 static void _set_sync_bpm( zdj_deck_t * deck, double bpm );
 static void _offset_sync_bpm( zdj_deck_t * deck, double offset );
+static void _offset_pitch_setting( zdj_deck_t * deck, double offset );
 
 void zdj_deck_dj_init_sync( zdj_deck_t * deck ) {
-    // printf( "zdj_deck_dj_init_sync\n" );
     zdj_dj_deck_state_t * state = (zdj_dj_deck_state_t*)deck->state;
 
     // Setup sync state
     deck->set_sync_bpm = &_set_sync_bpm;
     deck->offset_sync_bpm = &_offset_sync_bpm;
-    deck->can_sync = true;
+    deck->offset_pitch_setting = &_offset_pitch_setting;
+    
+    if( state->song->performance && 
+        fabs( state->song->performance->bpm ) > zdj_eps
+    ) { deck->can_sync = true; } else { deck->can_sync = false; }
 
-    // Ignore sync state if song BPM ~= 0.0.
-    if( state->song->performance && fabs( state->song->performance->bpm ) > zdj_eps ) { 
-        if( zdj_deck_manager( )->sync.enabled ) {
-            if( zdj_deck_manager( )->sync.locked ) {
-                // Adopt the root tempo if it's been set already.
-                deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm );
-            } else {
-                // Else, lock the root tempo to the deck's song's tempo.
-                deck->set_sync_bpm( deck, state->song->performance->bpm );
-                zdj_deck_manager( )->sync.locked = true;
-                zdj_deck_manager( )->sync.set_bpm = state->song->performance->bpm;
-            }
+    // printf( "===> zdj_deck_dj_init_sync can_sync:%d\n", deck->can_sync );
+
+    if( deck->can_sync &&
+        zdj_deck_manager( )->sync.preferred &&
+        zdj_deck_manager_can_activate_sync( )
+    ) {
+        if( zdj_deck_manager( )->sync.active && zdj_deck_manager( )->sync.locked ) {
+            // printf( "===> New DJ Deck syncing to: %1.1f\n", zdj_deck_manager( )->sync.set_bpm );
+            // Adopt the root tempo if it's been set already.
+            deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm );
         } else {
+            // printf( "===> New DJ Deck setting sync tempo to: %1.1f\n", state->song->performance->bpm );
+            // Else, lock the root tempo to the deck's song's tempo.
             deck->set_sync_bpm( deck, state->song->performance->bpm );
+            zdj_deck_manager( )->sync.active = true;
+            zdj_deck_manager( )->sync.locked = true;
+            zdj_deck_manager( )->sync.set_bpm = state->song->performance->bpm;
         }
+    } else if( !deck->can_sync ) {
+        zdj_deck_manager( )->sync.active = false;
     }
     // printf( "zdj_deck_dj_init_sync done\n" );
 }
@@ -54,14 +63,20 @@ static void _set_sync_bpm( zdj_deck_t * deck, double bpm ) {
 }
 
 static void _offset_sync_bpm( zdj_deck_t * deck, double offset ) {
-
-    // printf( "dj deck offset bpm: %1.4f\n", offset );
+    printf( "dj deck offset bpm: %1.4f\n", offset );
 
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
+    if( deck_state->set_bpm < 0.01 ) { return; }
     deck_state->set_bpm += offset;
 
     if( deck_state->song->performance && (fabs( deck_state->song->performance->bpm ) > zdj_eps) ) {
         deck->controls.platter.motor.pitch_setting = deck_state->set_bpm / deck_state->song->performance->bpm;
-        // printf( "pitch set: %1.2f\n", deck->controls.platter.motor.pitch_setting );
+        printf( "pitch set: %1.2f\n", deck->controls.platter.motor.pitch_setting );
     }
+}
+
+static void _offset_pitch_setting( zdj_deck_t * deck, double offset ) {
+    // printf( "dj deck offset pitch setting: %1.4f\n", offset );
+    deck->controls.platter.motor.pitch_setting += offset;
+    printf( "pitch set: %1.2f\n", deck->controls.platter.motor.pitch_setting );
 }

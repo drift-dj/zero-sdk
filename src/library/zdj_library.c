@@ -73,7 +73,7 @@ static void _zdj_library_create_db_tables( sqlite3 * db ) {
     // Create tables
     char sql[ 2048 ];
     // Audio
-    strcpy( sql, "CREATE TABLE 'Audio_Data_Entity' ( 'entity_id' TEXT NOT NULL, 'song_entity_id' TEXT, 'data_source_entity_id' TEXT, 'filepath' TEXT, 'file_checksum' TEXT, 'has_procedural_edit' INT, 'procedural_edit_filepath' TEXT, 'av_codec_id' INT, 'av_stream_index' INT, 'av_sample_rate' INT, 'av_sample_format' INT, 'av_channel_count' INT, 'duration' REAL, 'timebase' REAL, 'error' INT, PRIMARY KEY('entity_id'))" );
+    strcpy( sql, "CREATE TABLE 'Audio_Data_Entity' ( 'entity_id' TEXT NOT NULL, 'song_entity_id' TEXT, 'data_source_entity_id' TEXT, 'filepath' TEXT, 'file_checksum' TEXT, 'has_procedural_edit' INT, 'procedural_edit_filepath' TEXT, 'av_codec_id' INT, 'av_stream_index' INT, 'av_sample_rate' INT, 'av_sample_format' INT, 'av_channel_count' INT, 'duration_sec' REAL, 'duration_pcm' INT, 'timebase' REAL, 'error' INT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
     // Catalog
     strcpy( sql, "CREATE TABLE 'Catalog_Data_Entity' ('entity_id' TEXT NOT NULL, 'song_entity_id' TEXT, 'data_source_entity_id' TEXT, 'title' TEXT, 'artist' TEXT, 'album' TEXT, 'label' TEXT, 'genre' TEXT, 'year' INT, 'error' INT, PRIMARY KEY('entity_id'))" );
@@ -98,6 +98,15 @@ static void _zdj_library_create_db_tables( sqlite3 * db ) {
     zdj_sql_exec( (char*)&sql, db );
     // Data Source
     strcpy( sql, "CREATE TABLE 'Data_Source_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, PRIMARY KEY('entity_id'))" );
+    zdj_sql_exec( (char*)&sql, db );
+    // Cuepoints
+    strcpy( sql, "CREATE TABLE 'Cuepoint_Entity' ('entity_id' TEXT NOT NULL, 'performance_entity_id' TEXT, 'name' TEXT, 'sample' INT, 'is_loop' INT, 'loop_len' INT, PRIMARY KEY('entity_id'))" );
+    zdj_sql_exec( (char*)&sql, db );
+    // Playlists
+    strcpy( sql, "CREATE TABLE 'Playlist_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, 'ordered_song_links' TEXT, PRIMARY KEY('entity_id'))" );
+    zdj_sql_exec( (char*)&sql, db );
+    // Tags
+    strcpy( sql, "CREATE TABLE 'Tag_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
 }
 
@@ -148,6 +157,11 @@ void zdj_library_reset_db( void ) {
 
     // Create the default Data Source records
     zdj_library_create_default_data_sources( );
+
+    // Create a new screenshot counter
+    zdj_library_set_int_setting( 
+        zdj_library_config_get_current_library_id( ), ZDJ_LIBRARY_SETTING_SCREENSHOT_COUNTER, 0
+    );
 
     // Flush cache to disk so everything's in sync.
     zdj_library_db_flush( );

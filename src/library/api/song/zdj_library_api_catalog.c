@@ -171,5 +171,7 @@ zdj_health_status_t zdj_library_store_catalog(
     
     sqlite3_finalize( catalog->store_stmt );
 
+    zdj_sql_db_flush( db );
+    
     return ZDJ_HEALTH_STATUS_OKAY;
 }

@@ -32,6 +32,7 @@ typedef enum {
     ZDJ_DECK_TYPE_DJ,
     ZDJ_DECK_TYPE_LIB,
     ZDJ_DECK_TYPE_EXTERNAL,
+    ZDJ_DECK_TYPE_XPORT,
     ZDJ_DECK_TYPE_CV,
     ZDJ_DECK_TYPE_LOOP,
     ZDJ_DECK_TYPE_PLUGIN,
@@ -42,7 +43,8 @@ typedef enum {
     ZDJ_DECK_STATION_NONE,
     ZDJ_DECK_STATION_1,
     ZDJ_DECK_STATION_2,
-    ZDJ_DECK_STATION_EXT
+    ZDJ_DECK_STATION_EXT,
+    ZDJ_DECK_STATION_XPORT
 } zdj_deck_station_t;
 
 typedef enum {
@@ -74,14 +76,16 @@ typedef enum {
 
 typedef struct {
     zdj_deck_control_loop_phase_t phase;
-    int64_t activate_decode_addr;
     bool is_enabled;
-    int64_t pcm_len;
+    double pcm_len;
     double beatgrid_len;
-    bool quantize;
-    int64_t start_pcm_addr;
-    int64_t end_pcm_addr;
+    double start_origin_d;
+    double end_origin_d;
+    double move_req_len;
+    double length_change_req_len;
     int fade_len;
+    int c_count_start;
+    int c_count_len;
 } zdj_deck_control_loop_state_t;
 
 // Beat skip can't be updated while actively crossfading.
@@ -92,16 +96,49 @@ typedef enum {
     ZDJ_DECK_SKIP_PHASE_RUN // Skip is in layer stack
 } zdj_deck_control_skip_phase_t;
 
+typedef enum {
+    ZDJ_DECK_SKIP_TYPE_QUANT,
+    ZDJ_DECK_SKIP_TYPE_UNQUANT,
+    ZDJ_DECK_SKIP_TYPE_SCRUB
+} zdj_deck_control_skip_type_t;
+
 typedef struct {
     zdj_deck_control_skip_phase_t phase;
-    double skip_unit;
     double current_offset;
     double skip_req_len;
-    int64_t depart_decode_addr;
-    int64_t depart_pcm_addr;
-    int64_t arrive_pcm_addr;
+    zdj_deck_control_skip_type_t skip_req_type;
+    double depart_origin_d;
+    double dest_origin_d;
     int fade_len;
+    int counter;
+    int c_count_skip;
 } zdj_deck_control_skip_state_t;
+
+typedef enum {
+    ZDJ_DECK_HYPERSCRUB_PHASE_INACTIVE,
+    ZDJ_DECK_HYPERSCRUB_PHASE_ACTIVATE,
+    ZDJ_DECK_HYPERSCRUB_PHASE_STAGED,
+    ZDJ_DECK_HYPERSCRUB_PHASE_RUN
+} zdj_deck_control_hyperscrub_phase_t;
+
+typedef struct {
+    zdj_deck_control_hyperscrub_phase_t phase;
+    double req_offset;
+    int counter;
+} zdj_deck_control_hyperscrub_state_t;
+
+typedef enum {
+    ZDJ_DECK_NEEDLEDROP_PHASE_INACTIVE,
+    ZDJ_DECK_NEEDLEDROP_PHASE_ACTIVATE,
+    ZDJ_DECK_NEEDLEDROP_PHASE_STAGED,
+    ZDJ_DECK_NEEDLEDROP_PHASE_RUN
+} zdj_deck_control_needledrop_phase_t;
+
+typedef struct {
+    zdj_deck_control_needledrop_phase_t phase;
+    double origin_coord;
+    int counter;
+} zdj_deck_control_needledrop_state_t;
 
 typedef enum {
     ZDJ_PLATTER_MOTOR_IDLE,
@@ -152,6 +189,8 @@ typedef struct {
     double instant_val;
     double tempo_nudge_rate; // bypass the slipmat sim in tempo tsm mode
     int slip_dwell; // Hysteresis - how long after input does platter remain in slip state
+
+    double scrub_skip_offset; // Distance to skip when scrubbing faster than window allows
     zdj_deck_platter_slip_state_t state;
 } zdj_deck_platter_slip_t;
 
@@ -188,10 +227,28 @@ typedef struct {
     double scratch_coeff;
 } zdj_deck_platter_t;
 
+typedef struct {
+    double trim;
+    double cue_trim;
+    bool cue_mute;
+    double eq_lo;
+    double eq_mid;
+    double eq_hi;
+    double fade;
+    double xfade;
+    double pan;
+} zdj_deck_control_knob_state_t;
+
 typedef struct zdj_deck_control_state_t { 
     zdj_deck_platter_t platter;
     zdj_deck_control_skip_state_t skip_state;
     zdj_deck_control_loop_state_t loop_state;
+    zdj_deck_control_hyperscrub_state_t hyperscrub_state;
+    zdj_deck_control_needledrop_state_t needledrop_state;
+    zdj_deck_control_knob_state_t knob_state;
+    bool discon_quantize;
+    double discon_quantize_val;
+    int c_count_q_val;
 } zdj_deck_control_state_t;
 
 typedef struct zdj_deck_t {
@@ -219,20 +276,25 @@ typedef struct zdj_deck_t {
     // Transport Control API
     // update_controls is called from the Controls thread ~900 kHz.
     void ( *handle_control_event )( struct zdj_deck_t *, zdj_control_event_t * );
-    void ( *update_transport )( struct zdj_deck_t * );
+    // void ( *update_transport )( struct zdj_deck_t * );
+    void ( *update_transport_inputs )( struct zdj_deck_t * );
+    void ( *update_transport_outputs )( struct zdj_deck_t * );
     zdj_deck_control_state_t controls;
 
     // Sync API
     bool can_sync;
     void ( *set_sync_bpm )( struct zdj_deck_t *, double );
     void ( *offset_sync_bpm )( struct zdj_deck_t *, double );
+    void ( *offset_pitch_setting )( struct zdj_deck_t *, double );
 
     // Public Thread-Safe Loop/Skip API
-    void ( *new_loop )( struct zdj_deck_t *, int64_t, bool );
+    void ( *new_loop )( struct zdj_deck_t *, double, bool );
     void ( *disable_loop )( struct zdj_deck_t * );
-    void ( *move_loop )( struct zdj_deck_t *, int64_t );
-    void ( *resize_loop )( struct zdj_deck_t *, int64_t );
-    void ( *new_skip )( struct zdj_deck_t *, double );
+    void ( *move_loop )( struct zdj_deck_t *, double );
+    void ( *resize_loop )( struct zdj_deck_t *, double );
+    void ( *new_skip )( struct zdj_deck_t *, double, zdj_deck_control_skip_type_t );
+    void ( *new_hyperscrub )( struct zdj_deck_t *, double );
+    void ( *new_needledrop )( struct zdj_deck_t *, double );
 
     // Address API
     int64_t ( *get_resource_addr )( struct zdj_deck_t * );
@@ -241,61 +303,12 @@ typedef struct zdj_deck_t {
     // internal state
     void * state;
 
+    int predelay_counter;
+
     // linkage for the controls thread
     struct zdj_deck_t * next;
     struct zdj_deck_t * prev;
 } zdj_deck_t;
-
-
-// typedef enum {
-//     ZDJ_DECK_TSM_SOURCE_PITCH,
-//     ZDJ_DECK_TSM_SOURCE_TEMPO,
-// } zdj_dj_deck_tsm_source_t;
-
-// typedef struct {
-//     int64_t cur_sample;
-//     int64_t sample_count;
-//     int64_t pre_sample_count;
-//     int64_t xfade_sample_count;
-//     int64_t post_sample_count;
-// } zdj_dj_deck_tsm_transition_t;
-
-// typedef struct {
-//     zdj_library_song_t * song;
-    
-//     // Internal audio pipeline
-//     zdj_pipeline_node_t * dsp_node;
-//     zdj_pipeline_node_t * tsm_pitch_node;
-//     zdj_pipeline_node_t * tsm_tempo_node;
-//     zdj_pipeline_node_t * decode_node;
-
-//     // TSM engine management
-//     bool tempo_tsm_enabled;
-//     zdj_dj_deck_tsm_source_t tsm_source;
-    
-//     // Thread management
-//     sem_t start_cycle;
-//     bool thread_ready;
-//     bool exit_thread;
-
-//     // Sync
-//     double set_bpm;
-// } zdj_dj_deck_state_t;
-
-// typedef struct {
-//     zdj_library_song_t * song;
-    
-//     // Internal audio pipeline
-//     zdj_pipeline_node_t * dsp_node;
-//     zdj_pipeline_node_t * tsm_node;
-//     zdj_pipeline_node_t * decode_node;
-    
-//     // Thread management
-//     sem_t start_cycle;
-//     bool thread_ready;
-//     bool exit_thread;
-
-// } zdj_lib_deck_state_t;
 
 // typedef struct {
 //     zdj_library_song_t * song;
@@ -305,22 +318,18 @@ typedef struct zdj_deck_t {
 //     zdj_pipeline_node_t * decode_node;
 // } zdj_cv_deck_state_t;
 
-typedef struct {
-    zdj_pipeline_node_t * dsp_node;
+// typedef struct {
+//     zdj_pipeline_node_t * dsp_node;
 
-    // Thread management
-    sem_t start_cycle;
-    bool thread_ready;
-    bool exit_thread;
-} zdj_ext_deck_state_t;
+//     // Thread management
+//     sem_t start_cycle;
+//     bool thread_ready;
+//     bool exit_thread;
+// } zdj_ext_deck_state_t;
 
 typedef struct {
     int id;
 } zdj_loop_deck_state_t;
-
-// typedef struct {
-//     int id;
-// } zdj_plugin_deck_state_t;
 
 // typedef struct {
 //     float s1_p;
@@ -333,43 +342,11 @@ typedef struct {
 //     float s4_f;
 // } zdj_test_deck_state_t;
 
-zdj_deck_t * zdj_new_deck( zdj_deck_type_t type, zdj_deck_station_t station, void * resource );
-// void zdj_deck_init_controls( zdj_deck_t * deck );
-
-
-// zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource );
-// void zdj_dj_deck_handle_controls( zdj_deck_t * deck, zdj_control_event_t * event );
-// void zdj_dj_deck_reset_platter( zdj_deck_platter_t * platter, double addr );
-// void zdj_dj_deck_set_sync_bpm( zdj_deck_t * deck, double offset );
-// void zdj_dj_deck_offset_sync_bpm( zdj_deck_t * deck, double offset );
-
-// zdj_error_type_t zdj_new_cv_deck( zdj_deck_t * deck, void * resource );
-// zdj_error_type_t zdj_new_lib_deck( zdj_deck_t * deck, void * resource );
-zdj_error_type_t zdj_new_extern_deck( zdj_deck_t * deck );
-// zdj_error_type_t zdj_new_test_deck( zdj_deck_t * deck );
-// zdj_error_type_t zdj_new_live_loop_deck( zdj_deck_t * deck );
-// zdj_error_type_t zdj_new_plugin_deck( zdj_deck_t * deck, void * resource );
-
-
-// void zdj_deck_update_control_model( zdj_deck_t * deck );
-
-// int64_t zdj_deck_get_pcm_addr_for_needle_head( zdj_deck_t * deck, zdj_pipeline_node_t * decode_node );
-
-// void zdj_deck_new_loop_req( zdj_deck_t * deck, int64_t len, bool quant );
-// void zdj_deck_enable_loop_req( zdj_deck_t * deck, zdj_library_cuepoint_t * cuepoint );
-// void zdj_deck_disable_loop_req( zdj_deck_t * deck );
-// void zdj_deck_move_loop( zdj_deck_t * deck, int64_t distance, bool quant );
-// void zdj_deck_resize_loop( zdj_deck_t * deck, int64_t offset, bool quant );
-
-// void zdj_deck_new_loop( zdj_deck_t * deck );
-// void zdj_deck_enable_loop( zdj_deck_t * deck, zdj_library_cuepoint_t * cuepoint );
-// void zdj_deck_disable_loop( zdj_deck_t * deck );
-// void zdj_deck_move_loop( zdj_deck_t * deck, int64_t distance, bool quant );
-// void zdj_deck_resize_loop( zdj_deck_t * deck, int64_t offset, bool quant );
-
-// void zdj_deck_new_skip_req( zdj_deck_t * deck, double units );
-// void zdj_deck_stage_skip( zdj_deck_t * deck );
-// void zdj_deck_update_skip( zdj_deck_t * deck );
-// void zdj_deck_new_skip( zdj_deck_t * deck );
+zdj_deck_t * zdj_new_deck( 
+    zdj_deck_type_t type, 
+    zdj_deck_station_t station, 
+    void * resource, 
+    int win_buf_count 
+);
 
 #endif

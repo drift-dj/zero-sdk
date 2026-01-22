@@ -1,9 +1,34 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <signal.h>
 #include <execinfo.h>
+// #include <backtrace.h>
 
 #include <zerodj/system/error/zdj_error.h>
+
+
+///////////////////////////////////////////////////////
+// Do some hacking to fix wonky library dependencies //
+///////////////////////////////////////////////////////
+unsigned long __stack_chk_guard;
+void __stack_chk_guard_setup(void) {
+    __stack_chk_guard = 0xBAAAAAAD; // Use a random or magic number
+}
+void __stack_chk_fail(void) {
+    /* Handle the error (e.g., print message and exit) */
+}
+
+int __isoc23_sscanf(const char *str, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int ret = vsscanf(str, format, args);
+    va_end(args);
+    return ret;
+}
+
+
+
 
 static zdj_error_state_t * _zdj_error_state = NULL;
 
@@ -57,10 +82,34 @@ static char * _zdj_error_marker_string[ ZDJ_ERROR_MARKER_COUNT ] = {
     "debug" // ZDJ_ERROR_MARKER_DEBUG,
 };
 
+// int bt_callback(void *, uintptr_t, const char *filename, int lineno, const char *function) {
+//   /// demangle function name
+//   const char *func_name = function;
+// //   int status;
+// //   char *demangled = abi::__cxa_demangle(function, nullptr, nullptr, &status);
+// //   if (status == 0) {
+// //     func_name = demangled;
+// //   }
+
+//   /// print
+//   printf("%s:%d in function %s\n", filename, lineno, func_name);
+//   return 0;
+// }
+
+// void bt_error_callback(void *, const char *msg, int errnum) {
+//   printf("Error %d occurred when getting the stacktrace: %s", errnum, msg);
+// }
+
+// void bt_error_callback_create(void *, const char *msg, int errnum) {
+//   printf("Error %d occurred when initializing the stacktrace: %s", errnum, msg);
+// }
+
+// void *__bt_state = NULL;
+
 // Print (hopefully) helpful info and exit.
 void _zdj_error_sig( int code ) {
     if( code == SIGSEGV ) {
-        // printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
+        printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
         
         int max_frames = 100;
         void *callstack[ max_frames ];
@@ -74,8 +123,13 @@ void _zdj_error_sig( int code ) {
             printf("%s\n", strings[i]);
         }
         
-        printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
+        // printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
         
+        // if (__bt_state) { /// make sure init_back_trace() is called
+        //     // backtrace_full((backtrace_state *) __bt_state, 0, bt_callback, bt_error_callback, nullptr);
+        //     backtrace_full(__bt_state, 0, bt_callback, bt_error_callback, NULL);
+        // }
+
         exit( code );
     }
 }
@@ -90,8 +144,8 @@ zdj_error_state_t * zdj_error_state( void ) {
     return _zdj_error_state;
 }
 
-void zdj_error_init( void ) {
-    
+void zdj_error_init( char * binary_path ) {
+    // __bt_state = backtrace_create_state( binary_path, 0, bt_error_callback_create, NULL );
 }
 
 void zdj_print_error( zdj_error_type_t error ) {

@@ -94,11 +94,11 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
             case ZDJ_BEATGRID_MARK_32ND:
             case ZDJ_BEATGRID_MARK_16TH:
             case ZDJ_BEATGRID_MARK_8TH:
-                pixelColor( zdj_renderer( ), div_x, clip->screen.y - 1, ZDJ_BLACK );
-                pixelColor( zdj_renderer( ), div_x, clip->screen.y + 1, ZDJ_BLACK );
-                pixelColor( zdj_renderer( ), div_x, clip->screen.y, ZDJ_WHITE );
-                pixelColor( zdj_renderer( ), div_x-1, clip->screen.y, ZDJ_BLACK );
-                pixelColor( zdj_renderer( ), div_x+1, clip->screen.y, ZDJ_BLACK );
+                // pixelColor( zdj_renderer( ), div_x, clip->screen.y - 1, ZDJ_BLACK );
+                // pixelColor( zdj_renderer( ), div_x, clip->screen.y + 1, ZDJ_BLACK );
+                // pixelColor( zdj_renderer( ), div_x, clip->screen.y, ZDJ_WHITE );
+                // pixelColor( zdj_renderer( ), div_x-1, clip->screen.y, ZDJ_BLACK );
+                // pixelColor( zdj_renderer( ), div_x+1, clip->screen.y, ZDJ_BLACK );
                 break;
             case ZDJ_BEATGRID_MARK_QUARTER:
             case ZDJ_BEATGRID_MARK_ORIGIN:

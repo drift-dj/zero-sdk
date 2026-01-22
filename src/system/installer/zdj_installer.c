@@ -139,14 +139,15 @@ void _zdj_installer_extract_file_cb( zdj_installer_manifest_item_t * item, void 
     zdj_health_status_t extract_health = zdj_fs_extract_file_from_binary(
         installer->path, 
         item->extract_path, 
-        item->blob_start, 
+        item->blob_start + installer->data_offsets.binary_offset, 
         item->blob_length, 
-        false
+        true
     );
 
     if( extract_health > ZDJ_HEALTH_STATUS_OKAY ) { 
         installer->valid = false;
         installer->status = extract_health;
+        printf( "installer %s failed to extract file @: %d/%d\n", installer->path, item->blob_start, item->blob_length );
     }
 }
 
@@ -194,24 +195,29 @@ void _zdj_installer_commit_file_cb( zdj_installer_manifest_item_t * item, void *
     zdj_installer_t * installer = (zdj_installer_t*)data;
     zdj_health_status_t rollback_health = ZDJ_HEALTH_STATUS_UNKNOWN;
 
+    printf( "commit item cb dest:%s rb:%s\n", item->dest_path, item->rollback_path );
     // Copy dest file to rollback path if it exists
     if( access( item->dest_path, F_OK ) == 0 ) {
-        rollback_health = zdj_fs_copy_file( item->dest_path, item->rollback_path, false );
+        rollback_health = zdj_fs_copy_file( item->dest_path, item->rollback_path, true );
         if( rollback_health > ZDJ_HEALTH_STATUS_OKAY ) { 
             installer->valid = false;
             installer->status = rollback_health;
+            printf( "commit rollback copy bad: %d\n", rollback_health );
             return; 
         }
+        printf( "commit rollback copy okay\n" );
     }
 
     // Overwrite dest path with extracted file
     zdj_health_status_t dest_health = zdj_fs_copy_file( item->extract_path, item->dest_path, true );
     // If copy to dest fails, force a rollback
-    if( rollback_health > ZDJ_HEALTH_STATUS_OKAY ) { 
+    if( dest_health > ZDJ_HEALTH_STATUS_OKAY ) { 
+        printf( "dest health bad\n" );
         installer->valid = false;
         installer->status = ZDJ_HEALTH_STATUS_ROLLBACK;
         return; 
     }
+    printf( "dest copy okay\n" );
 }
 
 void _zdj_installer_rollback_file_cb( zdj_installer_manifest_item_t * item, void * data ) {

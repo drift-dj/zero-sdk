@@ -12,9 +12,9 @@
 #include <zerodj/ui/view/label_view/zdj_label_view.h>
 #include <zerodj/ui/view/text_input_view/buffer/zdj_text_input_buffer_view.h>
 
-#define ZDJ_TEXT_INPUT_BUFFER_MARGIN 1
+#define ZDJ_TEXT_INPUT_BUFFER_MARGIN 3
 #define ZDJ_TEXT_INPUT_CURSOR_W 25
-#define ZDJ_TEXT_INPUT_BUFFER_W ZDJ_SCREEN_W - (ZDJ_TEXT_INPUT_BUFFER_MARGIN*2) - ZDJ_TEXT_INPUT_CURSOR_W
+#define ZDJ_TEXT_INPUT_BUFFER_W ZDJ_MODAL_WIDTH - (ZDJ_TEXT_INPUT_BUFFER_MARGIN*2) - ZDJ_TEXT_INPUT_CURSOR_W
 
 static void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip );
 void _zdj_text_input_buffer_view_deinit_state( zdj_view_t * view );
@@ -29,7 +29,6 @@ zdj_view_t * zdj_new_text_input_buffer_view( char * input_str ) {
     buffer_state->has_valid_layout = false;
     buffer_state->cursor_counter = 0;
     buffer_view->state = buffer_state;
-    // buffer_state->str = strdup( input_str );
     strcpy( buffer_state->str, input_str );
     return buffer_view;
 }
@@ -127,13 +126,13 @@ void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip ) {
         // Just position everything from left to right.
         if( input_state->left_label ) {
             input_state->left_label->frame.x = ZDJ_TEXT_INPUT_BUFFER_MARGIN;
-            input_state->left_label->frame.y = 3;
+            input_state->left_label->frame.y = 2;
             zdj_add_subview( input_view, input_state->left_label );
         }
         
         if( input_state->right_label ) {
             input_state->right_label->frame.x = left_w + ZDJ_TEXT_INPUT_CURSOR_W + ZDJ_TEXT_INPUT_BUFFER_MARGIN;
-            input_state->right_label->frame.y = 3;
+            input_state->right_label->frame.y = 2;
             zdj_add_subview( input_view, input_state->right_label );
         }
 
@@ -156,13 +155,13 @@ void _zdj_text_input_draw( zdj_view_t * input_view, zdj_view_clip_t * clip ) {
 
         if( input_state->left_label ) {
             input_state->left_label->frame.x = cursor_x - input_state->left_label->frame.w - 2;
-            input_state->left_label->frame.y = 3;
+            input_state->left_label->frame.y = 2;
             zdj_add_subview( input_view, input_state->left_label );
         }
         
         if( input_state->right_label ) {
             input_state->right_label->frame.x = cursor_x + ZDJ_TEXT_INPUT_CURSOR_W + 2;
-            input_state->right_label->frame.y = 3;
+            input_state->right_label->frame.y = 2;
             zdj_add_subview( input_view, input_state->right_label );
         }
 

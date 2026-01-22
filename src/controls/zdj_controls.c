@@ -42,6 +42,7 @@ zdj_error_type_t zdj_controls_init( void ) {
     memset( &zdj_special_control_handlers, 0, sizeof( zdj_special_control_handler_t )*5 );
     // Stand up control cycle thread
     zdj_thread_launch_control_cycle( zdj_control_cycle_thread_main, NULL );
+    return ZDJ_ERROR_OKAY;
 }
 
 // Wipe any existing control/hmi input events.
@@ -95,9 +96,12 @@ void * zdj_control_cycle_thread_main( void * arg ) {
         nanosleep( &frame_sleep, NULL );
 
         // Open a tag for the process cycle
-        zdj_perf_tag_t * tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_CONTROL );
-        tag->name = ZDJ_PERF_TAG_CONTROL_CYCLE;
-        tag->start = zdj_perf_time( );
+        // zdj_perf_tag_t * tag;
+        // if( zdj_perf_enabled( ) ) {
+        //     tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_CONTROL );
+        //     tag->name = ZDJ_PERF_TAG_CONTROL_CYCLE;
+        //     tag->start = zdj_perf_time( );
+        // }
 
         // Run HMI scan cycle
         zdj_control_scan_hmi_input( );
@@ -128,6 +132,6 @@ void * zdj_control_cycle_thread_main( void * arg ) {
         }
 
         // Close the perf tag
-        tag->end = zdj_perf_time( );
+        // if( zdj_perf_enabled( ) ) { tag->end = zdj_perf_time( ); }
     }
 }

@@ -41,9 +41,6 @@ zdj_view_t * zdj_new_text_input_keyboard_view( void ) {
     menu_state->scroll_enabled = false;
     _shift_key_active = false;
 
-    // zdj_view_t * bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WHITE ], NULL );   
-    // zdj_add_subview( menu, bg ); 
-
     _add_key_item( menu, &keyboard_keys_en_us[ 0 ][ 0 ], 0, 0 );
     _add_key_item( menu, &keyboard_keys_en_us[ 0 ][ 1 ], 0, 1 );
     _add_key_item( menu, &keyboard_keys_en_us[ 0 ][ 2 ], 0, 2 );
@@ -97,6 +94,7 @@ zdj_view_t * zdj_new_text_input_keyboard_view( void ) {
     // Add space key
     _space_key_index = menu_state->item_count;
     zdj_view_t * space_key = zdj_new_asset_menu_item( ZDJ_UI_ASSET_SPACE_KEY, ZDJ_UI_ASSET_SPACE_KEY_HI, false );
+    zdj_menu_item_view_state_t * space_state = (zdj_menu_item_view_state_t*)space_key->state;
     space_key->frame.x = 100;
     space_key->frame.y = 2;
     space_key->frame.w = 8;
@@ -151,12 +149,13 @@ zdj_view_t * zdj_new_text_input_keyboard_view( void ) {
     ok_key->frame.y = 25;
     ok_key->frame.w = 23;
     ok_key->frame.h = 8;
-    zdj_menu_view_add_item( menu, ok_key );
+    zdj_menu_view_add_item( menu, ok_key );    
 
     return menu;
 }
 
 int zdj_text_input_keyboard_get_current_char( zdj_view_t * keyboard_menu ) {
+    // printf( "zdj_text_input_keyboard_get_current_char\n" );
     // Get key at scroll_index
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)keyboard_menu->state;
     
@@ -173,6 +172,7 @@ int zdj_text_input_keyboard_get_current_char( zdj_view_t * keyboard_menu ) {
 }
 
 void zdj_text_input_keyboard_set_current_char( zdj_view_t * keyboard_menu, char c ) {
+    // printf( "zdj_text_input_keyboard_set_current_char %c\n", c );
     // Find index for key with matching char
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)keyboard_menu->state;
     zdj_keyboard_key_t * key = NULL;
@@ -203,12 +203,14 @@ void zdj_text_input_keyboard_set_current_char( zdj_view_t * keyboard_menu, char 
 }
 
 void zdj_text_input_keyboard_set_item_index( zdj_view_t * keyboard_menu, int index ) {
+    // printf( "zdj_text_input_keyboard_set_item_index %d\n", index );
     zdj_menu_view_set_scroll_index( keyboard_menu, index );
 }
 
 zdj_keyboard_chrome_item_t zdj_text_input_keyboard_get_current_chrome( 
     zdj_view_t * keyboard_menu 
 ) {
+    // printf( "zdj_text_input_keyboard_get_current_chrome\n" );
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)keyboard_menu->state;
 
     if( menu_state->scroll_index == _help_key_index ) {
@@ -234,6 +236,7 @@ void zdj_text_input_keyboard_set_current_chrome(
     zdj_view_t * keyboard_menu, 
     zdj_keyboard_chrome_item_t item 
 ) {
+    // printf( "zdj_text_input_keyboard_set_current_chrome\n" );
     switch( item ) {
         case ZDJ_KEYBOARD_CHROME_HELP:
             break;
@@ -262,6 +265,7 @@ void zdj_text_input_keyboard_set_current_chrome(
 }
 
 void zdj_text_input_keyboard_select_next_key_char( zdj_view_t * keyboard_menu ) {
+    // printf( "zdj_text_input_keyboard_select_next_key_char\n" );
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)keyboard_menu->state;
     zdj_keyboard_key_t * key = _get_current_keyboard_key( keyboard_menu );
     if( key && (key->cur_char < key->char_count-1) ) {
@@ -274,6 +278,7 @@ void zdj_text_input_keyboard_select_next_key_char( zdj_view_t * keyboard_menu ) 
 }
 
 void zdj_text_input_keyboard_select_prev_key_char( zdj_view_t * keyboard_menu ) {
+    // printf( "zdj_text_input_keyboard_select_prev_key_char\n" );
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)keyboard_menu->state;
     zdj_keyboard_key_t * key = _get_current_keyboard_key( keyboard_menu );
     if( key && (key->cur_char > 0) ) {

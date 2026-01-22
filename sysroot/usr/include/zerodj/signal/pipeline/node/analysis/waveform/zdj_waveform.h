@@ -125,6 +125,8 @@ typedef struct {
     double win_fwd_pixel_count;
     double win_pixel_count;
 
+    double samples_per_pixel;
+
     // Playback waveform data
     zdj_waveform_header_t * waveform_header;
     FILE * waveform_fd;
@@ -135,7 +137,8 @@ typedef struct {
 
     // Deck/control refs
     zdj_deck_t * deck;
-    zdj_pipeline_node_t * decode_node;
+    zdj_pipeline_node_t * audio_decode_node;
+    zdj_pipeline_node_t * waveform_decode_node;
 
     // Renderer
     double zoom_val;

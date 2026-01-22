@@ -3,7 +3,7 @@
 #include <zerodj/ui/anim/zdj_anim.h>
 
 void zdj_anim_init_dj_deck_page_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn ) {
-    anim->start_point.x = -70;
+    anim->start_point.x = (zdj_dj_deck_page_rect()->w + 2) * -1;
     anim->end_point.x = 0;
 
     // Delay the in anim by a few frames to let the old menu's out animation happen.
@@ -14,7 +14,7 @@ void zdj_anim_init_dj_deck_page_show( zdj_anim_t * anim, zdj_view_t * view, void
 
 void zdj_anim_init_dj_deck_page_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn ) {
     anim->start_point.x = 0;
-    anim->end_point.x = -70;
+    anim->end_point.x = (zdj_dj_deck_page_rect()->w + 2) * -1;
 
     // Delay the out anim by a few frames to give the button flash time to happen.
     anim->frame = 0;

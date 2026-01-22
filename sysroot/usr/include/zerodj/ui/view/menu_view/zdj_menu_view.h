@@ -27,6 +27,12 @@
 
 #define ZDJ_BACK_INDEX -1
 
+typedef enum {
+    ZDJ_MENU_INPUT_MODE_NORMAL,
+    ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS,
+    ZDJ_MENU_INPUT_MODE_EDIT_ITEM_POSITION
+} zdj_menu_view_input_mode_t;
+
 typedef struct {
     float position;
     float velocity;
@@ -44,6 +50,13 @@ typedef struct {
     // It can be used by an enclosing view as a header-less menu to determine
     // the enclosing view's back button visibility.  See file browser, for ex.
     bool has_back;
+    zdj_menu_view_input_mode_t input_mode;
+    bool edit_enabled;
+    bool long_press_to_edit;
+    zdj_view_t * edit_item; // ref to menu item currently taking edit inputs.
+    int edit_item_move_top_index;
+    int edit_item_move_bottom_index;
+    double move_item_index;
     zdj_view_t * scroll_view;
     zdj_rect_t scroll_view_frame;
     bool scroll_enabled;
@@ -63,6 +76,7 @@ void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section );
 void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item );
 void zdj_menu_view_add_chrome_item( zdj_view_t * menu_view, zdj_view_t * item );
 void zdj_menu_view_insert_item( zdj_view_t * menu_view, zdj_view_t * item, int index );
+void zdj_menu_view_move_item( zdj_view_t * menu_view, zdj_view_t * item, int dir );
 void zdj_menu_view_remove_all_items( zdj_view_t * menu_view );
 void zdj_menu_view_remove_item_at_scroll_index( zdj_view_t * menu_view, int index );
 void zdj_menu_view_remove_all_subviews( zdj_view_t * menu_view );

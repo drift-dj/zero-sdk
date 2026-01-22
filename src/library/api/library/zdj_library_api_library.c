@@ -29,10 +29,10 @@ void zdj_library_get_all_libraries(
         while ( (( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW) && row < result_limit ) {
             zdj_library_t * lib = calloc( 1, sizeof( zdj_library_t ) );
             strcpy( lib->entity_id, (char*)sqlite3_column_text ( stmt, 0 ) );
-            lib->name = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
-            lib->song_links = strdup( (char*)sqlite3_column_text ( stmt, 2 ) );
-            lib->curation_data_links = strdup( (char*)sqlite3_column_text ( stmt, 3 ) );
-            lib->setting_links = strdup( (char*)sqlite3_column_text ( stmt, 4 ) );
+            strcpy( lib->name, (char*)sqlite3_column_text ( stmt, 1 ) );
+            strcpy( lib->song_links_table, (char*)sqlite3_column_text ( stmt, 2 ) );
+            strcpy( lib->playlist_links_table, (char*)sqlite3_column_text ( stmt, 3 ) );
+            strcpy( lib->setting_links_table, (char*)sqlite3_column_text ( stmt, 4 ) );
             libraries[ row ] = lib;
             row++;
         }
@@ -40,7 +40,7 @@ void zdj_library_get_all_libraries(
     }
 }
 
-zdj_library_t * zdj_library_get_library_for_entity_id( char * library_entity_id ) {
+zdj_library_t * zdj_library_fetch_library_dto_for_entity_id( char * library_entity_id, sqlite3 * db ) {
     int sql_res;
     zdj_library_t * lib = NULL;
     sprintf( _sql, "select * from %s where entity_id like \'%s\'", ZDJ_LIBRARY_TABLE_LIBRARY, library_entity_id );
@@ -49,13 +49,16 @@ zdj_library_t * zdj_library_get_library_for_entity_id( char * library_entity_id 
         while ( ( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW ) {
             lib = calloc( 1, sizeof( zdj_library_t ) );
             strcpy( lib->entity_id, (char*)sqlite3_column_text ( stmt, 0 ) );
-            lib->name = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
-            lib->song_links = strdup( (char*)sqlite3_column_text ( stmt, 2 ) );
-            lib->curation_data_links = strdup( (char*)sqlite3_column_text ( stmt, 3 ) );
-            lib->setting_links = strdup( (char*)sqlite3_column_text ( stmt, 4 ) );
+            strcpy( lib->name, (char*)sqlite3_column_text ( stmt, 1 ) );
+            strcpy( lib->song_links_table, (char*)sqlite3_column_text ( stmt, 2 ) );
+            strcpy( lib->playlist_links_table, (char*)sqlite3_column_text ( stmt, 3 ) );
+            strcpy( lib->setting_links_table, (char*)sqlite3_column_text ( stmt, 4 ) );
         }
         sqlite3_finalize( stmt );
     }
+
+    // Fill in the playlist eids from the playlist links table
+    zdj_library_populate_playlists_for_library( lib, db );
     return lib;
 }
 
@@ -63,7 +66,7 @@ zdj_library_t * zdj_library_get_current( void ) {
     zdj_library_config_t * config = zdj_library_get_config( );
     // printf( "zdj_library_get_current %p %s\n", config, config->current_lib_entity_id );
     if( !config ){ return NULL; }
-    return zdj_library_get_library_for_entity_id( config->current_lib_entity_id );
+    return zdj_library_fetch_library_dto_for_entity_id( config->current_lib_entity_id, zdj_library_db );
 }
 
 int zdj_library_set_current( char * library_entity_id ) {
@@ -92,13 +95,23 @@ zdj_health_status_t zdj_library_new( void ) {
     zdj_sql_exec( (char *)&_sql, zdj_library_db );
 
     // Add a Song_Links table
+    // Add optional 'sequence' field to song_links
     snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Song_Links_%s' ( 'entity_id' TEXT NOT NULL, PRIMARY KEY('entity_id'))",
         new_lib_entity_id 
     );
     zdj_sql_exec( (char*)&_sql, zdj_library_db );
 
     // Add a Playlist_Links table
+    snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Playlist_Links_%s' ( 'table_name' TEXT NOT NULL, 'display_name' TEXT, PRIMARY KEY('table_name'))",
+        new_lib_entity_id 
+    );
+    zdj_sql_exec( (char*)&_sql, zdj_library_db );
+
     // Add a Curation_Data_Links table
+    snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Curation_Data_Links_%s' ( 'entity_id' TEXT NOT NULL, PRIMARY KEY('entity_id'))",
+        new_lib_entity_id 
+    );
+    zdj_sql_exec( (char*)&_sql, zdj_library_db );
 
     // Set current lib to the new lib
     zdj_library_config_set_current_library_id( new_lib_entity_id );
@@ -168,9 +181,50 @@ zdj_health_status_t zdj_library_add_song_link( char * library_entity_id, zdj_lib
     }
 }
 
+zdj_error_type_t zdj_library_populate_playlists_for_library(
+    zdj_library_t * library,
+    sqlite3 * db 
+) {
+    // printf( "zdj_library_populate_playlists_for_library\n" );
+    // Drop any current playlist state before fetching
+    if( library->playlist_table_names ) {
+        for( int i=0; i<library->playlist_count; i++ ){
+            if( library->playlist_table_names[ i ] ) { free( library->playlist_table_names[ i ] ); }
+        }
+        free( library->playlist_table_names );
+    }
+
+    // Count playlists in lib's playlist links table
+    library->playlist_count = zdj_sql_rows_in_table( library->playlist_links_table, NULL, db );
+    // printf( "playlist_count: %d %s\n", library->playlist_count, library->playlist_links_table );
+    if( library->playlist_count == 0 ) { 
+        return ZDJ_ERROR_OKAY; 
+    }
+
+    // Alloc storage for playlist eids
+    library->playlist_table_names = calloc( library->playlist_count, sizeof( char* ) );
+    library->playlist_titles = calloc( library->playlist_count, sizeof( char* ) );
+
+    // Fill playlist eids/titles from table
+    for( int t=0; t<library->playlist_count; t++ ) {
+        int res;
+        char sql[ 2048 ];
+        snprintf( sql, sizeof( sql ), "select * from %s", library->playlist_links_table );
+
+        sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
+        if( stmt ) {
+            while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
+                // printf( "found table: %s\n", sqlite3_column_text ( stmt, 1 ) );
+                library->playlist_table_names[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 0 ) );
+                library->playlist_titles[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
+            }
+            sqlite3_finalize( stmt );
+        }
+    }
+
+    return ZDJ_ERROR_OKAY;
+}
+
 void zdj_library_deinit_library( zdj_library_t * library ) {
-    free( library->name );
-    free( library->song_links );
-    free( library->curation_data_links );
-    free( library->setting_links );
+
 }

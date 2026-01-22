@@ -64,19 +64,19 @@ zdj_error_type_t zdj_gaussian_free( zdj_gaussian_t * kernel ) {
 	free( kernel );
 }
 
-double zdj_calc_fader_gain( double travel ) {
-	// Max travel = +10dB = 3.162x amplitude
-	// Min travel = -∞ = 0x amplitude
-	// ^5 places unity @ travel=~0.8
-	// ^3 places unity @ travel=~0.6
-	return (travel*travel*travel*travel*travel) * 3.162;
-}
-double zdj_calc_fader_db( double travel ) {
-	// This is super hacky at the moment.
-	// Just a linear interpolation where travel=1.0 is +10dB,
-	// and travel=fader_gain unity = 0dB
-	return (travel - 0.7f) / 0.2f;
-}
+// double zdj_calc_fader_gain( double travel ) {
+// 	// Max travel = +10dB = 3.162x amplitude
+// 	// Min travel = -∞ = 0x amplitude
+// 	// ^5 places unity @ travel=~0.8
+// 	// ^3 places unity @ travel=~0.6
+// 	return (travel*travel*travel*travel*travel) * 3.162;
+// }
+// double zdj_calc_fader_db( double travel ) {
+// 	// This is super hacky at the moment.
+// 	// Just a linear interpolation where travel=1.0 is +10dB,
+// 	// and travel=fader_gain unity = 0dB
+// 	return (travel - 0.7f) / 0.2f;
+// }
 
 double zdj_signal_lowpass( double state, double input, double coeff ) {
 	return state + ((input-state) * coeff);
@@ -98,13 +98,25 @@ void zdj_signal_naive_resample_audio(
 ) {
 	double rate = (in_end_coord - in_start_coord) / (double)out_sample_count;
 
-	// printf( "zdj_signal_naive_resample_audio rate: %1.3f\n", rate );
+	
+	// printf( "zdj_signal_naive_resample_audio rate: %1.3f/%ld %1.0f/%1.0f\n", rate, out_sample_count, in_start_coord, in_end_coord );
 
 	double cur_sample = in_start_coord - in_buf_ref_coord;
 	int left_neighbor_sample, left_neighbor_index;
 	int right_neighbor_sample, right_neighbor_index;
 	double interp_val;
 	double samp;
+
+	double hyperscrub_fade = 1.0;
+	// if( rate > 20.0 ) {
+	// 	hyperscrub_fade = (140.0 - rate - 20.0) / 140.0;
+	// } else if ( rate < -20.0 ) { 
+	// 	hyperscrub_fade = (140 - fabs(rate) - 20.0) / 140.0;
+	// }
+	if( fabs( rate ) > 17 ) { hyperscrub_fade = (90.0 - fabs(rate) - 17.0) / 90.0; }
+	if( hyperscrub_fade < 0.0 ) { hyperscrub_fade = 0.0; }
+
+	// printf( "%1.1f\n", rate );
 
 	for( int i=0; i<out_sample_count; i++ ) {
 		// printf( "resamp: rat: %1.3f, out i %d, src cur_sam: %1.3f\n", rate, i, cur_sample );
@@ -123,8 +135,8 @@ void zdj_signal_naive_resample_audio(
 		
 		samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
 		samp += in_buf[ right_neighbor_index ] * interp_val;
-		// printf( "1.2\n" );
-		out_buf[ i*out_channel_count ] = samp;
+		// printf( "1.2 %d\n", i*out_channel_count );
+		out_buf[ i*out_channel_count ] = samp * hyperscrub_fade;
 
 		// printf( "1.3\n" );
 		if( out_channel_count == 2 ) {
@@ -138,7 +150,7 @@ void zdj_signal_naive_resample_audio(
 			}
 			samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
 			samp += in_buf[ right_neighbor_index ] * interp_val;
-			out_buf[ i*out_channel_count+1 ] = samp;
+			out_buf[ i*out_channel_count+1 ] = samp * hyperscrub_fade;
 			// printf( "3\n" );
 		}
 
@@ -191,4 +203,16 @@ double zdj_signal_beatgrid_count_for_pcm_count( double pcm_count, int sample_rat
 
 	double samples_per_bar = samples_per_minute / bars_per_minute;
 	return pcm_count / samples_per_bar;
+}
+
+float zdj_signal_db_for_gain( float gain ) {
+	return log10( gain ) * 20;
+}
+
+float zdj_signal_lo_xover_hz_for_unit_val( float unit_val ) {
+	return ( unit_val * 1000 ) + 80;
+}
+
+float zdj_signal_hi_xover_hz_for_unit_val( float unit_val ) {
+	return ( unit_val * 10000 ) + 1500;
 }

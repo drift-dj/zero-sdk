@@ -200,7 +200,8 @@ typedef enum {
     ZDJ_VIEW_DIALOG,
     ZDJ_VIEW_WAVEFORM,
     ZDJ_VIEW_DJ_DECK_PAGE,
-    ZDJ_VIEW_BEATGRID
+    ZDJ_VIEW_BEATGRID,
+    ZDJ_VIEW_CUEPOINTS
 } zdj_view_type_t;
 
 typedef enum {

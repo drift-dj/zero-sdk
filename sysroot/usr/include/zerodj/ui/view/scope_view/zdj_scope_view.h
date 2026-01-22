@@ -30,6 +30,7 @@ typedef struct {
     zdj_soundcard_t * soundcard;
     zdj_view_t * waveform;
     zdj_view_t * menu;
+    zdj_view_t * parent_view;
 } zdj_scope_view_state_t;
 
 zdj_view_t * zdj_new_scope_view( zdj_soundcard_t * soundcard, zdj_soundcard_node_name_t node_name );

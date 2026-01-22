@@ -4,136 +4,129 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/system/perf/zdj_perf.h>
 #include <zerodj/ui/zdj_ui.h>
-#include <zerodj/ui/anim/zdj_anim.h>
-#include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/panel/debug/zdj_debug_panel.h>
-#include <zerodj/ui/view/asset_view/zdj_asset_view.h>
-#include <zerodj/ui/view/debug_view/zdj_debug_view.h>
-#include <zerodj/ui/view/log_view/zdj_log_view.h>
-#include <zerodj/ui/view/scroll_view/zdj_scroll_view.h>
+#include <zerodj/ui/view/label_view/zdj_label_view.h>
+#include <zerodj/ui/view/menu_view/zdj_menu_view.h>
+#include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
+#include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
+#include <zerodj/ui/view/menu_section_view/zdj_menu_section_view.h>
+#include <zerodj/ui/view/modal_view/zdj_modal_view.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
-static void _zdj_debug_panel_draw( zdj_view_t * view, zdj_view_clip_t * clip );
-static void _zdj_debug_panel_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
-static void _zdj_debug_panel_deploy( zdj_view_t * view );
-static void _zdj_debug_panel_retract( zdj_view_t * view );
+static void _draw( zdj_view_t * view, zdj_view_clip_t * clip );
+static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event );
+static void _handle_back( zdj_view_t * menu_view );
+static void _refresh_menu( zdj_view_t * view );
+
+static void _add_perf_section( zdj_view_t * view );
+static void _update_perf_report( zdj_debug_panel_state_t * state );
+
+static void _anim_in_cb( zdj_view_t * superview, zdj_view_t * view );
+static void _anim_out_cb( zdj_view_t * superview, zdj_view_t * view );
 
 zdj_view_t * zdj_new_debug_panel( void ) {
-    zdj_view_t * view = zdj_new_view( zdj_screen_rect( ) );
+    zdj_perf_init( 3000 );
 
-    // Add a container view for animations/clipping
-    zdj_view_t * container_view = zdj_new_view( zdj_debug_panel_rect( ) );
-    zdj_add_subview( view, container_view );
-    container_view->type = ZDJ_VIEW_BASE;
-    container_view->draw = &_zdj_debug_panel_draw;
-    container_view->handle_control_event = &_zdj_debug_panel_handle_control;
+    zdj_view_t * view = zdj_new_modal_view( zdj_modal_rect( ) );
+    view->draw = &_draw;
+    view->handle_control_event = &_handle_control;
+    view->in_anim.cb_fn = &_anim_in_cb;
+    view->out_anim.cb_fn = &_anim_out_cb;
+    view->map = ZDJ_CONTROL_MAP_DEBUG_PANEL;
 
-    container_view->frame.x = ZDJ_DEBUG_PANEL_WIDTH * -3;
-    container_view->frame.y = 0;
-
-    zdj_set_anim( &container_view->in_anim, ZDJ_ANIM_DEBUG_PANEL_SHOW );
-    zdj_set_anim( &container_view->out_anim, ZDJ_ANIM_DEBUG_PANEL_HIDE );
-
-    // Add a log_view
-    // zdj_view_t * log_view = zdj_new_log_view( 
-    //     "cat /sys/kernel/debug/usb/tcpm-0-0052/log", 
-    //     ZDJ_LOG_VIEW_TYPE_BUFFER,
-    //     zdj_debug_panel_rect( ) 
-    // );
-    // zdj_view_t * log_view = zdj_new_log_view( 
-    //     "dmesg | tail -n 10", 
-    //     ZDJ_LOG_VIEW_TYPE_TAIL,
-    //     zdj_debug_panel_rect( ) 
-    // );
-    // zdj_add_subview( container_view, log_view );
-
-    zdj_view_t * debug_view = zdj_new_debug_view( zdj_debug_panel_rect( ) );
-    zdj_add_subview( container_view, debug_view );
-
-    // Add state
     zdj_debug_panel_state_t * state = calloc( 1, sizeof( zdj_debug_panel_state_t ) );
-    container_view->state = state;
-    state->debug_view = debug_view;
-    state->event_capture = false;
+    state->view_needs_refresh = true;
+    view->state = state;
+
+    // Make menu
+    zdj_view_t * menu = zdj_new_menu_view( ZDJ_VERTICAL, zdj_modal_rect( ) );
+    zdj_add_subview( view, menu );
+    menu->frame.x = 0;
+    menu->frame.y = 0;
+    menu->frame.w = ZDJ_MODAL_WIDTH;
+    menu->frame.h = ZDJ_MODAL_HEIGHT;
+    state->menu = menu;
+    
+    // Set up header
+    zdj_view_t * menu_header = zdj_new_menu_header( 
+        "Debug",
+        " ",
+        ZDJ_MENU_HEADER_STYLE_NORMAL,
+        ZDJ_MENU_HEADER_BACK_STYLE_EXIT
+    );
+    zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_header->state;
+    header_state->handle_back = &_handle_back;
+    zdj_menu_view_add_header( menu, menu_header );
     
     return view;
 }
 
-void _zdj_debug_panel_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_debug_panel_state_t * state = (zdj_debug_panel_state_t*)view->state;
 
-    boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
+    boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
 
-    // if( state->event_capture ) {
-    //     rectangleColor( zdj_renderer( ), clip->dst.x-1, clip->dst.y-1, clip->dst.x+clip->dst.w+2, clip->dst.y+clip->dst.h+2, ZDJ_WHITE );
-    // }
+    if( state->view_needs_refresh ) { _refresh_menu( view ); }
 }
 
-void _zdj_debug_panel_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
-    zdj_control_event_t * e = (zdj_control_event_t *)_event;
+static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+
+}
+
+static void _handle_back( zdj_view_t * menu_view ) {
+
+}
+
+static void _refresh_menu( zdj_view_t * view ) {
     zdj_debug_panel_state_t * state = (zdj_debug_panel_state_t*)view->state;
 
-    // Ignore events which have been blocked by layers above this one.
-    if( e->blocked ) { return; }
+    zdj_menu_view_remove_all_subviews( state->menu );
 
-    // Capture events for deploy/retract and focus/un-focus.
-    if( e->id == ZDJ_UI_CONTROL_FN_1_PRESS_1 ) {
-        printf( "_zdj_debug_panel_handle_control\n" );
-        e->blocked = true;
-        if( !state->deployed ) { 
-            // Show debug panel
-            _zdj_debug_panel_deploy( view );
-        } else {
-            // Hide debug panel
-            _zdj_debug_panel_retract( view );
-        }
-    } else if( e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ) {
-        // If we're deployed, capture Tone 1 PB release as a toggle on event_capture.
-        // (deployed debug menu always captures Tone 1 PB release)
-        if( state->deployed ) {
-            printf( "_zdj_debug_panel_handle_control\n" );
-            e->blocked = true;
-            state->event_capture = !state->event_capture;
-        }
+    // zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Fast Audio Thread" ) );
+    // zdj_menu_view_add_item( state->menu, zdj_new_menu_item( "Slowest", ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) );
+    // zdj_menu_view_add_item( state->menu, zdj_new_menu_item( "Normal", ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) );
+    // zdj_menu_view_add_item( state->menu, zdj_new_menu_item( "Fastes", ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) );
+    
+    _add_perf_section( view );
+}
+
+static void _add_perf_section( zdj_view_t * view ) {
+    zdj_debug_panel_state_t * state = (zdj_debug_panel_state_t*)view->state;
+    
+    if( state->perf_counter++ > 100 ) {
+        state->perf_counter = 0;
+        _update_perf_report( state );
     }
 
-    // // If we're currently capturing events, grab menu scroll stuff
-    // // and pass it down to the subview stack.
-    // if( state->event_capture ) {
-    //     if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_0 ) {
-    //         state->debug_view->handle_control_event( state->debug_view, e );
-    //         e->blocked = true;
-    //     } else if( e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ) {
-    //         state->debug_view->handle_control_event( state->debug_view, _event );
-    //         e->blocked = true;
-    //     } else if( e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0 ) {
-    //         state->debug_view->handle_control_event( state->debug_view, _event );
-    //         e->blocked = true;
-    //     }
-    // }
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Perf" ) );
+    zdj_menu_view_add_item( state->menu, zdj_new_menu_item( state->line_str, ZDJ_MENU_ITEM_LAYOUT_INERT ) );
 }
 
-void _zdj_debug_panel_deploy( zdj_view_t * view ) {
-    zdj_debug_panel_state_t * state = (zdj_debug_panel_state_t*)view->state;
-    state->event_capture = true;
-    state->deployed = true;
+static void _update_perf_report( zdj_debug_panel_state_t * state ) {
+    state->report = zdj_perf_make_cycle_timing_report( );
+    zdj_reset_perf( );
 
-    ((anim_init_t)view->in_anim.init_fn)( 
-        &view->in_anim, 
-        view
-    );
-    view->anim = &view->in_anim;
+    double cad_msec;
+    double cad_hz;
+    double dur_msec;
+    char str[ 64 ];
+    
+    state->line = zdj_perf_report_line_for_name( state->report, ZDJ_PERF_TAG_DECK_MOVE );
+    cad_msec = (double)state->line->avg_cadence / 1000000.0;
+    cad_hz = 1000.0 / cad_msec;
+    dur_msec = (double)state->line->avg_dur / 1000000.0;
+    snprintf( state->line_str, sizeof( state->line_str ), "%1.1fmS/%1.0fHz  %1.1fmS", cad_msec, cad_hz, dur_msec );
 }
 
-void _zdj_debug_panel_retract( zdj_view_t * view ) {
-    zdj_debug_panel_state_t * state = (zdj_debug_panel_state_t*)view->state;
-    state->event_capture = false;
-    state->deployed = false;
+static void _anim_in_cb( zdj_view_t * superview, zdj_view_t * view ) {
+    // printf( "debug panel in cb\n" );
+    zdj_reset_perf( );
+    zdj_enable_perf( );
+}
 
-    ((anim_init_t)view->out_anim.init_fn)( 
-        &view->out_anim, 
-        view 
-    );
-    view->anim = &view->out_anim;
+static void _anim_out_cb( zdj_view_t * superview, zdj_view_t * view ) {
+    // printf( "debug panel out cb\n" );
+    zdj_disable_perf( );
 }

@@ -106,13 +106,13 @@ void _zdj_scope_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) 
 
     zdj_menu_view_remove_all_items( menu_view );
 
-    zdj_menu_view_add_padding( menu_view, 2 );
-    // Add Node selector.
-    zdj_view_t * node_select = zdj_new_menu_item( 
-        "Zoom", 
-        ZDJ_MENU_ITEM_LAYOUT_DATA_R 
-    );
-    zdj_menu_view_add_item( menu_view, node_select );
+    // zdj_menu_view_add_padding( menu_view, 2 );
+    // // Add Node selector.
+    // zdj_view_t * node_select = zdj_new_menu_item( 
+    //     "Zoom", 
+    //     ZDJ_MENU_ITEM_LAYOUT_DATA_R 
+    // );
+    // zdj_menu_view_add_item( menu_view, node_select );
 
     // Add waveform frame
     zdj_view_t * frame_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TEXT_INPUT_CURSOR ], NULL );
@@ -126,16 +126,17 @@ void _zdj_scope_view_update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) 
     zdj_add_subview( menu_view, frame_r );
 
 
-    // Add waveform view based on current node.
+    // // Add waveform view based on current node.
     state->waveform = zdj_new_live_waveform_view( 
-        &(zdj_rect_t){6,15,ZDJ_MODAL_WIDTH-9,30}, 
+        &(zdj_rect_t){6,7,ZDJ_MODAL_WIDTH-9,30}, 
         zdj_soundcard_get_node_for_name( soundcard, state->node_name )
     );
+
     zdj_menu_view_add_item( menu_view, state->waveform );
 }
 
 void _zdj_scope_view_handle_back( zdj_view_t * scope_view ) {
-    zdj_pop_subview_of( zdj_root_view( ), true );
+    zdj_pop_subview_of( zdj_panel_view( ), true );
 }
 
 void _zdj_scope_view_deinit_state( zdj_view_t * view ) {

@@ -10,11 +10,15 @@
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_tempo_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 
-static void _update_platter_model ( zdj_deck_t * deck );
+// static void _update_platter_model( zdj_deck_t * deck );
+static void _update_platter_model_inputs( zdj_deck_t * deck );
+static void _update_platter_model_outputs( zdj_deck_t * deck );
 static void _reset_tsm_tempo_node_to_decode_addr( zdj_pipeline_node_t * node, double addr );
 
 void zdj_deck_dj_init_transport( zdj_deck_t * deck ) {
-    deck->update_transport = &_update_platter_model;
+    // deck->update_transport = &_update_platter_model;
+    deck->update_transport_inputs = &_update_platter_model_inputs; // Control thread @900Hz
+    deck->update_transport_outputs = &_update_platter_model_outputs; // Soundcard thread @110Hz
 }
 
 void zdj_dj_deck_reset_platter( 
@@ -31,12 +35,15 @@ void zdj_dj_deck_reset_platter(
 
 //////////////////////////////
 // Platter Model
+// Updated from control thread
+// ~900 Hz
 //////////////////////////////
 
-static void _update_platter_model ( zdj_deck_t * deck ) {
-    // printf( "zdj_deck_update_controls %p\n", deck );
+static void _update_platter_model_inputs( zdj_deck_t * deck ) {
+     // printf( "_update_platter_model %p\n", deck );
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     if( !deck_state->decode_node ) { return; }
+    if( deck->status < ZDJ_DECK_STATUS_RUNNING ){ return; }
     
     // Get node states
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
@@ -75,8 +82,17 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
                     // After spinup, we need to enter tempo tsm mode if enabled.
                     slip->state = ZDJ_PLATTER_SLIP_LAMINAR_TEMPO; 
                     // Sync tempo decode to needle head
-                    tsm_tempo_state->rate = tsm_tempo_state->rate = deck->controls.platter.motor.set_rate;
+
+                    //////////////////////////////////////////////
+                    // MASSIVE PROBLEM
+                    // Decouple soundcard thread state
+                    // from control thread state. 
+                    //////////////////////////////////////////////
+                    tsm_tempo_state->rate = deck->controls.platter.motor.set_rate;
                     _reset_tsm_tempo_node_to_decode_addr( deck_state->tsm_tempo_node, platter->needle.head );
+                    //////////////////////////////////////////////
+                    //////////////////////////////////////////////
+
                 }
             }
             // printf( "ZDJ_PLATTER_MOTOR_SPIN_UP: %1.3f\n", motor->instant_rate );
@@ -101,6 +117,23 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
             }
             break;
     }
+}
+
+static void _update_platter_model_outputs( zdj_deck_t * deck ) {
+    //  printf( "_update_platter_model %p\n", deck );
+    zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
+    if( !deck_state->decode_node ) { return; }
+    
+    // Get node states
+    zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
+    zdj_tsm_pitch_node_state_t * tsm_pitch_state = (zdj_tsm_pitch_node_state_t*)deck_state->tsm_pitch_node->state;
+    zdj_tsm_tempo_node_state_t * tsm_tempo_state = (zdj_tsm_tempo_node_state_t*)deck_state->tsm_tempo_node->state;
+
+    // Get platter models
+    zdj_deck_platter_t * platter = &deck->controls.platter;
+    zdj_deck_platter_motor_t * motor = &platter->motor;
+    zdj_deck_platter_slip_t * slip = &platter->slip;
+
 
     double motor_factor = motor->instant_rate * ZDJ_SOUNDCARD_BUF_LEN;
 
@@ -115,6 +148,11 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
         slip->set_val += motor_factor;
         slip->instant_val = slip->set_val;
 
+        //////////////////////////////////////////////
+        // MASSIVE PROBLEM
+        // Decouple soundcard thread state
+        // from control thread state. 
+        //////////////////////////////////////////////
         // Update the needle head
         platter->needle.head = slip->offset + slip->instant_val;
         // printf( "lam pitch needle.head: %1.3f\n", platter->needle.head );
@@ -129,6 +167,7 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
         // printf( "ZDJ_PLATTER_SLIP_LAMINAR_TEMPO\n" );
         deck_state->tsm_source = ZDJ_DECK_TSM_SOURCE_TEMPO;
         
+
         zdj_dj_deck_reset_platter( platter, tsm_tempo_state->decode_coord );
         // printf( "lam tempo needle.head: %1.3f\n", platter->needle.head );
 
@@ -157,6 +196,7 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
 
         // Update the needle head
         platter->needle.head = slip->offset + slip->instant_val;
+        // printf( "xport: set:%1.3f inst:%1.3f head:%1.3f\n", slip->set_val, slip->instant_val, platter->needle.head );
         // printf( "scratch needle.head: %1.3f rate: %1.3f\n", platter->needle.head, motor->instant_rate );
         // printf( "scratch plat m_h:%1.3f s_s:%1.3f s_i:%1.3f s_o:%1.3f n_h: %1.3f\n", 
         //     motor->head,
@@ -207,7 +247,8 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
             slip->state = ZDJ_PLATTER_SLIP_LAMINAR_TEMPO;
         } 
 
-        // Update needle head to follow tsm node
+        // Update needle head to follow tsm node - so we're ready the instant
+        // we exit tempo mode
         zdj_dj_deck_reset_platter( platter, tsm_tempo_state->decode_coord );
         // printf( "nudge tempo rate: %1.3f needle.head: %1.3f\n", tsm_tempo_state->rate, platter->needle.head );
 
@@ -216,7 +257,7 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
         if( motor->enabled && deck_state->tempo_tsm_enabled ) {
             slip->state = ZDJ_PLATTER_SLIP_LAMINAR_TEMPO;
             // Set tempo tsm head;
-            tsm_tempo_state->rate = tsm_tempo_state->rate = deck->controls.platter.motor.set_rate;
+            tsm_tempo_state->rate = deck->controls.platter.motor.set_rate;
             _reset_tsm_tempo_node_to_decode_addr( deck_state->tsm_tempo_node, platter->needle.head );
         } else {
             slip->state = ZDJ_PLATTER_SLIP_LAMINAR_PITCH;
@@ -232,7 +273,8 @@ static void _update_platter_model ( zdj_deck_t * deck ) {
         if( motor->instant_rate < 0.001 ) { deck->safe_to_deinit = true; }
     }
 
-    // printf( "zdj_deck_update_controls done\n" );
+    // printf( "%1.1f\n", deck->controls.platter.motor.set_rate );
+    // printf( "needle.head: %1.1f\n" );
 }
 
 

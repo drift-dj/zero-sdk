@@ -42,13 +42,16 @@ typedef enum {
     ZDJ_MENU_ITEM_LAYOUT_INERT_STATUS,
     ZDJ_MENU_ITEM_LAYOUT_LAUNCH_BIG,
     ZDJ_MENU_ITEM_LAYOUT_LAUNCH_SM,
+    ZDJ_MENU_ITEM_LAYOUT_PLAYLIST,
     ZDJ_MENU_ITEM_LAYOUT_SLIDER,
     ZDJ_MENU_ITEM_LAYOUT_SONG_IMPORT,
     ZDJ_MENU_ITEM_LAYOUT_TOGGLE,
     ZDJ_MENU_ITEM_LAYOUT_ASSET,
+    ZDJ_MENU_ITEM_LAYOUT_CUEPOINT,
     ZDJ_MENU_ITEM_LAYOUT_CUSTOM
 } zdj_menu_item_view_layout_t;
 
+// DEPRECATED
 typedef enum {
     ZDJ_MENU_ITEM_ACTION_UNKNOWN,
     ZDJ_MENU_ITEM_ACTION_VIEW,
@@ -65,6 +68,7 @@ typedef enum {
     ZDJ_MENU_ITEM_ACTION_DIR_ENTER,
     ZDJ_MENU_ITEM_ACTION_FILE_SELECT
 } zdj_menu_item_view_action_t;
+// DEPRECATED
 
 typedef enum {
     ZDJ_MENU_ITEM_DATA_TYPE_CHAR,
@@ -75,13 +79,27 @@ typedef enum {
     ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_2
 } zdj_menu_item_data_display_type_t;
 
+typedef enum {
+    ZDJ_MENU_ITEM_OPTIONS_NONE,
+    ZDJ_MENU_ITEM_OPTIONS_LIB_PLAYLIST,
+    ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST
+} zdj_menu_item_options_type_t;
+
+typedef enum {
+    ZDJ_MENU_ITEM_ACTION_SELECT,
+    ZDJ_MENU_ITEM_ACTION_DELETE,
+    ZDJ_MENU_ITEM_ACTION_START_MOVE,
+    ZDJ_MENU_ITEM_ACTION_END_MOVE,
+    ZDJ_MENU_ITEM_ACTION_EDIT,
+    ZDJ_MENU_ITEM_ACTION_DONE
+} zdj_menu_item_action_t;
+
 typedef void ( *init_layout_t )( zdj_view_t* );
 typedef void ( *update_layout_t )( zdj_view_t* );
 
 typedef struct {
     char title[ 256 ];
     char subtitle[ 256 ];
-    // zdj_ui_data_t * data;
     zdj_ui_data_t data;
     zdj_menu_item_data_display_type_t data_type;
     char data_prefix[ 32 ];
@@ -94,12 +112,18 @@ typedef struct {
     update_layout_t update_layout;
     zdj_ui_asset_t icon;
     zdj_ui_asset_t icon_hi;
-    zdj_menu_item_view_action_t action;
+    zdj_menu_item_view_action_t action; // DEPERECATED
     char link[ 256 ];
     bool is_hilite;
     bool is_blinking;
     int blink_timer;
     bool handles_hmi;
+    bool captures_all_events;
+    bool edit_enabled;
+    bool edit_active;
+    double edit_option_index;
+    zdj_menu_item_options_type_t edit_options_type;
+    zdj_menu_item_action_t edit_action;
     zdj_view_t * normal_view;
     zdj_view_t * hilite_view;
     zdj_view_t * title_view;
@@ -125,8 +149,15 @@ zdj_view_t * zdj_new_data_menu_item(
     char * prefix,
     char * suffix
 );
+zdj_view_t * zdj_new_cuepoint_menu_item( char * name, char * cuepoint_eid );
 
 zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index );
+
+void zdj_menu_item_scroll_options( zdj_view_t * item, int dir );
+void zdj_menu_item_enter_edit_mode( zdj_view_t * item );
+void zdj_menu_item_exit_edit_mode( zdj_view_t * item );
+void zdj_menu_item_enter_move_mode( zdj_view_t * item );
+void zdj_menu_item_exit_move_mode( zdj_view_t * item );
 
 void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout_t layout );
 
@@ -144,15 +175,18 @@ void zdj_menu_item_inert_data_init_layout( zdj_view_t * view );
 void zdj_menu_item_inert_status_init_layout( zdj_view_t * view );
 void zdj_menu_item_launch_big_init_layout( zdj_view_t * view );
 void zdj_menu_item_launch_sm_init_layout( zdj_view_t * view );
+void zdj_menu_item_playlist_init_layout( zdj_view_t * view );
 void zdj_menu_item_slider_init_layout( zdj_view_t * view );
 void zdj_menu_item_song_import_init_layout( zdj_view_t * view );
 void zdj_menu_item_toggle_init_layout( zdj_view_t * view );
 void zdj_menu_item_asset_init_layout( zdj_view_t * view );
+void zdj_menu_item_cuepoint_init_layout( zdj_view_t * view );
 
 void zdj_menu_item_data_l_update_layout( zdj_view_t * view );
 void zdj_menu_item_data_r_update_layout( zdj_view_t * view );
 void zdj_menu_item_inert_data_update_layout( zdj_view_t * view );
 void zdj_menu_item_inert_status_update_layout( zdj_view_t * view );
+void zdj_menu_item_playlist_update_layout( zdj_view_t * view );
 void zdj_menu_item_slider_update_layout( zdj_view_t * view );
 void zdj_menu_item_song_import_update_layout( zdj_view_t * view );
 void zdj_menu_item_toggle_update_layout( zdj_view_t * view );

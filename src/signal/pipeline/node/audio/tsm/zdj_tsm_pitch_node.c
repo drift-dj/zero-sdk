@@ -44,42 +44,43 @@ zdj_pipeline_node_t * zdj_new_tsm_pitch_node(
     return node;
 }
 
+// float _tsm1_p = 0;
+// float _tsm1_f = 945;
+
 // Calculate this buffer's start/stop address and interpolate decode samples into out_buffer
 static void _update_wait( zdj_pipeline_node_t * node ) {
     // printf( "pitch_node _update_wait\n" );
     zdj_tsm_pitch_node_state_t * state = (zdj_tsm_pitch_node_state_t*)node->state;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)state->decode_node->state;
 
-    // printf( "tsm update_wait decd %ld>%ld>%ld ref: %1.1f st:%1.1f en:%1.1f\n", 
-    //     decode_state->head_win_start,
-    //     decode_state->head_decode_addr,
-    //     decode_state->head_win_end,
-    //     state->decode_buf_ref_coord, 
-    //     state->decode_start_coord,
-    //     state->decode_end_coord
-    // );
-
     // printf( "tsm: %1.1f -> %1.1f\n", state->decode_start_coord, state->decode_end_coord );
     // printf( "------------------\n" );
+
+    zdj_decode_addr_t decode_win_start;
+    decode_state->get_win_start_addr( state->decode_node, &decode_win_start );
 
     // Interp from rate-based decode buf coords to full width of tsm buf.
     zdj_signal_naive_resample_audio( 
         decode_state->out_buffer,
         state->decode_start_coord,
         state->decode_end_coord,
-        state->decode_buf_ref_coord,
+        decode_win_start.transport_d,
         decode_state->channel_count,
         state->out_buffer,
         ZDJ_SOUNDCARD_BUF_LEN,
         state->channel_count
     );
-
-    // Naïve copy
-    // printf( "--- TSM naive copy:\n" );
-    // for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-    //     state->out_buffer[ i ] = decode_state->out_buffer[ i ];
-    //     // printf( "%1.1f -> %1.1f\n", decode_state->out_buffer[ i ], state->out_buffer[ i ] ); 
-    // }
+    // float pre_p = _tsm1_p;
+    // _tsm1_p = zdj_signal_gen_sine( 
+    //     _tsm1_f, 
+    //     _tsm1_p, 
+    //     ZDJ_SOUNDCARD_BUF_LEN,
+    //     state->out_buffer,
+    //     state->channel_count,
+    //     0,
+    //     1.0f
+    // );
+    // printf( "pre:%1.3f post:%1.3f, d:%1.3f\n", pre_p, _tsm1_p, pre_p - _tsm1_p );
 
     // printf( "pitch_node _update_wait done\n" );
 }

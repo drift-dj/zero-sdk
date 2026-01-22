@@ -18,6 +18,11 @@
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 
 
+static bool _contains_core_addr( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * addr, 
+    zdj_decode_addr_coord_t ref_coord 
+);
 static bool _contains_addr( 
     zdj_decode_layer_t * layer, 
     zdj_decode_addr_t * addr, 
@@ -31,8 +36,20 @@ static double _origin_d_coord_for_transport_d_coord(
 void zdj_decode_layer_init_addr_api( zdj_decode_layer_t * layer ) {
 
     layer->contains_addr = &_contains_addr;
+    layer->contains_core_addr = &_contains_core_addr;
     layer->update_buf_coords_for_head = &_update_buf_coords_for_node_head;
     layer->origin_d_coord_for_transport_d_coord = &_origin_d_coord_for_transport_d_coord;
+}
+
+static bool _contains_core_addr( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * addr, 
+    zdj_decode_addr_coord_t ref_coord 
+) {
+    return ( (layer->core_start.less_than( &layer->core_start, addr, ref_coord ) &&
+              layer->core_end.greater_than( &layer->core_end, addr, ref_coord )) ||
+              layer->core_start.equal( &layer->core_start, addr, ref_coord ) ||
+              layer->core_end.equal( &layer->core_end, addr, ref_coord ) );
 }
 
 static bool _contains_addr( 
@@ -40,8 +57,10 @@ static bool _contains_addr(
     zdj_decode_addr_t * addr, 
     zdj_decode_addr_coord_t ref_coord 
 ) {
-    return ( layer->core_start.less_than( &layer->core_start, addr, ref_coord ) &&
-             layer->core_end.greater_than( &layer->core_end, addr, ref_coord ) );
+    return ( (layer->lead_in_start.less_than( &layer->lead_in_start, addr, ref_coord ) &&
+              layer->lead_out_end.greater_than( &layer->lead_out_end, addr, ref_coord )) ||
+              layer->lead_in_start.equal( &layer->lead_in_start, addr, ref_coord ) ||
+              layer->lead_out_end.equal( &layer->lead_out_end, addr, ref_coord ) );
 }
 
 static void _update_buf_coords_for_node_head( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node ) {

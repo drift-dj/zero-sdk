@@ -228,6 +228,12 @@ void zdj_control_scan_hmi_input( void ) {
     zdj_hmi_m7_state_model->play_pb_state = !(b_val[0]-48);
     zdj_hmi_m7_state_model->nav_pb_state = !(sw_val[0]-48);
 
+    // printf( "%d, %d, %d\n",
+    //     zdj_hmi_m7_state_model->hotcue_pb_state,
+    //     zdj_hmi_m7_state_model->play_pb_state,
+    //     zdj_hmi_m7_state_model->nav_pb_state
+    // );
+
     zdj_hmi_m7_state_model->out_state = enco_1_vol->upval;
     zdj_hmi_m7_state_model->jog_state = enco_2_jog->upval;
     zdj_hmi_m7_state_model->tone_1_state = enco_3_t1->upval;

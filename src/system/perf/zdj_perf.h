@@ -31,6 +31,8 @@ typedef enum {
     ZDJ_PERF_TAG_CONTROL_CYCLE,
     ZDJ_PERF_TAG_UI_CYCLE,
     ZDJ_PERF_TAG_AUDIO_BUF_CYCLE,
+    ZDJ_PERF_TAG_DECK_MOVE,
+    ZDJ_PERF_TAG_DECK_UPDATE,
     ZDJ_PERF_TAG_COUNT
 } zdj_perf_tag_name_t;
 
@@ -38,6 +40,8 @@ static char * zdj_perf_tag_name[ ZDJ_PERF_TAG_COUNT ] = {
     "Ctrl",// ZDJ_PERF_TAG_CONTROL_CYCLE,
     "UI",// ZDJ_PERF_TAG_UI_CYCLE,
     "Aud",// ZDJ_PERF_TAG_SOUNDCARD_FAST_CYCLE
+    "DMv",// ZDJ_PERF_TAG_DECK_MOVE,
+    "DUp"// ZDJ_PERF_TAG_DECK_UPDATE,
 };
 
 typedef struct {
@@ -70,6 +74,29 @@ typedef struct {
     uint32_t cycle_count;
     uint32_t miss_count;
 } zdj_perf_report_t;
+
+
+extern bool _zdj_perf_enabled;
+extern uint32_t _zdj_perf_tag_max;
+
+extern zdj_perf_tag_t * _zdj_perf_hmi_scan_tags;
+extern int32_t _zdj_perf_hmi_scan_tag_index;
+
+extern zdj_perf_tag_t * _zdj_perf_hmi_process_tags;
+extern int32_t _zdj_perf_hmi_process_tag_index;
+
+extern zdj_perf_tag_t * _zdj_perf_ui_tags;
+extern int32_t _zdj_perf_ui_tag_index;
+
+extern zdj_perf_tag_t * _zdj_perf_soundcard_fast_cycle_tags;
+extern int32_t _zdj_perf_soundcard_fast_cycle_tag_index;
+
+extern zdj_perf_tag_t * _zdj_perf_soundcard_slow_cycle_tags;
+extern int32_t _zdj_perf_soundcard_slow_cycle_tag_index;
+
+extern zdj_perf_tag_t * _zdj_perf_deck_audio_cycle_tags;
+extern int32_t _zdj_perf_deck_audio_cycle_tag_index;
+
 
 // Get raw time for perf tag
 uint64_t zdj_perf_time( void );

@@ -3,6 +3,8 @@
 
 #include <zerodj/controls/zdj_controls.h>
 
+zdj_control_map_id_t zdj_control_active_map;
+
 void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
     // printf( "zdj_activate_control_map: %d\n", map_id );
     zdj_deactivate_all_controls( );
@@ -10,11 +12,14 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
         case ZDJ_CONTROL_MAP_MENU_BASE:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_PRESS_2 ); // long press for edit mode
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_PRESS_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_MENU_DJ_ROOT:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
@@ -24,6 +29,8 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
 
         case ZDJ_CONTROL_MAP_TEXT_INPUT:
@@ -43,6 +50,8 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_SDK_TEST:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
@@ -56,10 +65,18 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             break;
 
-        case ZDJ_CONTROL_MAP_SOUNDCARD:
+        case ZDJ_CONTROL_MAP_SOUNDCARD_PANEL:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_PRESS_1 );
@@ -67,6 +84,30 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
+            zdj_activate_control( ZDJ_UI_CONTROL_NEXT_PANEL );
+            zdj_activate_control( ZDJ_UI_CONTROL_PREV_PANEL );
+            break;
+        case ZDJ_CONTROL_MAP_ASSIST_PANEL:
+        case ZDJ_CONTROL_MAP_DEBUG_PANEL:
+        case ZDJ_CONTROL_MAP_RECORDING_PANEL:
+        case ZDJ_CONTROL_MAP_WIDGET_PANEL:
+            zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_2_PRESS_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
+            zdj_activate_control( ZDJ_UI_CONTROL_NEXT_PANEL );
+            zdj_activate_control( ZDJ_UI_CONTROL_PREV_PANEL );
             break;
 
         case ZDJ_CONTROL_MAP_LIB_EDIT_SONG:
@@ -88,15 +129,22 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_LIB_EDIT_CUEPOINT:
         case ZDJ_CONTROL_MAP_LIB_EDIT_BEATGRID:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_PLAY_PAUSE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_START );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_END );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_SCRUB );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_PRESS_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
@@ -109,9 +157,41 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_PRESS_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_PRESS_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_PRESS_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_RELEASE_0 );
+            break;
+
+        case ZDJ_CONTROL_MAP_LIB_SONG_DEBUG:
+            zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_PLAY_PAUSE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_START );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_END );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_SCRUB );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_START );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_LENGTH );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_SKIP );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_PRESS_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
+            // zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_0 );
+            // zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_0 );
+            // zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
 
         case ZDJ_CONTROL_MAP_STATION_1_EMPTY:
@@ -119,6 +199,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
@@ -128,12 +209,15 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_1_CONTROL_TEMPO );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_TEMPO_FINE );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_MOM_EQ:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_PLAY_PAUSE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_START );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_END );
@@ -146,12 +230,15 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_1_CONTROL_FILTER_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 ); 
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_EQ:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_PLAY_PAUSE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_START );
@@ -168,12 +255,15 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_TRIM:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_PLAY_PAUSE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_START );
@@ -189,12 +279,15 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_LOOP:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_PLAY_PAUSE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_START );
@@ -206,6 +299,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_START );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_END );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_LENGTH );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_SKIP );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_SKIP_LENGTH );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN );
@@ -215,12 +309,16 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 ); // Toggle quant
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_SYNC:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_PLAY_PAUSE );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_START );
@@ -235,12 +333,15 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
 
         case ZDJ_CONTROL_MAP_STATION_2_EMPTY:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
@@ -249,11 +350,14 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_2_CONTROL_TEMPO );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_TEMPO_FINE );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_MOM_EQ:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_PLAY_PAUSE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_HOTCUE_START );
@@ -267,11 +371,14 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_2_CONTROL_FILTER_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 ); 
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_EQ:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_PLAY_PAUSE );
@@ -288,10 +395,13 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_0 ); 
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
         case ZDJ_CONTROL_MAP_STATION_2_TRIM:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_PLAY_PAUSE );
@@ -307,10 +417,13 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_0 ); 
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
         case ZDJ_CONTROL_MAP_STATION_2_LOOP:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_PLAY_PAUSE );
@@ -323,6 +436,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_2_CONTROL_LOOP_START );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_LOOP_END );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_LOOP_LENGTH );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_SKIP );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_SKIP_LENGTH );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN );
@@ -331,10 +445,13 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_0 ); 
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
         case ZDJ_CONTROL_MAP_STATION_2_SYNC:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
             zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_PLAY_PAUSE );
@@ -349,13 +466,19 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_0 ); 
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
         
         case ZDJ_CONTROL_MAP_STATION_EXT_MOM_EQ:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_SCRUB );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_TEMPO );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_TEMPO_FINE );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_SCRUB );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_EQ_LO );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_EQ_MID );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_EQ_HI );
@@ -363,13 +486,19 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 ); 
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
         case ZDJ_CONTROL_MAP_STATION_EXT_EQ:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_SCRUB );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_TEMPO );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_TEMPO_FINE );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_SCRUB );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_EQ_LO );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_EQ_MID );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_EQ_HI );
@@ -382,13 +511,19 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
         case ZDJ_CONTROL_MAP_STATION_EXT_TRIM:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_DECK_CONTROL_TOGGLE_RECORD );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_SCRUB );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_TEMPO );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_TEMPO_FINE );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_SCRUB );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_TRIM );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_PFL_TRIM );
             zdj_activate_control( ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE );
@@ -400,9 +535,13 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
+            // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             break;
         // ZDJ_CONTROL_MAP_STATION_EXT_TRIM,
     }
+
+    zdj_control_active_map = map_id;
 
     // Re-activate special control handler
     for( int i=0; i<5; i++ ) {

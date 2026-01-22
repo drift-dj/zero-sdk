@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/deck/dj/zdj_deck_dj.h>
-#include <zerodj/signal/pipeline/node/audio/deck_dsp/zdj_deck_dsp_node.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_pitch_node.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_tempo_node.h>
 
@@ -29,46 +30,46 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
         case ZDJ_DECK_TSM_SOURCE_PITCH:
             // Copy direct from pitch node
             if( stereo && tsm_pitch_state->channel_count == 2 ) { // Stereo
-                // memcpy( soundcard_buf, tsm_pitch_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * 2 * sizeof( float ) );
-                zdj_deck_dsp_node_process_buffer( 
-                    deck_state->dsp_node, 
-                    tsm_pitch_state->out_buffer, 
-                    soundcard_buf,
-                    tsm_pitch_state->channel_count, 
-                    ZDJ_SOUNDCARD_BUF_LEN 
-                );
+                memcpy( soundcard_buf, tsm_pitch_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * 2 * sizeof( float ) );
+                // zdj_deck_dsp_node_process_buffer( 
+                //     deck_state->dsp_node, 
+                //     tsm_pitch_state->out_buffer, 
+                //     soundcard_buf,
+                //     tsm_pitch_state->channel_count, 
+                //     ZDJ_SOUNDCARD_BUF_LEN 
+                // );
             } else if( !stereo && tsm_pitch_state->channel_count == 1 ) { // Mono
-                // memcpy( soundcard_buf, tsm_pitch_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * sizeof( float ) );
-                zdj_deck_dsp_node_process_buffer( 
-                    deck_state->dsp_node, 
-                    tsm_pitch_state->out_buffer, 
-                    soundcard_buf,
-                    tsm_pitch_state->channel_count, 
-                    ZDJ_SOUNDCARD_BUF_LEN 
-                );
+                memcpy( soundcard_buf, tsm_pitch_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * sizeof( float ) );
+                // zdj_deck_dsp_node_process_buffer( 
+                //     deck_state->dsp_node, 
+                //     tsm_pitch_state->out_buffer, 
+                //     soundcard_buf,
+                //     tsm_pitch_state->channel_count, 
+                //     ZDJ_SOUNDCARD_BUF_LEN 
+                // );
             }
             break;
 
         case ZDJ_DECK_TSM_SOURCE_TEMPO:
             // Copy direct from tempo node
             if( stereo && tsm_tempo_state->channel_count == 2 ) { // Stereo
-                // memcpy( soundcard_buf, tsm_tempo_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * 2 * sizeof( float ) );
-                zdj_deck_dsp_node_process_buffer( 
-                    deck_state->dsp_node, 
-                    tsm_tempo_state->out_buffer, 
-                    soundcard_buf,
-                    tsm_tempo_state->channel_count, 
-                    ZDJ_SOUNDCARD_BUF_LEN 
-                );
+                memcpy( soundcard_buf, tsm_tempo_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * 2 * sizeof( float ) );
+                // zdj_deck_dsp_node_process_buffer( 
+                //     deck_state->dsp_node, 
+                //     tsm_tempo_state->out_buffer, 
+                //     soundcard_buf,
+                //     tsm_tempo_state->channel_count, 
+                //     ZDJ_SOUNDCARD_BUF_LEN 
+                // );
             } else if( !stereo && tsm_tempo_state->channel_count == 1 ) { // Mono
-                // memcpy( soundcard_buf, tsm_tempo_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * sizeof( float ) );
-                zdj_deck_dsp_node_process_buffer( 
-                    deck_state->dsp_node, 
-                    tsm_tempo_state->out_buffer, 
-                    soundcard_buf,
-                    tsm_tempo_state->channel_count, 
-                    ZDJ_SOUNDCARD_BUF_LEN 
-                );
+                memcpy( soundcard_buf, tsm_tempo_state->out_buffer, ZDJ_SOUNDCARD_BUF_LEN * sizeof( float ) );
+                // zdj_deck_dsp_node_process_buffer( 
+                //     deck_state->dsp_node, 
+                //     tsm_tempo_state->out_buffer, 
+                //     soundcard_buf,
+                //     tsm_tempo_state->channel_count, 
+                //     ZDJ_SOUNDCARD_BUF_LEN 
+                // );
             }
             break;
         

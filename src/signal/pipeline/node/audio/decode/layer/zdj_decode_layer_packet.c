@@ -34,6 +34,8 @@ static void _remove_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * pa
 static void _get_first_packet_addr( zdj_decode_layer_t * layer, zdj_decode_addr_t * addr );
 static void _get_last_packet_addr( zdj_decode_layer_t * layer, zdj_decode_addr_t * addr );
 
+static zdj_decode_packet_t * _get_packet_containing_addr( zdj_decode_layer_t * layer, zdj_decode_addr_t * addr, zdj_decode_addr_coord_t coord );
+
 void zdj_decode_layer_init_packet_api( zdj_decode_layer_t * layer ) {
     layer->is_empty = &_is_empty;
     layer->prepend_packet = &_prepend_packet;
@@ -44,6 +46,7 @@ void zdj_decode_layer_init_packet_api( zdj_decode_layer_t * layer ) {
     layer->can_remove_packet = &_can_remove_packet;
     layer->get_first_packet_addr = &_get_first_packet_addr;
     layer->get_last_packet_addr = &_get_last_packet_addr;
+    layer->get_packet_containing_addr = &_get_packet_containing_addr;
 }
 
 static bool _is_empty( zdj_decode_layer_t * layer ) {
@@ -51,7 +54,7 @@ static bool _is_empty( zdj_decode_layer_t * layer ) {
 }
 
 static void _prepend_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * packet ) {
-    printf( "_prepend_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
+    // printf( "_prepend_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
     if( layer->first_packet ) {
         packet->next = layer->first_packet;
         layer->first_packet->prev = packet;
@@ -63,7 +66,7 @@ static void _prepend_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * p
 }
 
 static void _append_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * packet ) {
-    printf( "_append_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
+    // printf( "_append_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
     if( layer->last_packet ) {
         packet->prev = layer->last_packet;
         layer->last_packet->next = packet;
@@ -77,7 +80,7 @@ static void _append_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * pa
 static void _insert_packet_after( 
     zdj_decode_layer_t * layer, zdj_decode_packet_t * new_packet, zdj_decode_packet_t * target_packet 
 ) {
-    printf( "_insert_packet_after\n" );
+    // printf( "_insert_packet_after\n" );
     if( target_packet == layer->last_packet ) {
         layer->append_packet( layer, new_packet );
     } else {
@@ -91,7 +94,7 @@ static void _insert_packet_after(
 static void _insert_packet_before( 
     zdj_decode_layer_t * layer, zdj_decode_packet_t * new_packet, zdj_decode_packet_t * target_packet
 ) {
-    printf( "_insert_packet_before\n" );
+    // printf( "_insert_packet_before\n" );
     if( target_packet == layer->first_packet ) {
         layer->prepend_packet( layer, new_packet );
     } else {
@@ -104,7 +107,7 @@ static void _insert_packet_before(
 
 static void _remove_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * packet ) {
     if( !packet ) { return; }
-    printf( "remove_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
+    // printf( "remove_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
     if( packet == layer->first_packet && packet == layer->last_packet ) {
         layer->first_packet = NULL;
         layer->last_packet = NULL;
@@ -119,7 +122,7 @@ static void _remove_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * pa
         packet->next->prev = packet->prev;
     }
     packet->deinit( packet );
-    printf( "remove_packet done\n" );
+    // printf( "remove_packet done\n" );
 }
 
 static bool _can_remove_packet( 
@@ -130,7 +133,9 @@ static bool _can_remove_packet(
     zdj_decode_addr_t win_start; node_state->get_win_start_addr( node, &win_start );
     zdj_decode_addr_t win_end; node_state->get_win_end_addr( node, &win_end );
     return packet->start_addr.greater_than( &packet->start_addr, &win_end, ZDJ_ADDR_COORD_TRANSPORT ) ||
-           packet->end_addr.less_than( &packet->end_addr, &win_start, ZDJ_ADDR_COORD_TRANSPORT );
+           packet->start_addr.greater_than( &packet->start_addr, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT ) ||
+           packet->end_addr.less_than( &packet->end_addr, &win_start, ZDJ_ADDR_COORD_TRANSPORT ) ||
+           packet->end_addr.less_than( &packet->end_addr, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT );
 }
 
 static void _get_first_packet_addr( zdj_decode_layer_t * layer, zdj_decode_addr_t * addr ) {
@@ -143,4 +148,8 @@ static void _get_last_packet_addr( zdj_decode_layer_t * layer, zdj_decode_addr_t
     if( layer->last_packet ) {
         layer->last_packet->start_addr.copy( &layer->last_packet->start_addr, addr );
     }
+}
+
+static zdj_decode_packet_t * _get_packet_containing_addr( zdj_decode_layer_t * layer, zdj_decode_addr_t * addr, zdj_decode_addr_coord_t coord ) {
+    
 }

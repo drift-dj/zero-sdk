@@ -65,7 +65,7 @@ typedef struct {
     char tmp_filepath[ 256 ];
     char filename[ 256 ];
     FILE * tmp_fp;
-
+	int64_t sample_count;
 } zdj_audio_record_node_state_t;
 
 zdj_pipeline_node_t * zdj_new_audio_record_node( zdj_soundcard_node_t * soundcard_node );

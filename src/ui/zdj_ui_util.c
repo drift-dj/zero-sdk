@@ -91,7 +91,7 @@ zdj_rect_t * zdj_dj_deck_page_rect( void ) {
         _zdj_dj_deck_page_rect_priv = calloc( 1, sizeof( zdj_rect_t ) );
         _zdj_dj_deck_page_rect_priv->x = 0;
         _zdj_dj_deck_page_rect_priv->y = 0;
-        _zdj_dj_deck_page_rect_priv->w = ZDJ_SCREEN_W;
+        _zdj_dj_deck_page_rect_priv->w = 80;
         _zdj_dj_deck_page_rect_priv->h = 8;
     }
     return _zdj_dj_deck_page_rect_priv;

@@ -34,8 +34,8 @@ typedef enum {
     ZDJ_UI_CONTROL_NONE,
     // Jog Events
     ZDJ_UI_CONTROL_JOG_ADJUST_0, // Normal
-    ZDJ_UI_CONTROL_JOG_ADJUST_1, // Press-Adjust
-    ZDJ_UI_CONTROL_JOG_ADJUST_2, // Shift Adjust
+    ZDJ_UI_CONTROL_JOG_ADJUST_1, // Shift-Adjust
+    ZDJ_UI_CONTROL_JOG_ADJUST_2, // Press-Adjust
     ZDJ_UI_CONTROL_JOG_ADJUST_3,
     ZDJ_UI_CONTROL_JOG_ADJUST_4,
     ZDJ_UI_CONTROL_JOG_ADJUST_5,
@@ -175,7 +175,14 @@ typedef enum {
     ZDJ_UI_CONTROL_XFADE_ADJUST_0,
     ZDJ_UI_CONTROL_XFADE_ADJUST_1,
 
-
+    // UI Control Events
+    ZDJ_UI_CONTROL_TOGGLE_PANEL,
+    ZDJ_UI_CONTROL_TOGGLE_ASSIST_PANEL,
+    ZDJ_UI_CONTROL_TOGGLE_RECORDING_PANEL,
+    ZDJ_UI_CONTROL_TOGGLE_SOUNDCARD_PANEL,
+    ZDJ_UI_CONTROL_NEXT_PANEL,
+    ZDJ_UI_CONTROL_PREV_PANEL,
+    ZDJ_UI_CONTROL_SCROLL_PANEL,
 
     ///////////////////////////
     //  Deck Control Events  //
@@ -209,6 +216,7 @@ typedef enum {
     ZDJ_DECK_1_CONTROL_LOOP_START,
     ZDJ_DECK_1_CONTROL_LOOP_END,
     ZDJ_DECK_1_CONTROL_LOOP_LENGTH,
+    ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START,
     ZDJ_DECK_1_CONTROL_SKIP,
     ZDJ_DECK_1_CONTROL_SKIP_LENGTH,
     ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN,
@@ -246,6 +254,7 @@ typedef enum {
     ZDJ_DECK_2_CONTROL_LOOP_START,
     ZDJ_DECK_2_CONTROL_LOOP_END,
     ZDJ_DECK_2_CONTROL_LOOP_LENGTH,
+    ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START,
     ZDJ_DECK_2_CONTROL_SKIP,
     ZDJ_DECK_2_CONTROL_SKIP_LENGTH,
     ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN,
@@ -302,8 +311,305 @@ typedef enum {
     ZDJ_DECK_EXT_CONTROL_HOTCUE_START,
     ZDJ_DECK_EXT_CONTROL_HOTCUE_STOP,
 
+    // External Transport Deck
+    ZDJ_DECK_XPORT_CONTROL_SCRUB,
+    ZDJ_DECK_XPORT_CONTROL_SYNC_MULT,
+    ZDJ_DECK_XPORT_CONTROL_TEMPO,
+    ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE,
+    ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE,
+    ZDJ_DECK_XPORT_CONTROL_PAUSE,
+    ZDJ_DECK_XPORT_CONTROL_HOTCUE_START,
+    ZDJ_DECK_XPORT_CONTROL_HOTCUE_STOP,
+    ZDJ_DECK_XPORT_CONTROL_HOTCUE_END,
+
     ZDJ_CONTROL_ID_COUNT
 } zdj_control_id_t;
+
+
+// static char * zdj_control_id_name[ ZDJ_CONTROL_MAP_COUNT ] = {
+    // /////////////////////////
+    // //  UI Control Events  //
+    // /////////////////////////
+    // "UI: None", // ZDJ_UI_CONTROL_NONE,
+    // // Jog Events
+    // "UI: Jog Turn", // ZDJ_UI_CONTROL_JOG_ADJUST_0,
+    // "UI: Jog Shift Turn", // ZDJ_UI_CONTROL_JOG_ADJUST_1,
+    // "UI: Jog Press Turn", // ZDJ_UI_CONTROL_JOG_ADJUST_2,
+    // "UI: Jog Turn Axis 3", // ZDJ_UI_CONTROL_JOG_ADJUST_3,
+    // "UI: Jog Turn Axis 4", // ZDJ_UI_CONTROL_JOG_ADJUST_4,
+    // "UI: Jog Turn Axis 5", // ZDJ_UI_CONTROL_JOG_ADJUST_5,
+    // "UI: Jog Turn Axis 6", // ZDJ_UI_CONTROL_JOG_ADJUST_6,
+    // "UI: Jog Turn Axis 7", // ZDJ_UI_CONTROL_JOG_ADJUST_7,
+    // "UI: Jog Press", // ZDJ_UI_CONTROL_JOG_PRESS_0, // Press
+    // "UI: Jog Shift Press", // ZDJ_UI_CONTROL_JOG_PRESS_1, // Shift Press
+    // "UI: Jog Long Press", // ZDJ_UI_CONTROL_JOG_PRESS_2, // Long Press
+    // "UI: Jog Shift Long Press", // ZDJ_UI_CONTROL_JOG_PRESS_3, // Shift Long Press
+    // "UI: Jog Release", // ZDJ_UI_CONTROL_JOG_RELEASE_0, // Release
+    // "UI: Jog Shift Release", // ZDJ_UI_CONTROL_JOG_RELEASE_1, // Shift Release
+    // "UI: Jog Long Release", // ZDJ_UI_CONTROL_JOG_RELEASE_2, // Long Release
+    // "UI: Jog Shift Long Release", // ZDJ_UI_CONTROL_JOG_RELEASE_3, // Shift Long Release
+    // "UI: Jog Press Turn Release", // ZDJ_UI_CONTROL_JOG_RELEASE_4, // Press-Adjust Release
+
+    // // Vol/Out knob events
+    // "UI: Vol Turn", // ZDJ_UI_CONTROL_OUT_ADJUST_0,
+    // "UI: Vol Shift Turn", // ZDJ_UI_CONTROL_OUT_ADJUST_1,
+    // "UI: Vol Press Turn", // ZDJ_UI_CONTROL_OUT_ADJUST_2,
+    // "UI: Vol Press", // ZDJ_UI_CONTROL_OUT_PRESS_0, // Press
+    // "UI: Vol Shift Press", // ZDJ_UI_CONTROL_OUT_PRESS_1, // Shift Press
+    // "UI: Vol Long Press", // ZDJ_UI_CONTROL_OUT_PRESS_2, // Long Press
+    // "UI: Vol Shift Long Press", // ZDJ_UI_CONTROL_OUT_PRESS_3, // Shift Long Press
+    // "UI: Vol Release", // ZDJ_UI_CONTROL_OUT_RELEASE_0, // Release
+    // "UI: Vol Shift Release", // ZDJ_UI_CONTROL_OUT_RELEASE_1, // Shift Release
+    // "UI: Vol Long Release", // ZDJ_UI_CONTROL_OUT_RELEASE_2, // Long Release
+    // "UI: Vol Shift Long Release", // ZDJ_UI_CONTROL_OUT_RELEASE_3, // Shift Long Release
+    // "UI: Vol Press Turn Release", // ZDJ_UI_CONTROL_OUT_RELEASE_4, // Press-Adjust Release
+
+    // // Tone 1 Knob Events
+    // "UI: Tone 1 Turn", // ZDJ_UI_CONTROL_TONE_1_ADJUST_0,
+    // "UI: Tone 1 Shift Turn", // ZDJ_UI_CONTROL_TONE_1_ADJUST_1,
+    // "UI: Tone 1 Press Turn", // ZDJ_UI_CONTROL_TONE_1_ADJUST_2,
+    // "UI: Tone 1 Press", // ZDJ_UI_CONTROL_TONE_1_PRESS_0, // Press
+    // "UI: Tone 1 Shift Press", // ZDJ_UI_CONTROL_TONE_1_PRESS_1, // Shift Press
+    // "UI: Tone 1 Long Press", // ZDJ_UI_CONTROL_TONE_1_PRESS_2, // Long Press
+    // "UI: Tone 1 Shift Press", // ZDJ_UI_CONTROL_TONE_1_PRESS_3, // Shift Long Press
+    // "UI: Tone 1 Release", // ZDJ_UI_CONTROL_TONE_1_RELEASE_0, // Release
+    // "UI: Tone 1 Shift Release", // ZDJ_UI_CONTROL_TONE_1_RELEASE_1, // Shift Release
+    // "UI: Tone 1 Long Release", // ZDJ_UI_CONTROL_TONE_1_RELEASE_2, // Long Release
+    // "UI: Tone 1 Shift Long Release", // ZDJ_UI_CONTROL_TONE_1_RELEASE_3, // Shift Long Release
+    // "UI: Tone 1 Press Turn Release", // ZDJ_UI_CONTROL_TONE_1_RELEASE_4, // Press-Adjust Release
+
+    // // Tone 2 Knob Events
+    // ZDJ_UI_CONTROL_TONE_2_ADJUST_0,
+    // ZDJ_UI_CONTROL_TONE_2_ADJUST_1,
+    // ZDJ_UI_CONTROL_TONE_2_ADJUST_2,
+    // ZDJ_UI_CONTROL_TONE_2_PRESS_0, // Press
+    // ZDJ_UI_CONTROL_TONE_2_PRESS_1, // Shift Press
+    // ZDJ_UI_CONTROL_TONE_2_PRESS_2, // Long Press
+    // ZDJ_UI_CONTROL_TONE_2_PRESS_3, // Shift Long Press
+    // ZDJ_UI_CONTROL_TONE_2_RELEASE_0, // Release
+    // ZDJ_UI_CONTROL_TONE_2_RELEASE_1, // Shift Release
+    // ZDJ_UI_CONTROL_TONE_2_RELEASE_2, // Long Release
+    // ZDJ_UI_CONTROL_TONE_2_RELEASE_3, // Shift Long Release
+    // ZDJ_UI_CONTROL_TONE_2_RELEASE_4, // Press-Adjust Release
+
+    // // Tone 3 Knob Events
+    // ZDJ_UI_CONTROL_TONE_3_ADJUST_0,
+    // ZDJ_UI_CONTROL_TONE_3_ADJUST_1,
+    // ZDJ_UI_CONTROL_TONE_3_ADJUST_2,
+    // ZDJ_UI_CONTROL_TONE_3_PRESS_0, // Press
+    // ZDJ_UI_CONTROL_TONE_3_PRESS_1, // Shift Press
+    // ZDJ_UI_CONTROL_TONE_3_PRESS_2, // Long Press
+    // ZDJ_UI_CONTROL_TONE_3_PRESS_3, // Shift Long Press
+    // ZDJ_UI_CONTROL_TONE_3_RELEASE_0, // Release
+    // ZDJ_UI_CONTROL_TONE_3_RELEASE_1, // Shift Release
+    // ZDJ_UI_CONTROL_TONE_3_RELEASE_2, // Long Release
+    // ZDJ_UI_CONTROL_TONE_3_RELEASE_3, // Shift Long Release
+    // ZDJ_UI_CONTROL_TONE_3_RELEASE_4, // Press-Adjust Release
+    
+    // // Play PB Events
+    // ZDJ_UI_CONTROL_PLAY_PRESS_0, // Press
+    // ZDJ_UI_CONTROL_PLAY_PRESS_1, // Shift Press
+    // ZDJ_UI_CONTROL_PLAY_PRESS_2, // Long Press
+    // ZDJ_UI_CONTROL_PLAY_PRESS_3, // Shift Long Press
+    // ZDJ_UI_CONTROL_PLAY_RELEASE_0, // Release
+    // ZDJ_UI_CONTROL_PLAY_RELEASE_1, // Shift Release
+    // ZDJ_UI_CONTROL_PLAY_RELEASE_2, // Long Release
+    // ZDJ_UI_CONTROL_PLAY_RELEASE_3, // Shift Long Release
+
+    // // Hotcue PB Events
+    // ZDJ_UI_CONTROL_HOTCUE_PRESS_0,
+    // ZDJ_UI_CONTROL_HOTCUE_PRESS_1,
+    // ZDJ_UI_CONTROL_HOTCUE_PRESS_2,
+    // ZDJ_UI_CONTROL_HOTCUE_PRESS_3,
+    // ZDJ_UI_CONTROL_HOTCUE_RELEASE_0,
+    // ZDJ_UI_CONTROL_HOTCUE_RELEASE_1,
+    // ZDJ_UI_CONTROL_HOTCUE_RELEASE_2,
+    // ZDJ_UI_CONTROL_HOTCUE_RELEASE_3,
+
+    // // Nav PB Events
+    // ZDJ_UI_CONTROL_NAV_PRESS_0,
+    // ZDJ_UI_CONTROL_NAV_PRESS_1,
+    // ZDJ_UI_CONTROL_NAV_PRESS_2,
+    // ZDJ_UI_CONTROL_NAV_PRESS_3,
+    // ZDJ_UI_CONTROL_NAV_RELEASE_0,
+    // ZDJ_UI_CONTROL_NAV_RELEASE_1,
+    // ZDJ_UI_CONTROL_NAV_RELEASE_2,
+    // ZDJ_UI_CONTROL_NAV_RELEASE_3,
+
+    // // Fn 1 PB Events
+    // ZDJ_UI_CONTROL_FN_1_PRESS_0,
+    // ZDJ_UI_CONTROL_FN_1_PRESS_1,
+    // ZDJ_UI_CONTROL_FN_1_PRESS_2,
+    // ZDJ_UI_CONTROL_FN_1_PRESS_3,
+    // ZDJ_UI_CONTROL_FN_1_RELEASE_0,
+    // ZDJ_UI_CONTROL_FN_1_RELEASE_1,
+    // ZDJ_UI_CONTROL_FN_1_RELEASE_2,
+    // ZDJ_UI_CONTROL_FN_1_RELEASE_3,
+
+    // // Fn 2 PB Events
+    // ZDJ_UI_CONTROL_FN_2_PRESS_0,
+    // ZDJ_UI_CONTROL_FN_2_PRESS_1,
+    // ZDJ_UI_CONTROL_FN_2_PRESS_2,
+    // ZDJ_UI_CONTROL_FN_2_PRESS_3,
+    // ZDJ_UI_CONTROL_FN_2_RELEASE_0,
+    // ZDJ_UI_CONTROL_FN_2_RELEASE_1,
+    // ZDJ_UI_CONTROL_FN_2_RELEASE_2,
+    // ZDJ_UI_CONTROL_FN_2_RELEASE_3,
+
+    // // Fn 3 PB Events
+    // ZDJ_UI_CONTROL_FN_3_PRESS_0,
+    // ZDJ_UI_CONTROL_FN_3_PRESS_1,
+    // ZDJ_UI_CONTROL_FN_3_PRESS_2,
+    // ZDJ_UI_CONTROL_FN_3_PRESS_3,
+    // ZDJ_UI_CONTROL_FN_3_RELEASE_0,
+    // ZDJ_UI_CONTROL_FN_3_RELEASE_1,
+    // ZDJ_UI_CONTROL_FN_3_RELEASE_2,
+    // ZDJ_UI_CONTROL_FN_3_RELEASE_3,
+
+    // // Fader Events
+    // ZDJ_UI_CONTROL_FADE_1_ADJUST_0,
+    // ZDJ_UI_CONTROL_FADE_1_ADJUST_1,
+    // ZDJ_UI_CONTROL_FADE_2_ADJUST_0,
+    // ZDJ_UI_CONTROL_FADE_2_ADJUST_1,
+    // ZDJ_UI_CONTROL_XFADE_ADJUST_0,
+    // ZDJ_UI_CONTROL_XFADE_ADJUST_1,
+
+    // // UI Control Events
+    // ZDJ_UI_CONTROL_TOGGLE_PANEL,
+    // ZDJ_UI_CONTROL_TOGGLE_ASSIST_PANEL,
+    // ZDJ_UI_CONTROL_TOGGLE_RECORDING_PANEL,
+    // ZDJ_UI_CONTROL_TOGGLE_SOUNDCARD_PANEL,
+    // ZDJ_UI_CONTROL_NEXT_PANEL,
+    // ZDJ_UI_CONTROL_PREV_PANEL,
+    // ZDJ_UI_CONTROL_SCROLL_PANEL,
+
+    // ///////////////////////////
+    // //  Deck Control Events  //
+    // ///////////////////////////
+    // // Admin Controls
+    // ZDJ_DECK_CONTROL_LR_VOL,
+    // ZDJ_DECK_CONTROL_CUE_VOL,
+    // ZDJ_DECK_CONTROL_XFADE,
+    // ZDJ_DECK_CONTROL_TOGGLE_RECORD,
+    // ZDJ_DECK_CONTROL_START_RECORD,
+    // ZDJ_DECK_CONTROL_PAUSE_RECORD,
+    // ZDJ_DECK_CONTROL_SYNC_TOGGLE,
+    // ZDJ_DECK_CONTROL_SYNC_ENABLE,
+    // ZDJ_DECK_CONTROL_SYNC_DISABLE,
+    // ZDJ_DECK_1_2_BASS_SWAP,
+
+    // // Deck 1
+    // ZDJ_DECK_1_CONTROL_FADE,
+    // ZDJ_DECK_1_CONTROL_TRIM,
+    // ZDJ_DECK_1_CONTROL_EQ_LO,
+    // ZDJ_DECK_1_CONTROL_EQ_MID,
+    // ZDJ_DECK_1_CONTROL_EQ_HI,
+    // ZDJ_DECK_1_CONTROL_FILTER_0,
+    // ZDJ_DECK_1_CONTROL_FILTER_1,
+    // ZDJ_DECK_1_CONTROL_FILTER_2,
+    // ZDJ_DECK_1_CONTROL_PFL_TRIM,
+    // ZDJ_DECK_1_CONTROL_PFL_TOGGLE_MUTE,
+    // ZDJ_DECK_1_CONTROL_LOOP_TOGGLE,
+    // ZDJ_DECK_1_CONTROL_LOOP_ON,
+    // ZDJ_DECK_1_CONTROL_LOOP_OFF,
+    // ZDJ_DECK_1_CONTROL_LOOP_START,
+    // ZDJ_DECK_1_CONTROL_LOOP_END,
+    // ZDJ_DECK_1_CONTROL_LOOP_LENGTH,
+    // ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START,
+    // ZDJ_DECK_1_CONTROL_SKIP,
+    // ZDJ_DECK_1_CONTROL_SKIP_LENGTH,
+    // ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN,
+    // ZDJ_DECK_1_CONTROL_SKIP_RESET_TO_ORIGIN,
+    // ZDJ_DECK_1_CONTROL_FX_SELECT,
+    // ZDJ_DECK_1_CONTROL_FX_0,
+    // ZDJ_DECK_1_CONTROL_FX_1,
+    // ZDJ_DECK_1_CONTROL_FX_2,
+    // ZDJ_DECK_1_CONTROL_FX_3,
+    // ZDJ_DECK_1_CONTROL_FX_4,
+    // ZDJ_DECK_1_CONTROL_FX_5,
+    // ZDJ_DECK_1_CONTROL_SYNC_MULT,
+    // ZDJ_DECK_1_CONTROL_SCRUB,
+    // ZDJ_DECK_1_CONTROL_TEMPO,
+    // ZDJ_DECK_1_CONTROL_TEMPO_FINE,
+    // ZDJ_DECK_1_CONTROL_PLAY_PAUSE,
+    // ZDJ_DECK_1_CONTROL_PAUSE,
+    // ZDJ_DECK_1_CONTROL_HOTCUE_START,
+    // ZDJ_DECK_1_CONTROL_HOTCUE_END,
+
+    // // Deck 2
+    // ZDJ_DECK_2_CONTROL_FADE,
+    // ZDJ_DECK_2_CONTROL_TRIM,
+    // ZDJ_DECK_2_CONTROL_EQ_LO,
+    // ZDJ_DECK_2_CONTROL_EQ_MID,
+    // ZDJ_DECK_2_CONTROL_EQ_HI,
+    // ZDJ_DECK_2_CONTROL_FILTER_0,
+    // ZDJ_DECK_2_CONTROL_FILTER_1,
+    // ZDJ_DECK_2_CONTROL_FILTER_2,
+    // ZDJ_DECK_2_CONTROL_PFL_TRIM,
+    // ZDJ_DECK_2_CONTROL_PFL_TOGGLE_MUTE,
+    // ZDJ_DECK_2_CONTROL_LOOP_TOGGLE,
+    // ZDJ_DECK_2_CONTROL_LOOP_ON,
+    // ZDJ_DECK_2_CONTROL_LOOP_OFF,
+    // ZDJ_DECK_2_CONTROL_LOOP_START,
+    // ZDJ_DECK_2_CONTROL_LOOP_END,
+    // ZDJ_DECK_2_CONTROL_LOOP_LENGTH,
+    // ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START,
+    // ZDJ_DECK_2_CONTROL_SKIP,
+    // ZDJ_DECK_2_CONTROL_SKIP_LENGTH,
+    // ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN,
+    // ZDJ_DECK_2_CONTROL_SKIP_RESET_TO_ORIGIN,
+    // ZDJ_DECK_2_CONTROL_FX_SELECT,
+    // ZDJ_DECK_2_CONTROL_FX_0,
+    // ZDJ_DECK_2_CONTROL_FX_1,
+    // ZDJ_DECK_2_CONTROL_FX_2,
+    // ZDJ_DECK_2_CONTROL_FX_3,
+    // ZDJ_DECK_2_CONTROL_FX_4,
+    // ZDJ_DECK_2_CONTROL_FX_5,
+    // ZDJ_DECK_2_CONTROL_SYNC_MULT,
+    // ZDJ_DECK_2_CONTROL_SCRUB,
+    // ZDJ_DECK_2_CONTROL_TEMPO,
+    // ZDJ_DECK_2_CONTROL_TEMPO_FINE,
+    // ZDJ_DECK_2_CONTROL_PLAY_PAUSE,
+    // ZDJ_DECK_2_CONTROL_PAUSE,
+    // ZDJ_DECK_2_CONTROL_HOTCUE_START,
+    // ZDJ_DECK_2_CONTROL_HOTCUE_END,
+
+    // // External Deck
+    // ZDJ_DECK_EXT_CONTROL_TRIM,
+    // ZDJ_DECK_EXT_CONTROL_EQ_LO,
+    // ZDJ_DECK_EXT_CONTROL_EQ_MID,
+    // ZDJ_DECK_EXT_CONTROL_EQ_HI,
+    // ZDJ_DECK_EXT_CONTROL_FILTER_0,
+    // ZDJ_DECK_EXT_CONTROL_FILTER_1,
+    // ZDJ_DECK_EXT_CONTROL_FILTER_2,
+    // ZDJ_DECK_EXT_CONTROL_PFL_TRIM,
+    // ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE,
+    // ZDJ_DECK_EXT_CONTROL_LOOP_TOGGLE,
+    // ZDJ_DECK_EXT_CONTROL_LOOP_ON,
+    // ZDJ_DECK_EXT_CONTROL_LOOP_OFF,
+    // ZDJ_DECK_EXT_CONTROL_LOOP_START,
+    // ZDJ_DECK_EXT_CONTROL_LOOP_END,
+    // ZDJ_DECK_EXT_CONTROL_LOOP_LENGTH,
+    // ZDJ_DECK_EXT_CONTROL_SKIP,
+    // ZDJ_DECK_EXT_CONTROL_SKIP_LENGTH,
+    // ZDJ_DECK_EXT_CONTROL_SKIP_SET_ORIGIN,
+    // ZDJ_DECK_EXT_CONTROL_SKIP_RESET_TO_ORIGIN,
+    // ZDJ_DECK_EXT_CONTROL_FX_SELECT,
+    // ZDJ_DECK_EXT_CONTROL_FX_0,
+    // ZDJ_DECK_EXT_CONTROL_FX_1,
+    // ZDJ_DECK_EXT_CONTROL_FX_2,
+    // ZDJ_DECK_EXT_CONTROL_FX_3,
+    // ZDJ_DECK_EXT_CONTROL_FX_4,
+    // ZDJ_DECK_EXT_CONTROL_FX_5,
+    // ZDJ_DECK_EXT_CONTROL_SCRUB,
+    // ZDJ_DECK_EXT_CONTROL_SYNC_MULT,
+    // ZDJ_DECK_EXT_CONTROL_TEMPO,
+    // ZDJ_DECK_EXT_CONTROL_TEMPO_FINE,
+    // ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE,
+    // ZDJ_DECK_EXT_CONTROL_PAUSE,
+    // ZDJ_DECK_EXT_CONTROL_HOTCUE_START,
+    // ZDJ_DECK_EXT_CONTROL_HOTCUE_STOP
+// };
 
 typedef enum {
     ZDJ_CONTROL_MAP_NONE,
@@ -315,11 +621,17 @@ typedef enum {
     
     ZDJ_CONTROL_MAP_SDK_TEST,
 
-    ZDJ_CONTROL_MAP_SOUNDCARD,
+    ZDJ_CONTROL_MAP_ASSIST_PANEL,
+    ZDJ_CONTROL_MAP_DEBUG_PANEL,
+    ZDJ_CONTROL_MAP_RECORDING_PANEL,
+    ZDJ_CONTROL_MAP_SOUNDCARD_PANEL,
+    ZDJ_CONTROL_MAP_WIDGET_PANEL,
 
     ZDJ_CONTROL_MAP_LIB_EDIT_SONG,
     ZDJ_CONTROL_MAP_LIB_EDIT_CUEPOINT,
     ZDJ_CONTROL_MAP_LIB_EDIT_BEATGRID,
+
+    ZDJ_CONTROL_MAP_LIB_SONG_DEBUG,
 
     ZDJ_CONTROL_MAP_STATION_1_EMPTY,
     ZDJ_CONTROL_MAP_STATION_1_MOM_EQ,
@@ -354,11 +666,17 @@ static char * zdj_control_map_name[ ZDJ_CONTROL_MAP_COUNT ] = {
     
     "SDK Test", // ZDJ_CONTROL_MAP_SDK_TEST,
 
-    "Soundcard", // ZDJ_CONTROL_MAP_SOUNDCARD,
+    "Assist Panel", // ZDJ_CONTROL_MAP_ASSIST_PANEL,
+    "Debug Panel", // ZDJ_CONTROL_MAP_DEBUG_PANEL,
+    "Recording Panel", // ZDJ_CONTROL_MAP_RECORDING_PANEL,
+    "Soundcard Panel", // ZDJ_CONTROL_MAP_SOUNDCARD_PANEL,
+    "Widget Panel", // ZDJ_CONTROL_MAP_WIDGET_PANEL,
 
     "Lib Edit Song", // ZDJ_CONTROL_MAP_LIB_EDIT_SONG,
     "Lib Edit Cuepoint", // ZDJ_CONTROL_MAP_LIB_EDIT_CUEPOINT,
     "Lib Edit Beatgrid", // ZDJ_CONTROL_MAP_LIB_EDIT_BEATGRID,
+
+    "Lib Edit Song Debug", // ZDJ_CONTROL_MAP_LIB_SONG_DEBUG
 
     "Deck 1 Empty", // ZDJ_CONTROL_MAP_STATION_1_EMPTY,
     "Deck 1 Mom. EQ", // ZDJ_CONTROL_MAP_STATION_1_MOM_EQ,
@@ -404,6 +722,7 @@ extern zdj_special_control_handler_t zdj_special_control_handlers[ 5 ];
 void * zdj_control_cycle_thread_main( void * arg );
 
 extern zdj_control_active_state_t zdj_control_active_state;
+extern zdj_control_map_id_t zdj_control_active_map;
 
 #define ZDJ_CONTROL_EVENT_BUF_LEN 24
 // Ring buffer for queueing events until audio buf cycle consumes them

@@ -24,7 +24,14 @@
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/ui/zdj_ui.h>
 
+typedef enum {
+    ZDJ_LOOP_VIEW_TYPE_PLAYBACK,
+    ZDJ_LOOP_VIEW_TYPE_EDIT,
+    ZDJ_LOOP_VIEW_TYPE_HIDDEN,
+} zdj_loop_view_type_t;
+
 typedef struct {
+    zdj_loop_view_type_t type;
     zdj_deck_t * deck;
     zdj_pipeline_node_t * decode_node;
     double zoom_val;
@@ -33,7 +40,8 @@ typedef struct {
 zdj_view_t * zdj_new_loop_view( 
     zdj_rect_t * frame, 
     zdj_deck_t * deck,
-    double zoom_val
+    double zoom_val,
+    zdj_loop_view_type_t type
 );
 
 #endif

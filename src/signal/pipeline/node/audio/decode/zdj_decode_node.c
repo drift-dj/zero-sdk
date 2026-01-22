@@ -13,6 +13,7 @@
 #include <libavcodec/codec_id.h>
 
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
@@ -35,7 +36,7 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     size_t back_sample_count,
     size_t fwd_sample_count
 ) {
-    // printf( "zdj_new_decode_node\n" );
+    printf( "zdj_new_decode_node\n" );
     // Make node
     zdj_pipeline_node_t * node = zdj_new_pipeline_node( );
     node->deinit_state = &_deinit_state;
@@ -48,7 +49,8 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     node->state = state;
     state->status = ZDJ_DECODE_NODE_INIT;
     state->song = song;
-    state->song_pcm_duration = song->audio->duration * song->audio->av_sample_rate;
+    state->song_pcm_duration = song->audio->duration_pcm;
+    state->channel_count = song->audio->av_channel_count;
     state->win_back_sample_count = back_sample_count;
     state->win_fwd_sample_count = fwd_sample_count;
     state->win_sample_count = fwd_sample_count + back_sample_count;
@@ -94,19 +96,23 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     state->codec_ctx->thread_count = 0;
     res = avcodec_open2( state->codec_ctx, codec, NULL );
 
+    printf( "code id: %d\n", state->song->audio->av_codec_id );
     switch( state->song->audio->av_codec_id ) {
         case AV_CODEC_ID_MP3:
             state->estimated_packet_sample_count = 1152;
             state->av_timebase_factor = 320;
+            state->requires_garbage = true;
             break;
         case AV_CODEC_ID_AAC:
             state->estimated_packet_sample_count = 511;
             state->av_timebase_factor = 1;
-            // break;
+            state->requires_garbage = true;
+            break;
         case AV_CODEC_ID_FLAC:
-            state->estimated_packet_sample_count = 2048;
+            state->estimated_packet_sample_count = 1152;
             state->av_timebase_factor = 1;
-            // break;
+            state->requires_garbage = true;
+            break;
         case AV_CODEC_ID_PCM_S16LE:
         case AV_CODEC_ID_PCM_S16BE:
         case AV_CODEC_ID_PCM_U16LE:
@@ -121,25 +127,18 @@ zdj_pipeline_node_t * zdj_new_decode_node(
         case AV_CODEC_ID_PCM_U32BE:
         case AV_CODEC_ID_PCM_F32LE:
         case AV_CODEC_ID_PCM_F32BE:
-            state->estimated_packet_sample_count = 2048;
+            state->estimated_packet_sample_count = 1024;
             state->av_timebase_factor = 1;
+            state->requires_garbage = false;
             break;
     }
 
-    // // Do inert window move to trigger pre-fill
-    // node->reset_window( node, 0 );
-
-    // printf( "zdj_new_decode_node 2\n" );
-
-    // Add and fill first layer
-    // ------------------------
-    zdj_decode_layer_t * layer = zdj_new_decode_continuous_layer( node, &state->head );
-    state->append_layer( node, layer );
-    layer->fill( layer, node );
+    // Do inert window move to trigger pre-fill
+    node->reset_window( node, 0 );
 
     // // Debug dump format
     // av_dump_format( state->fmt_ctx, 0, song->audio->filepath, 0 );
-    // printf( "zdj_new_decode_node done\n" );
+    printf( "zdj_new_decode_node done\n" );
 
     return node;
 }
@@ -152,18 +151,33 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_DECODE_UPDATE;
     
+    
+
     // printf( "_update_wait 0\n" );
     state->clear_out_buffer( node );
+
+    
+
     zdj_decode_layer_t * layer = state->first_layer;
+
+    
     // printf( "_update_wait 1\n" );
     while( layer ) {
+        zdj_perf_tag_t * move_tag;
+        if ( zdj_perf_enabled( ) ) {
+            move_tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_DECK_AUDIO_CYCLE );
+            move_tag->name = ZDJ_PERF_TAG_DECK_MOVE;
+            move_tag->start = zdj_perf_time( );
+        }
         // printf( "_update_wait 2\n" );
-        layer->accum( layer, node );
+        layer->accum( layer, node ); 
         // printf( "_update_wait 3\n" );
         layer = layer->next;
         // printf( "_update_wait 4\n" );
+        if ( zdj_perf_enabled( ) ) { move_tag->end = zdj_perf_time( ); }
     }
-    
+
+
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
     // printf( "decode _update_wait done\n" );
 }
@@ -179,13 +193,25 @@ static void _deinit_state( zdj_pipeline_node_t * node ) {
 }
 
 static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset ) {
-    // printf( "decode _move_window\n" );
+    // printf( "decode _move_window: %1.3f\n", offset );
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_DECODE_WINDOW;
 
+    // zdj_perf_tag_t * move_tag;
+    // if ( zdj_perf_enabled( ) ) {
+    //     move_tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_DECK_AUDIO_CYCLE );
+    //     move_tag->name = ZDJ_PERF_TAG_DECK_MOVE;
+    //     move_tag->start = zdj_perf_time( );
+    // }
+
+
     // Move the head address by offset.
     state->offset_addr_by_transport_d_coord( node, &state->head, (double)offset );
+    // Set head's buf coord.
+    state->head.buf_d = floor( state->win_sample_count / 2 );
+    state->head.buf_i = (int)state->head.buf_d;
+    // printf( "move1 h:%1.3f/%d\n", state->head.buf_d, state->head.buf_i );
 
     // Groom Existing Layers
     // --------------------
@@ -198,6 +224,8 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
         layer = layer->next;
     }
 
+
+    // printf( "move 2\n" );
     // DEPRECATING
     // Add first layer if layers are empty
     // -----------------------------------
@@ -208,58 +236,114 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
 
     // Add Discon Layers
     // -----------------
-    if( state->discon_is_active( node ) ) {
+    if( state->discon_is_active ) {
+
+        // printf( "move 3\n" );
 
         zdj_decode_addr_t earliest_addr;
         state->get_earliest_core_addr( node, &earliest_addr );
         zdj_decode_addr_t latest_addr;
         state->get_latest_core_addr( node, &latest_addr );
+        // printf( "discon_active: %1.0f %d\n", 
+        //     latest_addr.transport_d,
+        //     state->win_contains_addr( node, &latest_addr, ZDJ_ADDR_COORD_TRANSPORT )
+        // );
+
+
+        
+
+
 
         // Groom backwards from first layer, prepending layers until they extend beyond win start.
         while( state->win_contains_addr( node, &earliest_addr, ZDJ_ADDR_COORD_TRANSPORT ) ) {
-            if( state->first_layer->back_discon.type != ZDJ_DECODE_DISCON_LOOP ) { continue; }
+            
+
+            // printf( "move 4\n" );
+
+            if( state->first_layer->back_discon_type != ZDJ_DECODE_DISCON_LOOP ) { break; }
+
+            // printf( "Prepending loop layer\n" );
+
             // Make and offset an address for the new loop start
             zdj_decode_addr_t loop_start;
             state->first_layer->core_start.copy( &state->first_layer->core_start, &loop_start );
-            int64_t loop_len = state->first_layer->back_discon.length;
-            // Move the loop back in decode space by 1 loop length
+            zdj_deck_control_loop_state_t * loop_state = (zdj_deck_control_loop_state_t*)state->first_layer->_loop_state;
+            // Move the entire loop start addr back in decode space by 1 loop length
             state->offset_addr_by_transport_d_coord( 
                 node, 
                 &loop_start, 
-                (double)loop_len * -1
+                (double)loop_state->pcm_len * -1
             );
-            state->prepend_layer( node, zdj_new_decode_loop_layer( node, &loop_start, loop_len ) );
+            // Set ONLY the origin coords to the loop's start
+            // loop_start.origin_bg = state->first_layer->core_start.origin_bg;
+            // loop_start.origin_d = state->first_layer->core_start.origin_d;
+            // loop_start.origin_i = state->first_layer->core_start.origin_i;
+            loop_start.origin_d = loop_state->start_origin_d;
+            loop_start.origin_i = (int64_t)loop_start.origin_d;
+            loop_start.origin_bg = zdj_signal_beatgrid_count_for_pcm_count( 
+                loop_start.origin_d,
+                state->song->audio->av_sample_rate,
+                state->song->performance->bpm
+            );
+
+            state->prepend_layer( 
+                node, zdj_new_decode_loop_layer( node, &loop_start, state->first_layer->_loop_state ) 
+            );
+            state->first_layer->update_buf_coords_for_head( state->first_layer, node );
+            state->first_layer->fill( state->first_layer, node );
             // Update the earliest addr for next loop
             state->get_earliest_core_addr( node, &earliest_addr );
-        }
+
+        }        
+
 
         // Groom forward from new first layer, appending layers to fill window coords.
         while( state->win_contains_addr( node, &latest_addr, ZDJ_ADDR_COORD_TRANSPORT ) ) {
-            // Add a new discon layer based on discon type of last layer
-            if( state->last_layer->fwd_discon.type == ZDJ_DECODE_DISCON_LOOP ) {
-                
-                int64_t loop_len = state->last_layer->fwd_discon.length;
-                zdj_decode_addr_t loop_start;
-                state->last_layer->core_end.copy( &state->last_layer->core_end, &loop_start );
-                state->append_layer( node, zdj_new_decode_loop_layer( node, &loop_start, loop_len ) );
             
-            } if( state->last_layer->fwd_discon.type == ZDJ_DECODE_DISCON_SKIP ) {
+            
+
+            // printf( "move 5\n" );
+
+            // Add a new discon layer based on discon type of last layer
+            if( state->last_layer->fwd_discon_type == ZDJ_DECODE_DISCON_LOOP ) {
+        
+                // printf( "Appending loop layer\n" );
+                zdj_deck_control_loop_state_t * loop_state = (zdj_deck_control_loop_state_t*)state->last_layer->_loop_state;
+                zdj_decode_addr_t loop_start;
+                // Copy the last layer's end addr into the new layer's start addr
+                state->last_layer->core_end.copy( &state->last_layer->core_end, &loop_start );
+
+                // The last layer's end may have been altered to a quantization.
+                // We want to keep the transport coords, but ensure the origin coords
+                // respect the original loop_state addresses.
+                // This behavior only applies to fill fwd.
+                loop_start.origin_d = loop_state->start_origin_d;
+                loop_start.origin_i = (int64_t)loop_start.origin_d;
+                loop_start.origin_bg = zdj_signal_beatgrid_count_for_pcm_count( 
+                    loop_start.origin_d,
+                    state->song->audio->av_sample_rate,
+                    state->song->performance->bpm
+                );
+
                 
-                zdj_decode_addr_t skip_depart;
-                // Note: This assumes the truncate has already happened.
-                state->last_layer->core_end.copy( &state->last_layer->core_end, &skip_depart );
-                zdj_decode_addr_t skip_dest;
-                skip_depart.copy( &skip_depart, &skip_dest );
-                // Offset only origin coord of dest's pcm addr.
-                // TODO: Link deck controls skip state here.
-                double skip_bg_len = 1.25f;
-                state->offset_addr_origin_by_skip_bg( node, &skip_dest, skip_bg_len );
-                state->append_layer( node, zdj_new_decode_skip_layer( node, &skip_depart, &skip_dest ) );
+                state->append_layer( 
+                    node, zdj_new_decode_loop_layer( node, &loop_start, state->last_layer->_loop_state ) 
+                );
+                state->last_layer->update_buf_coords_for_head( state->last_layer, node );
+                state->last_layer->fill( state->last_layer, node );
+
             }
             // Update latest addr for next loop
             state->get_latest_core_addr( node, &latest_addr );
+            // printf( "latest: tp:%1.1f og:%1.1f\n", latest_addr.transport_d, latest_addr.origin_d );
+
+            
+            
         }
+
     }
+
+
 
     // Delete empty layers
     // -------------------
@@ -275,6 +359,12 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
     // Refresh the head's addr (including origin) since there may be a new layer
     // under the head after all the grooming above.
     state->set_addr_transport_d_coord( node, &state->head, state->head.transport_d );
+    // Set head's buf coord.
+    state->head.buf_d = floor( state->win_sample_count / 2 );
+    state->head.buf_i = (int)state->head.buf_d;
+    // printf( "move2 h:%1.3f/%d\n", state->head.buf_d, state->head.buf_i );
+
+    // if ( zdj_perf_enabled( ) ) { move_tag->end = zdj_perf_time( ); }
 
     // printf( " decode _move_window done\n" );
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
@@ -282,12 +372,22 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
 
 // DEPRECATING
 static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double address ) {
-    printf( "======> WARNING!!! RESET WINDOW CALLED\n" );
+    // printf( "======> WARNING!!! RESET WINDOW CALLED\n" );
     // If we're going to use this, we need to clear out the layer stack.
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     zdj_decode_init_addr( &state->head );
     state->set_addr_transport_d_coord( node, &state->head, address );
-    // _move_window( node, address );
+
+    zdj_decode_layer_t * layer = state->first_layer;
+    while( layer ) {
+        zdj_decode_layer_t * next_layer = layer->next;
+        state->remove_layer( node, layer );
+        layer = next_layer;
+    }
+
+    layer = zdj_new_decode_continuous_layer( node, &state->head );
+    state->append_layer( node, layer );
+    layer->fill( layer, node );
 }
 // DEPRECATING
 
@@ -321,7 +421,7 @@ static void _append_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * laye
 }
 
 static bool _can_remove_layer( zdj_decode_layer_t * layer ) {
-    return layer->fwd_discon.type != ZDJ_DECODE_DISCON_NONE && layer->is_empty( layer );
+    return layer->fwd_discon_type != ZDJ_DECODE_DISCON_NONE && layer->is_empty( layer );
 }
 
 static void _remove_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer ) {

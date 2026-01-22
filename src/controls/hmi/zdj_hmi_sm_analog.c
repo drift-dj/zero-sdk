@@ -9,7 +9,7 @@
 void zdj_control_process_hmi_analog_input( zdj_hmi_input_state_t * input, int32_t pot_val ) {
     zdj_hmi_input_event_t * event;
 
-    // printf( "zdj_control_process_hmi_analog_input: %s\n", zdj_hmi_input_name[ input->id ] );
+    // printf( "zdj_control_process_hmi_analog_input: %s %d\n", zdj_hmi_input_name[ input->id ], pot_val );
 
     switch ( input->current_state ) {
         case ZDJ_HMI_STATE_IDLE:
@@ -47,7 +47,5 @@ void zdj_control_process_hmi_analog_input( zdj_hmi_input_state_t * input, int32_
             }
             break;
 
-    }
-    
-        
+    }   
 }

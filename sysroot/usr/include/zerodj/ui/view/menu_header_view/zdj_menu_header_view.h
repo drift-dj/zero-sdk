@@ -21,6 +21,8 @@
 #ifndef ZDJ_MENU_HEADER_VIEW_H
 #define ZDJ_MENU_HEADER_VIEW_H
 
+#include <zerodj/ui/zdj_ui.h>
+
 typedef enum {
     ZDJ_MENU_HEADER_STYLE_NONE,
     ZDJ_MENU_HEADER_STYLE_NORMAL

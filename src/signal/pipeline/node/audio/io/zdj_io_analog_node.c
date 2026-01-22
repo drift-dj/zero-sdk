@@ -54,7 +54,7 @@ zdj_pipeline_node_t * zdj_new_io_analog_node( void ) {
 
 zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node ) {
     zdj_io_analog_node_state_t * node_state = (zdj_io_analog_node_state_t*)node->state;
-    printf( "zdj_io_analog_configure\n" );
+    // printf( "zdj_io_analog_configure\n" );
     // Write inputs to shared buffer_state struct
     node_state->shared_audio_state->buffer_len = ZDJ_SOUNDCARD_BUF_LEN;
 
@@ -145,7 +145,13 @@ zdj_error_type_t zdj_analog_io_pull_samples( zdj_pipeline_node_t * node ) {
         in_2_state->buffer[ i*2+1 ] = (float)xfrm;
     }
 
-    // printf( "zdj_analog_io_pull_samples: %f\n", in_1_state->buffer[ 2 ] );
+    // printf( "zdj_analog_io_pull_samples: %1.3f %1.3f %1.3f %1.3f\n", in_1_state->buffer[ 2 ],in_1_state->buffer[ 3 ], in_2_state->buffer[ 2 ], in_2_state->buffer[ 3 ] );
+    // printf( "zdj_analog_io_pull_samples: %d %d %d %d\n", 
+    //     state->shared_adc_buffer[ 2*8+1 ],
+    //     state->shared_adc_buffer[ 2*8+2 ],
+    //     state->shared_adc_buffer[ 2*8+3 ],
+    //     state->shared_adc_buffer[ 2*8+4 ]
+    // );
 }
 
 void _zdj_io_analog_node_deinit_state( zdj_pipeline_node_t * node ) {
@@ -175,7 +181,7 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
 	sched_setscheduler( syscall(SYS_gettid), SCHED_RR, &param );
 
     // Give realtime scheduler access to 100% of core time
-	system( "echo -1 >/proc/sys/kernel/sched_rt_runtime_us" );
+	// system( "echo -1 >/proc/sys/kernel/sched_rt_runtime_us" );
 
     // Set core affinity to Core #1;
     cpu_set_t cpuset;
@@ -198,6 +204,8 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
     // struct timespec cycle_delay = { 0, cycle_time };
     struct timespec cycle_delay = { 0, 50 };
 
+    double p_start_prev, p_start;
+    double n_start, n_end;
 
     while( 1 ) {
         // Check for cycle_ready
@@ -205,6 +213,9 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
         // and a buffer of DAC samples is needed.
         // On cycle_ready
         if( node_state->shared_audio_state->cycle_ready ) {
+            // p_start_prev = p_start;
+            // p_start = zdj_perf_time( );
+            // printf( "p:%1.2f", ( p_start - p_start_prev ) / 1000000.0 );
             // De-assert cycle_ready to let M7 core know we got it.
             node_state->shared_audio_state->cycle_ready = false;
 
@@ -214,15 +225,18 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
             // Don't spend a ton of time in the CB.  
             // You want to be done before the next cycle_ready assert.
             if( node->update_cb ) { 
-                if( zdj_perf_enabled( ) ) {
-                    zdj_perf_tag_t * tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_AUDIO_BUF );
-                    tag->name = ZDJ_PERF_TAG_AUDIO_BUF_CYCLE;
-                    tag->start = zdj_perf_time( );
+                // if( zdj_perf_enabled( ) ) {
+                // //     zdj_perf_tag_t * tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_AUDIO_BUF );
+                // //     tag->name = ZDJ_PERF_TAG_AUDIO_BUF_CYCLE;
+                // //     tag->start = zdj_perf_time( );
+                //     node->update_cb( node );
+                // //     tag->end = zdj_perf_time( );
+                // } else {
+                    // n_start = zdj_perf_time( );
                     node->update_cb( node );
-                    tag->end = zdj_perf_time( );
-                } else {
-                    node->update_cb( node );
-                }
+                    // n_end = zdj_perf_time( );
+                    // printf( " n:%1.2f\n", ( n_end - n_start ) / 1000000.0 );
+                // }
             }
         } 
 

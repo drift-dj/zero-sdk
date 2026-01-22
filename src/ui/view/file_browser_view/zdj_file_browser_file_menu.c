@@ -83,13 +83,13 @@ zdj_view_t * zdj_new_file_browser_menu_for_path(
 
     // Scan dir contents, adding menu items
     DIR * dir = opendir( path );
-    printf( "file browser open dir %s: %p\n", path, dir );
+    // printf( "file browser open dir %s: %p\n", path, dir );
     struct dirent * entry;
     int id = 0;
     if ( dir ) {
         // Look at every entry in dir.
         while ( ( entry = readdir( dir ) ) != NULL ) {
-            printf( "file browser menu entry: %s\n", entry->d_name );
+            // printf( "file browser menu entry: %s\n", entry->d_name );
             if( entry->d_name[ 0 ] == '.' ) continue;
             char dir_path[ 2048 ];
             snprintf( dir_path, sizeof( dir_path ), "%s/%s", path, entry->d_name );

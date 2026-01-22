@@ -12,7 +12,7 @@ typedef struct {
 void zdj_anim_init_header_activate( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn ) {
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)view->state;
 
-    // Note that we're hacking to different anims into a single x/y point
+    // Note that we're hacking two different anims into a single x/y point
     anim->start_point.x = header_state->title_ticker->frame.x;
     anim->start_point.y = 1;
 
@@ -27,11 +27,12 @@ void zdj_anim_init_header_activate( zdj_anim_t * anim, zdj_view_t * view, void *
 void zdj_anim_init_header_deactivate( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn ) {
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)view->state;
 
-    // Note that we're hacking to different anims into a single x/y point
+    // Note that we're hacking two different anims into a single x/y point
     anim->start_point.x = header_state->title_ticker->frame.x; // <-- this doesn't look right
     anim->start_point.y = 0;
 
-    anim->end_point.x = header_state->back_view->frame.w + 6;
+    // anim->end_point.x = header_state->back_view->frame.w + 6;
+    anim->end_point.x = header_state->name_label->frame.w + 6;
     anim->end_point.y = 1;
 
     anim->frame = 0;
@@ -43,8 +44,8 @@ void zdj_anim_update_header( zdj_anim_t * anim, zdj_view_t * view ) {
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)view->state;
 
     float coeff = anim->ease( (float)anim->frame, (float)anim->frames );
-    float back_y = 8 * ( anim->start_point.y + ( ( anim->end_point.y - anim->start_point.y ) * coeff ) );
-    float name_y = 8 - (8 * ( anim->start_point.y + ( ( anim->end_point.y - anim->start_point.y ) * coeff ) ));
+    float back_y = 7 * ( anim->start_point.y + ( ( anim->end_point.y - anim->start_point.y ) * coeff ) );
+    float name_y = 7 - (8 * ( anim->start_point.y + ( ( anim->end_point.y - anim->start_point.y ) * coeff ) ));
     float title_x = anim->start_point.x + ( ( anim->end_point.x - anim->start_point.x ) * coeff );
 
     if( anim->frame == anim->frames ) {

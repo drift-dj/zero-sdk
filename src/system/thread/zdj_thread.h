@@ -28,7 +28,8 @@
 typedef enum {
     ZDJ_SYSTEM_THREAD_CONTROL,
     ZDJ_SYSTEM_THREAD_UI,
-    ZDJ_SYSTEM_THREAD_AUDIO_BUF
+    ZDJ_SYSTEM_THREAD_AUDIO_BUF,
+    ZDJ_SYSTEM_THREAD_DECK_AUDIO_CYCLE
 } zdj_system_thread_t;
 
 typedef void * ( *zdj_thread_main )( void * );

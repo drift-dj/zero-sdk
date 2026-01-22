@@ -9,16 +9,12 @@
 #include <zerodj/system/debug/zdj_debug.h>
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/perf/zdj_perf.h>
-#include <zerodj/system/screen_cap/zdj_screen_cap.h>
+#include <zerodj/system/screencap/zdj_screencap.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
-#include <zerodj/ui/panel/accessibility/zdj_accessibility_panel.h>
-#include <zerodj/ui/panel/recording/zdj_recording_panel.h>
-#include <zerodj/ui/panel/volume/zdj_volume_panel.h>
-#include <zerodj/ui/panel/debug/zdj_debug_panel.h>
-#include <zerodj/ui/panel/perf/zdj_perf_panel.h>
-#include <zerodj/ui/panel/widget/zdj_widget_panel.h>
+#include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
+#include <zerodj/ui/widget/zdj_ui_widget.h>
 #include <zerodj/system/display/zdj_display.h>
 #include <zerodj/health/zdj_health_type.h>
 
@@ -27,12 +23,8 @@ zdj_view_t * zdj_view_stack_top;
 zdj_rect_t view_stack_frame = {0,0,128,64};
 
 zdj_view_t * zdj_view_stack_root_view;
-zdj_view_t * zdj_view_stack_widget_panel;
-zdj_view_t * zdj_view_stack_accessibility_panel;
-zdj_view_t * zdj_view_stack_record_panel;
-zdj_view_t * zdj_view_stack_volume_panel;
-zdj_view_t * zdj_view_stack_debug_panel;
-zdj_view_t * zdj_view_stack_perf_panel;
+zdj_view_t * zdj_view_stack_panel_view;
+zdj_view_t * zdj_view_stack_widget_view;
 
 // static void _zdj_view_stack_handle_events( zdj_view_t * view );
 static void _zdj_view_stack_draw( zdj_view_t * view );
@@ -41,28 +33,12 @@ zdj_view_t * zdj_root_view( void ) {
     return zdj_view_stack_root_view;
 }
 
-zdj_view_t * zdj_widget_panel( void ) {
-    return zdj_view_stack_widget_panel;
+zdj_view_t * zdj_panel_view( void ) {
+    return zdj_view_stack_panel_view;
 }
 
-zdj_view_t * zdj_accessibility_panel( void ) {
-    return zdj_view_stack_accessibility_panel;
-}
-
-zdj_view_t * zdj_record_panel( void ) {
-    return zdj_view_stack_record_panel;
-}
-
-zdj_view_t * zdj_volume_panel( void ) {
-    return zdj_view_stack_volume_panel;
-}
-
-zdj_view_t * zdj_debug_panel( void ) {
-    return zdj_view_stack_debug_panel;
-}
-
-zdj_view_t * zdj_perf_panel( void ) {
-    return zdj_view_stack_perf_panel;
+zdj_view_t * zdj_widget_view( void ) {
+    return zdj_view_stack_widget_view;
 }
 
 void zdj_view_stack_init( void ) {
@@ -70,30 +46,14 @@ void zdj_view_stack_init( void ) {
     zdj_view_stack_root_view->subview_clip.src.w = zdj_view_stack_root_view->subview_clip.dst.w = 128;
     zdj_view_stack_root_view->subview_clip.src.h = zdj_view_stack_root_view->subview_clip.dst.h = 64;
 
-    zdj_view_stack_widget_panel = zdj_new_widget_panel( );
-    zdj_view_stack_widget_panel->subview_clip.src.w = zdj_view_stack_widget_panel->subview_clip.dst.w = 128;
-    zdj_view_stack_widget_panel->subview_clip.src.h = zdj_view_stack_widget_panel->subview_clip.dst.h = 64;
-    
-    zdj_view_stack_accessibility_panel = zdj_new_accessibility_panel( );
-    zdj_view_stack_accessibility_panel->subview_clip.src.w = zdj_view_stack_accessibility_panel->subview_clip.dst.w = 128;
-    zdj_view_stack_accessibility_panel->subview_clip.src.h = zdj_view_stack_accessibility_panel->subview_clip.dst.h = 64;
+    zdj_view_stack_panel_view = zdj_new_view( &view_stack_frame );
+    zdj_view_stack_panel_view->subview_clip.src.w = zdj_view_stack_panel_view->subview_clip.dst.w = 128;
+    zdj_view_stack_panel_view->subview_clip.src.h = zdj_view_stack_panel_view->subview_clip.dst.h = 64;
 
-    zdj_view_stack_record_panel = zdj_new_recording_panel( );
-    zdj_view_stack_record_panel->subview_clip.src.w = zdj_view_stack_record_panel->subview_clip.dst.w = 128;
-    zdj_view_stack_record_panel->subview_clip.src.h = zdj_view_stack_record_panel->subview_clip.dst.h = 64;
+    zdj_view_stack_widget_view = zdj_new_view( &view_stack_frame );
+    zdj_view_stack_widget_view->subview_clip.src.w = zdj_view_stack_widget_view->subview_clip.dst.w = 128;
+    zdj_view_stack_widget_view->subview_clip.src.h = zdj_view_stack_widget_view->subview_clip.dst.h = 64;
 
-    zdj_view_stack_volume_panel = zdj_new_volume_panel( );
-    zdj_view_stack_volume_panel->subview_clip.src.w = zdj_view_stack_volume_panel->subview_clip.dst.w = 128;
-    zdj_view_stack_volume_panel->subview_clip.src.h = zdj_view_stack_volume_panel->subview_clip.dst.h = 64;
-
-    zdj_view_stack_debug_panel = zdj_new_debug_panel( );
-    zdj_view_stack_debug_panel->subview_clip.src.w = zdj_view_stack_debug_panel->subview_clip.dst.w = 128;
-    zdj_view_stack_debug_panel->subview_clip.src.h = zdj_view_stack_debug_panel->subview_clip.dst.h = 64;
-
-    zdj_view_stack_perf_panel = zdj_new_perf_panel( );
-    zdj_view_stack_perf_panel->subview_clip.src.w = zdj_view_stack_perf_panel->subview_clip.dst.w = 128;
-    zdj_view_stack_perf_panel->subview_clip.src.h = zdj_view_stack_perf_panel->subview_clip.dst.h = 64;
-    
     zdj_delete_stack = NULL;
 }
 
@@ -104,9 +64,12 @@ void zdj_view_stack_deinit( void ) {
 void zdj_view_stack_update( void ) {
     zdj_view_t * view;
     // Open a tag for the UI cycle
-    zdj_perf_tag_t * tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_UI );
-    tag->name = ZDJ_PERF_TAG_UI_CYCLE;
-    tag->start = zdj_perf_time( );
+    // zdj_perf_tag_t * tag;
+    // if( zdj_perf_enabled( ) ) {
+    //     tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_UI );
+    //     tag->name = ZDJ_PERF_TAG_UI_CYCLE;
+    //     tag->start = zdj_perf_time( );
+    // }
 
     // If there are unhandled events in the event ring buffer...
     int start_ind = zdj_ui_event_buf_read;
@@ -117,15 +80,7 @@ void zdj_view_stack_update( void ) {
             zdj_view_stack_handle_special_events( start_ind, end_ind );
         // }
         // ...send events into views for handling.
-        zdj_view_stack_handle_events( 
-            start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_record_panel( ) ) 
-        );
-        zdj_view_stack_handle_events( 
-            start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_debug_panel( ) ) 
-        );
-        zdj_view_stack_handle_events( 
-            start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_perf_panel( ) ) 
-        );
+        zdj_view_stack_handle_events( start_ind, end_ind, zdj_panel_view( ) );
         zdj_view_stack_handle_events( 
             start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_root_view( ) ) 
         );
@@ -136,20 +91,16 @@ void zdj_view_stack_update( void ) {
     // Draw views from lowest to highest.
     zdj_new_view_count = 0;
     _zdj_view_stack_draw( zdj_root_view( ) );
-    // _zdj_view_stack_draw( zdj_widget_panel( ) );
-    // _zdj_view_stack_draw( zdj_accessibility_panel( ) );
+    _zdj_view_stack_draw( zdj_panel_view( ) );
+    _zdj_view_stack_draw( zdj_widget_view( ) );
 
-    zdj_view_stack_draw( zdj_record_panel( ), &zdj_record_panel( )->subview_clip );
-    zdj_view_stack_draw( zdj_volume_panel( ), &zdj_volume_panel( )->subview_clip );
-
-    _zdj_view_stack_draw( zdj_debug_panel( ) );
-    _zdj_view_stack_draw( zdj_perf_panel( ) );
     zdj_view_count = zdj_new_view_count;
 
     // If screen_cap is armed, grab it here after all drawing is complete.
     if( zdj_screen_cap_armed ) {
-        zdj_write_screen_cap( );
-        zdj_screen_cap_armed = false;
+        zdj_update_screencap( );
+        // zdj_write_screen_cap( );
+        // zdj_screen_cap_armed = false;
     }
 
     // Delete everything in the delete stack
@@ -161,7 +112,7 @@ void zdj_view_stack_update( void ) {
     }
     zdj_delete_stack = NULL;
     
-    tag->end = zdj_perf_time( );
+    // if( zdj_perf_enabled( ) ) { tag->end = zdj_perf_time( ); }
 }
 
 void _zdj_view_stack_draw( zdj_view_t * view ) {
