@@ -131,18 +131,18 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_OUT_RELEASE_3, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_ADJUST ) {
             // Sort turn events among UI/Decks
-            printf( "out adjust - " );
+            // printf( "out adjust - " );
             if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_OUT_ADJUST_0 ] ) { 
-                printf( "ui out\n" );
+                // printf( "ui out\n" );
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_OUT_ADJUST_0, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_SCROLL_PANEL ] ) { 
-                printf( "scroll panel\n" );
+                // printf( "scroll panel\n" );
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_SCROLL_PANEL, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_CONTROL_LR_VOL ] ) { 
-                printf( "vol\n" );
+                // printf( "vol\n" );
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CONTROL_LR_VOL, in_e, c_e ); return true; 
             } else {
-                printf( "none\n" );
+                // printf( "none\n" );
             }
         } else if( in_e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ) {
             // Sort push-turn events among UI/Decks
@@ -393,11 +393,7 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
     // Hotcue Btn
     else if( in_e->id == ZDJ_HMI_PB_0_HOTCUE ) {
         if( in_e->type == ZDJ_HMI_EVENT_PRESS ) {
-            if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_PRESS_0 ] ) { 
+            if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_PRESS_0 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_HOTCUE_PRESS_0, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_HOTCUE_START ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_HOTCUE_START, in_e, c_e ); return true; 
@@ -422,10 +418,20 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
             if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_PRESS_3 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_HOTCUE_PRESS_3, in_e, c_e ); return true; 
             }
-        } else if( in_e->type == ZDJ_HMI_EVENT_LONG_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_RELEASE_1 ] ) { 
-            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_HOTCUE_RELEASE_1, in_e, c_e ); return true; 
-        } else if( in_e->type == ZDJ_HMI_EVENT_MOD_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_RELEASE_2 ] ) { 
-            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_HOTCUE_RELEASE_2, in_e, c_e ); return true; 
+        } else if( in_e->type == ZDJ_HMI_EVENT_LONG_RELEASE ) {
+            if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_RELEASE_1 ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_HOTCUE_RELEASE_1, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_HOTCUE_END ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_HOTCUE_END, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_HOTCUE_END ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_HOTCUE_END, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_HOTCUE_END ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_HOTCUE_END, in_e, c_e ); return true; 
+            }
+        } else if( in_e->type == ZDJ_HMI_EVENT_MOD_RELEASE ){
+            if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_RELEASE_2 ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_HOTCUE_RELEASE_2, in_e, c_e ); return true; 
+            }
         }
     }
 

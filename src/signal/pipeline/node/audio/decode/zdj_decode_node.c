@@ -198,20 +198,11 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_DECODE_WINDOW;
 
-    // zdj_perf_tag_t * move_tag;
-    // if ( zdj_perf_enabled( ) ) {
-    //     move_tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_DECK_AUDIO_CYCLE );
-    //     move_tag->name = ZDJ_PERF_TAG_DECK_MOVE;
-    //     move_tag->start = zdj_perf_time( );
-    // }
-
-
     // Move the head address by offset.
     state->offset_addr_by_transport_d_coord( node, &state->head, (double)offset );
     // Set head's buf coord.
     state->head.buf_d = floor( state->win_sample_count / 2 );
     state->head.buf_i = (int)state->head.buf_d;
-    // printf( "move1 h:%1.3f/%d\n", state->head.buf_d, state->head.buf_i );
 
     // Groom Existing Layers
     // --------------------
@@ -224,8 +215,6 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
         layer = layer->next;
     }
 
-
-    // printf( "move 2\n" );
     // DEPRECATING
     // Add first layer if layers are empty
     // -----------------------------------
@@ -238,32 +227,14 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
     // -----------------
     if( state->discon_is_active ) {
 
-        // printf( "move 3\n" );
-
         zdj_decode_addr_t earliest_addr;
         state->get_earliest_core_addr( node, &earliest_addr );
         zdj_decode_addr_t latest_addr;
         state->get_latest_core_addr( node, &latest_addr );
-        // printf( "discon_active: %1.0f %d\n", 
-        //     latest_addr.transport_d,
-        //     state->win_contains_addr( node, &latest_addr, ZDJ_ADDR_COORD_TRANSPORT )
-        // );
-
-
-        
-
-
 
         // Groom backwards from first layer, prepending layers until they extend beyond win start.
         while( state->win_contains_addr( node, &earliest_addr, ZDJ_ADDR_COORD_TRANSPORT ) ) {
-            
-
-            // printf( "move 4\n" );
-
             if( state->first_layer->back_discon_type != ZDJ_DECODE_DISCON_LOOP ) { break; }
-
-            // printf( "Prepending loop layer\n" );
-
             // Make and offset an address for the new loop start
             zdj_decode_addr_t loop_start;
             state->first_layer->core_start.copy( &state->first_layer->core_start, &loop_start );
@@ -296,14 +267,8 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
 
         }        
 
-
         // Groom forward from new first layer, appending layers to fill window coords.
         while( state->win_contains_addr( node, &latest_addr, ZDJ_ADDR_COORD_TRANSPORT ) ) {
-            
-            
-
-            // printf( "move 5\n" );
-
             // Add a new discon layer based on discon type of last layer
             if( state->last_layer->fwd_discon_type == ZDJ_DECODE_DISCON_LOOP ) {
         
@@ -324,7 +289,6 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
                     state->song->audio->av_sample_rate,
                     state->song->performance->bpm
                 );
-
                 
                 state->append_layer( 
                     node, zdj_new_decode_loop_layer( node, &loop_start, state->last_layer->_loop_state ) 
@@ -335,15 +299,9 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
             }
             // Update latest addr for next loop
             state->get_latest_core_addr( node, &latest_addr );
-            // printf( "latest: tp:%1.1f og:%1.1f\n", latest_addr.transport_d, latest_addr.origin_d );
-
-            
-            
         }
 
     }
-
-
 
     // Delete empty layers
     // -------------------
@@ -362,11 +320,7 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
     // Set head's buf coord.
     state->head.buf_d = floor( state->win_sample_count / 2 );
     state->head.buf_i = (int)state->head.buf_d;
-    // printf( "move2 h:%1.3f/%d\n", state->head.buf_d, state->head.buf_i );
 
-    // if ( zdj_perf_enabled( ) ) { move_tag->end = zdj_perf_time( ); }
-
-    // printf( " decode _move_window done\n" );
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
 }
 

@@ -211,6 +211,8 @@ static void _put_map(
     bool node_is_right_channel = zdj_soundcard_node_name_is_right_channel( node->name );
     bool input_node_is_ana_input = zdj_soundcard_node_name_is_analog_input( input_node->name );
 
+    map->accum_pan = false;
+
     if( node_is_ana_output && input_node->stereo  ) {
         
         // If given output node is right channel, assume it isn't stereo
@@ -255,14 +257,31 @@ static void _put_map(
         //     map->source_channel_count,
         //     map->source_channel_offset
         // );
-    } else if( input_node_is_ana_input && node->stereo ) {
+    } else if( input_node_is_ana_input && input_node->stereo && node->stereo ) {
         map->dest_channel_stride = 2;
         map->dest_channel_count = 2;
         map->dest_channel_offset = 0;
         map->source_channel_stride = 2;
         map->source_channel_count = 2;
         map->source_channel_offset = 0;
-    } else if( input_node_is_ana_input && !node->stereo ) {
+    } else if( input_node_is_ana_input && !input_node->stereo && node->stereo ) {
+        map->dest_channel_stride = 2;
+        map->dest_channel_count = 2;
+        map->dest_channel_offset = 0;
+        map->source_channel_stride = 2;
+        map->source_channel_count = 1;
+        map->source_channel_offset = zdj_soundcard_node_name_is_right_channel( input_node->name ) ? 1 : 0;
+        // Add pan here
+        // map->source_pan = input_node->pan;
+        map->accum_pan = true;
+    } else if( input_node_is_ana_input && input_node->stereo && !node->stereo ) {
+        map->dest_channel_stride = 1;
+        map->dest_channel_count = 1;
+        map->dest_channel_offset = 0;
+        map->source_channel_stride = 2;
+        map->source_channel_count = 2;
+        map->source_channel_offset = 0;
+    } else if( input_node_is_ana_input && !input_node->stereo && !node->stereo ) {
         map->dest_channel_stride = 1;
         map->dest_channel_count = 1;
         map->dest_channel_offset = 0;
@@ -287,7 +306,7 @@ static void _put_map(
         map->source_channel_stride = 1;
         map->source_channel_count = 1;
         map->source_channel_offset = 0;
-        map->source_pan = input_node->pan;
+        // map->source_pan = input_node->pan;
         // if( is_output_node ) {
         //     printf( "accum: st %s <- mo %s:%d/%d\n", 
         //         zdj_soundcard_node_name[ node->name ],
@@ -356,9 +375,23 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
     }
 
     // Stride thru buffers, mixing samples, capturing metering data, and pushing waveform data
-    float source_sample, dest_sample, new_dest_sample;
+    float source_sample, dest_sample, dest_sample_l, dest_sample_r;
+    float new_dest_sample, new_dest_sample_l, new_dest_sample_r;
+    float pan_coeff_l, pan_coeff_r;
     int source_index, dest_index;
     float meter_val[ 2 ] = { 0 };
+
+    if( map->accum_pan ) {
+        pan_coeff_l = ((input_node->dsp_dto->pan*-1.0) / 2.0) + 0.5;
+        pan_coeff_r = (input_node->dsp_dto->pan / 2.0) + 0.5;
+        // printf( "%s->%s pan %1.3f [%1.3f<>%1.3f]\n", 
+        //     zdj_soundcard_node_name[ input_node->name ], 
+        //     zdj_soundcard_node_name[ node->name ], 
+        //     input_node->dsp_dto->pan, pan_coeff_l, pan_coeff_r 
+        // );
+    }
+
+    
     // if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 ) {
     //     printf( "\n%s[%d/%d/%d] -> %s[%d/%d/%d]\n", 
     //         zdj_soundcard_node_name[ input_node->name ], 
@@ -379,33 +412,32 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
                 // Stereo source channel - copy to mono or stereo dest channels
                 source_index = i*map->source_channel_stride+c+map->source_channel_offset;
             }
-            dest_index = i*map->dest_channel_stride+c+map->dest_channel_offset;
-
-            // Add the samples and clip to min/max ( -1.0->1.0 )
-            source_sample = source_buf[ source_index ];
-            dest_sample = dest_buf[ dest_index ];
-
-            // Include pan for mono->stereo accum
-            if( map->accum_pan ) {
-                new_dest_sample = source_sample+dest_sample;
-            } else {
-                new_dest_sample = source_sample+dest_sample;
-            }
             
-            // if( new_dest_sample > 1.0f ) {
-            //     dest_buf[ dest_index ] = 1.0f;
-            // } else if( new_dest_sample < -1.0f ) {
-            //     dest_buf[ dest_index ] = -1.0f;
-            // } else {
+            // Add the samples
+            source_sample = source_buf[ source_index ];
+            
+            if( map->accum_pan ) {
+                // Panned mix
+                // If accum_pan is true, we know dest_buf has 2 channels.
+                if( !node->stereo ) { 
+                    printf( "panning into a mono buffer !!!" ); 
+                } else {
+                    dest_sample_l = dest_buf[ i*2 ];
+                    dest_sample_r = dest_buf[ i*2+1 ];
+
+                    new_dest_sample_l = (source_sample*pan_coeff_l)+dest_sample_l;
+                    dest_buf[ i*2 ] = new_dest_sample_l;
+
+                    new_dest_sample_r = (source_sample*pan_coeff_r)+dest_sample_r;
+                    dest_buf[ i*2+1 ] = new_dest_sample_r;
+                }
+            } else {
+                // Non-panned mix
+                dest_index = i*map->dest_channel_stride+c+map->dest_channel_offset;
+                dest_sample = dest_buf[ dest_index ];
+                new_dest_sample = source_sample+dest_sample;
                 dest_buf[ dest_index ] = new_dest_sample;
-            // }
-
-            // if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1 && new_dest_sample > 0.01 ) {
-            //     printf( "%d:%1.1f -> %d:%1.1f : %1.1f\n", source_index, source_sample, dest_index, dest_sample, dest_buf[ dest_index ] );
-            // }
-
-            // Add sample to meter value
-            // if( c < 2 ) { meter_val[ c ] += fabs( new_dest_sample ); }
+            }
         }
     }
 }

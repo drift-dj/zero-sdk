@@ -88,6 +88,18 @@ typedef struct {
     int c_count_len;
 } zdj_deck_control_loop_state_t;
 
+typedef enum {
+    ZDJ_DECK_HOTCUE_PHASE_INACTIVE, // Idle - do nothing
+    ZDJ_DECK_HOTCUE_PHASE_ACTIVATE, // Request received from control thread
+    ZDJ_DECK_HOTCUE_PHASE_STAGED, // Address has been determined, skip has not been requested
+    ZDJ_DECK_HOTCUE_PHASE_RUN // Skip has been requested
+} zdj_deck_control_hotcue_phase_t;
+
+typedef struct {
+    zdj_deck_control_hotcue_phase_t phase;
+    double current_target_d;
+} zdj_deck_control_hotcue_state_t;
+
 // Beat skip can't be updated while actively crossfading.
 typedef enum {
     ZDJ_DECK_SKIP_PHASE_INACTIVE, // Idle - do nothing
@@ -222,6 +234,8 @@ typedef struct {
     zdj_deck_platter_slip_t slip;
     zdj_deck_platter_needle_t needle;
     zdj_deck_platter_antipop_t antipop;
+    double scrub_factor_inst;
+    double scrub_factor_set;
     bool scratch_override;
     double nudge_coeff;
     double scratch_coeff;
@@ -241,6 +255,7 @@ typedef struct {
 
 typedef struct zdj_deck_control_state_t { 
     zdj_deck_platter_t platter;
+    zdj_deck_control_hotcue_state_t hotcue_state;
     zdj_deck_control_skip_state_t skip_state;
     zdj_deck_control_loop_state_t loop_state;
     zdj_deck_control_hyperscrub_state_t hyperscrub_state;
@@ -283,6 +298,7 @@ typedef struct zdj_deck_t {
 
     // Sync API
     bool can_sync;
+    double sync_factor;
     void ( *set_sync_bpm )( struct zdj_deck_t *, double );
     void ( *offset_sync_bpm )( struct zdj_deck_t *, double );
     void ( *offset_pitch_setting )( struct zdj_deck_t *, double );

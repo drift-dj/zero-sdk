@@ -32,7 +32,7 @@
 #include <zerodj/signal/soundcard/db/zdj_soundcard_dto.h>
 #include <zerodj/signal/soundcard/dsp/zdj_soundcard_dsp.h>
 
-#define ZDJ_SOUNDCARD_BUF_LEN 400
+#define ZDJ_SOUNDCARD_BUF_LEN 256
 
 #define ZDJ_SOUNDCARD_DB_PATH "/etc/zero_data/soundcard.db"
 #define ZDJ_SOUNDCARD_LINKAGE_TABLE "Linkage"
@@ -255,8 +255,8 @@ typedef struct  {
     struct zdj_soundcard_node_t * prev;
     bool show_meter; // Show this node's meter in routing mixer UI
     zdj_soundcard_signal_type_t signal_type;
-    int gain;
-    int pan;
+    int gain; // DEPRECATED
+    int pan; // DEPRECATED
     int stereo;
     int mute;
     int direction;

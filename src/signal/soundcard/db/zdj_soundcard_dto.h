@@ -198,7 +198,7 @@ typedef struct {
     float gain;
 	zdj_soundcard_dsp_knob_model_t gain_model;
 	double ( *get_gain_display_val )( zdj_soundcard_dsp_knob_model_t, float );
-    float pan;
+	float pan;
 	zdj_soundcard_dsp_knob_model_t pan_model;
 	double ( *get_pan_display_val )( zdj_soundcard_dsp_knob_model_t, float );
 	bool mute;

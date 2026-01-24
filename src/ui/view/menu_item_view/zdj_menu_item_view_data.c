@@ -15,7 +15,7 @@ void zdj_menu_item_data_l_init_layout( zdj_view_t * view ) { }
 
 void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
 
-    printf( "data item layout init\n" );
+    // printf( "data item layout init\n" );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
     // Clear out the normal/hilite views' subviews
@@ -69,14 +69,14 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
         );
         break;
     case ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_1:
-        snprintf( data_str, sizeof( data_str ), "%s%1.0f%s", 
+        snprintf( data_str, sizeof( data_str ), "%s%1.1f%s", 
             state->data_prefix,
             state->data.f_val,
             state->data_suffix
         );
         break;
     case ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_2:
-        snprintf( data_str, sizeof( data_str ), "%s%1.0f%s", 
+        snprintf( data_str, sizeof( data_str ), "%s%1.2f%s", 
             state->data_prefix,
             state->data.f_val,
             state->data_suffix

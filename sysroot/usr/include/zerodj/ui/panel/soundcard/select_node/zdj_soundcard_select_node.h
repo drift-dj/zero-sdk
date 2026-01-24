@@ -50,6 +50,11 @@ zdj_error_type_t zdj_soundcard_build_select_node_aux_bus_menu(
     zdj_soundcard_node_config_context_t * context 
 );
 
+zdj_error_type_t zdj_soundcard_build_select_node_deck_menu( 
+    zdj_view_t * menu,
+    zdj_soundcard_node_config_context_t * context 
+);
+
 zdj_error_type_t zdj_soundcard_build_select_node_clock_menu( 
     zdj_view_t * menu, zdj_soundcard_node_config_context_t * context 
 );

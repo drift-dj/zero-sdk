@@ -25,6 +25,8 @@ void zdj_deck_dj_init_sync( zdj_deck_t * deck ) {
         fabs( state->song->performance->bpm ) > zdj_eps
     ) { deck->can_sync = true; } else { deck->can_sync = false; }
 
+    deck->sync_factor = 1.0;
+
     // printf( "===> zdj_deck_dj_init_sync can_sync:%d\n", deck->can_sync );
 
     if( deck->can_sync &&

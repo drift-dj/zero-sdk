@@ -150,11 +150,12 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
         double ppqn = deck_state->ppqn;
         double quant_val = 0.250 / ppqn;
 
-        double bars_per_minute = deck_state->set_bpm / 4.0;
+        double bars_per_minute = (deck_state->set_bpm / 4.0) * (120.0 / deck_state->set_bpm);
         double samples_per_minute = 44100.0 * 60.0;
         double samples_per_bar = samples_per_minute / bars_per_minute;
 
-        double d_offset = deck->controls.platter.motor.set_rate;
+        // double d_offset = deck->controls.platter.motor.set_rate;
+        double d_offset = deck->controls.platter.motor.instant_rate;
         double bg_offset = d_offset / samples_per_bar;
         double start_transport_d = deck_state->transport_d;
         double start_transport_bg = deck_state->transport_bg;
@@ -178,8 +179,8 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
 
         // printf( "c:%1.5f q:%1.5f [%d]\n", cur_bg, quant_bg, deck_state->meter_on );
 
-        deck_state->transport_d += (ZDJ_SOUNDCARD_BUF_LEN * deck->controls.platter.motor.set_rate);
-        deck_state->transport_bg += (ZDJ_SOUNDCARD_BUF_LEN * deck->controls.platter.motor.set_rate) / samples_per_bar;
+        deck_state->transport_d += (ZDJ_SOUNDCARD_BUF_LEN * deck->controls.platter.motor.instant_rate);
+        deck_state->transport_bg += (ZDJ_SOUNDCARD_BUF_LEN * deck->controls.platter.motor.instant_rate) / samples_per_bar;
 
         // if( deck_state->meter_counter++ > 2 ) {
         //     printf( "meter->false\n" );
@@ -232,15 +233,11 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
             platter->motor.enabled = true;
             platter->motor.set_rate = platter->motor.pitch_setting;
             platter->motor.state = ZDJ_PLATTER_MOTOR_RUN;
-            platter->motor.cur_spin_up_cycle = 0;
         
         // Pause
         } else {
             platter->motor.enabled = false;
             platter->motor.state = ZDJ_PLATTER_MOTOR_IDLE;
-            platter->motor.cur_spin_down_cycle = 0;
-            // Ensure slip is in pitch mode so we hear spin down.
-            platter->slip.state = ZDJ_PLATTER_SLIP_LAMINAR_PITCH;
         }
         printf( "xport deck toggle play/pause: %1.3f\n", platter->motor.set_rate );
         break;
@@ -253,9 +250,8 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     case ZDJ_DECK_XPORT_CONTROL_SCRUB:
         // Nudge clock synth
         if( platter->motor.enabled ) {
-            // Use set_val in pitch mode so the full platter sim is employed.
-            platter->slip.set_val += event->i_val * platter->nudge_coeff;
-            platter->slip.state = ZDJ_PLATTER_SLIP_NUDGE_PITCH;            
+            // printf( "clock_nudge: %d\n", event->i_val );
+            platter->slip.instant_val += (double)event->i_val * 0.010;       
         } 
         break;
 
@@ -264,32 +260,8 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 //     // Tempo //
 //     ///////////  
 
-    // if( zdj_deck_manager( )->sync.preferred &&
-    //     zdj_deck_manager_can_activate_sync( )
-    // ) {
-    //     if( zdj_deck_manager( )->sync.active && zdj_deck_manager( )->sync.locked ) {
-    //         // printf( "===> New DJ Deck syncing to: %1.1f\n", zdj_deck_manager( )->sync.set_bpm );
-    //         // Adopt the root tempo if it's been set already.
-    //         deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm );
-    //     } else {
-    //         // printf( "===> New DJ Deck setting sync tempo to: %1.1f\n", state->song->performance->bpm );
-    //         // Else, lock the root tempo to the deck's song's tempo.
-    //         // deck->set_sync_bpm( deck, state->set_bpm );
-    //         // zdj_deck_manager( )->sync.active = true;
-    //         // zdj_deck_manager( )->sync.locked = true;
-    //         // zdj_deck_manager( )->sync.set_bpm = state->set_bpm;
-    //     }
-    // }
-
-
     case ZDJ_DECK_XPORT_CONTROL_TEMPO:
-
-        // if( zdj_deck_manager( )->sync.active ) {
-        //     zdj_deck_manager_update_sync_bpm( event->i_val * 1 );
-        // } else {
-        //     deck->offset_sync_bpm( deck, event->i_val * 1 );
-        // }
-
+    
         if( zdj_deck_manager( )->sync.preferred &&
             !zdj_deck_manager( )->sync.active &&
             zdj_deck_manager_can_activate_sync( )
@@ -299,18 +271,6 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
             zdj_deck_manager( )->sync.locked = true;
             zdj_deck_manager( )->sync.set_bpm = deck_state->set_bpm;
 
-            // if( zdj_deck_manager( )->sync.active && zdj_deck_manager( )->sync.locked ) {
-            //     // printf( "===> New DJ Deck syncing to: %1.1f\n", zdj_deck_manager( )->sync.set_bpm );
-            //     // Adopt the root tempo if it's been set already.
-            //     deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm );
-            // } else {
-                // printf( "===> New DJ Deck setting sync tempo to: %1.1f\n", state->song->performance->bpm );
-                // Else, lock the root tempo to the deck's song's tempo.
-                // deck->set_sync_bpm( deck, state->set_bpm );
-                // zdj_deck_manager( )->sync.active = true;
-                // zdj_deck_manager( )->sync.locked = true;
-                // zdj_deck_manager( )->sync.set_bpm = state->set_bpm;
-            // }
         } else if( zdj_deck_manager( )->sync.active ) {
             zdj_deck_manager_update_sync_bpm( event->i_val * 1 );
         } else {

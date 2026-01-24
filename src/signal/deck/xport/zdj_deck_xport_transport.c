@@ -25,12 +25,20 @@ void zdj_xport_deck_reset_platter(
     double addr 
 ) {
     // printf( "zdj_dj_deck_reset_platter: %1.1f\n", addr );
-    platter->motor.head = addr;
-    platter->slip.offset = 0;
-    platter->slip.set_val = addr;
-    platter->slip.instant_val = addr;
-    platter->needle.head = addr;
+    // platter->motor.head = addr;
+    // platter->slip.offset = 0;
+    // platter->slip.set_val = addr;
+    // platter->slip.instant_val = addr;
+    // platter->needle.head = addr;
 }
+
+////////////////////////////////
+// WARNING !!!!!
+// Clock synth is currently wired
+// directly to motor.set_rate.
+// Need to update to take output of
+// platter model
+////////////////////////////////
 
 //////////////////////////////
 // Platter Model
@@ -63,7 +71,11 @@ static void _update_platter_model_inputs( zdj_deck_t * deck ) {
         case ZDJ_PLATTER_MOTOR_RUN:
             // printf( "ZDJ_PLATTER_MOTOR_RUN\n" );
             motor->set_rate = motor->pitch_setting;
-            motor->instant_rate = motor->set_rate;
+            // motor->instant_rate = motor->set_rate;
+            // This is a hack since clock synth directly reads motor.set_rate
+            motor->instant_rate = motor->set_rate + platter->slip.instant_val;
+            // printf( "motor rt:%1.3f slip val:%1.5f\n", motor->instant_rate, platter->slip.instant_val );
+            platter->slip.instant_val *= 0.7;
             break;
     }
 }
@@ -117,8 +129,8 @@ static void _update_platter_model_outputs( zdj_deck_t * deck ) {
         } 
          
         // Update the needle head
-        platter->needle.head = slip->offset + slip->instant_val;
-        // printf( "nudge pitch needle.head: %1.3f\n", platter->needle.head );
+        // platter->needle.head = slip->offset + slip->instant_val;
+        // printf( "nudge pitch disp:%1.3f needle.head:%1.3f\n", displacement, platter->needle.head );
 
     } else if( slip->state == ZDJ_PLATTER_SLIP_TO_LAM ) {
         slip->state = ZDJ_PLATTER_SLIP_LAMINAR_PITCH;

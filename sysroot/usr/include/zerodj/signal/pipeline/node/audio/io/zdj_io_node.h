@@ -28,7 +28,7 @@
 
 typedef struct {
     zdj_shared_audio_state_t * shared_audio_state;
-    int32_t * shared_dac_buffer;
+    volatile int32_t * shared_dac_buffer;
     volatile int32_t * shared_adc_buffer;
     zdj_pipeline_node_t * out_1_buffer;
     zdj_pipeline_node_t * out_2_buffer;

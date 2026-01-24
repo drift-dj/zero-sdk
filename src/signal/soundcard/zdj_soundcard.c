@@ -125,7 +125,6 @@ zdj_error_type_t zdj_soundcard_stop( zdj_soundcard_t * soundcard ) {
 // M7 soundcard has signaled that there is a new cycle of buffers available for processing.
 // This CB sets the cadence for Soundcard's fast-cycle - finish before next cycle or we stutter.
 void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
-
     // Transform output samples from io_node's output float buffers to shared M7 buffers
     zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
     

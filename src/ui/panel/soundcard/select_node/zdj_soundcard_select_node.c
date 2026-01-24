@@ -106,6 +106,10 @@ zdj_view_t * zdj_new_soundcard_select_node(
         zdj_soundcard_build_select_node_internal_bus_menu( menu, context );
     } else if( zdj_soundcard_node_name_is_aux_bus( context->node->name ) ) {
         zdj_soundcard_build_select_node_aux_bus_menu( menu, context );
+    } else if( zdj_soundcard_node_name_is_dj_deck( context->node->name ) ) {
+        zdj_soundcard_build_select_node_deck_menu( menu, context );
+    } else if( zdj_soundcard_node_name_is_ext_deck( context->node->name ) ) {
+        zdj_soundcard_build_select_node_deck_menu( menu, context );
     } else if( zdj_soundcard_node_name_is_clock( context->node->name ) ) {
         zdj_soundcard_build_select_node_clock_menu( menu, context );
     } else if( zdj_soundcard_node_name_is_cv( context->node->name ) ) {
@@ -257,6 +261,10 @@ zdj_error_type_t zdj_soundcard_build_select_node_output_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
 
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_B );
+
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Clocks" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_1 );
@@ -302,6 +310,10 @@ zdj_error_type_t zdj_soundcard_build_select_node_input_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_B );
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Clocks" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 );
@@ -374,6 +386,60 @@ zdj_error_type_t zdj_soundcard_build_select_node_aux_bus_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_B );
+
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Clocks" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_1 );
+    // _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_2 );
+    // _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_3 );
+
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "CV" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CV_0 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CV_1 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CV_2 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CV_3 );
+}
+
+zdj_error_type_t zdj_soundcard_build_select_node_deck_menu( 
+    zdj_view_t * menu,
+    zdj_soundcard_node_config_context_t * context 
+) {
+    printf( "zdj_soundcard_build_select_node_deck_menu\n" );
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Output Ports" ) );
+     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 );
+    // Only show out 1 if out 0/1 are mono
+    if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 )->stereo ) {
+        _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1 );
+    }
+    
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 );
+    // Only show out 3 if out 2/3 are mono
+    if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 )->stereo ) {
+        _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
+    }
+
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Busses" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_1 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_2 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 );
+
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Decks" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+
+    zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_B );
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Clocks" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 );

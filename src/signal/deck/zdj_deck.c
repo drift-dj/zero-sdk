@@ -80,7 +80,7 @@ zdj_deck_t * zdj_new_deck(
 
     // Scratch/Nudge constants
     deck->controls.platter.nudge_coeff = 10;
-    deck->controls.platter.scratch_coeff = 600.0;
+    deck->controls.platter.scratch_coeff = 1200.0;
     // deck->controls.platter.scratch_coeff = 50.0;
 
     // Scratch while playing

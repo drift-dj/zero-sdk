@@ -142,10 +142,10 @@ zdj_decode_packet_t * zdj_decode_packet(
         node, layer, &packet->end_addr, end_origin_i_coord 
     );
 
-    printf( "[%p].init_addr t:%1.0f/o:%1.0f packet:[%ld - %ld]\n",
-        layer, layer->init_addr.transport_d, layer->init_addr.origin_d,
-        start_origin_i_coord, end_origin_i_coord
-    );
+    // printf( "[%p].init_addr t:%1.0f/o:%1.0f packet:[%ld - %ld]\n",
+    //     layer, layer->init_addr.transport_d, layer->init_addr.origin_d,
+    //     start_origin_i_coord, end_origin_i_coord
+    // );
     
     // TODO: find a cleaner way to signal the last packet in a song
     if( packet_has_eof ) { packet->is_eof = true; return packet; }

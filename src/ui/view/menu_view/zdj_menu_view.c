@@ -550,7 +550,7 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
         // Prevent views/menus below this one from getting bav release
         e->blocked = true;
     } else {
-        printf( "sending non-standard\n" );
+        // printf( "sending non-standard\n" );
         // If menu accepts more than standard nav controls, send those in as well
         if( menu_state->scroll_index > -1 && menu_item && menu_item_state && menu_item_state->captures_all_events ) {
             if( menu_item->handle_control_event ) {

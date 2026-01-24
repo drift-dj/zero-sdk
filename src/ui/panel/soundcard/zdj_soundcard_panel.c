@@ -484,11 +484,11 @@ int zdj_soundcard_view_add_meter_for_node(
         // printf( "0.1: %p %d %d %d\n", source_node, label, show_detail, node->stereo );
         meter = zdj_soundcard_view_new_meter_for_node( source_node, label, show_detail, !node->stereo );
         // printf( "0.2\n" );
-    } else if ( zdj_soundcard_node_name_is_input( node->name ) ) {
-        zdj_soundcard_node_t * linked_node = zdj_soundcard_get_node_for_name( 
-            zdj_soundcard, node->output_links->dest_node
-        );
-        meter = zdj_soundcard_view_new_meter_for_node( linked_node, label, show_detail, !node->stereo );
+    // } else if ( zdj_soundcard_node_name_is_input( node->name ) ) {
+    //     zdj_soundcard_node_t * linked_node = zdj_soundcard_get_node_for_name( 
+    //         zdj_soundcard, node->output_links->dest_node
+    //     );
+    //     meter = zdj_soundcard_view_new_meter_for_node( linked_node, label, show_detail, !node->stereo );
     } else {
         meter = zdj_soundcard_view_new_meter_for_node( node, label, show_detail, mono );
     }

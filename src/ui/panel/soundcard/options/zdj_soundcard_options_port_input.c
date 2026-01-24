@@ -23,6 +23,7 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _handle_gain( zdj_view_t * view, zdj_control_event_t * _event );
+static void _handle_pan( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_stereo( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_mute( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_linkage( zdj_view_t * view, zdj_control_event_t * _event );
@@ -58,33 +59,50 @@ void zdj_soundcard_options_update_port_input_layout( zdj_view_t * view ) {
         NULL,
         " dB" 
     );
+    gain->handle_control_event = &_handle_gain;
     zdj_menu_item_view_state_t * gain_state = (zdj_menu_item_view_state_t*)gain->state;
+    gain_state->data.ptr = options_state;
     gain_state->data.f_val = zdj_signal_db_for_gain( page_node->dsp_dto->gain );
-    options_state->menu_index_gain = 0;
+    gain_state->captures_all_events = true;
     zdj_menu_view_add_item( menu_view, gain );
     
     options_state->menu_index_pad = -1;
 
-    // // Pan
-    // if( !page_node->stereo ) {
-    //     zdj_view_t * pan = zdj_new_data_menu_item( 
-    //         "Pan", 
-    //         ZDJ_MENU_ITEM_LAYOUT_DATA_R,
-    //         ZDJ_MENU_ITEM_DATA_TYPE_INT,
-    //         NULL,
-    //         NULL
-    //     );
-    //     zdj_menu_item_view_state_t * pan_state = (zdj_menu_item_view_state_t*)pan->state;
-    //     pan_state->data.i_val = page_node->pan;
-    //     if( options_state->menu_index_pad != -1 ){ 
-    //         options_state->menu_index_pan = options_state->menu_index_pad + 1;; 
-    //     } else { 
-    //         options_state->menu_index_pan = options_state->menu_index_gain + 1;
-    //     }
-    //     zdj_menu_view_add_item( menu_view, pan );
-    // } else {
-    //     options_state->menu_index_pan = -1;
-    // }
+    // Pan
+    if( !page_node->stereo ) {
+        zdj_view_t * pan;
+        if( fabs(page_node->dsp_dto->pan) < zdj_eps ) {
+            pan = zdj_new_data_menu_item( 
+                "Pan", 
+                ZDJ_MENU_ITEM_LAYOUT_DATA_R,
+                ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_2,
+                NULL,
+                NULL
+            );
+        } else if( page_node->dsp_dto->pan > 0.0 ) {
+            pan = zdj_new_data_menu_item( 
+                "Pan", 
+                ZDJ_MENU_ITEM_LAYOUT_DATA_R,
+                ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_2,
+                NULL,
+                ">"
+            );
+        } else {
+            pan = zdj_new_data_menu_item( 
+                "Pan", 
+                ZDJ_MENU_ITEM_LAYOUT_DATA_R,
+                ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_2,
+                "<",
+                NULL
+            );
+        }
+        pan->handle_control_event = &_handle_pan;
+        zdj_menu_item_view_state_t * pan_state = (zdj_menu_item_view_state_t*)pan->state;
+        pan_state->data.ptr = options_state;
+        pan_state->data.f_val = page_node->dsp_dto->pan;
+        pan_state->captures_all_events = true;
+        zdj_menu_view_add_item( menu_view, pan );
+    }
     
     // Stereo
     zdj_view_t * stereo = zdj_new_menu_item( "Stereo", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
@@ -100,7 +118,6 @@ void zdj_soundcard_options_update_port_input_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * mute_state = (zdj_menu_item_view_state_t*)mute->state;
     mute_state->data.b_val = page_node->mute;
     mute_state->data.ptr = options_state; // Ref to options view state to force update_needed on click
-    options_state->menu_index_mute = options_state->menu_index_stereo + 1;
     zdj_menu_view_add_item( menu_view, mute );
 
     // Outputs section
@@ -211,6 +228,21 @@ static void _handle_gain( zdj_view_t * view, zdj_control_event_t * _event ) {
         options_state->config_context->node->dsp_dto
     ) {
         options_state->config_context->node->dsp_dto->adjust_gain( 
+            options_state->config_context->node, _event->i_val 
+        );
+        options_state->needs_layout_update = true;
+    }
+}
+
+static void _handle_pan( zdj_view_t * view, zdj_control_event_t * _event ) {
+    zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data.ptr;
+    // printf( "handle pan event: %p\n", options_state );
+    if( options_state->config_context &&
+        options_state->config_context->node &&  
+        options_state->config_context->node->dsp_dto
+    ) {
+        options_state->config_context->node->dsp_dto->adjust_pan( 
             options_state->config_context->node, _event->i_val 
         );
         options_state->needs_layout_update = true;

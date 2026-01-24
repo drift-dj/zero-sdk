@@ -44,7 +44,6 @@ zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource, int win_bu
     state->decode_win_buf_count = win_buf_count;
     state->tsm_source = ZDJ_DECK_TSM_SOURCE_PITCH;
     
-    // Disable tempo-stretch to get sync working
     state->tempo_tsm_enabled = true;
 
     // Lifecycle

@@ -28,7 +28,10 @@ void zdj_soundcard_dsp_gain_adjust_knob( void * _node, int input_val ) {
 
 void zdj_soundcard_dsp_pan_adjust_knob( void * _node, int input_val ) {
     zdj_soundcard_node_t * node = (zdj_soundcard_node_t*)_node;
-    printf( "adjust pan: %s\n", zdj_soundcard_node_name[ node->name ] );
+    // printf( "adjust pan: %s\n", zdj_soundcard_node_name[ node->name ] );
+    node->dsp_dto->pan += input_val * 0.021;
+    if( node->dsp_dto->pan > 1.0 ) { node->dsp_dto->pan = 1.0; }
+    else if( node->dsp_dto->pan < -1.0 ) { node->dsp_dto->pan = -1.0; }
 }
 
 void zdj_soundcard_dsp_mute_toggle( void * _node ) {

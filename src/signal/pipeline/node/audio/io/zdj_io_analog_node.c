@@ -70,6 +70,21 @@ zdj_error_type_t zdj_io_analog_configure( zdj_pipeline_node_t * node ) {
     // Write cfg_dac request to shared buffer_state struct
     zdj_m7_shared_msg_buffer( )->update_audio_cfg_req = true;
 
+    // Fill shared bufs w/0s
+    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+        node_state->shared_dac_buffer[ i*4+0 ] = 0;
+        node_state->shared_dac_buffer[ i*4+1 ] = 0;
+        node_state->shared_dac_buffer[ i*4+2 ] = 0;
+        node_state->shared_dac_buffer[ i*4+3 ] = 0;
+    }
+
+    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+        node_state->shared_adc_buffer[ i*8+1 ] = 0;
+        node_state->shared_dac_buffer[ i*8+2 ] = 0;
+        node_state->shared_dac_buffer[ i*8+3 ] = 0;
+        node_state->shared_dac_buffer[ i*8+4 ] = 0;
+    }
+
     // Resize window based on buffer_len
     // zdj_pipeline_window_state_resize( 
     //     node->window_state,

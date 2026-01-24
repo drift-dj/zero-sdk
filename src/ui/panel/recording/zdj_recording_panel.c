@@ -17,6 +17,7 @@
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/menu_section_view/zdj_menu_section_view.h>
 #include <zerodj/ui/view/modal_view/zdj_modal_view.h>
+#include <zerodj/ui/view/scroll_view/zdj_scroll_view.h>
 #include <zerodj/ui/panel/soundcard/zdj_soundcard_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
@@ -100,6 +101,9 @@ static void _refresh_menu( zdj_view_t * view ) {
 
     zdj_menu_view_remove_all_subviews( state->menu );
 
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)state->menu->state;
+    zdj_scroll_view_state_t * scroll_state = (zdj_scroll_view_state_t*)menu_state->scroll_view->state;
+    
     // Add record toggle btn
     zdj_view_t * record_toggle_btn;
         
@@ -169,6 +173,7 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Input" ) );
     zdj_menu_view_add_item( state->menu, zdj_new_menu_item( "Main Bus LR", ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) );
 
+    zdj_menu_view_add_padding( state->menu, 3 );
     // printf( "record_panel _refresh_menu done\n" );
 }
 

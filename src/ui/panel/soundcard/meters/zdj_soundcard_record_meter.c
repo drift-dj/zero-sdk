@@ -80,8 +80,11 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     view_state->meter_cover_r->frame.x = meter_r + 3;
     view_state->meter_cover_r->frame.w = 112 - meter_r;
 
-    view_state->fader->frame.x = node->dsp_dto->gain * 111;
-    // view_state->fader->frame.x = 80;
+    double fader_val = node->dsp_dto->get_gain_display_val( 
+        node->dsp_dto->gain_model,
+        node->dsp_dto->gain
+    );
+    view_state->fader->frame.x = 3 + fader_val * 106;
 }
 
 
