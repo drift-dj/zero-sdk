@@ -8,5 +8,6 @@ typedef struct {
 } root_menu_state_t;
 
 zdj_view_t * new_root_menu( void );
+zdj_view_t * refresh_root_menu( void );
 
 #endif

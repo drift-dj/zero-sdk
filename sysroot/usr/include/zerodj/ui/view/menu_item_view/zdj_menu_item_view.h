@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 
@@ -30,7 +31,10 @@
 typedef enum {
     ZDJ_MENU_ITEM_LAYOUT_BASIC_L,
     ZDJ_MENU_ITEM_LAYOUT_BASIC_R,
+    ZDJ_MENU_ITEM_LAYOUT_BASIC_LG,
     ZDJ_MENU_ITEM_LAYOUT_BASIC_LAUNCH_R,
+    ZDJ_MENU_ITEM_LAYOUT_BASIC_L_EDIT,
+    ZDJ_MENU_ITEM_LAYOUT_BASIC_MED_L_EDIT,
     ZDJ_MENU_ITEM_LAYOUT_DATA_L,
     ZDJ_MENU_ITEM_LAYOUT_DATA_R,
     ZDJ_MENU_ITEM_LAYOUT_DIR,
@@ -44,12 +48,22 @@ typedef enum {
     ZDJ_MENU_ITEM_LAYOUT_LAUNCH_SM,
     ZDJ_MENU_ITEM_LAYOUT_PLAYLIST,
     ZDJ_MENU_ITEM_LAYOUT_SLIDER,
+    ZDJ_MENU_ITEM_LAYOUT_SONG,
+    ZDJ_MENU_ITEM_LAYOUT_SONG_PLAYLIST,
     ZDJ_MENU_ITEM_LAYOUT_SONG_IMPORT,
     ZDJ_MENU_ITEM_LAYOUT_TOGGLE,
     ZDJ_MENU_ITEM_LAYOUT_ASSET,
     ZDJ_MENU_ITEM_LAYOUT_CUEPOINT,
+    ZDJ_MENU_ITEM_LAYOUT_USB_DEVICE,
+    ZDJ_MENU_ITEM_LAYOUT_BROWSER_DEVICE,
     ZDJ_MENU_ITEM_LAYOUT_CUSTOM
 } zdj_menu_item_view_layout_t;
+
+typedef enum {
+    ZDJ_MENU_ITEM_BROWSER_DEVICE_TYPE_ZERO,
+    ZDJ_MENU_ITEM_BROWSER_DEVICE_TYPE_LINUX,
+    ZDJ_MENU_ITEM_BROWSER_DEVICE_TYPE_MSD
+} zdj_menu_item_view_browser_device_type_t;
 
 // DEPRECATED
 typedef enum {
@@ -72,6 +86,7 @@ typedef enum {
 
 typedef enum {
     ZDJ_MENU_ITEM_DATA_TYPE_CHAR,
+    ZDJ_MENU_ITEM_DATA_TYPE_CHAR_EDIT,
     ZDJ_MENU_ITEM_DATA_TYPE_BOOL,
     ZDJ_MENU_ITEM_DATA_TYPE_INT,
     ZDJ_MENU_ITEM_DATA_TYPE_DOUBLE_0,
@@ -81,21 +96,27 @@ typedef enum {
 
 typedef enum {
     ZDJ_MENU_ITEM_OPTIONS_NONE,
+    ZDJ_MENU_ITEM_OPTIONS_DJ_SONG_MENU,
     ZDJ_MENU_ITEM_OPTIONS_LIB_PLAYLIST,
-    ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST
+    ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST,
 } zdj_menu_item_options_type_t;
 
 typedef enum {
     ZDJ_MENU_ITEM_ACTION_SELECT,
     ZDJ_MENU_ITEM_ACTION_DELETE,
+    ZDJ_MENU_ITEM_ACTION_ADD_TO_PLAYLIST,
     ZDJ_MENU_ITEM_ACTION_START_MOVE,
     ZDJ_MENU_ITEM_ACTION_END_MOVE,
     ZDJ_MENU_ITEM_ACTION_EDIT,
+    ZDJ_MENU_ITEM_ACTION_LEAD_DECK_1,
+    ZDJ_MENU_ITEM_ACTION_LEAD_DECK_2,
     ZDJ_MENU_ITEM_ACTION_DONE
 } zdj_menu_item_action_t;
 
 typedef void ( *init_layout_t )( zdj_view_t* );
 typedef void ( *update_layout_t )( zdj_view_t* );
+typedef void ( *enter_edit_mode_t )( zdj_view_t* );
+typedef void ( *exit_edit_mode_t )( zdj_view_t* );
 
 typedef struct {
     char title[ 256 ];
@@ -117,6 +138,9 @@ typedef struct {
     bool is_hilite;
     bool is_blinking;
     int blink_timer;
+    int blink_length;
+    int blink_period;
+    int blink_duty;
     bool handles_hmi;
     bool captures_all_events;
     bool edit_enabled;
@@ -124,6 +148,9 @@ typedef struct {
     double edit_option_index;
     zdj_menu_item_options_type_t edit_options_type;
     zdj_menu_item_action_t edit_action;
+    enter_edit_mode_t enter_edit_mode;
+    exit_edit_mode_t exit_edit_mode;
+    bool scroll_to_exit_edit_mode;
     zdj_view_t * normal_view;
     zdj_view_t * hilite_view;
     zdj_view_t * title_view;
@@ -150,12 +177,18 @@ zdj_view_t * zdj_new_data_menu_item(
     char * suffix
 );
 zdj_view_t * zdj_new_cuepoint_menu_item( char * name, char * cuepoint_eid );
+zdj_view_t * zdj_new_usb_device_menu_item( zdj_usb_device_t * device_dto );
+zdj_view_t * zdj_new_browser_device_menu_item( 
+    char * title,
+    char * path, 
+    zdj_menu_item_view_browser_device_type_t type 
+);
 
 zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index );
 
 void zdj_menu_item_scroll_options( zdj_view_t * item, int dir );
-void zdj_menu_item_enter_edit_mode( zdj_view_t * item );
-void zdj_menu_item_exit_edit_mode( zdj_view_t * item );
+// void zdj_menu_item_enter_edit_mode( zdj_view_t * item );
+// void zdj_menu_item_exit_edit_mode( zdj_view_t * item );
 void zdj_menu_item_enter_move_mode( zdj_view_t * item );
 void zdj_menu_item_exit_move_mode( zdj_view_t * item );
 
@@ -163,7 +196,11 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
 
 void zdj_menu_item_basic_l_init_layout( zdj_view_t * view );
 void zdj_menu_item_basic_r_init_layout( zdj_view_t * view );
+void zdj_menu_item_basic_lg_init_layout( zdj_view_t * view );
 void zdj_menu_item_basic_launch_r_init_layout( zdj_view_t * view );
+void zdj_menu_item_basic_l_edit_init_layout( zdj_view_t * view );
+void zdj_menu_item_basic_med_l_edit_init_layout( zdj_view_t * view );
+void zdj_menu_item_browser_device_init_layout( zdj_view_t * view );
 void zdj_menu_item_data_l_init_layout( zdj_view_t * view );
 void zdj_menu_item_data_r_init_layout( zdj_view_t * view );
 void zdj_menu_item_dir_init_layout( zdj_view_t * view );
@@ -177,10 +214,13 @@ void zdj_menu_item_launch_big_init_layout( zdj_view_t * view );
 void zdj_menu_item_launch_sm_init_layout( zdj_view_t * view );
 void zdj_menu_item_playlist_init_layout( zdj_view_t * view );
 void zdj_menu_item_slider_init_layout( zdj_view_t * view );
+void zdj_menu_item_song_init_layout( zdj_view_t * view );
+void zdj_menu_item_song_update_layout( zdj_view_t * view );
 void zdj_menu_item_song_import_init_layout( zdj_view_t * view );
 void zdj_menu_item_toggle_init_layout( zdj_view_t * view );
 void zdj_menu_item_asset_init_layout( zdj_view_t * view );
 void zdj_menu_item_cuepoint_init_layout( zdj_view_t * view );
+void zdj_menu_item_usb_device_init_layout( zdj_view_t * view );
 
 void zdj_menu_item_data_l_update_layout( zdj_view_t * view );
 void zdj_menu_item_data_r_update_layout( zdj_view_t * view );
@@ -188,6 +228,7 @@ void zdj_menu_item_inert_data_update_layout( zdj_view_t * view );
 void zdj_menu_item_inert_status_update_layout( zdj_view_t * view );
 void zdj_menu_item_playlist_update_layout( zdj_view_t * view );
 void zdj_menu_item_slider_update_layout( zdj_view_t * view );
+void zdj_menu_item_song_playlist_update_layout( zdj_view_t * view );
 void zdj_menu_item_song_import_update_layout( zdj_view_t * view );
 void zdj_menu_item_toggle_update_layout( zdj_view_t * view );
 

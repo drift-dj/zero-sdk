@@ -18,9 +18,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_DEVICE_SETTINGS_MENU_VIEW_H
-#define ZDJ_DEVICE_SETTINGS_MENU_VIEW_H
+#ifndef ZDJ_BATTERY_H
+#define ZDJ_BATTERY_H
 
-zdj_view_t * zdj_new_device_settings_menu( zdj_rect_t * frame );
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+typedef struct {
+    FILE * fd;
+    bool valid;
+    pthread_t * update_thread;
+    int charge_val;
+    double charge_pct;
+} zdj_battery_state_t;
+
+extern zdj_battery_state_t * _zdj_battery_state;
+
+zdj_battery_state_t * zdj_battery_state( void );
 
 #endif

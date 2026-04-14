@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "zerodj/system/boot/zdj_boot.h"
+#include "zerodj/system/registry/zdj_registry.h"
 
 #define ZERO_BUILD_INSTALL_DIR "/usr/local/bin/zero-build"
 #ifdef __APPLE__
@@ -101,6 +102,19 @@ typedef enum {
     OS_BUILDER_STATE_UNREACHABLE
 } os_builder_state_t;
 
+// char display_name[128];
+// char short_name[16];
+// char uuid[32];
+// char description[1024];
+// char linux_img[256];
+// char linux_sum[256];
+// char rootfs_img[256];
+// char rootfs_sum[256];
+// int major;
+// int minor;
+// int hotfix;
+// int build;
+
 typedef struct {
     bool repo_link;
     char repo_path[ 1024 ];
@@ -108,6 +122,21 @@ typedef struct {
     char builder_image_id[ 64 ];
     char bootloader_bin_path[ 256 ];
     char os_img_path[ 256 ];
+    char display_name[128];
+    char short_name[16];
+    char uuid[64];
+    char description[1024];
+    char bootloader_img[256];
+    char bootloader_sum[256];
+    char linux_img[256];
+    char linux_sum[256];
+    char rootfs_img[256];
+    char rootfs_sum[256];
+    char major[ 8 ];
+    char minor[ 8 ];
+    char hotfix[ 8 ];
+    char build[ 8 ];
+    char build_desc[ 64 ];
     os_builder_state_t os_builder_state_t_state;
     bool stop_workflow_on_error;
     build_status_t status;

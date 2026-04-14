@@ -27,12 +27,16 @@
 
 typedef enum {
     ZDJ_PROGRESS_BAR_VIEW_NORMAL,
-    ZDJ_PROGRESS_BAR_VIEW_WAIT
+    ZDJ_PROGRESS_BAR_VIEW_WAIT,
+    ZDJ_PROGRESS_BAR_VIEW_COMBO
 } zdj_progress_bar_view_type_t;
 
 typedef struct {
     zdj_progress_bar_view_type_t type;
-    zdj_view_t * wait_crawl_view;
+    zdj_view_t * bg;
+    zdj_view_t * wait_crawl;
+    zdj_view_t * bar;
+    zdj_view_t * bar_border;
     int crawl_anim_offset;
     float val;
     bool has_valid_display;

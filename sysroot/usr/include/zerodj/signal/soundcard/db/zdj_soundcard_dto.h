@@ -151,6 +151,7 @@ typedef enum {
 	ZDJ_SOUNDCARD_DSP_ID_MOD,
 	ZDJ_SOUNDCARD_DSP_ID_MOD_WIDEN,
 	ZDJ_SOUNDCARD_DSP_ID_XFADE_CURVE,
+	ZDJ_SOUNDCARD_DSP_ID_FILT_BI,
 	ZDJ_SOUNDCARD_DSP_ID_COUNT
 } zdj_soundcard_dsp_stage_id_t;
 
@@ -189,6 +190,7 @@ typedef struct {
 	zdj_soundcard_dsp_knob_model_t knob_7_model;
     void * data;
 	void ( *adjust_knob )( void *, int, int );
+	void ( *set_knob )( void *, int, int );
 	double ( *get_knob_display_val )( zdj_soundcard_dsp_knob_model_t, float );
 	zdj_dsp_func_t fn;
 } zdj_soundcard_dsp_stage_dto_t;

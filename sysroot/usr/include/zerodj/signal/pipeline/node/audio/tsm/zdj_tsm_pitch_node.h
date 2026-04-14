@@ -28,7 +28,7 @@ typedef struct {
     int channel_count;
     int sample_count;
     double rate;
-    float * out_buffer;
+    volatile float * out_buffer;
     zdj_pipeline_node_t * decode_node;
     double decode_start_coord;
     double decode_end_coord;

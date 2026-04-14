@@ -29,6 +29,7 @@ typedef struct {
     zdj_view_t * recording_widget;
     zdj_view_t * screencap_widget;
     zdj_view_t * volume_widget;
+    zdj_view_t * notify_widget;
 } zdj_widget_state_t;
 
 zdj_error_type_t zdj_ui_widget_init( void );

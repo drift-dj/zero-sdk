@@ -30,7 +30,11 @@ typedef struct {
 
 typedef void ( *zdj_fs_result_cb )( char *, void * );
 
+float zdj_fs_get_free_media_space( void );
+float zdj_fs_get_filesize( char * path );
+
 zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite );
+int zdj_fs_copy_file_with_hash( char * src, char * dst, bool overwrite );
 zdj_health_status_t zdj_fs_extract_file_from_binary( 
     char * bin, 
     char * dst, 

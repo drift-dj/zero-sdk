@@ -32,9 +32,10 @@
 #include <zerodj/signal/soundcard/db/zdj_soundcard_dto.h>
 #include <zerodj/signal/soundcard/dsp/zdj_soundcard_dsp.h>
 
-#define ZDJ_SOUNDCARD_BUF_LEN 256
+#define ZDJ_SOUNDCARD_BUF_LEN 400
+// #define ZDJ_SOUNDCARD_BUF_LEN 256
 
-#define ZDJ_SOUNDCARD_DB_PATH "/etc/zero_data/soundcard.db"
+#define ZDJ_SOUNDCARD_DB_PATH "/media/internal/.system/soundcard.db"
 #define ZDJ_SOUNDCARD_LINKAGE_TABLE "Linkage"
 #define ZDJ_SOUNDCARD_DSP_TABLE "DSP"
 #define ZDJ_SOUNDCARD_DEFAULT_DJ "DJ_Default"
@@ -263,17 +264,17 @@ typedef struct  {
     double val;
     int invert;
     int sync;
-    zdj_pipeline_node_t * data_pipe;
-    zdj_pipeline_node_t * meter_pipe;
+    volatile zdj_pipeline_node_t * data_pipe;
+    volatile zdj_pipeline_node_t * meter_pipe;
     void ( *get_edge_input_data )( void *, zdj_pipeline_node_t *, bool );
     void * edge_input_link;
     void ( *push_edge_output_data )( void *, zdj_pipeline_node_t *, bool );
     void * edge_output_link;
     zdj_soundcard_link_bitmap_t link_map;
     int input_link_count;
-    zdj_soundcard_link_t input_links[ 8 ];
+    volatile zdj_soundcard_link_t input_links[ 8 ];
     int output_link_count;
-    zdj_soundcard_link_t output_links[ 8 ];
+    volatile zdj_soundcard_link_t output_links[ 8 ];
     bool mix_complete;
     zdj_soundcard_dsp_dto_t * dsp_dto;
 } zdj_soundcard_node_t;

@@ -106,6 +106,9 @@ typedef struct {
     bool is_hilite;
     bool is_blinking;
     int blink_timer;
+    int blink_length;
+    int blink_period;
+    int blink_duty;
     bool handles_hmi;
     bool captures_all_events;
     bool edit_enabled;
@@ -113,6 +116,9 @@ typedef struct {
     double edit_option_index;
     zdj_menu_item_options_type_t edit_options_type;
     zdj_menu_item_action_t edit_action;
+    enter_edit_mode_t enter_edit_mode;
+    exit_edit_mode_t exit_edit_mode;
+    bool scroll_to_exit_edit_mode;
     zdj_view_t * normal_view;
     zdj_view_t * hilite_view;
     zdj_view_t * title_view;
@@ -133,13 +139,26 @@ typedef struct {
     zdj_view_t * mute_cover;
     zdj_view_t * detail;
     bool show_detail;
+    bool has_adjust;
+    int adjust_timer;
 } zdj_soundcard_meter_state_t;
 
 typedef struct {
+    // PANEL_VIEW_BASE EXTENSION - do not edit
     zdj_view_t * menu;
-    zdj_soundcard_t * soundcard;
+    zdj_view_t * overlay;
+    int overlay_counter;
     bool needs_layout_update;
-} zdj_soundcard_view_state_t;
+    zdj_view_t * event_target;
+    void (*exit_cb) ( void* );
+    // PANEL_VIEW_BASE EXTENSION - do not edit
+
+    // zdj_view_t * menu;
+    zdj_soundcard_t * soundcard;
+    // zdj_view_t * overlay;
+    // int overlay_counter;
+    // bool needs_layout_update;
+} zdj_soundcard_panel_state_t;
 
 // zdj_view_t * zdj_new_soundcard_view( zdj_soundcard_t * soundcard );
 zdj_view_t * zdj_new_soundcard_view( void );

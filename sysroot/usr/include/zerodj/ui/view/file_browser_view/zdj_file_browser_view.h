@@ -24,14 +24,16 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef enum {
-    ZDJ_FILE_BROWSER_SELECT_TYPE_DIR,
-    ZDJ_FILE_BROWSER_SELECT_TYPE_FILE,
-    ZDJ_FILE_BROWSER_SELECT_TYPE_ANY,
-} zdj_file_browser_select_type_t;
+    ZDJ_FILE_BROWSER_TYPE_SELECT_DIR,
+    ZDJ_FILE_BROWSER_TYPE_SELECT_FILE,
+    ZDJ_FILE_BROWSER_TYPE_SELECT_ANY,
+    ZDJ_FILE_BROWSER_TYPE_BROWSE
+} zdj_file_browser_type_t;
 
 typedef enum {
     ZDJ_FILE_BROWSER_EXIT_STATUS_CANCEL,
-    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT
+    ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT,
+    ZDJ_FILE_BROWSER_EXIT_STATUS_DONE
 } zdj_file_browser_exit_status_t;
 
 typedef struct {
@@ -43,16 +45,19 @@ typedef struct {
 
 typedef struct {
     char path[ 256 ];
+    zdj_ui_data_t data;
     zdj_view_t * header_view;
     zdj_view_t * menu_container;
+    zdj_view_t * devices_menu;
     void ( *handle_file_browser_exit )( zdj_view_t *, zdj_file_browser_exit_context_t * );
     bool ( *file_validator )( char * );
     bool read_only;
     bool allow_nav;
-    zdj_file_browser_select_type_t select_type;
+    zdj_file_browser_type_t type;
     char select_dir_title[ 64 ];
     int usb_host_counter;
     bool is_device_menu;
+    bool show_hidden;
 } zdj_file_browser_view_state_t;
 
 zdj_view_t * zdj_new_file_browser_view( 
@@ -60,8 +65,9 @@ zdj_view_t * zdj_new_file_browser_view(
     char * path,
     bool read_only,
     bool allow_nav,
-    zdj_file_browser_select_type_t select_type,
-    char * select_dir_title
+    zdj_file_browser_type_t type,
+    char * select_dir_title,
+    bool show_hidden
 );
 
 void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t * _event );

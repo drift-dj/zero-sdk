@@ -29,9 +29,14 @@ typedef enum {
     ZDJ_FLAG_TYPE_CUE_MINI,
     ZDJ_FLAG_TYPE_CUE_NORM,
     ZDJ_FLAG_TYPE_CUE_LOOP,
+    ZDJ_FLAG_TYPE_CUE_NORM_TOP,
+    ZDJ_FLAG_TYPE_CUE_NORM_BOTTOM,
+    ZDJ_FLAG_TYPE_CUE_LOOP_TOP,
+    ZDJ_FLAG_TYPE_CUE_LOOP_BOTTOM,
     ZDJ_FLAG_TYPE_BAR,
     ZDJ_FLAG_TYPE_TEXT
 } zdj_flag_type_t;
+
 
 typedef struct {
     zdj_flag_type_t type;

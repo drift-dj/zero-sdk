@@ -6,9 +6,13 @@
 typedef struct {
     zdj_view_t * eq_page;
     zdj_view_t * trim_page;
+    zdj_view_t * sync_page;
+    zdj_view_t * filt_page;
+    zdj_view_t * delay_page;
     zdj_view_t * waveform_view;
     zdj_view_t * beatgrid_view;
     zdj_view_t * loop_view;
+    zdj_view_t * nudge_view;
 } station_ext_view_state_t;
 
 zdj_view_t * new_station_ext_view( void );

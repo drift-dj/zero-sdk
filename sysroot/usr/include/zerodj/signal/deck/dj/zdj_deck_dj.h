@@ -51,6 +51,7 @@ typedef struct {
 
     // Sync
     double set_bpm;
+    int sync_mult_ui_counter;
 
     // Internal non-threadsafe loop/skip API
     void ( *handle_new_loop_req )( struct zdj_deck_t * );

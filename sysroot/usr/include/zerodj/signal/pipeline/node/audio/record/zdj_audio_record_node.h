@@ -31,7 +31,11 @@
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 #define ZDJ_RECORDING_DIR "/media/internal/recordings"
-#define ZDJ_RECORDING_TEMP_DIR "/media/internal/recordings/tmp"
+#define ZDJ_RECORDING_TEMP_FILE "/media/internal/recordings/.record_cache"
+
+#define ZDJ_RECORDING_BUF_COUNT 16 // Recording cache length in soundcard_bufs
+#define ZDJ_RECORDING_BUF_LEN 	ZDJ_SOUNDCARD_BUF_LEN * ZDJ_RECORDING_BUF_COUNT * 2 // Stereo
+#define ZDJ_RECORDING_BUF_SIZE 	ZDJ_RECORDING_BUF_LEN * sizeof( float ) // Memory size
 
 typedef struct {
 	char chunk_id[4];
@@ -62,16 +66,25 @@ typedef enum {
 typedef struct {
     zdj_audio_record_node_status_t status;
     zdj_soundcard_node_t * soundcard_node;
-    char tmp_filepath[ 256 ];
-    char filename[ 256 ];
+	int channel_count;
+    // char tmp_filepath[ 256 ];
+    // char filename[ 256 ];
+	int cur_buf;
+	float * front_buf;
+	float * back_buf;
+	float * buf_0;
+	float * buf_1;
+	int buf_count;
+	bool buf_flush_cmd;
     FILE * tmp_fp;
 	int64_t sample_count;
+	bool save_on_finish;
 } zdj_audio_record_node_state_t;
 
 zdj_pipeline_node_t * zdj_new_audio_record_node( zdj_soundcard_node_t * soundcard_node );
 
 void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node );
 void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save );
-
+void zdj_audio_record_put_capture_time( zdj_pipeline_node_t * record_node, char * str );
 
 #endif

@@ -18,14 +18,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_WIDGET_CONTROLS_PANEL_H
-#define ZDJ_WIDGET_CONTROLS_PANEL_H
+#ifndef ZDJ_BATTERY_ICON_VIEW_H
+#define ZDJ_BATTERY_ICON_VIEW_H
+
+#include <SDL2/SDL.h>
+
+#include <zerodj/ui/zdj_ui.h>
+
+typedef enum {
+    ZDJ_BATTERY_ICON_TYPE_SMALL,
+    ZDJ_BATTERY_ICON_TYPE_MEDIUM
+} zdj_battery_icon_type_t;
 
 typedef struct {
-    zdj_view_t * menu;
-    bool view_needs_refresh;
-} zdj_widget_controls_panel_state_t;
+    zdj_battery_icon_type_t type;
+    zdj_view_t * bg;
+    zdj_view_t * bar;
+    double charge_val;
+    FILE * fd;
+} zdj_battery_icon_state_t;
 
-zdj_view_t * zdj_new_widget_controls_panel( void );
+zdj_view_t * zdj_new_battery_icon_view( zdj_battery_icon_type_t type );
 
 #endif

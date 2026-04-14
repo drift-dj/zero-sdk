@@ -24,8 +24,19 @@
 #include <zerodj/system/perf/zdj_perf.h>
 
 typedef struct {
+    // PANEL_VIEW_BASE EXTENSION - do not edit
     zdj_view_t * menu;
-    bool view_needs_refresh;
+    zdj_view_t * overlay;
+    int overlay_counter;
+    bool needs_layout_update;
+    zdj_view_t * event_target;
+    void (*exit_cb) ( void* );
+    // PANEL_VIEW_BASE EXTENSION - do not edit
+
+    // zdj_view_t * menu;
+    // bool view_needs_refresh;
+    // zdj_view_t * overlay;
+    // int overlay_counter;
     int perf_counter;
     zdj_perf_report_t * report;
     zdj_perf_report_line_t * line;

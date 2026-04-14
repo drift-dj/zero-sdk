@@ -24,10 +24,12 @@
 #include <zerodj/system/error/zdj_error.h>
 
 typedef enum {
-    ZDJ_UI_PANEL_ASSIST,
+    // ZDJ_UI_PANEL_ASSIST,
     ZDJ_UI_PANEL_RECORDING,
     ZDJ_UI_PANEL_SOUNDCARD,
-    ZDJ_UI_PANEL_WIDGET,
+    ZDJ_UI_PANEL_BROWSER,
+    ZDJ_UI_PANEL_USB,
+    ZDJ_UI_PANEL_SETTINGS,
     // ZDJ_UI_PANEL_DEBUG,
     ZDJ_UI_PANEL_COUNT
 } zdj_panel_name_t;
@@ -37,13 +39,24 @@ typedef struct {
     zdj_panel_name_t current_panel_name;
     zdj_view_t * current_panel;
     zdj_view_t * assist_panel;
+    zdj_view_t * browser_panel;
     zdj_view_t * debug_panel;
     zdj_view_t * recording_panel;
     zdj_view_t * soundcard_panel;
-    zdj_view_t * widget_panel;
+    zdj_view_t * settings_panel;
+    zdj_view_t * usb_panel;
     double panel_scroll_index;
     zdj_control_map_id_t exit_map; // Map to which we return when retracting panel
 } zdj_panel_state_t;
+
+typedef struct{  
+    zdj_view_t * menu;
+    zdj_view_t * overlay;
+    int overlay_counter;
+    bool needs_layout_update;
+    zdj_view_t * event_target;
+    void (*exit_cb) ( void* );
+} zdj_panel_view_base_t;
 
 zdj_error_type_t zdj_ui_panel_init( void );
 
@@ -52,7 +65,9 @@ void zdj_ui_panel_toggle_assist( void );
 void zdj_ui_panel_toggle_debug( void );
 void zdj_ui_panel_toggle_recording( void );
 void zdj_ui_panel_toggle_soundcard( void );
-void zdj_ui_panel_toggle_widget( void );
+void zdj_ui_panel_toggle_settings( void );
+
+zdj_view_t * zdj_ui_panel_new_overlay( char * title );
 
 void zdj_ui_panel_scroll_next( void );
 void zdj_ui_panel_scroll_prev( void );

@@ -22,17 +22,22 @@
 #define ZDJ_SETTINGS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <sqlite3.h>
 
 #include <zerodj/system/error/zdj_error.h>
 
-#define ZDJ_SETTINGS_DB_PATH  "/etc/zero_data/settings.db"
+#define ZDJ_SETTINGS_DB_PATH  "/media/internal/.system/settings.db"
+#define ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH "/media/internal/.system/zerod_dev"
 
 typedef enum {
 	ZDJ_SETTING_UNKNOWN,
     ZDJ_SETTING_SCREENSHOT_COUNTER,
-    ZDJ_SETTING_RECORDING_COUNTER
+    ZDJ_SETTING_RECORDING_COUNTER,
+    ZDJ_SETTING_DISPLAY_FLIP,
+    ZDJ_SETTING_DISPLAY_BRIGHTNESS,
+    ZDJ_SETTING_REFRESH_RATE
 } zdj_setting_reserved_id_t;
 
 typedef enum {
@@ -51,6 +56,13 @@ typedef struct {
 	char c_val[ 256 ];
 } zdj_setting_t;
 
+typedef enum {
+    ZDJ_SETTING_REFRESH_RATE_115,
+    ZDJ_SETTING_REFRESH_RATE_60,
+    ZDJ_SETTING_REFRESH_RATE_30,
+    ZDJ_SETTING_REFRESH_RATE_20
+} zdj_setting_refresh_rate_t;
+
 extern sqlite3 * zdj_setting_db;
 
 zdj_error_type_t zdj_settings_init( void );
@@ -66,5 +78,8 @@ zdj_error_type_t zdj_setting_put_char( int id, char * str );
 int zdj_setting_increment_int( int id );
 int zdj_setting_decrement_int( int id);
 bool zdj_setting_flip_bool( int id );
+
+bool zdj_setting_get_dev_zerod_flag( void );
+void zdj_setting_set_dev_zerod_flag( bool flag );
 
 #endif

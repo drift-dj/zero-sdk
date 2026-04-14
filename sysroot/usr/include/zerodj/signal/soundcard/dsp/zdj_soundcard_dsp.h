@@ -69,6 +69,58 @@ typedef struct {
     double  sdm3_r;
 } zdj_soundcard_dsp_eq_state_t;
 
+typedef enum {
+    ZDJ_SOUNDCARD_DSP_FILT_BI_MODE_OFF,
+    ZDJ_SOUNDCARD_DSP_FILT_BI_MODE_HPF,
+    ZDJ_SOUNDCARD_DSP_FILT_BI_MODE_LPF,
+} zdj_soundcard_dsp_filt_bi_mode_t;
+
+typedef struct {
+    zdj_soundcard_dsp_filt_bi_mode_t mode;
+    float r;
+    float f;
+
+    bool needs_recalc;
+
+    // Lo-pass poles
+    float c_lo;
+    float a1_lo;
+    float a2_lo;
+    float a3_lo;
+    float b1_lo;
+    float b2_lo;
+
+    // Lo-pass history
+    float in_n1_l_lo;
+    float in_n2_l_lo;
+    float out_n1_l_lo;
+    float out_n2_l_lo;
+
+    float in_n1_r_lo;
+    float in_n2_r_lo;
+    float out_n1_r_lo;
+    float out_n2_r_lo;
+
+    // Hi-pass poles
+    float c_hi;
+    float a1_hi;
+    float a2_hi;
+    float a3_hi;
+    float b1_hi;
+    float b2_hi;
+
+    // Hi-pass history
+    float n1_l_hi;
+    float n2_l_hi;
+    float n1_r_hi;
+    float n2_r_hi;
+} zdj_soundcard_dsp_filt_bi_state_t;
+
+typedef struct {
+
+} zdj_soundcard_dsp_delay_state_t;
+
+// EQ
 void zdj_soundcard_dsp_eq_adjust_knob( void * _stage, int knob, int input_val );
 
 void zdj_soundcard_dsp_eq_3_1p_init( void * _stage );
@@ -79,5 +131,21 @@ void zdj_soundcard_dsp_eq_3_2p_update( void * _stage, float * buf, int channel_c
 
 void zdj_soundcard_dsp_eq_3_4p_init( void * _stage );
 void zdj_soundcard_dsp_eq_3_4p_update( void * _stage, float * buf, int channel_count );
+
+// Bi-modal filter
+void zdj_soundcard_dsp_filt_bi_init( void * _stage );
+void zdj_soundcard_dsp_filt_bi_update( void * _stage, float * buf, int channel_count );
+void zdj_soundcard_dsp_filt_bi_adjust_knob( void * _stage, int knob, int input_val );
+void zdj_soundcard_dsp_filt_bi_set_knob( void * _stage, int knob, int input_val );
+
+// Delay
+void zdj_soundcard_dsp_delay_init( void * _stage );
+void zdj_soundcard_dsp_delay_update( void * _stage, float * buf, int channel_count );
+void zdj_soundcard_dsp_delay_adjust_knob( void * _stage, int knob, int input_val );
+void zdj_soundcard_dsp_delay_set_knob( void * _stage, int knob, int input_val );
+
+// Mod
+
+// Widen
 
 #endif

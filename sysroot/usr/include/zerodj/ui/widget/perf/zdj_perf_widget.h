@@ -24,19 +24,27 @@
 #include <zerodj/system/perf/zdj_perf.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 
+// typedef struct {
+//     bool deployed;
+//     bool event_capture;
+//     zdj_view_t * container_view;
+//     zdj_view_t * thread_view;
+//     zdj_anim_t * in_anim;
+//     zdj_anim_t * out_anim;
+// } zdj_perf_widget_state_t;
+
 typedef struct {
     bool deployed;
-    bool event_capture;
-    zdj_view_t * container_view;
-    zdj_view_t * thread_view;
+    int update_counter;
+    uint64_t prev_time;
+    zdj_view_t * container;
+    zdj_view_t * perf_label;
     zdj_anim_t * in_anim;
     zdj_anim_t * out_anim;
+    void ( *toggle )( zdj_view_t* );
 } zdj_perf_widget_state_t;
 
 zdj_view_t * zdj_new_perf_widget( void );
 
-void zdj_perf_widget_toggle( void );
-void zdj_perf_widget_deploy( void );
-void zdj_perf_widget_retract( void );
 
 #endif

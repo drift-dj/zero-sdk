@@ -93,6 +93,8 @@ typedef struct {
     int64_t samples_per_point;
     float accum_norm;
 
+    float ( *norm_fn )( float *, int );
+
     zdj_waveform_header_t * waveform_header;
     FILE * waveform_fd;
 

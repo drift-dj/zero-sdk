@@ -42,10 +42,12 @@ typedef struct {
     zdj_menu_view_header_style_t style;
     char name[ 32 ];
     char title[ 256 ];
-    zdj_view_t * name_label;
-    zdj_view_t * title_ticker;
-    zdj_view_t * title_divider;
-    zdj_view_t * back_bg;
+    zdj_view_t * bar;
+    // zdj_view_t * name_label;
+    // zdj_view_t * title_ticker;
+    // zdj_view_t * title_divider;
+    // zdj_view_t * back_bg;
+    zdj_view_t * battery_view;
     bool has_valid_display;
     bool is_hilite;
     bool is_blinking;

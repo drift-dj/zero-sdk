@@ -51,8 +51,10 @@ typedef struct {
     // the enclosing view's back button visibility.  See file browser, for ex.
     bool has_back;
     zdj_menu_view_input_mode_t input_mode;
-    bool edit_enabled;
-    bool long_press_to_edit;
+    bool edit_enabled; // DEPRECATING
+    bool short_press_edit_enabled;
+    bool long_press_edit_enabled;
+    bool long_press_to_edit; // DEPRECATING
     zdj_view_t * edit_item; // ref to menu item currently taking edit inputs.
     int edit_item_move_top_index;
     int edit_item_move_bottom_index;
@@ -90,6 +92,8 @@ zdj_view_t * zdj_menu_view_get_item_for_data_c_val( zdj_view_t * menu_view, char
 
 void zdj_menu_view_add_scroll_filter_input( zdj_view_t * view, int input );
 void zdj_menu_view_update_scroll_filter( zdj_view_t * view );
+
+// void zdj_menu_view_exit_edit_mode( zdj_view_t * view );
 
 void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip );
 void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event );
