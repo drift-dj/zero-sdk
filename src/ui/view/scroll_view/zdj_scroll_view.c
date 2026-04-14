@@ -224,10 +224,16 @@ void zdj_scroll_view_by_int( zdj_view_t * scroll_view, int val ) {
 
 void _zdj_scroll_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK);
-    float ease_x = ( view->subview_clip.scroll_offset.set_x - view->subview_clip.scroll_offset.cur_x ) * 0.2f;
+
+    // Create a frame rate-invariant easing factor
+    float rate_factor = ((float)zdj_ui_refresh_hz - 20.0) / 100.0;
+    // Looking for rate = 0.6 @ 20Hz, 0.2 @ 120Hz
+    float rate = 0.6 - (rate_factor * 0.4);
+
+    float ease_x = ( view->subview_clip.scroll_offset.set_x - view->subview_clip.scroll_offset.cur_x ) * rate;
     view->subview_clip.scroll_offset.cur_x += ease_x;
 
-    float ease_y = ( view->subview_clip.scroll_offset.set_y - view->subview_clip.scroll_offset.cur_y ) * 0.2f;
+    float ease_y = ( view->subview_clip.scroll_offset.set_y - view->subview_clip.scroll_offset.cur_y ) * rate;
     view->subview_clip.scroll_offset.cur_y += ease_y;
 }
 

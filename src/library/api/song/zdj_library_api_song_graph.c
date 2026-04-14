@@ -38,7 +38,7 @@ zdj_health_status_t zdj_library_store_song_graph(
     zdj_library_song_t * song, 
     sqlite3 * db
 ) {
-    printf( "zdj_library_store_song_graph: %p/%s - %s %s %s %s\n", song, song->entity_id, song->audio->entity_id, song->catalog->entity_id, song->curation->entity_id, song->performance->entity_id );
+    // printf( "zdj_library_store_song_graph: %p/%s - %s %s %s %s\n", song, song->entity_id, song->audio->entity_id, song->catalog->entity_id, song->curation->entity_id, song->performance->entity_id );
     if( !song ) { return ZDJ_HEALTH_STATUS_MISSING_SONG; }
     
     // Insert record into db.
@@ -210,6 +210,24 @@ zdj_library_song_t * zdj_library_fetch_playback_song_graph(
     if( !song->performance ){ song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db ); }
     if( !song->performance ) {
         printf( "performance failed to load for %p\n", song );
+    }
+
+    // Fetch and populate playlists
+    song->performance->cuepoint_count = zdj_library_query_count_cuepoints_for_song( song, db );
+    if( song->performance->cuepoint_count > 0 ) {
+        char * cuepoint_ids[ song->performance->cuepoint_count ];
+        zdj_library_query_cuepoints_for_song( 
+            song, cuepoint_ids, song->performance->cuepoint_count, db 
+        );
+        song->performance->cuepoints = malloc( 
+            sizeof( zdj_library_cuepoint_t * ) * song->performance->cuepoint_count 
+        );
+        for( int i=0; i<song->performance->cuepoint_count; i++ ) {
+            song->performance->cuepoints[ i ] = zdj_library_fetch_cuepoint_dto_for_entity_id(
+                cuepoint_ids[ i ],
+                db
+            );
+        }
     }
 }
 

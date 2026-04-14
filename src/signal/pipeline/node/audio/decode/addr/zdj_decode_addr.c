@@ -45,7 +45,7 @@ static void _offset_addr_by_transport_i_coord(
     zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, int64_t offset
 );
 static void _offset_addr_by_transport_d_coord( 
-    zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, double offset
+    zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, double offset, bool ignore_loop
 );
 static void _offset_addr_by_transport_bg_coord( 
     zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, double offset
@@ -71,6 +71,9 @@ static void _addr_for_origin_bg_coord_in_layer(
 
 
 static zdj_decode_layer_t * _get_layer_containing_addr( 
+    zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, zdj_decode_addr_coord_t ref_coord
+);
+static zdj_decode_layer_t * _get_layer_containing_core_addr( 
     zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, zdj_decode_addr_coord_t ref_coord
 );
 static double _get_beatgrid_coord_for_d_coord( zdj_pipeline_node_t * node, double coord );
@@ -126,6 +129,7 @@ void zdj_decode_init_node_addr_api( zdj_pipeline_node_t * node ) {
     state->addr_for_origin_bg_coord_in_layer = &_addr_for_origin_bg_coord_in_layer;
 
     state->get_layer_containing_addr = &_get_layer_containing_addr;
+    state->get_layer_containing_core_addr = &_get_layer_containing_core_addr;
     state->get_beatgrid_coord_for_d_coord = &_get_beatgrid_coord_for_d_coord;
     state->get_d_offset_for_beatgrid_dist = &_get_d_offset_for_beatgrid_dist;
 
@@ -265,20 +269,24 @@ static void _offset_addr_by_transport_i_coord(
     addr->buf_i = state->head.buf_i - addr->transport_i;
     addr->buf_d = (double)addr->buf_i;
     addr->has_valid_buf = true;
-
+   
+    // Correct origin for any existing dicontinuity state
     zdj_decode_layer_t * layer = state->get_layer_containing_addr( node, addr, ZDJ_ADDR_COORD_TRANSPORT );
     if( layer ) {
+        // If there's a layer containing the new offset address, use the layer's origin coords
         addr->origin_i = round( layer->origin_d_coord_for_transport_d_coord( layer, addr->transport_d ) );
-        addr->origin_d = (double)addr->origin_i;
-        addr->origin_bg = state->get_beatgrid_coord_for_d_coord( node, addr->origin_d );
         addr->has_valid_origin = true;
     } else {
+        // If there's no layer containing the new offset address, just offset by given value
+        addr->origin_i += offset;
         addr->has_valid_origin = false;
     }
+    addr->origin_d = (double)addr->origin_i;
+    addr->origin_bg = state->get_beatgrid_coord_for_d_coord( node, addr->origin_d );
 }
 
 static void _offset_addr_by_transport_d_coord( 
-    zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, double offset
+    zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, double offset, bool ignore_loop
 ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
@@ -290,15 +298,19 @@ static void _offset_addr_by_transport_d_coord(
     addr->buf_i = round( addr->buf_d );
     addr->has_valid_buf = true;
 
+    // Correct origin for any existing dicontinuity state
     zdj_decode_layer_t * layer = state->get_layer_containing_addr( node, addr, ZDJ_ADDR_COORD_TRANSPORT );
-    if( layer ) {
+    if( layer && !ignore_loop ) {
+        // If there's a layer containing the new offset address, use the layer's origin coords
         addr->origin_d = layer->origin_d_coord_for_transport_d_coord( layer, addr->transport_d );
-        addr->origin_i = round( addr->origin_d );
-        addr->origin_bg = state->get_beatgrid_coord_for_d_coord( node, addr->origin_d );
         addr->has_valid_origin = true;
     } else {
+        // If there's no layer containing the new offset address, just offset by given value
+        addr->origin_d += offset;
         addr->has_valid_origin = false;
     }
+    addr->origin_i = round( addr->origin_d );
+    addr->origin_bg = state->get_beatgrid_coord_for_d_coord( node, addr->origin_d );
 }
 
 static void _offset_addr_by_transport_bg_coord( 
@@ -317,7 +329,7 @@ static void _offset_addr_by_transport_bg_coord(
 
     double d_coord_offset = offset * samples_per_bar;
 
-    state->offset_addr_by_transport_d_coord( node, addr, d_coord_offset );
+    state->offset_addr_by_transport_d_coord( node, addr, d_coord_offset, false );
 }
 
 
@@ -400,6 +412,7 @@ static void _addr_for_origin_i_coord_in_layer(
 static void _addr_for_origin_d_coord_in_layer( 
     zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, zdj_decode_addr_t * addr, double coord
 ) {
+    // printf( "_addr_for_origin_d_coord_in_layer: %p, %p, %1.0f\n", layer, addr, coord );
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
     addr->origin_d = coord;
@@ -430,11 +443,37 @@ static zdj_decode_layer_t * _get_layer_containing_addr(
 ) {
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
     zdj_decode_layer_t * layer = node_state->first_layer;
+    int iter_lim = 1000;
+    int iter = 0;
     while( layer ) {
         if( layer->contains_core_addr( layer, addr, ref_coord ) ) {
             return layer;
         }
         layer = layer->next;
+        if( iter++ > iter_lim ) {
+            printf( "HIT ITER LIMIT (_get_layer_containing_core_addr)\n" );
+            break;
+        }
+    }
+    return NULL;
+}
+
+static zdj_decode_layer_t * _get_layer_containing_core_addr( 
+    zdj_pipeline_node_t * node, zdj_decode_addr_t * addr, zdj_decode_addr_coord_t ref_coord
+) {
+    zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
+    zdj_decode_layer_t * layer = node_state->first_layer;
+    int iter_lim = 1000;
+    int iter = 0;
+    while( layer ) {
+        if( layer->contains_core_addr( layer, addr, ref_coord ) ) {
+            return layer;
+        }
+        layer = layer->next;
+        if( iter++ > iter_lim ) {
+            printf( "HIT ITER LIMIT (_get_layer_containing_core_addr)\n" );
+            break;
+        }
     }
     return NULL;
 }
@@ -513,7 +552,16 @@ static bool _equal(
 ) {
     // printf( "equal: %p = %p\n", addr1, addr2 );
     switch ( ref_coord ) {
-        case ZDJ_ADDR_COORD_ORIGIN: return ( fabs(addr1->origin_d - addr2->origin_d) < zdj_eps );
+        case ZDJ_ADDR_COORD_ORIGIN: 
+            // Origin coords may need a looser definition of equality since
+            // they are often in an unknown state of conversion between double/int types
+            if( fabs(addr1->origin_d - addr2->origin_d) < zdj_eps ) {
+                return true;
+            } else if( round( addr1->origin_d ) - round(addr2->origin_d) == 0 ) {
+                return true;
+            } else {
+                return false;
+            }
         case ZDJ_ADDR_COORD_TRANSPORT: return ( fabs(addr1->transport_d - addr2->transport_d) < zdj_eps );
         case ZDJ_ADDR_COORD_OUT_BUF: return ( fabs(addr1->buf_d - addr2->buf_d) < zdj_eps );
     }

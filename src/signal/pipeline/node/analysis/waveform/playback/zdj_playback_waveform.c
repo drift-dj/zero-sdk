@@ -63,6 +63,10 @@ zdj_pipeline_node_t * zdj_new_playback_waveform(
     state->needs_full_render = false;
     state->render_new_pixels = 0;
 
+    // Install the UI buffer on the decode node
+    zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)decode_node->state;
+    decode_state->install_ui_buffer( decode_node );
+
     // // Stand up waveform decode node
     // int decode_buf_count = 160; // number of decode buffers which fit in window.
     // state->waveform_decode_node = zdj_new_decode_node( 
@@ -110,20 +114,10 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     // printf( "playback_waveform _update_wait: %1.1f\n", decode_state->head.origin_d );
 
     // Move the point window with deck's needle head.
-    // if( decode_state->first_layer ) {
-        double win_move = decode_state->head.origin_d - state->win_pcm_sample_head;
-        if( fabs(win_move) > zdj_eps ) {
-            node->move_window( node, win_move );
-        }
-    // } else {
-    //     // Bug out early if we catch the thread with no layers
-    //     return;
-    // }
-
-    // state->waveform_decode_node->move_window( state->waveform_decode_node, head_move_val );
-    // // reset_window(  )
-    // // Re-charge the decode node buffer after the move
-    // state->waveform_decode_node->update_wait( state->waveform_decode_node );
+    double win_move = decode_state->head.origin_d - state->win_pcm_sample_head;
+    if( fabs(win_move) > zdj_eps ) {
+        node->move_window( node, win_move );
+    }
 
     // // TESTING ONLY
     state->needs_render = true;
@@ -138,7 +132,7 @@ static void _render( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
     // if( state->needs_full_render ) {
         // Clear the thingy
         boxColor( zdj_renderer( ), 0, 0, frame->w, frame->h, ZDJ_BLACK );
-        if( state->zoom_val > 1.5 ) { 
+        if( state->zoom_val > 1.5 || !state->has_hires ) { 
             _render_points( node, frame );
         } else {
             _render_waveform( node, frame );
@@ -146,6 +140,10 @@ static void _render( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
     // } else {
     //     // Incremental render - move current pixels by offset and add new ones.
     // }
+
+    // Request a fresh buffer copy from the fast soundcard thread
+    zdj_decode_node_state_t * audio_decode_state = (zdj_decode_node_state_t*)state->audio_decode_node->state;
+    audio_decode_state->ui_buffer_req = true;
 
     state->needs_render = false;
     state->needs_full_render = false;
@@ -155,6 +153,36 @@ static void _render( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
 
 static void _render_points( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
     zdj_waveform_state_t * state = (zdj_waveform_state_t*)node->state;
+
+    // If point head is offscreen, just show alert bar
+    // printf( "win ph:%1.1f / %d\n", state->win_point_head, state->waveform_header->frame_count );
+    if( state->win_point_head < -1.0 * (state->win_point_count / 2) ||
+        state->win_point_head > (state->waveform_header->frame_count + (state->win_point_count / 2))
+    ) { 
+        SDL_Rect s = { 
+            zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].x, 
+            zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].y, 
+            zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].w,
+            zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].h
+        };
+        SDL_Rect d = { 
+            0, 0, zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].w, zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].h 
+        };
+        switch( state->style ) {
+            case ZDJ_WAVEFORM_TOP_HALF:
+                d.y = frame->h - zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].h;
+                break;
+            case ZDJ_WAVEFORM_BOTTOM_HALF:
+                // d.y = 0;
+                d.y = -1;
+                break;
+            case ZDJ_WAVEFORM_SYM:
+                d.y = (frame->h/2) - 5;
+                break;
+        }
+        SDL_RenderCopy( zdj_renderer( ), zdj_asset_atlas( ), &s, &d );
+        return;
+    }
 
     // Fill buffer using current window settings
     int point_buf_index = 0;
@@ -177,9 +205,6 @@ static void _render_points( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
         memset( &state->point_buf[ (int)state->win_point_count - clip_len - 1 ], 0, clip_len * sizeof( uint8_t ) );
     }
 
-    // If we scroll off the end of the points, don't attempt to read.
-    // if( seek_target+read_count < 1 ){ return; }
-
     // Fill the point buffer from file.
     // FIXME: We are hitting the FS every frame.  This is extremely inefficient and dumb.
     fseek( state->waveform_fd, seek_target + sizeof( zdj_waveform_header_t ), SEEK_SET );
@@ -190,117 +215,125 @@ static void _render_points( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
 
     // Walk backward from head drawing points to fill the window
     int i;
-    int lead_in_x = -1;
+    bool show_lead_in = false;
+    int lead_in_x;
+    bool show_lead_out = false;
     int lead_out_x = 129;
     for( i=0; i<frame->w/2; i++ ){
-        // if( round(point_addr) >= 0 ) {
-            double point_buf_start = state->win_point_head - state->win_back_point_count;
-            float val = 0.0;
-            double point_index = state->win_point_head - (state->points_per_pixel * i) - point_buf_start;
+        double point_buf_start = state->win_point_head - state->win_back_point_count;
+        float val = 0.0;
+        double point_index = state->win_point_head - (state->points_per_pixel * i) - point_buf_start;
 
-            uint8_t raw_val = 0;
-            for( int n=0; n<point_avg_w; n++ ) {
-                int point_avg_index = point_index-n;
-                if( (point_avg_index+point_buf_start) >= 0 && 
-                    (point_avg_index+point_buf_start) < state->waveform_header->frame_count
-                ) {
-                    if( state->point_buf[ point_avg_index ] > raw_val ) {
-                        raw_val = state->point_buf[ point_avg_index ];
-                    }
-                }
-                point_avg_index = point_index+n;
-                if( (point_avg_index+point_buf_start) >= 0 && 
-                    (point_avg_index+point_buf_start) < state->waveform_header->frame_count
-                ) {
-                    if( state->point_buf[ point_avg_index ] > raw_val ) {
-                        raw_val = state->point_buf[ point_avg_index ];
-                    }
+        uint8_t raw_val = 0;
+        for( int n=0; n<point_avg_w; n++ ) {
+            int point_avg_index = point_index-n;
+            if( (point_avg_index+point_buf_start) >= 0 && 
+                (point_avg_index+point_buf_start) < state->waveform_header->frame_count
+            ) {
+                if( state->point_buf[ point_avg_index ] > raw_val ) {
+                    raw_val = state->point_buf[ point_avg_index ];
                 }
             }
-            val = ( (float)raw_val / (float)state->waveform_header->norm_val ) * (frame->h/2);
-
-            
-            switch( state->style ) {
-                case ZDJ_WAVEFORM_TOP_HALF:
-                    lineColor( zdj_renderer( ), (frame->w/2)-i, frame->h, (frame->w/2)-i, frame->h-val, ZDJ_WHITE );
-                    break;
-                case ZDJ_WAVEFORM_BOTTOM_HALF:
-                    lineColor( zdj_renderer( ), (frame->w/2)-i, 0, (frame->w/2)-i, val, ZDJ_WHITE );
-                    break;
-                case ZDJ_WAVEFORM_SYM:
-                    lineColor( zdj_renderer( ), (frame->w/2)-i, frame->h/2, (frame->w/2)-i, (frame->h/2)-val, ZDJ_WHITE );
-                    lineColor( zdj_renderer( ), (frame->w/2)-i, frame->h/2, (frame->w/2)-i, (frame->h/2)+val, ZDJ_WHITE );
-                    break;
+            point_avg_index = point_index+n;
+            if( (point_avg_index+point_buf_start) >= 0 && 
+                (point_avg_index+point_buf_start) < state->waveform_header->frame_count
+            ) {
+                if( state->point_buf[ point_avg_index ] > raw_val ) {
+                    raw_val = state->point_buf[ point_avg_index ];
+                }
             }
-        // } else {
-        if( round(point_addr) <= 0 ) {
-            // Capture the lead in pixel index if the start of song is in frame
-            lead_in_x = fmax( lead_in_x, (frame->w/2)-i );
-        } else if( round(point_addr) >= state->waveform_header->frame_count ) {
-            // Capture the lead in pixel index if the start of song is in frame
-            lead_out_x = fmin( lead_out_x, (frame->w/2)+i );
         }
+        val = ( (float)raw_val / (float)state->waveform_header->norm_val ) * (frame->h/2);
+
+        
+        switch( state->style ) {
+            case ZDJ_WAVEFORM_TOP_HALF:
+                lineColor( zdj_renderer( ), (frame->w/2)-i, frame->h, (frame->w/2)-i, frame->h-val, ZDJ_WHITE );
+                break;
+            case ZDJ_WAVEFORM_BOTTOM_HALF:
+                // lineColor( zdj_renderer( ), (frame->w/2)-i, 0, (frame->w/2)-i, val, ZDJ_WHITE );
+                lineColor( zdj_renderer( ), (frame->w/2)-i, -1, (frame->w/2)-i, val-1, ZDJ_WHITE );
+                break;
+            case ZDJ_WAVEFORM_SYM:
+                lineColor( zdj_renderer( ), (frame->w/2)-i, frame->h/2, (frame->w/2)-i, (frame->h/2)-val, ZDJ_WHITE );
+                lineColor( zdj_renderer( ), (frame->w/2)-i, frame->h/2, (frame->w/2)-i, (frame->h/2)+val, ZDJ_WHITE );
+                break;
+        }
+
+        // Find lead in/out location if in window
+        // if( fabs(round( point_addr )) < 2.0 ) {
+        if( fabs(round( point_addr )) < ceil( state->points_per_pixel ) ) {
+            show_lead_in = true;
+            lead_in_x = (frame->w/2)-i;
+        }
+        // if( fabs( state->waveform_header->frame_count - round( point_addr )  ) < 2.0 ) {
+        if( fabs( state->waveform_header->frame_count - round( point_addr )  ) < ceil( state->points_per_pixel ) ) {
+            show_lead_out = true;
+            lead_out_x = (frame->w/2)-i;
+        }
+
         point_addr -= state->points_per_pixel;
     }
 
     // Walk forward from head drawing points to fill the window
     point_addr = state->win_point_head;
     for( i=0; i<frame->w/2; i++ ){
-        // if( round(point_addr) < state->waveform_header->frame_count ) {
-            double point_buf_start = state->win_point_head - state->win_back_point_count;
-            float val = 0.0;
-            double point_index = state->win_point_head + (state->points_per_pixel * i) - point_buf_start;
-            
-            uint8_t raw_val = 0;
-            for( int n=0; n<point_avg_w; n++ ) {
-                int point_avg_index = point_index-n;
-                if( (point_avg_index+point_buf_start) >= 0 && 
-                    (point_avg_index+point_buf_start) < state->waveform_header->frame_count
-                ) {
-                    if( state->point_buf[ point_avg_index ] > raw_val ) {
-                        raw_val = state->point_buf[ point_avg_index ];
-                    }
-                }
-                point_avg_index = point_index+n;
-                if( (point_avg_index+point_buf_start) >= 0 && 
-                    (point_avg_index+point_buf_start) < state->waveform_header->frame_count
-                ) {
-                    if( state->point_buf[ point_avg_index ] > raw_val ) {
-                        raw_val = state->point_buf[ point_avg_index ];
-                    }
+        double point_buf_start = state->win_point_head - state->win_back_point_count;
+        float val = 0.0;
+        double point_index = state->win_point_head + (state->points_per_pixel * i) - point_buf_start;
+        
+        uint8_t raw_val = 0;
+        for( int n=0; n<point_avg_w; n++ ) {
+            int point_avg_index = point_index-n;
+            if( (point_avg_index+point_buf_start) >= 0 && 
+                (point_avg_index+point_buf_start) < state->waveform_header->frame_count
+            ) {
+                if( state->point_buf[ point_avg_index ] > raw_val ) {
+                    raw_val = state->point_buf[ point_avg_index ];
                 }
             }
-            val = ( (float)raw_val / (float)state->waveform_header->norm_val) * (frame->h/2);
-
-            switch( state->style ) {
-                case ZDJ_WAVEFORM_TOP_HALF:
-                    lineColor( zdj_renderer( ), (frame->w/2)+i, frame->h, (frame->w/2)+i, frame->h-val, ZDJ_WHITE );
-                    break;
-                case ZDJ_WAVEFORM_BOTTOM_HALF:
-                    lineColor( zdj_renderer( ), (frame->w/2)+i, 0, (frame->w/2)+i, val, ZDJ_WHITE );
-                    break;
-                case ZDJ_WAVEFORM_SYM:
-                    lineColor( zdj_renderer( ), (frame->w/2)+i, frame->h/2, (frame->w/2)+i, (frame->h/2)-val, ZDJ_WHITE );
-                    lineColor( zdj_renderer( ), (frame->w/2)+i, frame->h/2, (frame->w/2)+i, (frame->h/2)+val, ZDJ_WHITE );
-                    break;
+            point_avg_index = point_index+n;
+            if( (point_avg_index+point_buf_start) >= 0 && 
+                (point_avg_index+point_buf_start) < state->waveform_header->frame_count
+            ) {
+                if( state->point_buf[ point_avg_index ] > raw_val ) {
+                    raw_val = state->point_buf[ point_avg_index ];
+                }
             }
-        // } else {
-        // if( round(point_addr) >= state->waveform_header->frame_count ) {
-        //     // Capture the lead in pixel index if the start of song is in frame
-        //     lead_out_x = fmin( lead_out_x, (frame->w/2)+i );
-        // }
-        if( round(point_addr) <= 0 ) {
-            // Capture the lead in pixel index if the start of song is in frame
-            lead_in_x = fmax( lead_in_x, (frame->w/2)-i );
-        } else if( round(point_addr) >= state->waveform_header->frame_count ) {
-            // Capture the lead in pixel index if the start of song is in frame
-            lead_out_x = fmin( lead_out_x, (frame->w/2)+i );
         }
+        val = ( (float)raw_val / (float)state->waveform_header->norm_val) * (frame->h/2);
+
+        switch( state->style ) {
+            case ZDJ_WAVEFORM_TOP_HALF:
+                lineColor( zdj_renderer( ), (frame->w/2)+i, frame->h, (frame->w/2)+i, frame->h-val, ZDJ_WHITE );
+                break;
+            case ZDJ_WAVEFORM_BOTTOM_HALF:
+                // lineColor( zdj_renderer( ), (frame->w/2)+i, 0, (frame->w/2)+i, val, ZDJ_WHITE );
+                lineColor( zdj_renderer( ), (frame->w/2)+i, -1, (frame->w/2)+i, val-1, ZDJ_WHITE );
+                break;
+            case ZDJ_WAVEFORM_SYM:
+                lineColor( zdj_renderer( ), (frame->w/2)+i, frame->h/2, (frame->w/2)+i, (frame->h/2)-val, ZDJ_WHITE );
+                lineColor( zdj_renderer( ), (frame->w/2)+i, frame->h/2, (frame->w/2)+i, (frame->h/2)+val, ZDJ_WHITE );
+                break;
+        }
+
+        // Find lead in/out location if in window
+        // if( fabs( round( point_addr ) ) < 2.0 ) {
+        if( fabs( round( point_addr ) ) < ceil(state->points_per_pixel) ) {
+            show_lead_in = true;
+            lead_in_x = (frame->w/2)+i;
+        }
+        // if( fabs( state->waveform_header->frame_count - round( point_addr )  ) < 2.0 ) {
+        if( fabs( state->waveform_header->frame_count - round( point_addr )  ) < ceil(state->points_per_pixel) ) {
+            show_lead_out = true;
+            lead_out_x = (frame->w/2)+i;
+        }
+
         point_addr += state->points_per_pixel;
     }
 
     // Draw the lead in alert strip
-    if( lead_in_x > 0 ) { 
+    if( show_lead_in ) { 
         SDL_Rect s = { 
             zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].w - lead_in_x, 
             zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].y, 
@@ -315,7 +348,7 @@ static void _render_points( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
                 d.y = frame->h - zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].h;
                 break;
             case ZDJ_WAVEFORM_BOTTOM_HALF:
-                d.y = 0;
+                d.y = -1;
                 break;
             case ZDJ_WAVEFORM_SYM:
                 d.y = (frame->h/2) - 5;
@@ -340,7 +373,7 @@ static void _render_points( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
                 d.y = frame->h - zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ].h;
                 break;
             case ZDJ_WAVEFORM_BOTTOM_HALF:
-                d.y = 0;
+                d.y = -1;
                 break;
             case ZDJ_WAVEFORM_SYM:
                 d.y = (frame->h/2) - 5;
@@ -362,7 +395,9 @@ static void _render_waveform( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
     
 
     // printf( "---\n" );
-    double sample_avg_w = state->samples_per_pixel / 4.0;
+    // double sample_avg_w = state->samples_per_pixel / 4.0;
+    double sample_avg_w = state->samples_per_pixel / 2.0;
+    double sample_avg_weight = 1.0 / sample_avg_w;
     // printf( "avg_w = %1.3f\n", sample_avg_w );
 
     // printf( "waveform h buf:%1.3f pcm_h:%1.3f\n", decode_state->head.buf_d, state->win_pcm_sample_head );
@@ -377,36 +412,39 @@ static void _render_waveform( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
     int i;
     int lead_in_x = -1;
     int lead_out_x = 129;
-    int prev_y = 0;
     for( i=0; i<frame->w/2; i++ ){
         // printf( "hc: %1.3f\n", head_coord );
         if( round(head_coord) >= 0 ) {
             // Build reference into decode node buffer
             int buf_sample = round( audio_decode_state->head.buf_d - (state->samples_per_pixel * i) );
             if( buf_sample > 0 && buf_sample < audio_decode_state->win_sample_count ) { 
-                double buf_val = 0;
+                float buf_min = 10.0;
+                float buf_max = -10.0;
                 for( int n=0; n<sample_avg_w; n++ ) {
                     int buf_index = (buf_sample-n) * audio_decode_state->channel_count;
                     if( buf_index >= 0 && 
                         buf_index < audio_decode_state->win_sample_count*audio_decode_state->channel_count 
                     ) {
-                        if( fabs( audio_decode_state->out_buffer[ buf_index ] ) > fabs( buf_val ) ) {
-                            buf_val = audio_decode_state->out_buffer[ buf_index ];
-                        }
+                        buf_max = fmax( buf_max, audio_decode_state->ui_buffer[ buf_index ] );
+                        buf_min = fmin( buf_min, audio_decode_state->ui_buffer[ buf_index ] );
                     }
                     buf_index = (buf_sample+n) * audio_decode_state->channel_count;
                     if( buf_index >= 0 && 
                         buf_index < audio_decode_state->win_sample_count*audio_decode_state->channel_count 
                     ) {
-                        if( fabs( audio_decode_state->out_buffer[ buf_index ] ) > fabs( buf_val ) ) {
-                            buf_val = audio_decode_state->out_buffer[ buf_index ];
-                        }
+                        buf_max = fmax( buf_max, audio_decode_state->ui_buffer[ buf_index ] );
+                        buf_min = fmin( buf_min, audio_decode_state->ui_buffer[ buf_index ] );
                     }
                 }
-                buf_val *= 10;
 
-                lineColor( zdj_renderer( ), (frame->w/2)-i, (frame->h/2)+prev_y, (frame->w/2)-i-1, (frame->h/2)+buf_val, ZDJ_WHITE );
-                prev_y = buf_val;
+                lineColor( 
+                    zdj_renderer( ), 
+                    (frame->w/2)-i, 
+                    (frame->h/2)+(buf_max * 12), 
+                    (frame->w/2)-i, 
+                    (frame->h/2)+(buf_min * 12), 
+                    ZDJ_WHITE 
+                );
             }
         } else {
             // Capture the lead in pixel index if the start of song is in frame
@@ -417,36 +455,40 @@ static void _render_waveform( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
 
     // Walk forward from head drawing points to fill the window
     head_coord = state->win_pcm_sample_head;
-    prev_y = 0;
     for( i=0; i<frame->w/2; i++ ){
         if( round(head_coord) <= audio_decode_state->song_pcm_duration ) {
             // Build reference into decode node buffer
             int buf_sample = round( audio_decode_state->head.buf_d + (state->samples_per_pixel * i) );
             // printf( "h:%1.0f s:%d\n", decode_state->head.buf_d, buf_sample );
             if( buf_sample > 0 && buf_sample < audio_decode_state->win_sample_count ) { 
-                double buf_val = 0;
+                float buf_min = 10.0;
+                float buf_max = -10.0;
                 for( int n=0; n<sample_avg_w; n++ ) {
                     int buf_index = (buf_sample-n) * audio_decode_state->channel_count;
                     if( buf_index >= 0 && 
                         buf_index < audio_decode_state->win_sample_count * audio_decode_state->channel_count
                     ) {
-                        if( fabs( audio_decode_state->out_buffer[ buf_index ] ) > fabs( buf_val ) ) {
-                            buf_val = audio_decode_state->out_buffer[ buf_index ];
-                        }
+                        // buf_max = fmax( buf_max, audio_decode_state->out_buffer[ buf_index ] );
+                        // buf_min = fmin( buf_min, audio_decode_state->out_buffer[ buf_index ] );
+                        buf_max = fmax( buf_max, audio_decode_state->ui_buffer[ buf_index ] );
+                        buf_min = fmin( buf_min, audio_decode_state->ui_buffer[ buf_index ] );
                     }
                     buf_index = (buf_sample+n) * audio_decode_state->channel_count;
                     if( buf_index >= 0 && 
                         buf_index < audio_decode_state->win_sample_count * audio_decode_state->channel_count 
                     ) {
-                        if( fabs( audio_decode_state->out_buffer[ buf_index ] ) > fabs( buf_val ) ) {
-                            buf_val = audio_decode_state->out_buffer[ buf_index ];
-                        }
+                        buf_max = fmax( buf_max, audio_decode_state->ui_buffer[ buf_index ] );
+                        buf_min = fmin( buf_min, audio_decode_state->ui_buffer[ buf_index ] );
                     }
                 }
-                buf_val *= 10;
-
-                lineColor( zdj_renderer( ), (frame->w/2)+i, (frame->h/2)+prev_y, (frame->w/2)+i+1, (frame->h/2)+buf_val, ZDJ_WHITE );
-                prev_y = buf_val;
+                lineColor( 
+                    zdj_renderer( ), 
+                    (frame->w/2)+i, 
+                    (frame->h/2)+(buf_max * 12), 
+                    (frame->w/2)+i, 
+                    (frame->h/2)+(buf_min * 12), 
+                    ZDJ_WHITE 
+                );
             }
         } else {
             // Capture the lead in pixel index if the start of song is in frame
@@ -504,6 +546,7 @@ static void _render_waveform( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
         }
         SDL_RenderCopy( zdj_renderer( ), zdj_asset_atlas( ), &s, &d );
     }
+
     // printf( "_render_waveform done\n" );
 }
 

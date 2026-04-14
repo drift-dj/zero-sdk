@@ -11,6 +11,6 @@ echo "uploading $ROOT_DIR/res/zero_atlas-32bit.bmp to $1/root/res"
 echo "cd /root/res" > "$1"
 sz --zmodem -y $ROOT_DIR/res/zero_atlas-32bit.bmp > "$1" < "$1" || exit 1
 
-# echo "uploading $ROOT_DIR/res/soundcard.db to $1/etc/zero_data"
-# echo "cd /etc/zero_data" > "$1"
-# sz --zmodem -y $ROOT_DIR/res/soundcard.db > "$1" < "$1" || exit 1
+echo "uploading zero-m7_v0_0_1_release.elf to $1/usr/lib/firmware"
+echo "cd /usr/lib/firmware" > "$1"
+sz --zmodem -y /Users/jaredwheeler/Documents/Drift/dev/zero-m7/build/zero-m7_v0_0_1_release.elf > "$1" < "$1" || exit 1

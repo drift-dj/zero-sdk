@@ -150,7 +150,7 @@ void _zdj_soundcard_options_handle_control( zdj_view_t * view, zdj_control_event
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
-    // printf( "_zdj_soundcard_options_handle_control\n" );
+    printf( "_zdj_soundcard_options_handle_control\n" );
     // Grab Tone 1,2,3 + Jog push turn to send controls into channels.
     // if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ||
     //     e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ||

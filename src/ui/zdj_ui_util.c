@@ -22,6 +22,21 @@ SDL_Renderer * zdj_renderer( void ) {
     return zdj_display_renderer;
 }
 
+void zdj_ui_set_refresh_hz( int hz ) {
+    zdj_ui_refresh_hz = hz;
+}
+
+int zdj_ui_get_frame_nanos( void ) {
+    // Build the nanoseconds from the current display hz
+    return 1000000000 / zdj_ui_refresh_hz;
+}
+
+int zdj_ui_msec_to_frames( int msec ) {
+    double nanos_per_frame = 1000000000.0 / (double)zdj_ui_refresh_hz;
+    double nanos = msec * 1000000.0;
+    return round( nanos / nanos_per_frame );
+}
+
 zdj_rect_t * zdj_screen_rect( void ) {
     if( !_zdj_screen_rect_priv ) {
         _zdj_screen_rect_priv = calloc( 1, sizeof( zdj_rect_t ) );
@@ -91,8 +106,8 @@ zdj_rect_t * zdj_dj_deck_page_rect( void ) {
         _zdj_dj_deck_page_rect_priv = calloc( 1, sizeof( zdj_rect_t ) );
         _zdj_dj_deck_page_rect_priv->x = 0;
         _zdj_dj_deck_page_rect_priv->y = 0;
-        _zdj_dj_deck_page_rect_priv->w = 80;
-        _zdj_dj_deck_page_rect_priv->h = 8;
+        _zdj_dj_deck_page_rect_priv->w = 120;
+        _zdj_dj_deck_page_rect_priv->h = 9;
     }
     return _zdj_dj_deck_page_rect_priv;
 }

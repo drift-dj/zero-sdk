@@ -58,6 +58,7 @@ typedef struct {
     zdj_deck_t * station_ext;
     zdj_deck_t * decks;
     zdj_deck_manager_sync_t sync;
+    zdj_deck_station_t recent_station;
     uint8_t control_change_flags[ ZDJ_CONTROL_ID_COUNT ];
 } zdj_deck_manager_t;
 
@@ -73,6 +74,7 @@ zdj_deck_t * zdj_deck_manager_add_deck(
 );
 zdj_error_type_t zdj_deck_manager_remove_deck( zdj_deck_t * deck );
 zdj_deck_t * zdj_deck_manager_get_deck_for_station( zdj_deck_station_t station );
+zdj_deck_station_t zdj_deck_manager_get_station_for_map( zdj_control_map_id_t map );
 
 // Sync
 void zdj_deck_manager_set_prefer_sync( bool prefer );
@@ -86,5 +88,8 @@ void zdj_deck_manager_handle_events( int start_ind, int end_ind );
 void zdj_deck_manager_clear_control_flags( zdj_deck_t * deck );
 // Update the control models/sims for each active deck
 void zdj_deck_manager_control_update_cycle( void );
+
+zdj_deck_station_t zdj_deck_manager_get_recent_playback_station( void );
+void zdj_deck_manager_set_recent_playback_station_for_map( zdj_control_map_id_t map_id );
 
 #endif

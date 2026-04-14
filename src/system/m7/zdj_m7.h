@@ -69,6 +69,12 @@ typedef struct {
     uint8_t dac_cfg_volume_3; // Pad (0=+24db/255=-∞db) for HP DAC R
     uint8_t dac_cfg_standby_0; // Power down LR DAC
     uint8_t dac_cfg_standby_1; // Pover down HP DAC
+    uint8_t adc_cfg_gain_0; // PGA value for adc 0
+    uint8_t adc_cfg_gain_1; // PGA value for adc 0
+    uint8_t adc_cfg_gain_2; // PGA value for adc 0
+    uint8_t adc_cfg_gain_3; // PGA value for adc 0
+    uint8_t adc_cfg_standby; // Power down ADC
+    uint16_t audio_watchdog; // Sentinel for shutting off audio output in event of a front-end crash
 } zdj_shared_audio_state_t;
 // volatile zdj_shared_audio_state_t * zdj_m7_shared_audio_state( void );
 
@@ -79,6 +85,7 @@ typedef struct {
     int32_t deactivate_audio_req;
     int32_t update_audio_cfg_req;
     int32_t update_audio_cycle_ready_msg;
+    int32_t display_cfg_req;
     char msg_buf[ 256 ];
 } zdj_shared_msg_buffer_t;
 volatile zdj_shared_msg_buffer_t * zdj_m7_shared_msg_buffer( void );

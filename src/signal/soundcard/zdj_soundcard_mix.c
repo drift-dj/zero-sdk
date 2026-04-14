@@ -5,6 +5,7 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.h>
 #include <zerodj/signal/pipeline/node/analysis/meter/zdj_meter_node.h>
@@ -359,8 +360,6 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
     zdj_audio_buffer_node_state_t * source_buf_state = (zdj_audio_buffer_node_state_t*)input_node->data_pipe->state;
 
     float * source_buf = input_node->data_pipe->get_data( input_node->data_pipe );
-    
-    // float * dest_buf = node->data_pipe->get_data( node->data_pipe );
 
     float * dest_buf;
     // If dest node is analog out right channel, we need to grab a ref to the left buffer
@@ -391,15 +390,6 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
         // );
     }
 
-    
-    // if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 ) {
-    //     printf( "\n%s[%d/%d/%d] -> %s[%d/%d/%d]\n", 
-    //         zdj_soundcard_node_name[ input_node->name ], 
-    //         map->source_channel_count, map->source_channel_stride, map->source_channel_offset,
-    //         zdj_soundcard_node_name[ node->name ],
-    //         map->dest_channel_count, map->dest_channel_stride, map->dest_channel_offset
-    //     );
-    // }
     for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
 
         // Select each destination channel
@@ -460,36 +450,8 @@ static void _meter_node(
 
         // Select each destination channel
         for( int c=0; c<channel_count; c++ ) {
-            // // Map source channels to destination channels
-            // if( map.source_channel_count == 1 ) {
-            //     // Mono source channel - copy to mono or stereo dest channels
-            //     source_index = i*map.source_channel_stride+map.source_channel_offset;
-            // } else {
-            //     // Stereo source channel - copy to mono or stereo dest channels
-            //     source_index = i*map.source_channel_stride+c+map.source_channel_offset;
-            // }
-            // dest_index = i*map.dest_channel_stride+c+map.dest_channel_offset;
             index = (i*channel_count)+c;
-
-            // // Add the samples and clip to min/max ( -1.0->1.0 )
-            // source_sample = source_buf[ source_index ];
             sample = buf[ index ];
-            // // Include pan for mono->stereo accum
-            // if( accum_pan ) {
-            //     new_dest_sample = source_sample+dest_sample;
-            // } else {
-                // new_dest_sample = source_sample+dest_sample;
-            // }
-            
-
-            // if( new_dest_sample > 1.0f ) {
-            //     dest_buf[ dest_index ] = 1.0f;
-            // } else if( new_dest_sample < -1.0f ) {
-            //     dest_buf[ dest_index ] = -1.0f;
-            // } else {
-            //     dest_buf[ dest_index ] = new_dest_sample;
-            // }
-
             // Add sample to meter value
             if( c < 2 ) { meter_val[ c ] += fabs( sample ); }
         }
@@ -514,13 +476,44 @@ static void _meter_node(
         
     } else {
         meter_pipe_state = (zdj_meter_node_state_t*)node->meter_pipe->state;
+        // printf( "meter %s: %1.3f\n", 
+        //     zdj_soundcard_node_name[ node->name ],
+        //     meter_val[ 0 ] / ZDJ_SOUNDCARD_BUF_LEN
+        // );
     }
+
+
 
     // Average meter val + set in meter pipe
     if( meter_pipe_state && meter_pipe_state->add_frame ) { 
         meter_val[ 0 ] /= ZDJ_SOUNDCARD_BUF_LEN;
         meter_val[ 1 ] /= ZDJ_SOUNDCARD_BUF_LEN;
         meter_pipe_state->add_frame( node->meter_pipe, meter_val[ 0 ], meter_val[ 1 ] ); 
+
+        // Set clip
+        if( meter_val[ 0 ] > 0.9 ) { 
+            meter_pipe_state->has_ol_0_0 = true;
+            meter_pipe_state->timer_ol_0_0 = 100;
+            // Catch record bus clip to trigger UI alert
+            if( node->name == ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) {
+                // Catch record bus clip to Force the OL meter to appear
+                zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_RECORD_VOL ] = true;
+            }
+        }
+        if( meter_pipe_state->timer_ol_0_0 > 0 ){ meter_pipe_state->timer_ol_0_0--; }
+        else { meter_pipe_state->has_ol_0_0 = false; }
+
+        if( meter_val[ 1 ] > 0.9 ) { 
+            meter_pipe_state->has_ol_0_1 = true;
+            meter_pipe_state->timer_ol_0_1 = 100;
+            // Catch record bus clip to trigger UI alert
+            if( node->name == ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) {
+                // Catch record bus clip to Force the OL meter to appear
+                zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_RECORD_VOL ] = true;
+            }
+        }
+        if( meter_pipe_state->timer_ol_0_1 > 0 ){ meter_pipe_state->timer_ol_0_1--; }
+        else { meter_pipe_state->has_ol_0_1 = false; }
     }
 
     // printf( "_meter_node done\n" );

@@ -16,9 +16,15 @@ static void _draw_edit_move( zdj_view_t * view );
 static void _draw_edit_moving( zdj_view_t * view );
 static void _draw_edit_done( zdj_view_t * view );
 
+static void _enter_edit_mode( zdj_view_t * item );
+static void _exit_edit_mode( zdj_view_t * item );
+
 void zdj_menu_item_playlist_init_layout( zdj_view_t * view ) {
     // printf( "zdj_menu_item_playlist_init_layout\n" );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+
+    state->enter_edit_mode = _enter_edit_mode;
+    state->exit_edit_mode = _exit_edit_mode;
 
     // Clear out the normal/hilite views' subviews
     if( state->hilite_view ) { 
@@ -218,4 +224,22 @@ static void _draw_edit_done( zdj_view_t * view ) {
     zdj_add_subview( state->hilite_view, btn );
     btn->frame.y = 1;
     btn->frame.x = view->frame.w - 11;
+}
+
+static void _enter_edit_mode( zdj_view_t * item ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+    
+    // Update layout to first edit option state
+    item_state->edit_active = true;
+    item_state->edit_option_index = 0.0f;
+    item_state->needs_layout_update = true;
+}
+
+static void _exit_edit_mode( zdj_view_t * item ) {
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+    
+    // Update layout to normal state
+    item_state->edit_active = false;
+    item_state->needs_layout_init = true;    
+    item_state->edit_action = ZDJ_MENU_ITEM_ACTION_SELECT;
 }

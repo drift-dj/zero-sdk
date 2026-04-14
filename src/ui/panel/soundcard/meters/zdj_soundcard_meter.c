@@ -30,7 +30,7 @@ zdj_soundcard_meter_label_t zdj_meter_label_for_node( zdj_soundcard_node_t * nod
             if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_2; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
             if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_3; }
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3: return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_4;
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
             if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_34; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_4; }
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
             if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_12; } else { return ZDJ_SOUNDCARD_LABEL_ANALOG_IN_1; }

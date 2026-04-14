@@ -25,7 +25,7 @@ zdj_view_t * zdj_new_audio_stereo_meter_view(
     bool show_detail 
 ) {
     // printf( "zdj_new_audio_stereo_meter_view\n" );
-    zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,15,41} );
+    zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,15,55} );
     audio_meter_view->type = ZDJ_VIEW_MENU_ITEM;
     audio_meter_view->draw = &_zdj_audio_meter_draw;
     audio_meter_view->handle_control_event = &_zdj_audio_meter_handle_control;
@@ -41,21 +41,25 @@ zdj_view_t * zdj_new_audio_stereo_meter_view(
 
     // Add meter
     zdj_view_t * meter_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_STEREO_METER ], NULL );
+    meter_bg->frame.x = -1;
+    meter_bg->frame.y = 8;
     zdj_add_subview( audio_meter_view, meter_bg );
 
     // Add meter covers and store for updates
     zdj_view_t * meter_cover_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BLACK ], NULL );
     meter_cover_l->frame.w = 6;
     // meter_cover_l->frame.h = 0;
-    meter_cover_l->frame.h = 46;
+    meter_cover_l->frame.y = 9;
+    meter_cover_l->frame.h = 43;
     zdj_add_subview( audio_meter_view, meter_cover_l );
     state->meter_cover_l = meter_cover_l;
 
     zdj_view_t * meter_cover_r = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BLACK ], NULL );
     meter_cover_r->frame.x = 6;
+    meter_cover_r->frame.y = 9;
     meter_cover_r->frame.w = 5;
     // meter_cover_r->frame.h = 0;
-    meter_cover_r->frame.h = 46;
+    meter_cover_r->frame.h = 43;
     zdj_add_subview( audio_meter_view, meter_cover_r );
     state->meter_cover_r = meter_cover_r;
     
@@ -63,14 +67,14 @@ zdj_view_t * zdj_new_audio_stereo_meter_view(
     // Add mute cover
     zdj_view_t * mute_cover = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_MUTE_STEREO ], NULL );
     mute_cover->frame.x = 0;
-    mute_cover->frame.y = 8;
+    mute_cover->frame.y = 9;
     state->mute_cover = mute_cover;
     zdj_add_subview( audio_meter_view, mute_cover );
 
     // Add detail
     zdj_view_t * detail = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DETAIL ], NULL );
     detail->frame.x = 2;
-    detail->frame.y = 43;
+    detail->frame.y = 46;
     detail->frame.w = 0;
     state->detail = detail;
     zdj_add_subview( audio_meter_view, detail );
@@ -85,8 +89,9 @@ zdj_view_t * zdj_new_audio_stereo_meter_view(
     // Add fader
     // if( node->dsp_dto ) {
     if( zdj_soundcard_node_name_should_show_fader( node->name ) ) {
-        printf( "adding fader for: %s\n", zdj_soundcard_node_name[ node->name ] );
+        // printf( "adding fader for: %s\n", zdj_soundcard_node_name[ node->name ] );
         zdj_view_t * fader = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_FADER_BODY ], NULL );
+        fader->frame.x = -1;
         fader->frame.y = -10;
         state->fader = fader;
         zdj_add_subview( audio_meter_view, fader );
@@ -101,7 +106,7 @@ zdj_view_t * zdj_new_audio_mono_meter_view(
     bool show_detail 
 ) {
     // printf( "zdj_new_audio_mono_meter_view: \n" );
-    zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,12,40} );
+    zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,12,55} );
     audio_meter_view->type = ZDJ_VIEW_MENU_ITEM;
     audio_meter_view->draw = &_zdj_audio_meter_draw;
     audio_meter_view->handle_control_event = &_zdj_audio_meter_handle_control;
@@ -114,12 +119,16 @@ zdj_view_t * zdj_new_audio_mono_meter_view(
 
     // Add meter
     zdj_view_t * meter_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_MONO_METER ], NULL );
+    meter_bg->frame.x = -1;
+    meter_bg->frame.y = 8;
     zdj_add_subview( audio_meter_view, meter_bg );
 
     // Add meter covers and store for updates
     zdj_view_t * meter_cover_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BLACK ], NULL );
+    
+    meter_cover_l->frame.y = 9;
     meter_cover_l->frame.w = 11;
-    meter_cover_l->frame.h = 46;
+    meter_cover_l->frame.h = 43;
     zdj_add_subview( audio_meter_view, meter_cover_l );
     state->meter_cover_l = meter_cover_l;
 
@@ -135,6 +144,7 @@ zdj_view_t * zdj_new_audio_mono_meter_view(
     if( zdj_soundcard_node_name_should_show_fader( node->name ) ) {
     // if( node->dsp_dto ) {
         zdj_view_t * fader = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_FADER_BODY ], NULL );
+        fader->frame.x = -1;
         fader->frame.y = -10;
         state->fader = fader;
         zdj_add_subview( audio_meter_view, fader );
@@ -143,14 +153,14 @@ zdj_view_t * zdj_new_audio_mono_meter_view(
     // Add mute cover
     zdj_view_t * mute_cover = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_MUTE_MONO ], NULL );
     mute_cover->frame.x = 1;
-    mute_cover->frame.y = 8;
+    mute_cover->frame.y = 9;
     state->mute_cover = mute_cover;
     zdj_add_subview( audio_meter_view, mute_cover );
 
     // Add detail
     zdj_view_t * detail = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DETAIL ], NULL );
     detail->frame.x = 1;
-    detail->frame.y = 43;
+    detail->frame.y = 46;
     detail->frame.w = 0;
     state->detail = detail;
     zdj_add_subview( audio_meter_view, detail );
@@ -165,8 +175,8 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     zdj_pipeline_node_t * meter_pipe = config->node->meter_pipe;
     zdj_meter_node_state_t * meter_state = (zdj_meter_node_state_t*)meter_pipe->state;
-    float meter_l_h = (meter_state->instant_val_0) * 46;
-    float meter_r_h = (meter_state->instant_val_1) * 46;
+    float meter_l_h = (meter_state->instant_val_0) * 43;
+    float meter_r_h = (meter_state->instant_val_1) * 43;
     // printf( "%1.1f/%1.1f - %1.0f/%1.0f\n", 
     //     meter_state->lowpass_val_0, 
     //     meter_state->instant_val_1, 
@@ -176,16 +186,18 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     if( state->is_hilite ) {
         state->detail->frame.w = 7;
         if( state->fader && state->config_context->node->dsp_dto ) {
-            state->fader->frame.w = 11;
+            if( config->node->stereo ) { state->fader->frame.w = 13; } 
+            else { state->fader->frame.w = 10; }
             double fader_val = state->config_context->node->dsp_dto->get_gain_display_val( 
                 state->config_context->node->dsp_dto->gain_model,
                 state->config_context->node->dsp_dto->gain
             );
-            state->fader->frame.y = (32 - (fader_val * 32)) + 5;
+            state->fader->frame.y = (32 - (fader_val * 32)) + 10;
         }
     } else {
         if( state->fader && state->config_context->node->dsp_dto ) {
-            state->fader->frame.w = 0;
+            if( config->node->stereo ) { state->fader->frame.w = 13; } 
+            else { state->fader->frame.w = 10; }
         }
         state->detail->frame.w = 0;
     }
@@ -197,9 +209,9 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         }
     } else { 
         state->mute_cover->frame.w = 0; 
-        state->meter_cover_l->frame.h = 46 - meter_l_h;
+        state->meter_cover_l->frame.h = 43 - meter_l_h;
         if( config->node->stereo ) {
-            state->meter_cover_r->frame.h = 46 - meter_r_h;
+            state->meter_cover_r->frame.h = 43 - meter_r_h;
         }
     }
     // printf( "_zdj_audio_meter_draw done\n" );

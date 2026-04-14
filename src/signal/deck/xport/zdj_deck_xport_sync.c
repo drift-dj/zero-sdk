@@ -66,5 +66,5 @@ static void _offset_sync_bpm( zdj_deck_t * deck, double offset ) {
 static void _offset_pitch_setting( zdj_deck_t * deck, double offset ) {
     // printf( "dj deck offset pitch setting: %1.4f\n", offset );
     deck->controls.platter.motor.pitch_setting += offset;
-    printf( "pitch set: %1.2f\n", deck->controls.platter.motor.pitch_setting );
+    // printf( "pitch set: %1.2f\n", deck->controls.platter.motor.pitch_setting );
 }

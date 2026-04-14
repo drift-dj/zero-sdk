@@ -37,6 +37,9 @@ zdj_view_t * zdj_new_menu_item( char * title, zdj_menu_item_view_layout_t layout
     state->update_layout = NULL;
     state->is_blinking = false;
     state->blink_timer = 0;
+    state->blink_length = zdj_ui_msec_to_frames( 100 );
+    state->blink_period = zdj_ui_msec_to_frames( 50 );
+    state->blink_duty = state->blink_period / 2;
     state->handles_hmi = false;
     state->edit_enabled = false;
     zdj_menu_item_set_layout( menu_item, state->layout );
@@ -94,6 +97,27 @@ zdj_view_t * zdj_new_cuepoint_menu_item( char * name, char * cuepoint_eid ) {
     return menu_item;
 }
 
+zdj_view_t * zdj_new_usb_device_menu_item( zdj_usb_device_t * device_dto ) {
+    zdj_view_t * menu_item = zdj_new_menu_item( "USB", ZDJ_MENU_ITEM_LAYOUT_USB_DEVICE );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    // strcpy( item_state->title, device_dto->name_user );
+    // strcpy( item_state->data.c_val, device_dto->name_user );
+    item_state->data.ptr = device_dto;
+    return menu_item;
+}
+
+zdj_view_t * zdj_new_browser_device_menu_item( 
+    char * title,
+    char * path, 
+    zdj_menu_item_view_browser_device_type_t type 
+) {
+    zdj_view_t * menu_item = zdj_new_menu_item( title, ZDJ_MENU_ITEM_LAYOUT_BROWSER_DEVICE );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    strcpy( item_state->link, path );
+    item_state->data.i_val = type;
+    return menu_item;
+}
+
 // March through any view's subviews, looking for a menu_item_view
 // with a matching scroll_index.
 zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index ) {
@@ -120,37 +144,37 @@ void zdj_menu_item_scroll_options( zdj_view_t * item, int dir ) {
     double edit_option_count;
     switch (item_state->edit_options_type ) {
         case ZDJ_MENU_ITEM_OPTIONS_LIB_PLAYLIST:
-            edit_option_count = 3;
+            edit_option_count = 10;
             break;
         case ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST:
-            edit_option_count = 3;
+            edit_option_count = 8;
             break;
         default:
             edit_option_count = 0;
             break;
     }
     if( item_state->edit_option_index > edit_option_count ) { item_state->edit_option_index = edit_option_count; }
-    // printf( "zdj_menu_item_scroll_options: %d %1.1f %1.0f\n", dir, item_state->edit_option_index, round( item_state->edit_option_index ) );
+    printf( "zdj_menu_item_scroll_options: %d %1.1f %1.0f / %1.0f\n", dir, item_state->edit_option_index, round( item_state->edit_option_index ), edit_option_count );
     item_state->needs_layout_update = true;
 }
 
-void zdj_menu_item_enter_edit_mode( zdj_view_t * item ) {
-    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+// void zdj_menu_item_enter_edit_mode( zdj_view_t * item ) {
+//     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
     
-    // Update layout to first edit option state
-    item_state->edit_active = true;
-    item_state->edit_option_index = 0.0f;
-    item_state->needs_layout_update = true;
-}
+//     // Update layout to first edit option state
+//     item_state->edit_active = true;
+//     item_state->edit_option_index = 0.0f;
+//     item_state->needs_layout_update = true;
+// }
 
-void zdj_menu_item_exit_edit_mode( zdj_view_t * item ) {
-    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+// void zdj_menu_item_exit_edit_mode( zdj_view_t * item ) {
+//     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
     
-    // Update layout to normal state
-    item_state->edit_active = false;
-    item_state->needs_layout_init = true;    
-    item_state->edit_action = ZDJ_MENU_ITEM_ACTION_SELECT;
-}
+//     // Update layout to normal state
+//     item_state->edit_active = false;
+//     item_state->needs_layout_init = true;    
+//     item_state->edit_action = ZDJ_MENU_ITEM_ACTION_SELECT;
+// }
 
 void zdj_menu_item_enter_move_mode( zdj_view_t * item ) {
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
@@ -168,7 +192,11 @@ void zdj_menu_item_exit_move_mode( zdj_view_t * item ) {
     // item_state->edit_option_index = 3.0f;
     // item_state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
     // item_state->needs_layout_update = true;
-    zdj_menu_item_exit_edit_mode( item );
+
+    // zdj_menu_item_exit_edit_mode( item );
+    if( item_state->exit_edit_mode ) {
+        item_state->exit_edit_mode( item );
+    }
 }
 
 // Get a matching draw function for a menu_item node's layout attribute
@@ -182,16 +210,18 @@ void _zdj_menu_item_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     if( state->needs_layout_update && state->update_layout ) { state->update_layout( view ); }
     
     if( state->is_blinking ) {
-        if( state->blink_timer++ > ZDJ_BLINK_LENGTH ) {
+        // if( state->blink_timer++ > ZDJ_BLINK_LENGTH ) {
+        if( state->blink_timer++ > state->blink_length ) {
             state->is_blinking = false;
             state->blink_timer = 0;
             state->is_hilite = true;
         } else {
             // blink on a cycle
-            if( state->blink_timer % ZDJ_BLINK_PERIOD > ZDJ_BLINK_DUTY ) {
-                _zdj_menu_item_set_hilite( state, clip, true );
-            } else {
+            // if( state->blink_timer % ZDJ_BLINK_PERIOD > ZDJ_BLINK_DUTY ) {
+            if( (state->blink_timer % state->blink_period) >= state->blink_duty ) {
                 _zdj_menu_item_set_hilite( state, clip, false );
+            } else {
+                _zdj_menu_item_set_hilite( state, clip, true );
             }
         }
     } else {
@@ -234,8 +264,20 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             item_state->init_layout = zdj_menu_item_basic_r_init_layout;
             item_state->handles_hmi = true;
             break;
+        case ZDJ_MENU_ITEM_LAYOUT_BASIC_LG:
+            item_state->init_layout = zdj_menu_item_basic_lg_init_layout;
+            item_state->handles_hmi = true;
+            break;
         case ZDJ_MENU_ITEM_LAYOUT_BASIC_LAUNCH_R:
             item_state->init_layout = zdj_menu_item_basic_launch_r_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_BASIC_L_EDIT:
+            item_state->init_layout = zdj_menu_item_basic_l_edit_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_BASIC_MED_L_EDIT:
+            item_state->init_layout = zdj_menu_item_basic_med_l_edit_init_layout;
             item_state->handles_hmi = true;
             break;
         case ZDJ_MENU_ITEM_LAYOUT_DATA_L:
@@ -296,6 +338,16 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             item_state->update_layout = zdj_menu_item_slider_update_layout;
             item_state->handles_hmi = true;
             break;
+        case ZDJ_MENU_ITEM_LAYOUT_SONG:
+            item_state->init_layout = zdj_menu_item_song_init_layout;
+            item_state->update_layout = zdj_menu_item_song_update_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_SONG_PLAYLIST:
+            item_state->init_layout = zdj_menu_item_song_init_layout;
+            item_state->update_layout = zdj_menu_item_song_playlist_update_layout;
+            item_state->handles_hmi = true;
+            break;
         case ZDJ_MENU_ITEM_LAYOUT_SONG_IMPORT:
             item_state->init_layout = zdj_menu_item_song_import_init_layout;
             item_state->update_layout = zdj_menu_item_song_import_update_layout;
@@ -312,6 +364,14 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             break;
         case ZDJ_MENU_ITEM_LAYOUT_CUEPOINT:
             item_state->init_layout = zdj_menu_item_cuepoint_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_USB_DEVICE:
+            item_state->init_layout = zdj_menu_item_usb_device_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_BROWSER_DEVICE:
+            item_state->init_layout = zdj_menu_item_browser_device_init_layout;
             item_state->handles_hmi = true;
             break;
     }

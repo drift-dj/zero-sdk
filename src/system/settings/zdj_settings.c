@@ -9,6 +9,7 @@
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/system/sql/zdj_sql.h>
+#include <zerodj/ui/zdj_ui.h>
 
 sqlite3 * zdj_setting_db;
 
@@ -45,6 +46,21 @@ zdj_error_type_t zdj_settings_init( void ) {
         _reset_default( );
     }
 
+    // Set the UI refresh based on stored setting
+    zdj_setting_t * rate_setting = zdj_setting_get( ZDJ_SETTING_REFRESH_RATE );
+    if( rate_setting ) {
+        zdj_setting_refresh_rate_t rate = rate_setting->i_val;
+        switch ( rate ) {
+            case ZDJ_SETTING_REFRESH_RATE_115: zdj_ui_set_refresh_hz( 115 ); break;
+            case ZDJ_SETTING_REFRESH_RATE_60: zdj_ui_set_refresh_hz( 62 ); break;
+            case ZDJ_SETTING_REFRESH_RATE_30: zdj_ui_set_refresh_hz( 30 );  break;
+            case ZDJ_SETTING_REFRESH_RATE_20: zdj_ui_set_refresh_hz( 20 );  break;
+            default: zdj_ui_set_refresh_hz( 30 ); break; 
+        }
+    } else {
+        zdj_ui_set_refresh_hz( 30 );
+    }
+
     return ZDJ_ERROR_OKAY;
 }
 
@@ -68,11 +84,14 @@ static void _reset_default( void ) {
     // Make screenshot index
     zdj_setting_set_int( ZDJ_SETTING_SCREENSHOT_COUNTER, 0 );
     zdj_setting_set_int( ZDJ_SETTING_RECORDING_COUNTER, 0 );
+    zdj_setting_set_int( ZDJ_SETTING_DISPLAY_FLIP, 0 );
+    zdj_setting_set_int( ZDJ_SETTING_REFRESH_RATE, 0 );
 }
 
 zdj_setting_t * zdj_setting_get( int id ) {
-    zdj_setting_t * setting = calloc( 1, sizeof( zdj_setting_t ) );
-    setting->id = id;
+    zdj_setting_t * setting = NULL;
+    // zdj_setting_t * setting = calloc( 1, sizeof( zdj_setting_t ) );
+    // setting->id = id;
 
     char sql[ 256 ];
     sprintf( sql, "select * from Settings where id=%d", id );
@@ -80,6 +99,8 @@ zdj_setting_t * zdj_setting_get( int id ) {
     sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( sql, zdj_setting_db );
     if( stmt ) {
         while ( (( res = sqlite3_step( stmt ) ) == SQLITE_ROW) ) {
+            setting = calloc( 1, sizeof( zdj_setting_t ) );
+            setting->id = id;
             setting->type = sqlite3_column_int ( stmt, 1 );
             setting->i_val = sqlite3_column_int ( stmt, 2 );
             setting->b_val = sqlite3_column_int ( stmt, 3 );
@@ -268,4 +289,22 @@ bool zdj_setting_flip_bool( int id ) {
     zdj_setting_set_bool( id, val );
     free( setting );
     return val;
+}
+
+bool zdj_setting_get_dev_zerod_flag( void ) {
+    if( access( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH, F_OK ) == 0 ) { 
+        return true; 
+    } else {
+        return false;
+    }
+}
+
+void zdj_setting_set_dev_zerod_flag( bool flag ) {
+    if( flag ) {
+        FILE * dev_flag_fd = fopen( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH, "w" );
+        fwrite( "true", sizeof( char ), 5, dev_flag_fd );
+        fclose( dev_flag_fd );
+    } else {
+        remove( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH );
+    }
 }

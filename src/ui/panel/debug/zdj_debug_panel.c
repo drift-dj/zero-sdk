@@ -37,7 +37,7 @@ zdj_view_t * zdj_new_debug_panel( void ) {
     view->map = ZDJ_CONTROL_MAP_DEBUG_PANEL;
 
     zdj_debug_panel_state_t * state = calloc( 1, sizeof( zdj_debug_panel_state_t ) );
-    state->view_needs_refresh = true;
+    state->needs_layout_update = true;
     view->state = state;
 
     // Make menu
@@ -68,7 +68,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
 
-    if( state->view_needs_refresh ) { _refresh_menu( view ); }
+    if( state->needs_layout_update ) { _refresh_menu( view ); }
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {

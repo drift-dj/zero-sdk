@@ -188,12 +188,11 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
     // printf( "_zdj_io_analog_fast_cycle_thread_main: %p\n", node );
     zdj_io_analog_node_state_t * node_state = (zdj_io_analog_node_state_t *)node->state;
 
-
     // Set up scheduling
-    int prio = sched_get_priority_max( SCHED_RR );
+    int prio = sched_get_priority_max( SCHED_FIFO );
 	struct sched_param param;
 	param.sched_priority = prio;
-	sched_setscheduler( syscall(SYS_gettid), SCHED_RR, &param );
+	sched_setscheduler( syscall(SYS_gettid), SCHED_FIFO, &param );
 
     // Give realtime scheduler access to 100% of core time
 	// system( "echo -1 >/proc/sys/kernel/sched_rt_runtime_us" );
@@ -207,17 +206,15 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
         perror( "set affinity failed" );
     }
 
-    
-
-
     float cycle_sec = (float)(node_state->shared_audio_state->buffer_len) / 44100.0f;
     long cycle_nano = (long)(cycle_sec * 1000000000);
 
     // Check for cycle_ready ~ 8 times per cycle
     // Note that this is async w/M7 core so actual timing will be arbitrary.
     long cycle_time = cycle_nano / 8.0; 
-    // struct timespec cycle_delay = { 0, cycle_time };
-    struct timespec cycle_delay = { 0, 50 };
+    struct timespec cycle_delay = { 0, cycle_time };
+    // struct timespec cycle_delay = { 0, 50 };
+    printf( "cycle time: %ld\n", cycle_time );
 
     double p_start_prev, p_start;
     double n_start, n_end;
@@ -236,6 +233,7 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
 
             // tag a cycle catch
             node_state->shared_audio_state->miss_count--;
+            node_state->shared_audio_state->audio_watchdog = 0;
 
             // Don't spend a ton of time in the CB.  
             // You want to be done before the next cycle_ready assert.
@@ -253,16 +251,15 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
                     // printf( " n:%1.2f\n", ( n_end - n_start ) / 1000000.0 );
                 // }
             }
-        } 
-
-        // Sleep thread until next check
-        // nanosleep( &cycle_delay, NULL );
+        }
 
         // Exit thread on command
         if( node_state && node_state->running == false ) { 
-            // printf( "exiting thread\n" );
             return NULL; 
         }
+
+        cycle_delay.tv_nsec = cycle_time;
+        nanosleep( &cycle_delay, NULL );
     }
 
     return NULL;

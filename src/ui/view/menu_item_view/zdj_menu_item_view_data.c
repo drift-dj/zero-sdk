@@ -87,7 +87,7 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     // Pin title label to the left edge + margin
     zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_label_norm );
-    title_label_norm->frame.x = 6;
+    title_label_norm->frame.x = 1;
     title_label_norm->frame.y = -1;
 
     zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
@@ -98,11 +98,11 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     data_label_norm->frame.y = -1;
     
     // Add dots
-    zdj_view_t * divider = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MID_H_DIV ], NULL );
+    zdj_view_t * divider = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WIDE_H_DIV ], NULL );
     zdj_add_subview( state->normal_view, divider );
     divider->frame.h = 1;
     divider->frame.y = 3;
-    divider->frame.w = view->frame.w - title_label_norm->frame.w - data_label_norm->frame.w - 12;
+    divider->frame.w = view->frame.w - title_label_norm->frame.w - data_label_norm->frame.w - 4;
     divider->frame.x = title_label_norm->frame.x + title_label_norm->frame.w + 2;
 
     // Setup hilite view
@@ -118,7 +118,7 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     // Pin title label to the left edge + margin
     zdj_view_t * title_label_hi = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_label_hi );
-    title_label_hi->frame.x = 6;
+    title_label_hi->frame.x = 1;
     title_label_hi->frame.y = -1;
 
     // Get value from data instance
@@ -128,15 +128,15 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     data_label_hi->frame.y = -1;
 
     // Add dots
-    zdj_view_t * divider_hi = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MID_H_DIV_HI ], NULL );
+    zdj_view_t * divider_hi = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WIDE_H_DIV_HI ], NULL );
     zdj_add_subview( state->hilite_view, divider_hi );
     divider_hi->frame.h = 1;
     divider_hi->frame.y = 3;
-    divider_hi->frame.w = view->frame.w - title_label_hi->frame.w - data_label_hi->frame.w - 12;
+    divider_hi->frame.w = view->frame.w - title_label_hi->frame.w - data_label_hi->frame.w - 4;
     divider_hi->frame.x = title_label_hi->frame.x + title_label_hi->frame.w + 2;
 
     // Adjust hilite frame based on ticker's frame
-    hilite_bg->frame.w = view->frame.w - 5;
+    hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.x = view->frame.w - hilite_bg->frame.w;
     hilite_bg->frame.h = view->frame.h;
     

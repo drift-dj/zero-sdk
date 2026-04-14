@@ -35,6 +35,7 @@ typedef struct {
     zdj_deck_t * deck;
     zdj_pipeline_node_t * decode_node;
     double zoom_val;
+    float draw_y;
 } zdj_loop_view_state_t;
 
 zdj_view_t * zdj_new_loop_view( 

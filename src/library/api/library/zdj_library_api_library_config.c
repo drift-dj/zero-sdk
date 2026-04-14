@@ -63,6 +63,13 @@ char * zdj_library_config_get_current_library_id( void ) {
     }
 }
 
+void zdj_library_config_put_current_library_id( char * dest ) {
+    zdj_library_config_t * cfg = zdj_library_get_config( );
+    if( cfg ) {
+        strcpy( dest, cfg->current_lib_entity_id );
+    }
+}
+
 zdj_health_status_t zdj_library_config_set_current_library_id( char * entity_id ) {
     printf( "zdj_library_config_set_current_library_id\n" );
     zdj_library_config_t * cfg = zdj_library_get_config( );

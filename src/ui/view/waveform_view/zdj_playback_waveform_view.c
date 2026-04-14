@@ -77,8 +77,6 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_waveform_view_state_t * view_state = (zdj_waveform_view_state_t*)view->state;
     zdj_waveform_state_t * waveform_node_state = (zdj_waveform_state_t*)view_state->waveform_node->state;
 
-    // boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_DK_GRAY );
-
     view_state->waveform_node->update_wait( view_state->waveform_node );
     // Render the thumbnail points into the texture
 

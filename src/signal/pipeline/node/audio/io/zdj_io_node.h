@@ -27,13 +27,13 @@
 #include <zerodj/system/m7/zdj_m7.h>
 
 typedef struct {
-    zdj_shared_audio_state_t * shared_audio_state;
+    volatile zdj_shared_audio_state_t * shared_audio_state;
     volatile int32_t * shared_dac_buffer;
     volatile int32_t * shared_adc_buffer;
-    zdj_pipeline_node_t * out_1_buffer;
-    zdj_pipeline_node_t * out_2_buffer;
-    zdj_pipeline_node_t * in_1_buffer;
-    zdj_pipeline_node_t * in_2_buffer;
+    volatile zdj_pipeline_node_t * out_1_buffer;
+    volatile zdj_pipeline_node_t * out_2_buffer;
+    volatile zdj_pipeline_node_t * in_1_buffer;
+    volatile zdj_pipeline_node_t * in_2_buffer;
     bool running;
 } zdj_io_analog_node_state_t;
 

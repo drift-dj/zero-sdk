@@ -31,7 +31,7 @@ typedef struct {
     int sample_count;
     double rate;
     bool has_rate_update;
-    float * out_buffer;
+    volatile float * out_buffer;
 
     RubberBandState rb;
     // float **rb_in_ptrs; // Array of 2 [float] pointers containing input de-interleaved stereo PCM data

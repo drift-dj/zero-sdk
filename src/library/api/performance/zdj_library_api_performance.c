@@ -60,6 +60,8 @@ zdj_library_performance_t * zdj_library_fetch_current_performance_dto_for_song(
 
             char * cuepoints_links_table = (char*)sqlite3_column_text ( stmt, _cl_col );
             strcpy( performance->cuepoints_links_table, cuepoints_links_table );
+            performance->cuepoint_count = 0;
+            
         }
         sqlite3_finalize( stmt );
     }

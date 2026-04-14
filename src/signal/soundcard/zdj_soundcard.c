@@ -69,6 +69,10 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     soundcard->clock_deck = zdj_deck_manager_add_deck( ZDJ_DECK_TYPE_XPORT, ZDJ_DECK_STATION_XPORT, NULL, 0 );
     zdj_soundcard_init_clock_deck( soundcard );
 
+    // Bring up USB admin thread
+    // zdj_soundcard_launch_usb_admin_thread( );
+
+
     // Start the transport pipeline
     zdj_soundcard_start( soundcard );
 

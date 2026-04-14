@@ -114,7 +114,7 @@ zdj_error_type_t zdj_library_query_songs_in_genre(
     snprintf( _sql, sizeof( _sql ), 
         "SELECT * from Song_Entity\n"
         "INNER JOIN Catalog_Data_Entity ON Song_Entity.catalog_data_entity_id = Catalog_Data_Entity.entity_id\n"
-        "WHERE Song_Entity.entity_id IN (select entity_id from Song_Links_%s) AND artist like '%s'\n",
+        "WHERE Song_Entity.entity_id IN (select entity_id from Song_Links_%s) AND genre like '%s'\n",
         library_entity_id,
         genre
     );

@@ -61,14 +61,16 @@ void _zdj_live_waveform_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     SDL_SetRenderTarget(zdj_renderer( ), waveform_tex);
 
     for( int i=0; i<waveform_state->point_count-1; i++ ) {
-        aalineColor( 
-            zdj_renderer( ), 
-            i*2, 
-            (waveform_state->render_buf[ i ] * (view->frame.h/2)) + (view->frame.h/2),
-            i*2+1,
-            (waveform_state->render_buf[ i+1 ] * (view->frame.h/2)) + (view->frame.h/2),
-            ZDJ_WHITE
-        );
+        if( fabs(waveform_state->render_buf[ i ]) > 0.01 ) {
+            aalineColor( 
+                zdj_renderer( ), 
+                i*2, 
+                (waveform_state->render_buf[ i ] * (view->frame.h/2)) + (view->frame.h/2),
+                i*2+1,
+                (waveform_state->render_buf[ i+1 ] * (view->frame.h/2)) + (view->frame.h/2),
+                ZDJ_WHITE
+            );
+        }
     }
 
     // Release the renderer

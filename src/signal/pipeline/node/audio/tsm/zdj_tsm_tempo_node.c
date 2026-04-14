@@ -81,13 +81,17 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         // printf( "sample offset: %d - %1.1f\n", sample_offset, state->decode_coord );
         if( sample_offset < 0 ) { printf( "TSM Missed %d decode samples\n", sample_offset * -1 ); sample_offset = 0; }
 
+        // Make some input buffers to feed to RB
+        float * l_rb_in = calloc( ZDJ_SOUNDCARD_BUF_LEN, sizeof( float ) );
+        float * r_rb_in = calloc( ZDJ_SOUNDCARD_BUF_LEN, sizeof( float ) );
+        // De-interleave samples from the dcod buf
         
         if (available < (ZDJ_SOUNDCARD_BUF_LEN - done) || reqd > 0) {
             
-            // Make some input buffers to feed to RB
-            float l_rb_in[ ZDJ_SOUNDCARD_BUF_LEN ] = { 0 };
-            float r_rb_in[ ZDJ_SOUNDCARD_BUF_LEN ] = { 0 };
-            // De-interleave samples from the dcod buf
+            // // Make some input buffers to feed to RB
+            // float l_rb_in[ ZDJ_SOUNDCARD_BUF_LEN ] = { 0 };
+            // float r_rb_in[ ZDJ_SOUNDCARD_BUF_LEN ] = { 0 };
+            // // De-interleave samples from the dcod buf
 
             // double a_start = zdj_perf_time( );
             for (int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; ++i) {
@@ -104,6 +108,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
             // printf( "t:%1.3f\n", (a_end - a_start) / 1000000.0 );
             
             // Process the input samples
+            // const float * rb_in_channels[ 2 ] = { l_rb_in, r_rb_in }; 
             const float * rb_in_channels[ 2 ] = { l_rb_in, r_rb_in }; 
 
             // a_start = zdj_perf_time( );
@@ -113,7 +118,8 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
             // a_end = zdj_perf_time( );
         }
 
-        
+        free( l_rb_in );
+        free( r_rb_in );
 
         int count = rubberband_available( state->rb );
 
@@ -141,6 +147,9 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
             if( state->channel_count == 2 ) { state->out_buffer[ out_buf_index+1 ] = rb_out_channels[1][q]; }
         }
         done += len;
+
+        free( l_rb_out );
+        free( r_rb_out );
 
         // b_end = zdj_perf_time( );
 

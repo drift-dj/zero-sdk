@@ -87,7 +87,7 @@ void zdj_control_prepare_hmi_input_scan( void ) {
 // Scan HMI encoders in the background
 // void * hmi_input_scan_thread_main( void * arg ) {
 void zdj_control_scan_hmi_input( void ) {
-    struct timespec settle_sleep = { 0, 1 }; // ~100 µsec
+    struct timespec settle_sleep = { 0, 100 }; // ~100 µsec
 
     write( a0_fd, "0", 1 );
     write( a1_fd, "0", 1 );
@@ -104,8 +104,12 @@ void zdj_control_scan_hmi_input( void ) {
 
     enco_5_t3->cursam = (a_val[0]-48) * 2 + (b_val[0]-48);
     enco_5_t3->upval += quad_mat[ enco_5_t3->presam * 4 + enco_5_t3->cursam ];
+    // if( enco_5_t3->upval != 0 ) { 
+    //     printf( "t3 %d %d %d\n", enco_5_t3->cursam, enco_5_t3->upval,enco_5_t3->presam ); 
+    // }
     enco_5_t3->presam = enco_5_t3->cursam;
     zdj_hmi_m7_state_model->tone_3_pb_state = !(sw_val[0]-48);
+    
 
     // Address 1 - 001
     write( a0_fd, "1", 1 );
@@ -113,6 +117,7 @@ void zdj_control_scan_hmi_input( void ) {
     write( a2_fd, "0", 1 );
 
     // Sleep while GPIO settles
+    settle_sleep.tv_nsec = 100;
     nanosleep( &settle_sleep, NULL );
 
     lseek(a_fd, 0, SEEK_SET);
@@ -126,6 +131,7 @@ void zdj_control_scan_hmi_input( void ) {
     enco_2_jog->upval += quad_mat[ enco_2_jog->presam * 4 + enco_2_jog->cursam ];
     enco_2_jog->presam = enco_2_jog->cursam;
     zdj_hmi_m7_state_model->jog_pb_state = !(sw_val[0]-48);
+    // if( enco_2_jog->upval != 0 ) { printf( "jog\n" ); }
 
     // Address 2 - 010
     write( a0_fd, "0", 1 );
@@ -133,6 +139,7 @@ void zdj_control_scan_hmi_input( void ) {
     write( a2_fd, "0", 1 );
 
     // Sleep while GPIO settles
+    settle_sleep.tv_nsec = 100;
     nanosleep( &settle_sleep, NULL );
 
     lseek(a_fd, 0, SEEK_SET);
@@ -144,9 +151,12 @@ void zdj_control_scan_hmi_input( void ) {
 
     enco_1_vol->cursam = (a_val[0]-48) * 2 + (b_val[0]-48);
     enco_1_vol->upval += quad_mat[ enco_1_vol->presam * 4 + enco_1_vol->cursam ];
+    // if( enco_1_vol->upval != 0 ) { 
+    //     printf( "vol %d %d %d\n", enco_1_vol->cursam, enco_1_vol->upval, enco_1_vol->presam ); 
+    // }
     enco_1_vol->presam = enco_1_vol->cursam;
     zdj_hmi_m7_state_model->out_pb_state = !(sw_val[0]-48);
-
+    
 
     // Address 3 - 011
     write( a0_fd, "1", 1 );
@@ -154,6 +164,7 @@ void zdj_control_scan_hmi_input( void ) {
     write( a2_fd, "0", 1 );
 
     // Sleep while GPIO settles
+    settle_sleep.tv_nsec = 100;
     nanosleep( &settle_sleep, NULL );
 
     lseek(a_fd, 0, SEEK_SET);
@@ -174,6 +185,7 @@ void zdj_control_scan_hmi_input( void ) {
     write( a2_fd, "1", 1 );
 
     // Sleep while GPIO settles
+    settle_sleep.tv_nsec = 100;
     nanosleep( &settle_sleep, NULL );
 
     lseek(a_fd, 0, SEEK_SET);
@@ -185,8 +197,12 @@ void zdj_control_scan_hmi_input( void ) {
 
     enco_3_t1->cursam = (a_val[0]-48) * 2 + (b_val[0]-48);
     enco_3_t1->upval += quad_mat[ enco_3_t1->presam * 4 + enco_3_t1->cursam ];
+    // if( enco_3_t1->upval != 0 ) { 
+    //     printf( "t1 %d %d %d\n", enco_3_t1->cursam, enco_3_t1->upval, enco_3_t1->presam ); 
+    // }
     enco_3_t1->presam = enco_3_t1->cursam;
     zdj_hmi_m7_state_model->tone_1_pb_state = !(sw_val[0]-48);
+    
 
 
     // Address 6 - 110
@@ -195,6 +211,7 @@ void zdj_control_scan_hmi_input( void ) {
     write( a2_fd, "1", 1 );
 
     // Sleep while GPIO settles
+    settle_sleep.tv_nsec = 100;
     nanosleep( &settle_sleep, NULL );
 
     lseek(a_fd, 0, SEEK_SET);
@@ -206,8 +223,12 @@ void zdj_control_scan_hmi_input( void ) {
 
     enco_4_t2->cursam = (a_val[0]-48) * 2 + (b_val[0]-48);
     enco_4_t2->upval += quad_mat[ enco_4_t2->presam * 4 + enco_4_t2->cursam ];
+    // if( enco_4_t2->upval != 0 ) { 
+    //     printf( "t2 %d %d %d\n", enco_4_t2->cursam, enco_4_t2->upval, enco_4_t2->presam ); 
+    // }
     enco_4_t2->presam = enco_4_t2->cursam;
     zdj_hmi_m7_state_model->tone_2_pb_state = !(sw_val[0]-48);
+    
 
     // Address 7 - 111
     write( a0_fd, "1", 1 );
@@ -215,6 +236,7 @@ void zdj_control_scan_hmi_input( void ) {
     write( a2_fd, "1", 1 );
 
     // Sleep while GPIO settles
+    settle_sleep.tv_nsec = 100;
     nanosleep( &settle_sleep, NULL );
 
     lseek(a_fd, 0, SEEK_SET);

@@ -185,17 +185,17 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // Out Vol //
     /////////////  
 
-    case ZDJ_DECK_CONTROL_LR_VOL:
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
-        node->dsp_dto->adjust_gain( node, event->i_val );
-        event->blocked = true;
-        break;
+    // case ZDJ_DECK_CONTROL_LR_VOL:
+    //     node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
+    //     node->dsp_dto->adjust_gain( node, event->i_val );
+    //     event->blocked = true;
+    //     break;
 
-    case ZDJ_DECK_CONTROL_CUE_VOL:
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
-        node->dsp_dto->adjust_gain( node, event->i_val );
-        event->blocked = true;
-        break;
+    // case ZDJ_DECK_CONTROL_CUE_VOL:
+    //     node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
+    //     node->dsp_dto->adjust_gain( node, event->i_val );
+    //     event->blocked = true;
+    //     break;
 
 
     //////////////////
@@ -280,28 +280,58 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
         break;
 
     case ZDJ_DECK_EXT_CONTROL_FILTER_0:
-        // printf( "ext deck filter\n" );
+        // printf( "deck filter 0\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        dsp_dto = node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { 
+            dsp_stage->adjust_knob( dsp_stage, 0, event->i_val ); 
+        }
+        break;
+    
+    case ZDJ_DECK_EXT_CONTROL_FILTER_2:
+        // printf( "dj deck filter 2\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        dsp_dto = node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 2, event->i_val ); }
         break;
 
+    case ZDJ_DECK_EXT_CONTROL_FILTER_RESET:
+        // printf( "dj deck filter reset\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        dsp_dto = node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->set_knob( dsp_stage, 0, 0.0 ); }
+        break;
 
     ///////////////////////
     // Fade / Trim / Cue //
     ///////////////////////  
 
     case ZDJ_DECK_CONTROL_XFADE:
-        printf( "ext deck xfad\n" );
+        // printf( "ext deck xfad\n" );
         break;
     
     case ZDJ_DECK_EXT_CONTROL_TRIM:
-        printf( "ext deck trim\n" );
+        // printf( "ext deck trim\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        node->dsp_dto->adjust_gain( node, event->i_val );
+        event->blocked = true;
         break;
 
     case ZDJ_DECK_EXT_CONTROL_PFL_TRIM:
-        printf( "ext deck pfl trim\n" );
+        // printf( "ext deck pfl trim\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+        node->dsp_dto->adjust_gain( node, event->i_val );
+        event->blocked = true;
         break;
     
     case ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE:
-        printf( "ext deck pfl mute\n" );
+        // printf( "ext deck pfl mute\n" );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+        node->dsp_dto->toggle_mute( node );
+        event->blocked = true;
         break;
 
 
@@ -310,9 +340,15 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     //////////  
 
     case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
+        if( zdj_deck_manager( )->sync.preferred ) {
+            zdj_deck_manager_set_prefer_sync( false );
+        } else {
+            zdj_deck_manager_set_prefer_sync( true );
+        }
         break;
 
     case ZDJ_DECK_EXT_CONTROL_SYNC_MULT:
+        // if( deck->can_sync ) { request_sync_mult( event->i_val ); }
         break;
 
 

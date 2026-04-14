@@ -20,7 +20,11 @@ zdj_view_t * zdj_new_label_view(
 ) {
     // Build the label_view state instance
     zdj_label_state_t * label_state = calloc( 1, sizeof( zdj_label_state_t ) );
-    strcpy( label_state->str, str );
+    if( strlen( str ) > 0 ) {
+        strcpy( label_state->str, str );
+    } else {
+        strcpy( label_state->str, " " );
+    }
     label_state->justify = justify;
 
     // Build type texture

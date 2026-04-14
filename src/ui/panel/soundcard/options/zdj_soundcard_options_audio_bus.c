@@ -237,7 +237,7 @@ static void _handle_stereo( zdj_view_t * view, zdj_control_event_t * _event ) {
         // telling the user that all linkage will be removed
         // Launch drop lib confirm dialog
         zdj_view_t * dialog = zdj_new_dialog_view( 
-            ZDJ_DIALOG_VIEW_TYPE_OKAY,
+            ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL,
             "Confirm",
             "This will unlink all signals",
             "from this channel"

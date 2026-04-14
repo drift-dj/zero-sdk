@@ -27,9 +27,11 @@ zdj_view_t * zdj_new_file_browser_view(
     char * path,
     bool read_only,
     bool allow_nav,
-    zdj_file_browser_select_type_t select_type,
-    char * select_dir_title
+    zdj_file_browser_type_t type,
+    char * select_dir_title,
+    bool show_hidden
 ) {
+    // printf( "zdj_new_file_browser_view\n" );
     // Check path and fail before we do anything
     if( access( path, F_OK ) != 0 ) { return NULL; }
 
@@ -50,9 +52,10 @@ zdj_view_t * zdj_new_file_browser_view(
     strcpy( state->path, path );
     state->read_only = read_only;
     state->allow_nav = allow_nav;
-    state->select_type = select_type;
+    state->type = type;
     state->usb_host_counter = 0;
-    strcpy( state->select_dir_title, select_dir_title );
+    state->show_hidden = show_hidden;
+    if( select_dir_title ){ strcpy( state->select_dir_title, select_dir_title ); }
     browser_view->state = state;
 
     // Add header view
@@ -60,16 +63,16 @@ zdj_view_t * zdj_new_file_browser_view(
         "Browser",
         path,
         ZDJ_MENU_HEADER_STYLE_NORMAL,
-        ZDJ_MENU_HEADER_BACK_STYLE_CANCEL
+        ZDJ_MENU_HEADER_BACK_STYLE_BACK
     );
     state->header_view = header;
-    zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)header->state;
-    zdj_add_subview( browser_view, header );
+    header->frame.y = 0;
     header->frame.w = browser_view->frame.w;
-    header->frame.h = 7;
+    header->frame.h = 5;
+    zdj_add_subview( browser_view, header );
 
     // Add the menu container view
-    zdj_rect_t container_frame = { 0, 3, frame->w, frame->h };
+    zdj_rect_t container_frame = { 0, 5, frame->w, frame->h };
     zdj_view_t * menu_container = zdj_new_view( &container_frame );
     state->menu_container = menu_container;
     zdj_add_subview( browser_view, menu_container );
@@ -81,42 +84,56 @@ zdj_view_t * zdj_new_file_browser_view(
         state->path, 
         state->select_dir_title
     );
-    zdj_push_subview( menu_container, menu, false );
+    if( menu ) { zdj_push_subview( menu_container, menu, false ); }
+
+    // printf( "zdj_new_file_browser_view done\n" );
 
     return browser_view;
 }
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // printf( "browser _draw\n" );
     zdj_file_browser_view_state_t * state = (zdj_file_browser_view_state_t*)view->state;
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
 
-    if( zdj_usb_status->mode == ZDJ_USB_MODE_HOST ) {
-        state->usb_host_counter++;
-        state->usb_host_counter %= 100;
+    // if( zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST ) {
+    //     state->usb_host_counter++;
+    //     state->usb_host_counter %= 100;
 
-        // if( state->usb_host_counter == 0 ) { printf( "file browser host-mode check\n" ); }
+    //     // if( state->usb_host_counter == 0 ) { printf( "file browser host-mode check\n" ); }
 
-        // Check for attach/detach of USB drive
-        if ( state->usb_host_counter == 0 && zdj_usb_host_has_devices_update( ) ) {
-            // If we're looking at the devices menu, refresh the menu
-            if( state->is_device_menu ) {
-                // printf( "file browser host-mode device update\n" );
-                // state.menu_stack->top_subview().needs_refresh = true
+    //     // Check for attach/detach of USB drive
+    //     // if ( state->usb_host_counter == 0 && zdj_usb_host_has_devices_update( ) ) {
+    //     if ( state->usb_host_counter == 0 && zdj_usb_state->host_state.has_file_browser_update ) {
+    //         // If we're looking at the devices menu, refresh the menu
+    //         if( state->is_device_menu ) {
+    //             // printf( "file browser host-mode device update\n" );
+    //             // state.menu_stack->top_subview().needs_refresh = true
 
-            // If we're looking at a file menu,
-            } else {
-                // if we're inside an external drive, and the drive is no longer available,
-                // if( zdj_fs_path_is_external( xxx ) && !access( path ) ) {
-                // Assume -the drive has been detached, force the browser modal to close.
-                // }
-            }
+    //         // If we're looking at a file menu,
+    //         } else {
+    //             // if we're inside an external drive, and the drive is no longer available,
+    //             // if( zdj_fs_path_is_external( xxx ) && !access( path ) ) {
+    //             // Assume -the drive has been detached, force the browser modal to close.
+    //             // }
+    //         }
 
-        }
+    //     }
+    // }
+    // Update the devices menu when the set of attached devices changes
+    if( state->is_device_menu &&
+        zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
+        zdj_usb_state->host_state.has_file_browser_update 
+    ) {
+        zdj_usb_state->host_state.has_file_browser_update = false;
+        zdj_refresh_device_browser_menu( view, state->devices_menu );
     }
+    // printf( "browser _draw done\n" );
 }
 
 // Pass appropriate hmi events down into the top menu_view
 static void _handle_control( zdj_view_t * browser, zdj_control_event_t * _event ) {
+    // printf( "browser _handle_control\n" );
     zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_file_browser_view_state_t * browser_state = (zdj_file_browser_view_state_t *)browser->state;
     zdj_view_t * header_view = browser_state->header_view;
@@ -165,6 +182,8 @@ static void _handle_control( zdj_view_t * browser, zdj_control_event_t * _event 
 
     // Prevent views/menus below this one from getting jog wheel events
     e->blocked = true;
+
+    // printf( "browser _handle_control done\n" );
 }
 
 static void _deinit_state( zdj_view_t * view ) {
@@ -193,14 +212,13 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
                 zdj_view_t * current_menu = zdj_view_stack_top_subview_of( browser_state->menu_container );
                 if( !current_menu->prev ) { // cur menu has no previous menu
                     if( !strcmp( "/media", item_state->link ) ) {
-                        if( zdj_usb_status->mode == ZDJ_USB_MODE_HOST ) {
-                            // Make a new device menu
-                            zdj_view_t * new_menu = zdj_new_device_browser_menu( browser, &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10} );
-                            // Insert it behind the current menu
-                            zdj_push_subview_behind( browser_state->menu_container, current_menu, new_menu, true );
-                            // Set device menu to true so we track device attach/detach
-                            browser_state->is_device_menu = true;
-                        }
+                        // Make a new device menu
+                        browser_state->devices_menu = zdj_new_device_browser_menu( browser, &(zdj_rect_t){0, 10, browser->frame.w, browser->frame.h-10} );
+                        // Insert it behind the current menu
+                        zdj_push_subview_behind( browser_state->menu_container, current_menu, browser_state->devices_menu, true );
+                        
+                        // Set device menu to true so we track device attach/detach
+                        browser_state->is_device_menu = true;
                     } else {
                         printf( "browser dir_back: %s\n", item_state->link );
                         // Make a new file menu

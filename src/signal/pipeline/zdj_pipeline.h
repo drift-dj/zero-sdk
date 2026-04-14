@@ -119,9 +119,6 @@ typedef struct zdj_pipeline_node_t {
     void ( *deinit_state )( struct zdj_pipeline_node_t * );
 
     zdj_pipeline_window_state_t * window_state;
-    // zdj_error_type_t ( *move_window )( struct zdj_pipeline_node_t *, int );
-    // zdj_error_type_t ( *reset_window )( struct zdj_pipeline_node_t *, uint32_t );
-    // zdj_error_type_t ( *resize_window )( struct zdj_pipeline_node_t *, uint32_t, uint32_t );
     zdj_error_type_t ( *move_window )( struct zdj_pipeline_node_t *, double );
     zdj_error_type_t ( *reset_window )( struct zdj_pipeline_node_t *, double );
     zdj_error_type_t ( *resize_window )( struct zdj_pipeline_node_t *, double, uint32_t );
@@ -131,16 +128,12 @@ typedef struct zdj_pipeline_node_t {
     // Push funcs - Used when front-end code tells pipeline when to process data.
     // e.g. FX processor
     void ( *update_wait )( struct zdj_pipeline_node_t * );
-    // void ( *update_async )( struct zdj_pipeline_node_t * );
 
     // Pull callback - Used when internal system tells front-end when pipeline has new data to process 
     // e.g. analog io node - updates are triggered within M7 core
     void ( *update_cb )( struct zdj_pipeline_node_t * );
 
     pthread_t * thread;
-
-    // sem_t * async_wait;
-    // sem_t * async_ready;
 
     zdj_error_type_t ( *open )( struct zdj_pipeline_node_t * );
     zdj_error_type_t ( *close )( struct zdj_pipeline_node_t * );

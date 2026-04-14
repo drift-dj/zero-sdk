@@ -72,13 +72,17 @@ add_library(zerodj
     src/signal/soundcard/db/zdj_soundcard_db.c
     src/signal/soundcard/db/zdj_soundcard_dto.c
     src/signal/soundcard/dsp/zdj_soundcard_dsp_gain_pan.c
+    src/signal/soundcard/dsp/zdj_soundcard_dsp_delay.c
     src/signal/soundcard/dsp/zdj_soundcard_dsp_eq.c
+    src/signal/soundcard/dsp/zdj_soundcard_dsp_filt.c
     src/signal/soundcard/dsp/zdj_soundcard_dsp_knob.c
+    src/system/battery/zdj_battery.c
     src/system/boot/zdj_boot.c
     src/system/debug/zdj_debug.c
     src/system/display/zdj_display.c
     src/system/error/zdj_error.c
     src/system/fs/zdj_fs.c
+    src/system/hash/zdj_hash.c
     src/system/m7/zdj_m7.c
     src/system/installer/zdj_installer.c
     src/system/perf/zdj_perf.c
@@ -89,9 +93,10 @@ add_library(zerodj
     src/system/thread/zdj_thread.c
     src/system/sql/zdj_sql.c
     src/system/usb/zdj_usb.c
-    src/system/usb/zdj_usb_device.c
-    src/system/usb/zdj_usb_msd_device.c
-    src/system/usb/zdj_usb_poll.c
+    src/system/usb/zdj_usb_device_audio.c
+    src/system/usb/zdj_usb_device_db.c
+    src/system/usb/zdj_usb_thread.c
+    src/system/util/zdj_util.c
     src/system/uuid/zdj_uuid.c
     src/system/xml/zdj_xml.c
     src/system/xml/zdj_xml_menu.c
@@ -105,12 +110,18 @@ add_library(zerodj
     src/ui/anim/zdj_anim_menu.c
     src/ui/anim/zdj_anim_menu_stack.c
     src/ui/anim/zdj_anim_modal.c
+    src/ui/anim/zdj_anim_panel.c
     src/ui/anim/zdj_anim_record_panel.c
     src/ui/anim/zdj_anim_view.c
     src/ui/anim/zdj_anim_volume_panel.c
+    src/ui/anim/zdj_anim_widget.c
     src/ui/asset/zdj_ui_asset.c
     src/ui/font/zdj_font.c
+    src/ui/image_viewer/zdj_image_viewer.c
     src/ui/panel/assist/zdj_assist_panel.c
+    src/ui/panel/browser/zdj_browser_panel.c
+    src/ui/panel/browser/zdj_browser_devices_menu.c
+    src/ui/panel/browser/zdj_browser_file_menu.c
     src/ui/panel/debug/zdj_debug_panel.c
     src/ui/panel/recording/zdj_recording_panel.c
     src/ui/panel/soundcard/zdj_soundcard_panel.c
@@ -133,22 +144,31 @@ add_library(zerodj
     src/ui/panel/soundcard/options/zdj_soundcard_options_port_output.c
     src/ui/panel/soundcard/options/zdj_soundcard_options_record_bus.c
     src/ui/panel/soundcard/select_node/zdj_soundcard_select_node.c
-    src/ui/panel/widget_controls/zdj_widget_controls_panel.c
+    src/ui/panel/settings/zdj_settings_panel.c
+    src/ui/panel/settings/developer/zdj_settings_developer_panel.c
+    src/ui/panel/settings/software/zdj_settings_app_panel.c
+    src/ui/panel/settings/software/zdj_settings_installer_panel.c
+    src/ui/panel/settings/software/zdj_settings_os_install_view.c
+    src/ui/panel/settings/software/zdj_settings_os_panel.c
+    src/ui/panel/settings/software/zdj_settings_software_panel.c
+    src/ui/panel/usb/zdj_usb_panel.c
+    src/ui/panel/settings/ui/zdj_settings_ui_panel.c
     src/ui/panel/zdj_ui_panel.c
     src/ui/view/zdj_view_stack.c
     src/ui/view/asset_view/zdj_asset_view.c
+    src/ui/view/battery_icon_view/zdj_battery_icon_view.c
     src/ui/view/beatgrid_view/zdj_beatgrid_view.c
     src/ui/view/beatgrid_view/zdj_edit_beatgrid_view.c
     src/ui/view/beatgrid_view/zdj_playback_beatgrid_view.c
     src/ui/view/beatgrid_view/zdj_xport_beatgrid_view.c
     src/ui/view/cuepoint_view/zdj_cuepoint_view.c
     src/ui/view/debug_view/zdj_debug_view.c
-    src/ui/view/device_settings_menu_view/zdj_device_settings_menu_view.c
     src/ui/view/dialog_view/zdj_dialog_view.c
     src/ui/view/file_browser_view/zdj_file_browser_view.c
     src/ui/view/file_browser_view/zdj_file_browser_devices_menu.c
     src/ui/view/file_browser_view/zdj_file_browser_file_menu.c
     src/ui/view/flag_view/zdj_flag_view.c
+    src/ui/view/knob_view/zdj_knob_view.c
     src/ui/view/label_view/zdj_label_view.c
     src/ui/view/log_view/zdj_log_view.c
     src/ui/view/loop_view/zdj_loop_view.c
@@ -158,6 +178,7 @@ add_library(zerodj
     src/ui/view/menu_item_view/zdj_menu_item_view.c
     src/ui/view/menu_item_view/zdj_menu_item_view_asset.c
     src/ui/view/menu_item_view/zdj_menu_item_view_basic.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_browser_device.c
     src/ui/view/menu_item_view/zdj_menu_item_view_cuepoint.c
     src/ui/view/menu_item_view/zdj_menu_item_view_data.c
     src/ui/view/menu_item_view/zdj_menu_item_view_dir.c
@@ -168,30 +189,14 @@ add_library(zerodj
     src/ui/view/menu_item_view/zdj_menu_item_view_slider.c
     src/ui/view/menu_item_view/zdj_menu_item_view_song.c
     src/ui/view/menu_item_view/zdj_menu_item_view_toggle.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_usb.c
     src/ui/view/menu_section_view/zdj_menu_section_view.c
     src/ui/view/menu_stack/zdj_menu_stack.c
     src/ui/view/modal_view/zdj_modal_view.c
+    src/ui/view/nudge_view/zdj_nudge_view.c
     src/ui/view/progress_bar_view/zdj_progress_bar_view.c
     src/ui/view/scope_view/zdj_scope_view.c
     src/ui/view/scroll_view/zdj_scroll_view.c
-    # src/ui/view/soundcard_view/zdj_soundcard_view.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_meter.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_audio_meter.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_clock_meter.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_cv_meter.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_midi_meter.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_record_meter.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_record_mini_meter.c
-    # src/ui/view/soundcard_view/meters/zdj_soundcard_usb_meter.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options_annot_bus.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options_audio_bus.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options_cv.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options_clock.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options_port_input.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options_port_output.c
-    # src/ui/view/soundcard_view/options/zdj_soundcard_options_record_bus.c
-    # src/ui/view/soundcard_view/select_node/zdj_soundcard_select_node.c
     src/ui/view/text_input_view/zdj_text_input_view.c
     src/ui/view/text_input_view/buffer/zdj_text_input_buffer_view.c
     src/ui/view/text_input_view/keyboard/zdj_text_input_keyboard_view.c
@@ -200,15 +205,15 @@ add_library(zerodj
     src/ui/view/ticker_view/zdj_ticker_view.c
     src/ui/view/usb_drive_view/zdj_usb_drive_view.c
     src/ui/view/usb_status_view/zdj_usb_status_view.c
-    src/ui/view/usb_status_view/zdj_usb_status_view_device.c
-    src/ui/view/usb_status_view/zdj_usb_status_view_host.c
-    src/ui/view/usb_status_view/zdj_usb_status_view_offline.c
-    src/ui/view/usb_status_view/zdj_usb_status_view_reboot.c
     src/ui/view/waveform_view/zdj_live_waveform_view.c
     src/ui/view/waveform_view/zdj_playback_waveform_view.c
     src/ui/view/waveform_view/zdj_thumb_waveform_view.c
     src/ui/view/zoom_status_view/zdj_zoom_status_view.c
     src/ui/widget/zdj_ui_widget.c
+    src/ui/widget/debug/zdj_debug_widget.c
+    src/ui/widget/notify/zdj_notify_widget.c
+    src/ui/widget/perf/zdj_perf_widget.c
+    src/ui/widget/recording/zdj_recording_widget.c
     src/ui/widget/volume/zdj_volume_widget.c
 )
 
@@ -265,6 +270,7 @@ target_link_libraries(
     mpg123
     mhash
     rubberband
+    fdt
 )
 
 # add_custom_command(

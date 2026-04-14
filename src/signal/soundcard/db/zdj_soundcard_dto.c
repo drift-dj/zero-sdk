@@ -486,12 +486,13 @@ void zdj_soundcard_put_dsp_state_for_dto( zdj_soundcard_dsp_dto_t * dto ) {
 
     // Fill in state for all DSP stages
     for( int i=0; i<8; i++ ) {
-        dto->stages[ i ].adjust_knob = zdj_soundcard_dsp_eq_adjust_knob;
+        // dto->stages[ i ].adjust_knob = zdj_soundcard_dsp_eq_adjust_knob;
         dto->stages[ i ].get_knob_display_val = zdj_soundcard_dsp_get_knob_display_val;
 
         switch ( dto->stages[ i ].id ) {
             case ZDJ_SOUNDCARD_DSP_ID_EQ_3_1P:
                 zdj_soundcard_dsp_eq_3_1p_init( &dto->stages[ i ] );
+                dto->stages[ i ].adjust_knob = zdj_soundcard_dsp_eq_adjust_knob;
                 dto->stages[ i ].fn = zdj_soundcard_dsp_eq_3_1p_update;
                 dto->stages[ i ].knob_0_model = ZDJ_SOUNDCARD_DSP_KNOB_12DB_GAIN_FAST; // Lo
                 dto->stages[ i ].knob_1_model = ZDJ_SOUNDCARD_DSP_KNOB_12DB_GAIN_FAST; // Mid
@@ -502,6 +503,7 @@ void zdj_soundcard_put_dsp_state_for_dto( zdj_soundcard_dsp_dto_t * dto ) {
                 break;
             case ZDJ_SOUNDCARD_DSP_ID_EQ_3_2P:
                 zdj_soundcard_dsp_eq_3_2p_init( &dto->stages[ i ] );
+                dto->stages[ i ].adjust_knob = zdj_soundcard_dsp_eq_adjust_knob;
                 dto->stages[ i ].fn = zdj_soundcard_dsp_eq_3_2p_update;
                 dto->stages[ i ].knob_0_model = ZDJ_SOUNDCARD_DSP_KNOB_12DB_GAIN_FAST; // Lo
                 dto->stages[ i ].knob_1_model = ZDJ_SOUNDCARD_DSP_KNOB_12DB_GAIN_FAST; // Mid
@@ -512,6 +514,7 @@ void zdj_soundcard_put_dsp_state_for_dto( zdj_soundcard_dsp_dto_t * dto ) {
                 break;
             case ZDJ_SOUNDCARD_DSP_ID_EQ_3_4P:
                 zdj_soundcard_dsp_eq_3_4p_init( &dto->stages[ i ] );
+                dto->stages[ i ].adjust_knob = zdj_soundcard_dsp_eq_adjust_knob;
                 dto->stages[ i ].fn = zdj_soundcard_dsp_eq_3_4p_update;
                 dto->stages[ i ].knob_0_model = ZDJ_SOUNDCARD_DSP_KNOB_12DB_GAIN_FAST; // Lo
                 dto->stages[ i ].knob_1_model = ZDJ_SOUNDCARD_DSP_KNOB_12DB_GAIN_FAST; // Mid
@@ -523,6 +526,14 @@ void zdj_soundcard_put_dsp_state_for_dto( zdj_soundcard_dsp_dto_t * dto ) {
             case ZDJ_SOUNDCARD_DSP_ID_XFADE_CURVE:
                 // Curve just holds contour setting -- all processing is done via gain in parent dsp_dto
                 dto->stages[ i ].knob_0_model = ZDJ_SOUNDCARD_DSP_KNOB_0_1_FAST; // Curve
+                break;
+            case ZDJ_SOUNDCARD_DSP_ID_FILT_BI:
+                zdj_soundcard_dsp_filt_bi_init( &dto->stages[ i ] );
+                dto->stages[ i ].adjust_knob = zdj_soundcard_dsp_filt_bi_adjust_knob;
+                dto->stages[ i ].set_knob = zdj_soundcard_dsp_filt_bi_set_knob;
+                dto->stages[ i ].fn = zdj_soundcard_dsp_filt_bi_update;
+                dto->stages[ i ].knob_0_model = ZDJ_SOUNDCARD_DSP_KNOB_NEG_POS_1_FAST;
+                dto->stages[ i ].knob_2_model = ZDJ_SOUNDCARD_DSP_KNOB_0_1_FAST;
                 break;
             case ZDJ_SOUNDCARD_DSP_ID_DYN_COMP:
             case ZDJ_SOUNDCARD_DSP_ID_DYN_TAPE_SAT:

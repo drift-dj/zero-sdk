@@ -23,6 +23,8 @@
 
 #include <zerodj/system/error/zdj_error.h>
 
+# define SIG_M_PI		3.14159265358979323846
+
 extern double zdj_eps;
 
 typedef struct {

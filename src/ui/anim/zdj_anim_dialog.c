@@ -7,9 +7,10 @@ void zdj_anim_init_dialog_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_
     anim->start_point.y = view->frame.y;
     anim->end_point.x = ZDJ_DIALOG_X;
     anim->end_point.y = ZDJ_DIALOG_Y;
+    anim->frames = zdj_anim_show_hide_frames( );
 
     // Delay the in anim by a few frames to let the old menu's out animation happen.
-    anim->frame = -12;
+    anim->frame = zdj_anim_show_predelay( );
     anim->alive = true;
 }
 
@@ -20,7 +21,7 @@ void zdj_anim_init_dialog_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_
     anim->end_point.y = ZDJ_SCREEN_H+1;
 
     // Delay the out anim by a few frames to give the button flash time to happen.
-    anim->frame = -5;
+    anim->frame = zdj_anim_hide_predelay( );
     anim->alive = true;
 }
 

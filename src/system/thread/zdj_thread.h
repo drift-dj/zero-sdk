@@ -67,6 +67,7 @@ zdj_error_type_t zdj_thread_launch_deck_station_1_cycle( zdj_thread_main main, v
 zdj_error_type_t zdj_thread_launch_deck_station_2_cycle( zdj_thread_main main, void * arg );
 zdj_error_type_t zdj_thread_launch_deck_station_ext_cycle( zdj_thread_main main, void * arg );
 
-zdj_error_type_t zdj_thread_launch_record_post_proc_cycle( zdj_thread_main main, void * arg );
+// zdj_error_type_t zdj_thread_launch_record_proc_cycle( zdj_thread_main main, void * arg );
+// zdj_error_type_t zdj_thread_launch_record_post_proc_cycle( zdj_thread_main main, void * arg );
 
 #endif

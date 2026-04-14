@@ -7,6 +7,7 @@
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
+#include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/panel/assist/zdj_assist_panel.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
@@ -27,7 +28,7 @@ zdj_view_t * zdj_new_assist_panel( void ) {
     view->map = ZDJ_CONTROL_MAP_ASSIST_PANEL;
 
     zdj_assist_panel_state_t * state = calloc( 1, sizeof( zdj_assist_panel_state_t ) );
-    state->view_needs_refresh = true;
+    state->needs_layout_update = true;
     view->state = state;
 
     // Make menu
@@ -50,6 +51,9 @@ zdj_view_t * zdj_new_assist_panel( void ) {
     header_state->handle_back = &_handle_back;
     zdj_menu_view_add_header( menu, menu_header );
     
+    state->overlay = zdj_ui_panel_new_overlay( "Assist" );
+    zdj_add_subview( view, state->overlay );
+
     return view;
 }
 
@@ -58,7 +62,10 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
 
-    if( state->view_needs_refresh ) { _refresh_menu( view ); }
+    if( state->overlay_counter > 0 ) { state->overlay->frame.x = 0; state->overlay_counter--; }
+    else { state->overlay->frame.x = 129; }
+
+    if( state->needs_layout_update ) { _refresh_menu( view ); }
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
@@ -67,7 +74,11 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
 
     // Send events down into the subview stack
     zdj_assist_panel_state_t * state = (zdj_assist_panel_state_t*)view->state;
-    state->menu->handle_control_event( state->menu, event );
+
+    // Send events down into the subview stack
+    if( state->event_target ) {
+        state->event_target->handle_control_event( state->event_target, event );
+    }
 
     event->blocked = true;
 }

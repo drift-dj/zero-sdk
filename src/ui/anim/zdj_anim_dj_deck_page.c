@@ -7,8 +7,8 @@ void zdj_anim_init_dj_deck_page_show( zdj_anim_t * anim, zdj_view_t * view, void
     anim->end_point.x = 0;
 
     // Delay the in anim by a few frames to let the old menu's out animation happen.
-    anim->frame = -5;
-    anim->frames = 12;
+    anim->frame = zdj_ui_msec_to_frames( 50 ) * -1;
+    anim->frames = zdj_ui_msec_to_frames( 120 );
     anim->alive = true;
 }
 
@@ -18,7 +18,7 @@ void zdj_anim_init_dj_deck_page_hide( zdj_anim_t * anim, zdj_view_t * view, void
 
     // Delay the out anim by a few frames to give the button flash time to happen.
     anim->frame = 0;
-    anim->frames = 7;
+    anim->frames = zdj_ui_msec_to_frames( 100 );
     anim->alive = true;
 }
 

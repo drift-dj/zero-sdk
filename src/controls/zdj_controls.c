@@ -4,6 +4,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/controls/hmi/zdj_hmi_input.h>
@@ -15,6 +16,8 @@
 
 zdj_control_active_state_t zdj_control_active_state;
 zdj_special_control_handler_t zdj_special_control_handlers[ 5 ];
+int zdj_control_cycle_counter;
+bool zdj_control_cycle_reset;
 
 // Increment and bound and return write head.
 int zdj_get_next_deck_event_ind( void ) {
@@ -39,6 +42,7 @@ volatile int zdj_ui_event_buf_read;
 zdj_error_type_t zdj_controls_init( void ) {
     zdj_control_hmi_input_init( );
     zdj_clear_controls( );
+    zdj_control_cycle_counter = 0;
     memset( &zdj_special_control_handlers, 0, sizeof( zdj_special_control_handler_t )*5 );
     // Stand up control cycle thread
     zdj_thread_launch_control_cycle( zdj_control_cycle_thread_main, NULL );
@@ -81,6 +85,21 @@ void zdj_register_special_control_handler( int index, zdj_control_id_t control_i
 
 void * zdj_control_cycle_thread_main( void * arg ) {
 
+    // Set up scheduling
+    int prio = sched_get_priority_max( SCHED_FIFO );
+	struct sched_param param;
+	param.sched_priority = prio;
+	sched_setscheduler( syscall(SYS_gettid), SCHED_FIFO, &param );
+
+    // Set core affinity to Core #1;
+    cpu_set_t cpuset;
+	CPU_ZERO( &cpuset );
+	CPU_SET( 0,&cpuset );
+	int err = sched_setaffinity( syscall(SYS_gettid), sizeof(cpu_set_t), &cpuset );
+    if( err != 0 ) {
+        perror( "set affinity failed" );
+    }
+
     // Prep Internal HMI Input scan
     zdj_control_prepare_hmi_input_scan( );
 
@@ -88,13 +107,20 @@ void * zdj_control_cycle_thread_main( void * arg ) {
     // Maybe implement a soft-sleep system here which
     // lengthens sleep time if no events are happening.
     // Speeds back up after events arrive.
-    struct timespec frame_sleep = { 0, 400000 };
+    struct timespec frame_sleep = { 0, 800000 };
 
     while( 1 ) {
 
         // Sleep until next sample
+        frame_sleep.tv_nsec = 800000;
         nanosleep( &frame_sleep, NULL );
 
+        if( zdj_control_cycle_reset ) {
+            zdj_control_cycle_counter = 0;
+            zdj_control_cycle_reset = false;
+        } else {
+            zdj_control_cycle_counter++;
+        }
         // Open a tag for the process cycle
         // zdj_perf_tag_t * tag;
         // if( zdj_perf_enabled( ) ) {
@@ -105,7 +131,6 @@ void * zdj_control_cycle_thread_main( void * arg ) {
 
         // Run HMI scan cycle
         zdj_control_scan_hmi_input( );
-        // Get Pot vals from M7
 
         // Generate Internal HMI Input events
         zdj_control_process_hmi_input( );

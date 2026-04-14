@@ -22,11 +22,10 @@ zdj_view_t * zdj_view_stack_bottom;
 zdj_view_t * zdj_view_stack_top;
 zdj_rect_t view_stack_frame = {0,0,128,64};
 
-zdj_view_t * zdj_view_stack_root_view;
-zdj_view_t * zdj_view_stack_panel_view;
-zdj_view_t * zdj_view_stack_widget_view;
+zdj_view_t * zdj_view_stack_root_view = NULL;
+zdj_view_t * zdj_view_stack_panel_view = NULL;
+zdj_view_t * zdj_view_stack_widget_view = NULL;
 
-// static void _zdj_view_stack_handle_events( zdj_view_t * view );
 static void _zdj_view_stack_draw( zdj_view_t * view );
 
 zdj_view_t * zdj_root_view( void ) {
@@ -49,10 +48,19 @@ void zdj_view_stack_init( void ) {
     zdj_view_stack_panel_view = zdj_new_view( &view_stack_frame );
     zdj_view_stack_panel_view->subview_clip.src.w = zdj_view_stack_panel_view->subview_clip.dst.w = 128;
     zdj_view_stack_panel_view->subview_clip.src.h = zdj_view_stack_panel_view->subview_clip.dst.h = 64;
+    zdj_view_stack_panel_view->tag = 33;
 
     zdj_view_stack_widget_view = zdj_new_view( &view_stack_frame );
     zdj_view_stack_widget_view->subview_clip.src.w = zdj_view_stack_widget_view->subview_clip.dst.w = 128;
     zdj_view_stack_widget_view->subview_clip.src.h = zdj_view_stack_widget_view->subview_clip.dst.h = 64;
+
+    zdj_delete_stack = NULL;
+}
+
+void zdj_view_stack_min_init( void ) {
+    zdj_view_stack_root_view = zdj_new_view( &view_stack_frame );
+    zdj_view_stack_root_view->subview_clip.src.w = zdj_view_stack_root_view->subview_clip.dst.w = 128;
+    zdj_view_stack_root_view->subview_clip.src.h = zdj_view_stack_root_view->subview_clip.dst.h = 64;
 
     zdj_delete_stack = NULL;
 }
@@ -76,11 +84,10 @@ void zdj_view_stack_update( void ) {
     int end_ind = zdj_ui_event_buf_write;
     if( start_ind != end_ind ) {
         // Invoke any special commands before sending remaining events into stack
-        // if( zdj_special_control_handler ) {
-            zdj_view_stack_handle_special_events( start_ind, end_ind );
-        // }
+        zdj_view_stack_handle_special_events( start_ind, end_ind );
         // ...send events into views for handling.
         zdj_view_stack_handle_events( start_ind, end_ind, zdj_panel_view( ) );
+        zdj_view_stack_handle_events( start_ind, end_ind, zdj_widget_view( ) );
         zdj_view_stack_handle_events( 
             start_ind, end_ind, zdj_view_stack_top_subview_of( zdj_root_view( ) ) 
         );
@@ -97,11 +104,7 @@ void zdj_view_stack_update( void ) {
     zdj_view_count = zdj_new_view_count;
 
     // If screen_cap is armed, grab it here after all drawing is complete.
-    if( zdj_screen_cap_armed ) {
-        zdj_update_screencap( );
-        // zdj_write_screen_cap( );
-        // zdj_screen_cap_armed = false;
-    }
+    if( zdj_screen_cap_armed ) { zdj_update_screencap( ); }
 
     // Delete everything in the delete stack
     zdj_view_t * delete_view = zdj_delete_stack;
@@ -117,6 +120,7 @@ void zdj_view_stack_update( void ) {
 
 void _zdj_view_stack_draw( zdj_view_t * view ) {
     // printf( "_zdj_view_stack_draw\n" );
+    if( !view ){ return; }
     // Draw view's subviews (bottom-up)
     zdj_view_t * bottom_subview = zdj_view_stack_bottom_subview_of( view );
     if( bottom_subview ) { zdj_view_stack_draw( bottom_subview, &view->subview_clip ); }

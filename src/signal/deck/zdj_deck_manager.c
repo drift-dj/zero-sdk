@@ -22,9 +22,9 @@ static bool _is_soundcard_event( zdj_control_event_t * event );
 
 zdj_deck_manager_t * zdj_deck_manager( void ) {
     if( !_zdj_deck_manager ) { 
-        printf( "zdj_deck_manager( ) pre: %p\n", _zdj_deck_manager );
+        // printf( "zdj_deck_manager( ) pre: %p\n", _zdj_deck_manager );
         zdj_deck_manager_init( ); 
-        printf( "zdj_deck_manager( ) post: %p\n", _zdj_deck_manager );
+        // printf( "zdj_deck_manager( ) post: %p\n", _zdj_deck_manager );
     }
     return _zdj_deck_manager;
 }
@@ -32,6 +32,8 @@ zdj_deck_manager_t * zdj_deck_manager( void ) {
 zdj_error_type_t zdj_deck_manager_init( void ) {
     // printf( "zdj_deck_manager_init\n" );
     _zdj_deck_manager = calloc( 1, sizeof( zdj_deck_manager_t ) );
+    
+    _zdj_deck_manager->recent_station = ZDJ_DECK_STATION_1;
     
     // Set sync initial conditions
     _zdj_deck_manager->sync.preferred = true; // Read this from user settings
@@ -96,6 +98,42 @@ zdj_deck_t * zdj_deck_manager_get_deck_for_station( zdj_deck_station_t station )
         d = d->next;
     }
     return NULL;
+}
+
+zdj_deck_station_t zdj_deck_manager_get_station_for_map( zdj_control_map_id_t map ) {
+    // printf( "get_station_for_map: %s\n", zdj_control_map_name[ map ] );
+    switch ( map ) {
+        case ZDJ_CONTROL_MAP_STATION_1_EMPTY:
+        case ZDJ_CONTROL_MAP_STATION_1_EQ:
+        case ZDJ_CONTROL_MAP_STATION_1_TRIM:
+        case ZDJ_CONTROL_MAP_STATION_1_LOOP:
+        case ZDJ_CONTROL_MAP_STATION_1_LOOP_ON:
+        case ZDJ_CONTROL_MAP_STATION_1_LOOP_OFF:
+        case ZDJ_CONTROL_MAP_STATION_1_SYNC:
+        case ZDJ_CONTROL_MAP_STATION_1_FILT:
+        case ZDJ_CONTROL_MAP_STATION_1_DELAY:
+        case ZDJ_CONTROL_MAP_STATION_1_MOM_EQ: return ZDJ_DECK_STATION_1;
+
+        case ZDJ_CONTROL_MAP_STATION_2_EMPTY:
+        case ZDJ_CONTROL_MAP_STATION_2_EQ:
+        case ZDJ_CONTROL_MAP_STATION_2_TRIM:
+        case ZDJ_CONTROL_MAP_STATION_2_LOOP:
+        case ZDJ_CONTROL_MAP_STATION_2_LOOP_ON:
+        case ZDJ_CONTROL_MAP_STATION_2_LOOP_OFF:
+        case ZDJ_CONTROL_MAP_STATION_2_SYNC:
+        case ZDJ_CONTROL_MAP_STATION_2_FILT:
+        case ZDJ_CONTROL_MAP_STATION_2_DELAY:
+        case ZDJ_CONTROL_MAP_STATION_2_MOM_EQ: return ZDJ_DECK_STATION_2;
+
+        case ZDJ_CONTROL_MAP_STATION_EXT_EQ:
+        case ZDJ_CONTROL_MAP_STATION_EXT_TRIM:
+        case ZDJ_CONTROL_MAP_STATION_EXT_FILT:
+        case ZDJ_CONTROL_MAP_STATION_EXT_SYNC:
+        case ZDJ_CONTROL_MAP_STATION_EXT_DELAY:
+        case ZDJ_CONTROL_MAP_STATION_EXT_MOM_EQ: return ZDJ_DECK_STATION_EXT;
+        
+        default: return ZDJ_DECK_STATION_NONE;
+    }
 }
 
 // Get a new batch of mapped deck control events from the Control system.
@@ -188,6 +226,7 @@ void zdj_deck_manager_set_sync( double bpm ) {
     printf( "zdj_deck_manager_set_sync: %1.1f\n", bpm );
     if( !zdj_deck_manager_can_activate_sync( ) ){ return; }
     zdj_deck_manager( )->sync.active = true;
+    zdj_deck_manager( )->sync.locked = true;
     // Adopt source_deck's bpm as root bpm.
     zdj_deck_manager( )->sync.set_bpm = bpm;
     // Loop thru all decks - if syncable, update set_bpm to root bpm
@@ -239,6 +278,20 @@ void zdj_deck_manager_control_update_cycle( void ) {
     }
     // printf( "zdj_deck_manager_control_update_cycle done\n" );
 }
+zdj_deck_station_t zdj_deck_manager_get_recent_playback_station( void ) {
+    return zdj_deck_manager( )->recent_station;
+}
+
+// Watch control map changes for maps related to a specific deck.
+// If a specific deck is related to the control map, hold that deck as the most recent
+void zdj_deck_manager_set_recent_playback_station_for_map( zdj_control_map_id_t map_id ) {
+    zdj_deck_station_t station = zdj_deck_manager_get_station_for_map( map_id );
+    if( station == ZDJ_DECK_STATION_1 ||
+        station == ZDJ_DECK_STATION_2
+    ) {
+        zdj_deck_manager( )->recent_station = station;
+    }
+}
 
 // Deck manager thread runs on a slow sleep cycle and handles
 // requests asynchronously after they arrive.  
@@ -246,13 +299,13 @@ static void * _zdj_deck_manager_thread_main( void * arg ) {
     zdj_deck_manager_t * manager = (zdj_deck_manager_t*)arg;
 
     // Set up scheduling
-    int prio = sched_get_priority_max( SCHED_RR );
-	struct sched_param param;
-	param.sched_priority = prio;
-	sched_setscheduler( syscall(SYS_gettid), SCHED_RR, &param );
+    // int prio = sched_get_priority_max( SCHED_FIFO );
+	// struct sched_param param;
+	// param.sched_priority = prio;
+	// sched_setscheduler( syscall(SYS_gettid), SCHED_FIFO, &param );
 
     // Give realtime scheduler access to 100% of core time
-	system( "echo -1 >/proc/sys/kernel/sched_rt_runtime_us" );
+	// system( "echo -1 >/proc/sys/kernel/sched_rt_runtime_us" );
 
     // Set core affinity to Core #1;
     cpu_set_t cpuset;
@@ -307,8 +360,10 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_LOOP_ON:
         case ZDJ_DECK_1_CONTROL_LOOP_OFF:
         case ZDJ_DECK_1_CONTROL_LOOP_START:
+        case ZDJ_DECK_1_CONTROL_LOOP_START_ALT:
         case ZDJ_DECK_1_CONTROL_LOOP_END:
         case ZDJ_DECK_1_CONTROL_LOOP_LENGTH:
+        case ZDJ_DECK_1_CONTROL_LOOP_LENGTH_ALT:
         case ZDJ_DECK_1_CONTROL_SKIP:
         case ZDJ_DECK_1_CONTROL_SKIP_LENGTH:
         case ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN:
@@ -320,6 +375,10 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_FX_3:
         case ZDJ_DECK_1_CONTROL_FX_4:
         case ZDJ_DECK_1_CONTROL_FX_5:
+        case ZDJ_DECK_1_CONTROL_FILTER_0:
+        case ZDJ_DECK_1_CONTROL_FILTER_1:
+        case ZDJ_DECK_1_CONTROL_FILTER_2:
+        case ZDJ_DECK_1_CONTROL_FILTER_RESET:
         case ZDJ_DECK_1_CONTROL_SYNC_MULT:
         case ZDJ_DECK_1_CONTROL_SCRUB:
         case ZDJ_DECK_1_CONTROL_TEMPO:
@@ -327,7 +386,8 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_PLAY_PAUSE:
         case ZDJ_DECK_1_CONTROL_PAUSE:
         case ZDJ_DECK_1_CONTROL_HOTCUE_START:
-        case ZDJ_DECK_1_CONTROL_HOTCUE_END: return station == ZDJ_DECK_STATION_1;
+        case ZDJ_DECK_1_CONTROL_HOTCUE_END: 
+        case ZDJ_DECK_1_CONTROL_HOTCUE_NEXT: return station == ZDJ_DECK_STATION_1;
 
 
         case ZDJ_DECK_2_CONTROL_FADE:
@@ -341,8 +401,10 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_LOOP_ON:
         case ZDJ_DECK_2_CONTROL_LOOP_OFF:
         case ZDJ_DECK_2_CONTROL_LOOP_START:
+        case ZDJ_DECK_2_CONTROL_LOOP_START_ALT:
         case ZDJ_DECK_2_CONTROL_LOOP_END:
         case ZDJ_DECK_2_CONTROL_LOOP_LENGTH:
+        case ZDJ_DECK_2_CONTROL_LOOP_LENGTH_ALT:
         case ZDJ_DECK_2_CONTROL_SKIP:
         case ZDJ_DECK_2_CONTROL_SKIP_LENGTH:
         case ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN:
@@ -354,6 +416,10 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_FX_3:
         case ZDJ_DECK_2_CONTROL_FX_4:
         case ZDJ_DECK_2_CONTROL_FX_5:
+        case ZDJ_DECK_2_CONTROL_FILTER_0:
+        case ZDJ_DECK_2_CONTROL_FILTER_1:
+        case ZDJ_DECK_2_CONTROL_FILTER_2:
+        case ZDJ_DECK_2_CONTROL_FILTER_RESET:
         case ZDJ_DECK_2_CONTROL_SYNC_MULT:
         case ZDJ_DECK_2_CONTROL_SCRUB:
         case ZDJ_DECK_2_CONTROL_TEMPO:
@@ -361,7 +427,8 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_PLAY_PAUSE:
         case ZDJ_DECK_2_CONTROL_PAUSE:
         case ZDJ_DECK_2_CONTROL_HOTCUE_START:
-        case ZDJ_DECK_2_CONTROL_HOTCUE_END: return station == ZDJ_DECK_STATION_2;
+        case ZDJ_DECK_2_CONTROL_HOTCUE_END:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_NEXT: return station == ZDJ_DECK_STATION_2;
 
 
         case ZDJ_DECK_EXT_CONTROL_TRIM:
@@ -374,8 +441,10 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_EXT_CONTROL_LOOP_ON:
         case ZDJ_DECK_EXT_CONTROL_LOOP_OFF:
         case ZDJ_DECK_EXT_CONTROL_LOOP_START:
+        case ZDJ_DECK_EXT_CONTROL_LOOP_START_ALT:
         case ZDJ_DECK_EXT_CONTROL_LOOP_END:
         case ZDJ_DECK_EXT_CONTROL_LOOP_LENGTH:
+        case ZDJ_DECK_EXT_CONTROL_LOOP_LENGTH_ALT:
         case ZDJ_DECK_EXT_CONTROL_SKIP:
         case ZDJ_DECK_EXT_CONTROL_SKIP_LENGTH:
         case ZDJ_DECK_EXT_CONTROL_SKIP_SET_ORIGIN:
@@ -387,6 +456,11 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_EXT_CONTROL_FX_3:
         case ZDJ_DECK_EXT_CONTROL_FX_4:
         case ZDJ_DECK_EXT_CONTROL_FX_5:
+        case ZDJ_DECK_EXT_CONTROL_FILTER_0:
+        case ZDJ_DECK_EXT_CONTROL_FILTER_1:
+        case ZDJ_DECK_EXT_CONTROL_FILTER_2:
+        case ZDJ_DECK_EXT_CONTROL_FILTER_RESET:
+        case ZDJ_DECK_EXT_CONTROL_SYNC_MULT:
         case ZDJ_DECK_EXT_CONTROL_SCRUB: return station == ZDJ_DECK_STATION_EXT;
 
         case ZDJ_DECK_XPORT_CONTROL_SCRUB:
@@ -412,7 +486,9 @@ static bool _is_soundcard_event( zdj_control_event_t * event ) {
     switch ( event->id ) {
         case ZDJ_DECK_CONTROL_LR_VOL:
         case ZDJ_DECK_CONTROL_CUE_VOL:
+        case ZDJ_DECK_CONTROL_RECORD_VOL:
         case ZDJ_DECK_CONTROL_TOGGLE_RECORD: 
+        case ZDJ_DECK_1_2_BASS_SWAP:
         case ZDJ_DECK_CONTROL_XFADE: return true;
 
         default: return false;

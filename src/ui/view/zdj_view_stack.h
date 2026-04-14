@@ -37,6 +37,7 @@ zdj_view_t * zdj_widget_view( void );
 // zdj_view_t * zdj_perf_panel( void );
 
 void zdj_view_stack_init( void );
+void zdj_view_stack_min_init( void );
 void zdj_view_stack_deinit( void );
 void zdj_view_stack_update( void );
 

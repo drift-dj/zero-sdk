@@ -21,6 +21,7 @@
 #ifndef ZDJ_BOOT_H
 #define ZDJ_BOOT_H
 
+#include <stdint.h>
 #include <zerodj/health/zdj_health_type.h>
 
 #define ZDJ_SHARED_DOMAIN_BOOT_STATE_ADDR 0x55a71000
@@ -50,14 +51,23 @@
 #define ZDJ_DOMAIN_BOOT_A_RPMSG_AVAIL 1
 #define ZDJ_DOMAIN_BOOT_A_RPMSG_AVAIL_MASK 1 << ZDJ_DOMAIN_BOOT_A_RPMSG_AVAIL
 
+// typedef struct {
+//     int32_t fac_reset;
+//     int32_t m_avail;
+//     int32_t m_flags;
+//     int32_t a_avail;
+//     int32_t a_flags;
+//     int32_t update_display_req;
+//     int32_t flush_hmi_req;
+// } zdj_domain_boot_state_t;
+
 typedef struct {
-    int32_t fac_reset;
-    int32_t m_avail;
-    int32_t m_flags;
+    uint8_t fac_reset;
+    uint8_t build_major;
+    uint8_t build_minor;
+    uint8_t build_hotfix;
+    uint8_t build_build;
     int32_t a_avail;
-    int32_t a_flags;
-    int32_t update_display_req;
-    int32_t flush_hmi_req;
 } zdj_domain_boot_state_t;
 
 typedef enum {

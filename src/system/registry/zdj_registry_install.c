@@ -15,6 +15,20 @@ static zdj_install_t * _zdj_registry_all_installs = NULL;
 
 void _zdj_registry_install_scan_cb( char * path, void * data );
 
+
+zdj_error_type_t zdj_registry_put_os_sysreg( zdj_os_sysreg_t * sysreg ) {
+    if ( access( ZDJ_REGISTRY_OS_SYSREG_PATH, F_OK ) == 0 ) {
+        FILE * fp = fopen( ZDJ_REGISTRY_OS_SYSREG_PATH, "r" );
+        if( fp ) {
+            int br = fread( sysreg, sizeof( zdj_os_sysreg_t ), 1, fp );
+            fclose( fp );
+            return ZDJ_ERROR_OKAY;
+        }
+    }
+    return ZDJ_ERROR_BAD_REG_RECORD;
+}
+
+
 // Retrieve all installs in the registry
 zdj_install_t * zdj_registry_installs( void ) {
     if( !_zdj_registry_all_installs ) {
@@ -166,6 +180,35 @@ void zdj_registry_remove_install( zdj_install_t * install ) {
 // Release mem for an install instance
 void zdj_registry_free_install( zdj_install_t * install ) {
 
+}
+
+void zdj_registry_put_system_display_name_str( char * str ) {
+    zdj_os_sysreg_t sysreg;
+    zdj_error_type_t err = zdj_registry_put_os_sysreg( &sysreg );
+    if( err == ZDJ_ERROR_OKAY ) {
+        strcpy( str, sysreg.display_name );
+    }
+}
+
+void zdj_registry_put_system_build_desc_str( char * str ) {
+    zdj_os_sysreg_t sysreg;
+    zdj_error_type_t err = zdj_registry_put_os_sysreg( &sysreg );
+    if( err == ZDJ_ERROR_OKAY ) {
+        strcpy( str, sysreg.version_build_desc );
+    }
+}
+
+void zdj_registry_put_system_version_str( char * str ) {
+    zdj_os_sysreg_t sysreg;
+    zdj_error_type_t err = zdj_registry_put_os_sysreg( &sysreg );
+    if( err == ZDJ_ERROR_OKAY ) {
+        snprintf( str, -1, "%s.%s.%s r%s",  
+            sysreg.version_major,
+            sysreg.version_minor,
+            sysreg.version_hotfix,
+            sysreg.version_build
+        );
+    }
 }
 
 void zdj_registry_put_system_install_str( char * str ) {

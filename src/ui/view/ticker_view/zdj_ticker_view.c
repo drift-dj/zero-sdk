@@ -30,7 +30,10 @@ zdj_view_t * zdj_new_ticker_view(
     // Build the ticker_view state instance
     zdj_ticker_state_t * state = calloc( 1, sizeof( zdj_ticker_state_t ) );
     state->scroll_offset = 0;
-    state->scroll_rate = 0.3;
+    // Create a frame rate-invariant scroll rate
+    float rate_factor = ((float)zdj_ui_refresh_hz - 20.0) / 100.0;
+    // Looking for rate = 1.2 @ 20Hz, 0.3 @ 120Hz
+    state->scroll_rate = 1.2 - (rate_factor * 0.9);
     strcpy( state->str, str );
     state->justify = justify;
     view->state = (void*)state;

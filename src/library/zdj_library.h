@@ -31,12 +31,20 @@
 #define ZDJ_LIBRARY_ENTITY_ID_LEN 37
 #define ZDJ_LIBRARY_TABLE_LINK_LEN 256
 
-#define ZDJ_LIBRARY_DB_PATH "/etc/zero_data/zero.db"
-#define ZDJ_LIBRARY_IMPORT_DB_PATH "/etc/zero_data/zero_import.db"
-#define ZDJ_LIBRARY_PLAYBACK_WAVEFORM_DIR "/etc/zero_data/playback_waveform"
-#define ZDJ_LIBRARY_PLAYBACK_WAVEFORM_TEMP_DIR "/etc/zero_data/playback_waveform/tmp"
-#define ZDJ_LIBRARY_THUMB_WAVEFORM_DIR "/etc/zero_data/thumb_waveform"
-#define ZDJ_LIBRARY_THUMB_WAVEFORM_TEMP_DIR "/etc/zero_data/thumb_waveform/tmp"
+// #define ZDJ_LIBRARY_DB_PATH "/etc/zero_data/zero.db"
+// #define ZDJ_LIBRARY_IMPORT_DB_PATH "/etc/zero_data/zero_import.db"
+// #define ZDJ_LIBRARY_PLAYBACK_WAVEFORM_DIR "/etc/zero_data/playback_waveform"
+// #define ZDJ_LIBRARY_PLAYBACK_WAVEFORM_TEMP_DIR "/etc/zero_data/playback_waveform/tmp"
+// #define ZDJ_LIBRARY_THUMB_WAVEFORM_DIR "/etc/zero_data/thumb_waveform"
+// #define ZDJ_LIBRARY_THUMB_WAVEFORM_TEMP_DIR "/etc/zero_data/thumb_waveform/tmp"
+#define ZDJ_LIBRARY_VERSION 1
+#define ZDJ_LIBRARY_DIR "/media/internal/library/v1"
+#define ZDJ_LIBRARY_DB_PATH "/media/internal/library/v1/zero.db"
+#define ZDJ_LIBRARY_IMPORT_DB_PATH "/media/internal/library/v1/zero_import.db"
+#define ZDJ_LIBRARY_PLAYBACK_WAVEFORM_DIR "/media/internal/library/v1/playback_waveform"
+#define ZDJ_LIBRARY_PLAYBACK_WAVEFORM_TEMP_DIR "/media/internal/library/v1/playback_waveform/tmp"
+#define ZDJ_LIBRARY_THUMB_WAVEFORM_DIR "/media/internal/library/v1/thumb_waveform"
+#define ZDJ_LIBRARY_THUMB_WAVEFORM_TEMP_DIR "/media/internal/library/v1/thumb_waveform/tmp"
 
 #define ZDJ_LIBRARY_TABLE_LIBRARY_CONFIG            "Library_Config_Entity"
 #define ZDJ_LIBRARY_TABLE_LIBRARY                   "Library_Entity"
@@ -71,17 +79,84 @@
 // } zdj_library_data_source_ref_t;
 
 typedef enum {
-	ZDJ_LIBRARY_KEY_1A
+	ZDJ_LIBRARY_KEY_NONE,
+	ZDJ_LIBRARY_KEY_A, 
+    ZDJ_LIBRARY_KEY_AM, 
+    ZDJ_LIBRARY_KEY_AB, 
+    ZDJ_LIBRARY_KEY_ABM,
+    ZDJ_LIBRARY_KEY_B, 
+    ZDJ_LIBRARY_KEY_BM, 
+    ZDJ_LIBRARY_KEY_BB, 
+    ZDJ_LIBRARY_KEY_BBM,
+    ZDJ_LIBRARY_KEY_C, 
+    ZDJ_LIBRARY_KEY_CM,
+    ZDJ_LIBRARY_KEY_D, 
+    ZDJ_LIBRARY_KEY_DM, 
+    ZDJ_LIBRARY_KEY_DB, 
+    ZDJ_LIBRARY_KEY_DBM,
+    ZDJ_LIBRARY_KEY_E, 
+    ZDJ_LIBRARY_KEY_EM, 
+    ZDJ_LIBRARY_KEY_EB, 
+    ZDJ_LIBRARY_KEY_EBM,
+    ZDJ_LIBRARY_KEY_F, 
+    ZDJ_LIBRARY_KEY_FM, 
+    ZDJ_LIBRARY_KEY_FS, 
+    ZDJ_LIBRARY_KEY_FSM,
+    ZDJ_LIBRARY_KEY_G, 
+    ZDJ_LIBRARY_KEY_GM,
+    ZDJ_LIBRARY_KEY_ANY,
+	ZDJ_LIBRARY_KEY_COUNT
 } zdj_library_key_t;
 
+static char * zdj_library_key_name[ ZDJ_LIBRARY_KEY_COUNT ] = {
+	"None", // ZDJ_LIBRARY_KEY_NONE,
+	"A", // ZDJ_LIBRARY_KEY_A, 
+    "Amin", // ZDJ_LIBRARY_KEY_AM, 
+    "Ab", // ZDJ_LIBRARY_KEY_AB, 
+    "Abmin", // ZDJ_LIBRARY_KEY_ABM,
+    "B", // ZDJ_LIBRARY_KEY_B, 
+    "Bmin", // ZDJ_LIBRARY_KEY_BM, 
+    "Bb", // ZDJ_LIBRARY_KEY_BB, 
+    "Bbmin", // ZDJ_LIBRARY_KEY_BBM,
+    "C", // ZDJ_LIBRARY_KEY_C, 
+    "Cmin", // ZDJ_LIBRARY_KEY_CM,
+    "D", // ZDJ_LIBRARY_KEY_D, 
+    "Dmin", // ZDJ_LIBRARY_KEY_DM, 
+    "Db", // ZDJ_LIBRARY_KEY_DB, 
+    "Dbmin", // ZDJ_LIBRARY_KEY_DBM,
+    "E", // ZDJ_LIBRARY_KEY_E, 
+    "Emin", // ZDJ_LIBRARY_KEY_EM, 
+    "Eb", // ZDJ_LIBRARY_KEY_EB, 
+    "Ebmin", // ZDJ_LIBRARY_KEY_EBM,
+    "F", // ZDJ_LIBRARY_KEY_F, 
+    "Fmin", // ZDJ_LIBRARY_KEY_FM, 
+    "F#", // ZDJ_LIBRARY_KEY_FS, 
+    "F#min", // ZDJ_LIBRARY_KEY_FSM,
+    "G", // ZDJ_LIBRARY_KEY_G, 
+    "Gmin", // ZDJ_LIBRARY_KEY_GM,
+    "Any" // ZDJ_LIBRARY_KEY_ANY,
+};
+
 typedef enum {
+	ZDJ_LIBRARY_BPM_UNKOWN,
 	ZDJ_LIBRARY_BPM_0_40,
 	ZDJ_LIBRARY_BPM_40_100,
 	ZDJ_LIBRARY_BPM_100_130,
 	ZDJ_LIBRARY_BPM_130_145,
 	ZDJ_LIBRARY_BPM_145_180,
-	ZDJ_LIBRARY_BPM_180
+	ZDJ_LIBRARY_BPM_180,
+	ZDJ_LIBRARY_BPM_COUNT
 } zdj_library_bpm_range_t;
+
+static char * zdj_library_bpm_name[ ZDJ_LIBRARY_BPM_COUNT ] = {
+	"Unknown BPM", // ZDJ_LIBRARY_BPM_UNKOWN,
+	"0 - 40 BPM", // ZDJ_LIBRARY_BPM_0_40,
+	"40 - 100 BPM", // ZDJ_LIBRARY_BPM_40_100,
+	"100 - 130 BPM", // ZDJ_LIBRARY_BPM_100_130,
+	"130 - 145 BPM", // ZDJ_LIBRARY_BPM_130_145,
+	"145 - 180 BPM", // ZDJ_LIBRARY_BPM_145_180,
+	">180 BPM" // ZDJ_LIBRARY_BPM_180
+};
 
 typedef enum {
 	ZDJ_LIBRARY_ANALYSIS_STATE_NONE,
@@ -180,6 +255,8 @@ typedef struct {
 	float bpm;
 	bool has_beat_grid;
 	int beat_grid_start_sample;
+	int cuepoint_count;
+	int current_cuepoint;
 	struct zdj_library_cuepoint_t ** cuepoints;
 	char cuepoints_links_table[ ZDJ_LIBRARY_ENTITY_ID_LEN ]; // deprecated
 	zdj_health_status_t error;
@@ -325,6 +402,7 @@ zdj_health_status_t zdj_library_close_db( void );
 void zdj_library_new_config( void );
 zdj_library_config_t * zdj_library_get_config( void );
 char * zdj_library_config_get_current_library_id( void );
+void zdj_library_config_put_current_library_id( char * dest );
 zdj_health_status_t zdj_library_config_set_current_library_id( char * entity_id );
 
 // Library
@@ -478,7 +556,7 @@ zdj_error_type_t zdj_library_query_songs_by_artist(
 	sqlite3 * db 
 );
 
-int zdj_library_count_songs_in_bpm_range( 
+int zdj_library_query_count_songs_in_bpm_range( 
 	char * library_entity_id, 
 	zdj_library_bpm_range_t range, 
 	sqlite3 * db 

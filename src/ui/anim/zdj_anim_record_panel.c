@@ -8,6 +8,7 @@ void zdj_anim_init_record_panel_show( zdj_anim_t * anim, zdj_view_t * view, void
     anim->end_point.x = ZDJ_SCREEN_W - 40;
     anim->end_point.y = 0;
     anim->frame = 0;
+    anim->frames = zdj_anim_show_hide_frames( );
     anim->alive = true;
 }
 
@@ -17,6 +18,7 @@ void zdj_anim_init_record_panel_hide( zdj_anim_t * anim, zdj_view_t * view, void
     anim->end_point.x = ZDJ_SCREEN_W - 40;
     anim->end_point.y = -8;
     anim->frame = 0;
+    anim->frames = zdj_anim_show_hide_frames( );
     anim->alive = true;
 }
 

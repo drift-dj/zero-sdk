@@ -40,8 +40,10 @@ typedef struct {
     bool needs_layout_update;
     zdj_usb_gadget_config_t prev_config;
     int sync_counter;
+    zdj_view_t * parent_view;
+    void (*exit_cb)( void );
 } zdj_usb_drive_view_state_t;
 
-zdj_view_t * zdj_new_usb_drive_view( void );
+zdj_view_t * zdj_new_usb_drive_view( zdj_view_t * parent_view, void (*cb)( void ) );
 
 #endif

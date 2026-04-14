@@ -41,10 +41,14 @@
 #define ZDJ_SCREEN_W 128
 #define ZDJ_SCREEN_H 64
 
-#define ZDJ_MODAL_X 5
-#define ZDJ_MODAL_Y 3
-#define ZDJ_MODAL_WIDTH 118
-#define ZDJ_MODAL_HEIGHT 58
+// #define ZDJ_MODAL_X 5
+// #define ZDJ_MODAL_Y 3
+// #define ZDJ_MODAL_WIDTH 118
+// #define ZDJ_MODAL_HEIGHT 58
+#define ZDJ_MODAL_X 0
+#define ZDJ_MODAL_Y 0
+#define ZDJ_MODAL_WIDTH 128
+#define ZDJ_MODAL_HEIGHT 64
 
 #define ZDJ_DIALOG_X 15
 #define ZDJ_DIALOG_Y 9
@@ -52,7 +56,7 @@
 #define ZDJ_DIALOG_H 48
  
 #define ZDJ_MENU_X 15
-#define ZDJ_MENU_Y 5
+#define ZDJ_MENU_Y 0
 #define ZDJ_MENU_WIDTH 112
 #define ZDJ_MENU_HEIGHT 59
 
@@ -151,6 +155,10 @@ typedef enum {
     ZDJ_ANIM_MODAL_HIDE,
     ZDJ_ANIM_HEADER_ACTIVATE,
     ZDJ_ANIM_HEADER_DEACTIVATE,
+    ZDJ_ANIM_HEADER_BACK_ACTIVATE,
+    ZDJ_ANIM_HEADER_BACK_DEACTIVATE,
+    ZDJ_ANIM_HEADER_CLOSE_ACTIVATE,
+    ZDJ_ANIM_HEADER_CLOSE_DEACTIVATE,
     ZDJ_ANIM_DIALOG_SHOW,
     ZDJ_ANIM_DIALOG_HIDE,
     ZDJ_ANIM_DJ_DECK_PAGE_SHOW,
@@ -160,12 +168,27 @@ typedef enum {
     ZDJ_ANIM_VOLUME_PANEL_SHOW,
     ZDJ_ANIM_VOLUME_PANEL_HIDE,
     ZDJ_ANIM_RECORD_PANEL_SHOW,
-    ZDJ_ANIM_RECORD_PANEL_HIDE
+    ZDJ_ANIM_RECORD_PANEL_HIDE,
+    ZDJ_ANIM_RECORD_WIDGET_SHOW,
+    ZDJ_ANIM_RECORD_WIDGET_HIDE,
+    ZDJ_ANIM_DEBUG_WIDGET_SHOW,
+    ZDJ_ANIM_DEBUG_WIDGET_HIDE,
+    ZDJ_ANIM_PERF_WIDGET_SHOW,
+    ZDJ_ANIM_PERF_WIDGET_HIDE,
+    ZDJ_ANIM_NOTIFY_WIDGET_SHOW,
+    ZDJ_ANIM_NOTIFY_WIDGET_HIDE,
+    ZDJ_ANIM_PANEL_IN_NEXT,
+    ZDJ_ANIM_PANEL_OUT_NEXT,
+    ZDJ_ANIM_PANEL_IN_PREV,
+    ZDJ_ANIM_PANEL_OUT_PREV,
+    ZDJ_ANIM_PANEL_DEPLOY,
+    ZDJ_ANIM_PANEL_RETRACT
 } zdj_anim_type_t;
 
 typedef struct {
     int frame;
-    int frames;
+    // int frames;
+    float frames;
     float val;
     zdj_point_t start_point;
     zdj_point_t end_point;
@@ -201,7 +224,10 @@ typedef enum {
     ZDJ_VIEW_WAVEFORM,
     ZDJ_VIEW_DJ_DECK_PAGE,
     ZDJ_VIEW_BEATGRID,
-    ZDJ_VIEW_CUEPOINTS
+    ZDJ_VIEW_CUEPOINTS,
+    ZDJ_VIEW_KNOB,
+    ZDJ_VIEW_NUDGE,
+    ZDJ_VIEW_OVERLAY
 } zdj_view_type_t;
 
 typedef enum {
@@ -247,6 +273,7 @@ extern uint32_t * zdj_ui_pixels;
 extern SDL_Surface* zdj_display_surface;
 extern SDL_Renderer* zdj_display_renderer;
 extern zdj_view_t * zdj_delete_stack;
+extern int zdj_ui_refresh_hz;
 extern zdj_rect_t * zdj_screen_rect_priv;
 extern int zdj_view_count;
 extern int zdj_new_view_count;
@@ -266,8 +293,13 @@ SDL_Texture * zdj_ui_texture_from_bmp( char * filepath );
 
 
 void zdj_ui_init( void );
+void zdj_ui_min_init( void );
 void zdj_ui_deinit( void );
 void zdj_ui_update( void );
+
+void zdj_ui_set_refresh_hz( int hz );
+int zdj_ui_get_frame_nanos( void );
+int zdj_ui_msec_to_frames( int msec );
 
 // void zdj_ui_start_events( void );
 // void zdj_ui_stop_events( void );

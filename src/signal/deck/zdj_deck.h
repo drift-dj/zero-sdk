@@ -302,6 +302,7 @@ typedef struct zdj_deck_t {
     void ( *set_sync_bpm )( struct zdj_deck_t *, double );
     void ( *offset_sync_bpm )( struct zdj_deck_t *, double );
     void ( *offset_pitch_setting )( struct zdj_deck_t *, double );
+    void ( *request_sync_mult )( struct zdj_deck_t *, float );
 
     // Public Thread-Safe Loop/Skip API
     void ( *new_loop )( struct zdj_deck_t *, double, bool );

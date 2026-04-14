@@ -7,6 +7,7 @@ void zdj_anim_init_debug_panel_show( zdj_anim_t * anim, zdj_view_t * view, void 
     anim->start_point.y = 0;
     anim->end_point.x = 0;
     anim->end_point.y = 0;
+    anim->frames = zdj_anim_show_hide_frames( );
 
     // Delay the in anim by a few frames to let the old menu's out animation happen.
     anim->frame = 0;
@@ -18,6 +19,7 @@ void zdj_anim_init_debug_panel_hide( zdj_anim_t * anim, zdj_view_t * view, void 
     anim->start_point.y = 0;
     anim->end_point.x = ZDJ_DEBUG_PANEL_WIDTH * -3;
     anim->end_point.y = 0;
+    anim->frames = zdj_anim_show_hide_frames( );
 
     // Delay the out anim by a few frames to give the button flash time to happen.
     anim->frame = 0;

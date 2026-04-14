@@ -25,11 +25,38 @@
 
 #include <zerodj/zdj_data_type.h>
 #include <zerodj/health/zdj_health_type.h>
+#include <zerodj/system/error/zdj_error.h>
 
 #define ZDJ_REGISTRY_OS_SYSREG_PATH "/etc/registry/os/drift-os"
 #define ZDJ_REGISTRY_LAUNCH_REQ_PATH "/etc/registry/launch-req/launch_req"
 #define ZDJ_REGISTRY_PREV_LAUNCH_REQ_PATH "/etc/registry/launch-req/prev_launch_req"
 #define ZDJ_REGISTRY_NEW_LAUNCH_REQ_PATH "/etc/registry/launch-req/new_launch_req"
+
+typedef struct {
+    bool valid;
+    bool has_bootloader;
+    bool has_linux;
+    bool has_rootfs;
+} zdj_os_sysreg_installer_props_t;
+
+typedef struct {
+    char display_name[128];
+    char short_name[16];
+    char uuid[64];
+    char description[1024];
+    char version_major[8];
+    char version_minor[8];
+    char version_hotfix[8];
+    char version_build[8];
+    char version_build_desc[64];
+    char bootloader_img[256];
+    char bootloader_sum[256];
+    char linux_img[256];
+    char linux_sum[256];
+    char rootfs_img[256];
+    char rootfs_sum[256];
+    zdj_os_sysreg_installer_props_t installer_props;
+} zdj_os_sysreg_t;
 
 typedef struct {
     char registry_name[256];
@@ -50,6 +77,8 @@ typedef struct {
     zdj_install_t app_install;
     zdj_install_t fallback_install;
     zdj_health_status_t health;
+    int crash_count;
+    uint64_t launch_timestamp;
 } zdj_launch_req_t;
 
 // Install
@@ -63,6 +92,8 @@ zdj_install_t * zdj_registry_create_install(
     uint8_t v_hf,
     uint16_t v_b
 );
+zdj_error_type_t zdj_registry_os_sysreg( zdj_os_sysreg_t * sysreg );
+
 zdj_install_t * zdj_registry_installs( void );
 zdj_install_t * zdj_registry_installs_for_category( char * category );
 zdj_install_t * zdj_registry_install_for_name( char * name );
@@ -89,6 +120,9 @@ void zdj_registry_launch_req_switch_to_fallback( zdj_launch_req_t * launch_req )
 bool zdj_registry_install_is_normal_req( zdj_install_t * install );
 zdj_health_status_t zdj_registry_set_normal_req( zdj_install_t * install );
 
+void zdj_registry_put_system_display_name_str( char * str );
+void zdj_registry_put_system_build_desc_str( char * str );
+void zdj_registry_put_system_version_str( char * str );
 void zdj_registry_put_system_install_str( char * str );
 
 #endif

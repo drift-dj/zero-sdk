@@ -29,6 +29,23 @@ zdj_error_type_t zdj_library_query_all_playlists(
 	return ZDJ_ERROR_OKAY;
 }
 
+int zdj_library_query_count_playlists_for_song(
+	char * library_entity_id, 
+	zdj_library_song_t * song,
+	sqlite3 * db
+) {
+	return 0;
+}
+zdj_error_type_t zdj_library_query_playlists_for_song(
+	char * library_entity_id, 
+	char ** playlist_eids, 
+	int count,
+	zdj_library_song_t * song,
+	sqlite3 * db
+ ) {
+	return ZDJ_ERROR_OKAY;
+ }
+
 // int zdj_library_query_count_songs_in_playlist( 
 // 	char * library_entity_id, 
 // 	zdj_library_playlist_t * playlist,

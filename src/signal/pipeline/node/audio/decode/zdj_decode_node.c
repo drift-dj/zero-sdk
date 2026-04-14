@@ -22,6 +22,8 @@ static void _update_wait( zdj_pipeline_node_t * node );
 static void _deinit_state( zdj_pipeline_node_t * node );
 static void _clear_out_buffer( zdj_pipeline_node_t * node ); 
 
+static void _install_ui_buffer( zdj_pipeline_node_t * node );
+
 static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset );
 static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double address );
 
@@ -29,6 +31,7 @@ static void _prepend_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * lay
 static void _append_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 static bool _can_remove_layer( zdj_decode_layer_t * layer );
 static void _remove_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
+static void _remove_all_layers_except( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 
 zdj_pipeline_node_t * zdj_new_decode_node( 
     zdj_library_song_t * song,
@@ -36,7 +39,7 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     size_t back_sample_count,
     size_t fwd_sample_count
 ) {
-    printf( "zdj_new_decode_node\n" );
+    // printf( "zdj_new_decode_node\n" );
     // Make node
     zdj_pipeline_node_t * node = zdj_new_pipeline_node( );
     node->deinit_state = &_deinit_state;
@@ -59,6 +62,8 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     state->append_layer = &_append_layer;
     state->can_remove_layer = &_can_remove_layer;
     state->remove_layer = &_remove_layer;
+    state->remove_all_layers_except = &_remove_all_layers_except;
+    state->install_ui_buffer = &_install_ui_buffer;
     
     // printf( "zdj_new_decode_node 0\n" );
 
@@ -96,7 +101,7 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     state->codec_ctx->thread_count = 0;
     res = avcodec_open2( state->codec_ctx, codec, NULL );
 
-    printf( "code id: %d\n", state->song->audio->av_codec_id );
+    printf( "code id: 0x%x\n", state->song->audio->av_codec_id );
     switch( state->song->audio->av_codec_id ) {
         case AV_CODEC_ID_MP3:
             state->estimated_packet_sample_count = 1152;
@@ -138,7 +143,7 @@ zdj_pipeline_node_t * zdj_new_decode_node(
 
     // // Debug dump format
     // av_dump_format( state->fmt_ctx, 0, song->audio->filepath, 0 );
-    printf( "zdj_new_decode_node done\n" );
+    // printf( "zdj_new_decode_node done\n" );
 
     return node;
 }
@@ -177,6 +182,12 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         if ( zdj_perf_enabled( ) ) { move_tag->end = zdj_perf_time( ); }
     }
 
+    // Fill ui buffer if requested
+    if( state->ui_buffer_req ) {
+        state->ui_buffer_req = false;
+        memcpy( state->ui_buffer, state->out_buffer, state->win_sample_count * 4 * sizeof( float ) );
+    }
+
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
     // printf( "decode _update_wait done\n" );
@@ -188,6 +199,7 @@ static void _deinit_state( zdj_pipeline_node_t * node ) {
     if( state->codec_ctx ) { avcodec_free_context( &state->codec_ctx ); }
     if( state->fmt_ctx ) { avformat_free_context( state->fmt_ctx ); }
     if( state->out_buffer ) { free( state->out_buffer ); }
+    if( state->ui_buffer ) { free( state->ui_buffer ); }
     // Release packet_layers
     if( state ) { node->state = NULL; free( state );  }
 }
@@ -199,7 +211,7 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_DECODE_WINDOW;
 
     // Move the head address by offset.
-    state->offset_addr_by_transport_d_coord( node, &state->head, (double)offset );
+    state->offset_addr_by_transport_d_coord( node, &state->head, (double)offset, false );
     // Set head's buf coord.
     state->head.buf_d = floor( state->win_sample_count / 2 );
     state->head.buf_i = (int)state->head.buf_d;
@@ -211,6 +223,7 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
         // Update each layer's buffer index coords
         layer->update_buf_coords_for_head( layer, node );
         // Re-fill layer packets after move
+        // printf( "filling exitsing layer\n" );
         layer->fill( layer, node );
         layer = layer->next;
     }
@@ -219,7 +232,8 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
     // Add first layer if layers are empty
     // -----------------------------------
     if( !state->first_layer ) {
-        printf( "===> Found Missing first_layer!\n" );
+        // printf( "===> Found Missing first_layer! returning\n" );
+        return ZDJ_ERROR_OKAY;
     }
     // DEPRECATING
 
@@ -243,7 +257,8 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
             state->offset_addr_by_transport_d_coord( 
                 node, 
                 &loop_start, 
-                (double)loop_state->pcm_len * -1
+                (double)loop_state->pcm_len * -1,
+                false
             );
             // Set ONLY the origin coords to the loop's start
             // loop_start.origin_bg = state->first_layer->core_start.origin_bg;
@@ -290,6 +305,8 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
                     state->song->performance->bpm
                 );
                 
+                // printf( "appending layer\n" );
+                
                 state->append_layer( 
                     node, zdj_new_decode_loop_layer( node, &loop_start, state->last_layer->_loop_state ) 
                 );
@@ -309,6 +326,7 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
     while( layer ) {
         zdj_decode_layer_t * next_layer = layer->next;
         if ( state->can_remove_layer( layer ) ) { 
+            // printf( "decode_node removing layer\n" );
             state->remove_layer( node, layer );
         }
         layer = next_layer;
@@ -325,12 +343,14 @@ static zdj_error_type_t _move_window( zdj_pipeline_node_t * node, double offset 
 }
 
 // DEPRECATING
-static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double address ) {
+static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double origin_coord ) {
     // printf( "======> WARNING!!! RESET WINDOW CALLED\n" );
     // If we're going to use this, we need to clear out the layer stack.
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     zdj_decode_init_addr( &state->head );
-    state->set_addr_transport_d_coord( node, &state->head, address );
+    // state->set_addr_transport_d_coord( node, &state->head, origin_coord );
+    state->head.origin_d = origin_coord;
+    state->head.origin_i = (int64_t)origin_coord;
 
     zdj_decode_layer_t * layer = state->first_layer;
     while( layer ) {
@@ -339,8 +359,14 @@ static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double addres
         layer = next_layer;
     }
 
+    // printf( "decode _reset_window addr:%1.0f head t:%1.0fo:%1.0f\n", origin_coord, state->head.transport_d, state->head.origin_d );
+
     layer = zdj_new_decode_continuous_layer( node, &state->head );
     state->append_layer( node, layer );
+    // printf( "reset_window filling layer: tp:%1.0f->%1.0f o:%1.0f->%1.0f\n", 
+    //     layer->core_start.transport_d, layer->core_end.transport_d,
+    //     layer->core_start.origin_d, layer->core_end.origin_d 
+    // );
     layer->fill( layer, node );
 }
 // DEPRECATING
@@ -348,6 +374,13 @@ static zdj_error_type_t _reset_window( zdj_pipeline_node_t * node, double addres
 static void _clear_out_buffer( zdj_pipeline_node_t * node ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     memset( state->out_buffer, 0, state->win_sample_count * 4 * sizeof( float ) );
+}
+
+static void _install_ui_buffer( zdj_pipeline_node_t * node ) {
+    printf( "_install_ui_buffer: %p\n", node );
+    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
+    state->ui_buffer = calloc( state->win_sample_count * 4, sizeof( float ) );
+    state->ui_buffer_req = true;
 }
 
 static void _prepend_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer ) {
@@ -386,4 +419,36 @@ static void _remove_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * laye
     if( layer == state->first_layer ) { state->first_layer = layer->next; }
     if( layer == state->last_layer ) { state->last_layer = layer->prev; }
     layer->deinit( layer );
+}
+
+static void _remove_all_layers_except( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer ) {
+    zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)node->state;
+    
+    zdj_decode_layer_t * prev_layer = layer->prev;
+    int iter_lim = 1000;
+    int iter = 0;
+    while( prev_layer ) {
+        zdj_decode_layer_t * new_prev_layer = prev_layer->prev;
+        decode_state->remove_layer( node, prev_layer );
+        prev_layer = new_prev_layer;
+
+        if( iter++ > iter_lim ) {
+            printf( "HIT ITER LIMIT (zdj_remove_other_layers_in_node)\n" );
+            break;
+        }
+    }
+    iter = 0;
+    zdj_decode_layer_t * next_layer = layer->next;
+    while( next_layer ) {
+        zdj_decode_layer_t * new_next_layer = next_layer->next;
+        decode_state->remove_layer( node, next_layer );
+        next_layer = new_next_layer;
+
+        if( iter++ > iter_lim ) {
+            printf( "HIT ITER LIMIT (zdj_remove_other_layers_in_node)\n" );
+            break;
+        }
+    }
+    decode_state->first_layer = layer;
+    decode_state->last_layer = layer;
 }

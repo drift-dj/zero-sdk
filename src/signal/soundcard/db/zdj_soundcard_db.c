@@ -101,6 +101,10 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_1_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
     dto->deck_1_prefade_dsp.stages[ 0 ].knob_3 = 1.0; // Xover Lo
     dto->deck_1_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Hi
+    dto->deck_1_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
+    dto->deck_1_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
+    dto->deck_1_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
+    dto->deck_1_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
 
     // Deck 2
     dto->deck_2_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE;
@@ -116,6 +120,10 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_2_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
     dto->deck_2_prefade_dsp.stages[ 0 ].knob_3 = 1.0; // Xover Lo
     dto->deck_2_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Hi
+    dto->deck_2_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
+    dto->deck_2_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
+    dto->deck_2_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
+    dto->deck_2_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
 
     // Ext Deck
     dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
@@ -131,6 +139,10 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_ext_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
     dto->deck_ext_prefade_dsp.stages[ 0 ].knob_3 = 1.0; // Xover Lo
     dto->deck_ext_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Hi
+    dto->deck_ext_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
+    dto->deck_ext_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
+    dto->deck_ext_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
+    dto->deck_ext_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
 
     // Main Clock
     dto->clock_0_sig = ZDJ_SOUNDCARD_SIGNAL_XPORT_ANALOG_PPQN_4; // Clock output 4 PPQN
@@ -826,8 +838,8 @@ void zdj_soundcard_fetch_dsp_for_entity_id( zdj_soundcard_dsp_dto_t * dto, char 
     if( stmt ) {
         while ( ( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW ) {
             strcpy( dto->entity_id, (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_DSP_COL_ENTITY_ID ) );
-            dto->gain = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_GAIN );
-            dto->pan = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_PAN );
+            dto->gain = sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_GAIN );
+            dto->pan = sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_PAN );
 
             dto->stages[ 0 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_TYPE );
             dto->stages[ 0 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_ID );

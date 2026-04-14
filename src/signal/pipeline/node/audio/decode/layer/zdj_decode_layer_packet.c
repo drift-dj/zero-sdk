@@ -55,6 +55,7 @@ static bool _is_empty( zdj_decode_layer_t * layer ) {
 
 static void _prepend_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * packet ) {
     // printf( "_prepend_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
+    layer->debug_packet_counter++;
     if( layer->first_packet ) {
         packet->next = layer->first_packet;
         layer->first_packet->prev = packet;
@@ -67,6 +68,8 @@ static void _prepend_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * p
 
 static void _append_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * packet ) {
     // printf( "_append_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
+    if( !layer || !packet ) { return; }
+    layer->debug_packet_counter++;
     if( layer->last_packet ) {
         packet->prev = layer->last_packet;
         layer->last_packet->next = packet;
@@ -84,6 +87,7 @@ static void _insert_packet_after(
     if( target_packet == layer->last_packet ) {
         layer->append_packet( layer, new_packet );
     } else {
+        layer->debug_packet_counter++;
         new_packet->next = target_packet->next;
         new_packet->next->prev = new_packet;
         new_packet->prev = target_packet;
@@ -98,6 +102,7 @@ static void _insert_packet_before(
     if( target_packet == layer->first_packet ) {
         layer->prepend_packet( layer, new_packet );
     } else {
+        layer->debug_packet_counter++;
         new_packet->next = target_packet;
         new_packet->next->prev = new_packet;
         new_packet->prev = target_packet->prev;
@@ -107,6 +112,7 @@ static void _insert_packet_before(
 
 static void _remove_packet( zdj_decode_layer_t * layer, zdj_decode_packet_t * packet ) {
     if( !packet ) { return; }
+    layer->debug_packet_counter--;
     // printf( "remove_packet: %1.0f->%1.0f\n", packet->start_addr.origin_d,packet->end_addr.origin_d );
     if( packet == layer->first_packet && packet == layer->last_packet ) {
         layer->first_packet = NULL;

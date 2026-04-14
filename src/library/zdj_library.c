@@ -111,6 +111,17 @@ static void _zdj_library_create_db_tables( sqlite3 * db ) {
 }
 
 zdj_health_status_t zdj_library_open_db( void ) {
+    // If lib doesn't exist, create it.
+    if( access( ZDJ_LIBRARY_DB_PATH, F_OK ) != 0 ) {
+        printf( "Library not found: %s\nCreating new.\n", ZDJ_LIBRARY_DB_PATH );
+        zdj_fs_mkdir_p( ZDJ_LIBRARY_DIR );
+        zdj_fs_mkdir_p( ZDJ_LIBRARY_PLAYBACK_WAVEFORM_DIR );
+        zdj_fs_mkdir_p( ZDJ_LIBRARY_PLAYBACK_WAVEFORM_TEMP_DIR );
+        zdj_fs_mkdir_p( ZDJ_LIBRARY_THUMB_WAVEFORM_DIR );
+        zdj_fs_mkdir_p( ZDJ_LIBRARY_THUMB_WAVEFORM_TEMP_DIR );
+        zdj_library_reset_db( );
+    }
+
     // Open import db
     zdj_library_db = zdj_sql_open( ZDJ_LIBRARY_DB_PATH );
     if( !zdj_library_db ) { 

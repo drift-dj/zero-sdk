@@ -59,10 +59,12 @@ double zdj_soundcard_dsp_get_knob_display_val(
         case ZDJ_SOUNDCARD_DSP_KNOB_12DB_GAIN_SLOW:
             return _display_val_for_12db_gain_val( val );
             break;
+        case ZDJ_SOUNDCARD_DSP_KNOB_0_1_FAST:
+            return val;
+            break;
         case ZDJ_SOUNDCARD_DSP_KNOB_PAN:
         case ZDJ_SOUNDCARD_DSP_KNOB_INF_FAST:
         case ZDJ_SOUNDCARD_DSP_KNOB_INF_SLOW:
-        case ZDJ_SOUNDCARD_DSP_KNOB_0_1_FAST:
         case ZDJ_SOUNDCARD_DSP_KNOB_0_1_SLOW:
         case ZDJ_SOUNDCARD_DSP_KNOB_NEG_POS_1_FAST:
         case ZDJ_SOUNDCARD_DSP_KNOB_NEG_POS_1_SLOW: return 0; break;

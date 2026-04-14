@@ -26,7 +26,7 @@ zdj_view_t * zdj_new_clock_meter_view(
     zdj_soundcard_meter_label_t label,
     bool show_detail 
 ) {
-    zdj_view_t * clock_meter_view = zdj_new_view( &(zdj_rect_t){0,0,12,40} );
+    zdj_view_t * clock_meter_view = zdj_new_view( &(zdj_rect_t){0,0,12,55} );
     clock_meter_view->type = ZDJ_VIEW_MENU_ITEM;
     clock_meter_view->draw = &_zdj_clock_meter_draw;
     clock_meter_view->handle_control_event = &_zdj_clock_meter_handle_control;
@@ -47,9 +47,9 @@ zdj_view_t * zdj_new_clock_meter_view(
         NULL 
     );
     clock_pulse->frame.x = 1;
-    clock_pulse->frame.y = 45;
+    clock_pulse->frame.y = 50;
     clock_pulse->frame.w = 5;
-    clock_pulse->frame.h = 2;
+    clock_pulse->frame.h = 4;
     state->clock_pulse = clock_pulse;
     zdj_add_subview( clock_meter_view, clock_pulse );
 
@@ -73,7 +73,7 @@ zdj_view_t * zdj_new_clock_meter_view(
     char str[ 16 ];
     snprintf( str, sizeof( str ), "%1.2f", deck_state->set_bpm );
     zdj_view_t * bpm = zdj_new_label_vert_view( str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    bpm->frame.y = 37 - bpm->frame.h;
+    bpm->frame.y = 40 - bpm->frame.h;
     bpm->frame.x = 1;
     state->clock_bpm = bpm;
     zdj_add_subview( clock_meter_view, bpm );
@@ -88,7 +88,7 @@ zdj_view_t * zdj_new_clock_meter_view(
     // Add detail
     zdj_view_t * detail = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DETAIL ], NULL );
     detail->frame.x = 0;
-    detail->frame.y = 43;
+    detail->frame.y = 46;
     detail->frame.w = 0;
     state->detail = detail;
     zdj_add_subview( clock_meter_view, detail );
@@ -113,9 +113,9 @@ void _zdj_clock_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     // Update pulse icon
     if( deck_state->meter_on ) {
-        state->clock_pulse->frame.y = 43;
+        state->clock_pulse->frame.y = 49;
     } else {
-        state->clock_pulse->frame.y = 45;
+        state->clock_pulse->frame.y = 55;
     }
 
     // Update BPM
@@ -123,7 +123,7 @@ void _zdj_clock_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     char str[ 16 ];
     snprintf( str, sizeof( str ), "%1.2f", deck_state->set_bpm );
     zdj_view_t * bpm = zdj_new_label_vert_view( str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    bpm->frame.y = 37 - bpm->frame.h;
+    bpm->frame.y = 40 - bpm->frame.h;
     bpm->frame.x = 1;
     state->clock_bpm = bpm;
     zdj_add_subview( view, bpm );

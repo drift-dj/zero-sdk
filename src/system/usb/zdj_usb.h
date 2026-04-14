@@ -29,9 +29,9 @@
 
 #include <zerodj/system/error/zdj_error.h>
 
-#define ZDJ_USB_REQUEST_PATH "/etc/zero_data/usb_request"
-#define ZDJ_USB_STATUS_PATH "/etc/zero_data/usb_status"
-#define ZDJ_USB_DEVICE_DB_PATH "/etc/zero_data/device.db"
+#define ZDJ_USB_REQUEST_PATH "/media/internal/.system/usb_request"
+#define ZDJ_USB_STATUS_PATH "/media/internal/.system/usb_status"
+#define ZDJ_USB_DEVICE_DB_PATH "/media/internal/.system/device.db"
 
 typedef enum {
     ZDJ_USB_MODE_UNKNOWN,
@@ -113,6 +113,15 @@ static char * zdj_usb_submode_switch_name[ ZDJ_USB_SUBMODE_SWITCH_COUNT ] = {
 };
 
 typedef struct {
+    bool switch_req;
+    bool has_update;
+    zdj_usb_submode_switch_state_t state;
+    char switch_str_1[ 64 ];
+    char switch_str_2[ 64 ];
+    bool should_show_lib_rescan;
+} zdj_usb_submode_switch_data_t;
+
+typedef struct {
     bool uac2;
     bool midi;
     bool mass_storage;
@@ -124,17 +133,14 @@ typedef struct {
     zdj_usb_mode_t mode;
     zdj_usb_submode_t submode;
     zdj_usb_gadget_config_t gadget_config;
-} zdj_usb_mode_request_t;
+} zdj_usb_mode_state_t;
 
 typedef struct {
-    zdj_usb_mode_t mode;
-    zdj_usb_submode_t submode;
-    zdj_usb_gadget_config_t gadget_config;
-    zdj_usb_submode_switch_state_t switch_state;
-    bool has_frontend_update;
-    bool requires_reboot;
-    int devices_line_count;
-} zdj_usb_status_t;
+    bool has_update;
+    bool msd_has_been_mounted;
+    bool msd_has_been_hot_unplugged;
+    bool msd_has_been_unmounted_by_host;
+} zdj_usb_gadget_state_t;
 
 typedef struct zdj_usb_device_t {
     char entity_id[ 64 ];
@@ -146,10 +152,12 @@ typedef struct zdj_usb_device_t {
     char serial[ 64 ];
     char name_user[ 128 ];
     char mount_path[ 256 ];
+    bool mount_path_valid;
     bool attached;
     bool has_audio;
     bool has_msd;
     bool has_hid;
+    bool has_midi;
     struct zdj_usb_device_t * next;
 } zdj_usb_device_t;
 
@@ -166,29 +174,58 @@ typedef struct {
     zdj_usb_device_t * devices;
 } zdj_usb_attached_devices_t;
 
-extern zdj_usb_status_t * zdj_usb_status;
+typedef struct {
+    // bool has_update;
+    bool has_browser_panel_update;
+    bool has_file_browser_update;
+    bool has_usb_panel_update;
+    bool has_soundcard_update;
+    bool has_control_update;
+    int devices_line_count;
+    zdj_usb_attached_devices_t attached;
+} zdj_usb_host_state_t;
+
+typedef struct {
+    zdj_usb_mode_state_t mode_state;
+    zdj_usb_submode_switch_data_t switch_data;
+    bool run_state_thread;
+    bool has_port_partner;
+    bool has_port_partner_update;
+    zdj_usb_host_state_t host_state;
+    zdj_usb_gadget_state_t gadget_state;
+} zdj_usb_state_t;
+
+extern zdj_usb_state_t * zdj_usb_state;
 
 // USB Lifecycle
-zdj_error_type_t zdj_usb_init_frontend( void );
-
+zdj_error_type_t zdj_usb_init( void );
+zdj_error_type_t zdj_usb_disable( );
 
 // USB Mode Control API
-zdj_error_type_t zdj_usb_request_mode_switch( zdj_usb_mode_request_t * request );
+zdj_error_type_t zdj_usb_enable_mode( zdj_usb_mode_state_t * request );
+zdj_error_type_t zdj_usb_update_mode_from_sysfs( zdj_usb_state_t * state );
+void zdj_usb_bringup_last_requested_state( void );
+
+// USB Gadget Mode API
+bool zdj_usb_has_active_gadget( zdj_usb_state_t * state );
 zdj_usb_submode_t zdj_usb_submode_for_gadget_config( zdj_usb_gadget_config_t * config );
 zdj_error_type_t zdj_usb_update_gadget_config_from_functionfs( zdj_usb_gadget_config_t * config );
 
-// USB Connection Polling API
-bool zdj_usb_has_port_partner( void );
-bool zdj_usb_has_port_partner_update( void );
-zdj_error_type_t zdj_usb_start_port_partner_poll( void );
-zdj_error_type_t zdj_usb_stop_port_partner_poll( void );
-bool zdj_usb_host_has_devices_update( void );
-// bool zdj_usb_has_sysfs_devices_update( void );
-// zdj_error_type_t zdj_usb_start_sysfs_devices_poll( void );
-// zdj_error_type_t zdj_usb_stop_sysfs_devices_poll( void );
+// USB Host Mode API
+zdj_usb_attached_devices_t * zdj_usb_update_attached_devices( void );
+void zdj_usb_scan_attached_alsa_devices( zdj_usb_state_t * state );
 
-// USB Device Private API
-zdj_usb_attached_devices_t * zdj_usb_get_attached_devices( zdj_usb_device_filter_t type );
+// USB Connection State API
+
+void zdj_usb_launch_state_thread( void );
+// void zdj_usb_switch_state( zdj_usb_state_t * state );
+// bool zdj_usb_has_port_partner( void );
+// bool zdj_usb_has_port_partner_update( void );
+// bool zdj_usb_host_has_devices_update( void );
+// bool zdj_usb_msd_has_disconnected( void );
+
+// USB Devices API (Private)
+sqlite3 * _zdj_usb_get_device_db( void );
 zdj_usb_device_t * zdj_usb_device_create_dto( 
     char * crc,
     char * usb_vendor,
@@ -200,16 +237,16 @@ zdj_usb_device_t * zdj_usb_device_create_dto(
 );
 zdj_error_type_t zdj_usb_device_free_dto( zdj_usb_device_t * device );
 zdj_error_type_t zdj_usb_device_store_dto( zdj_usb_device_t * device, sqlite3 * db );
-
 zdj_usb_device_t * zdj_usb_device_fetch_dto_for_entity_id( char * entity_id, sqlite3 * db );
 zdj_error_type_t zdj_usb_device_fetch_all_entity_ids( char ** arr, int count, sqlite3 * db );
 zdj_usb_device_t * zdj_usb_device_fetch_dto_for_hash( char * hash, sqlite3 * db );
 int zdj_usb_device_count_in_db( sqlite3 * db );
-char * zdj_usb_device_get_uuid( void );
+// char * zdj_usb_device_get_uuid( void );
 zdj_error_type_t zdj_usb_device_cleanup_str( char * buf, size_t buf_len );
 
-// USB Mass Storage Device API
-zdj_error_type_t zdj_usb_msd_device_set_mount_path( zdj_usb_device_t * device );
+bool zdj_usb_devices_db_needs_init( void );
+sqlite3 * zdj_usb_create_devices_db( void );
+void zdj_usb_reset_devices_db( void );
 
 
 #endif

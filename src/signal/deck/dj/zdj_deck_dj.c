@@ -12,7 +12,6 @@
 #include <zerodj/signal/deck/dj/zdj_deck_dj.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
-// #include <zerodj/signal/pipeline/node/audio/deck_dsp/zdj_deck_dsp_node.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_pitch_node.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_tempo_node.h>
@@ -22,12 +21,6 @@ static void _update_state ( zdj_deck_t * deck );
 static void _begin_teardown( zdj_deck_t * deck );
 static void _deinit( zdj_deck_t * deck );
 static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool stereo );
-
-// static void _reset_tsm_tempo_node_to_decode_addr( 
-//     zdj_pipeline_node_t * node, 
-//     double addr 
-// );
-
 
 static int64_t _get_resource_addr( struct zdj_deck_t * deck );
 static void _set_resource_addr( struct zdj_deck_t * deck, int64_t addr );
@@ -88,13 +81,13 @@ static void _update_state ( zdj_deck_t * deck ) {
     switch ( deck->status ) {
 
         case ZDJ_DECK_STATUS_NEW:
-            printf( "ZDJ_DECK_STATUS_NEW (%p)\n", deck );
+            // printf( "ZDJ_DECK_STATUS_NEW (%p)\n", deck );
             deck->status = ZDJ_DECK_STATUS_MAKE_PIPELINE;
             break;
 
         // Stand up pipeline nodes.
         case ZDJ_DECK_STATUS_MAKE_PIPELINE:
-            printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE (%p)\n", deck );
+            // printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE (%p)\n", deck );
             // deck_state->dsp_node = zdj_new_deck_dsp_node( );
 
             zdj_deck_dj_init_sync( deck );
@@ -156,7 +149,7 @@ static void _update_state ( zdj_deck_t * deck ) {
         // If it does, assume it's in the process of exiting,
         // and keep polling here until it becomes available.
         case ZDJ_DECK_STATUS_WAIT_THREAD_AVAIL:
-            printf( "ZDJ_DECK_STATUS_WAIT_THREAD_AVAIL (%p)\n", deck );
+            // printf( "ZDJ_DECK_STATUS_WAIT_THREAD_AVAIL (%p)\n", deck );
             // if( deck->predelay_counter++ < 5 ) { break; }
             if( deck->station == ZDJ_DECK_STATION_1 &&
                 zdj_thread_deck_1_station_available 
@@ -178,7 +171,7 @@ static void _update_state ( zdj_deck_t * deck ) {
 
         // Wait for new deck thread to finish filling its buffers.
         case ZDJ_DECK_STATUS_WAIT_THREAD_READY:
-            printf( "DJ ZDJ_DECK_STATUS_WAIT_THREAD_READY (%p)\n", deck );
+            // printf( "DJ ZDJ_DECK_STATUS_WAIT_THREAD_READY (%p)\n", deck );
             if( deck_state->thread_ready ) {     
                 // printf( "0\n" );           
                 // Start serving deck samples to soundcard.
@@ -198,17 +191,35 @@ static void _update_state ( zdj_deck_t * deck ) {
                 // Update deck manager tempo
                 deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm );
 
+
                 // printf( "3\n" );
                 // Prep loop/skip state
-                deck->controls.discon_quantize = true;
-                deck->controls.discon_quantize_val = 0.0625f;
+                if( deck_state->song->performance &&
+                    deck_state->song->performance->has_beat_grid
+                ) {
+                    deck->controls.discon_quantize = true;
+                    deck->controls.loop_state.beatgrid_len = 1.0f;
+                    deck->controls.loop_state.pcm_len = decode_state->get_d_offset_for_beatgrid_dist( 
+                        deck_state->decode_node, 
+                        deck->controls.loop_state.beatgrid_len 
+                    );
+                } else {
+                    deck->controls.discon_quantize = false;
+                    deck->controls.loop_state.pcm_len = 44100.0;
+                }
+                deck->controls.discon_quantize_val = 0.125f;
                 deck->controls.loop_state.fade_len = 300;
-                deck->controls.loop_state.beatgrid_len = 1.0f;
-                deck->controls.loop_state.pcm_len = decode_state->get_d_offset_for_beatgrid_dist( 
-                    deck_state->decode_node, deck->controls.loop_state.beatgrid_len 
-                );
+                
+                
                 deck->controls.skip_state.phase = ZDJ_DECK_SKIP_PHASE_INACTIVE;
                 deck->controls.needledrop_state.phase = ZDJ_DECK_NEEDLEDROP_PHASE_INACTIVE;
+                if( deck_state->song->performance &&
+                    deck_state->song->performance->cuepoint_count > 0
+                ) {
+                    deck_state->song->performance->current_cuepoint = 0;
+                    deck->controls.hotcue_state.current_target_d = (double)deck_state->song->performance->cuepoints[ 0 ]->sample;
+                }
+
 
                 // printf( "4\n" );
                 // Call UI load CB
@@ -219,19 +230,19 @@ static void _update_state ( zdj_deck_t * deck ) {
 
         // Ignore new control events and start spooldown of deck drive/transport model.
         case ZDJ_DECK_STATUS_STOP_TRANSPORT:
-            printf( "ZDJ_DECK_STATUS_STOP_TRANSPORT (%p)\n", deck );
+            // printf( "ZDJ_DECK_STATUS_STOP_TRANSPORT (%p)\n", deck );
             // Immediately stop accepting control events.
             deck->handle_control_event = NULL;
             // Stop deck playback if running.
             if( deck->controls.platter.motor.enabled ) {
                 deck->safe_to_deinit = false;
-                if( deck->controls.platter.slip.state == ZDJ_PLATTER_SLIP_LAMINAR_TEMPO ) {
-                    // If we're in tempo mode, we need to sync the needle head with tempo node.
-                    zdj_dj_deck_reset_platter( &deck->controls.platter, tsm_tempo_state->decode_coord );
-                    // We also need to set the pitch node's sample addresses to something reasonable
-                    zdj_tsm_pitch_node_state_t * tsm_pitch_state = (zdj_tsm_pitch_node_state_t*)deck_state->tsm_pitch_node->state;
-                    tsm_pitch_state->decode_start_coord = tsm_tempo_state->decode_coord - ZDJ_SOUNDCARD_BUF_LEN;
-                }
+                // if( deck->controls.platter.slip.state == ZDJ_PLATTER_SLIP_LAMINAR_TEMPO ) {
+                //     // If we're in tempo mode, we need to sync the needle head with tempo node.
+                //     zdj_dj_deck_reset_platter( &deck->controls.platter, tsm_tempo_state->decode_coord );
+                //     // We also need to set the pitch node's sample addresses to something reasonable
+                //     zdj_tsm_pitch_node_state_t * tsm_pitch_state = (zdj_tsm_pitch_node_state_t*)deck_state->tsm_pitch_node->state;
+                //     tsm_pitch_state->decode_start_coord = tsm_tempo_state->decode_coord - ZDJ_SOUNDCARD_BUF_LEN;
+                // }
                 deck->controls.platter.motor.enabled = false;
                 deck->controls.platter.motor.state = ZDJ_PLATTER_MOTOR_SPIN_DOWN;
                 deck->controls.platter.motor.cur_spin_down_cycle = 0;
@@ -249,7 +260,7 @@ static void _update_state ( zdj_deck_t * deck ) {
         // Wait while deck transport fades out or slows to rate=0.
         // Allow this to take several audio buffer cycles.
         case ZDJ_DECK_STATUS_WAIT_SPOOLDOWN:
-            printf( "ZDJ_DECK_STATUS_WAIT_SPOOLDOWN (%p)\n", deck );
+            // printf( "ZDJ_DECK_STATUS_WAIT_SPOOLDOWN (%p)\n", deck );
             if( deck->safe_to_deinit ) {
                 // Stop sending deck samples to soundcard
                 zdj_soundcard_unlink_deck( zdj_soundcard, deck );
@@ -259,7 +270,6 @@ static void _update_state ( zdj_deck_t * deck ) {
                 sem_post( &deck_state->start_cycle );
                 // Tell the deck_manager we are ready for deinit()
                 deck->status = ZDJ_DECK_STATUS_IDLE;
-
             }
             break;
         default: break;
@@ -292,10 +302,10 @@ static void * _pipeline_thread_main( void * arg ) {
     zdj_tsm_tempo_node_state_t * tsm_tempo_state = (zdj_tsm_tempo_node_state_t*)deck_state->tsm_tempo_node->state;
 
     // Set up scheduling
-    int prio = sched_get_priority_max( SCHED_RR );
+    int prio = sched_get_priority_max( SCHED_FIFO );
 	struct sched_param param;
 	param.sched_priority = prio;
-	sched_setscheduler( syscall(SYS_gettid), SCHED_RR, &param );
+	sched_setscheduler( syscall(SYS_gettid), SCHED_FIFO, &param );
 
     // Give realtime scheduler access to 100% of core time
 	system( "echo -1 >/proc/sys/kernel/sched_rt_runtime_us" );
@@ -315,7 +325,7 @@ static void * _pipeline_thread_main( void * arg ) {
             zdj_thread_deck_2_station_available = false;
             break;
         case ZDJ_DECK_STATION_EXT:
-            // CPU_SET( 1,&cpuset );
+            CPU_SET( 2,&cpuset );
             zdj_thread_deck_ext_station_available = false;
             break;
         default: break;
@@ -327,7 +337,6 @@ static void * _pipeline_thread_main( void * arg ) {
     }
 
     double p_start, p_start_prev, d_start, p_end, d_end;
-
     double head_move_val;
     double head_move_rate;
     while( !deck_state->exit_thread ) {
@@ -395,42 +404,27 @@ static void * _pipeline_thread_main( void * arg ) {
 
         // printf( "head_move: %1.0f\n", head_move_val );
         if( fabs( head_move_val ) > zdj_eps) {
-            // If hyperscrub has been requested, this means we're scrubbing faster than
-            // the decode window will allow.  Add a skip to catch up to the requested scrub rate,
-            // but continue moving thru the decode buffer at the clamped scrub rate.
-            // if( fabs( deck->controls.hyperscrub_state.req_offset ) > zdj_eps ) {
-            //     deck->new_hyperscrub( deck, deck->controls.hyperscrub_state.req_offset );
-            // }
+            decode_node->move_window( decode_node, head_move_val );
+            decode_node->update_wait( decode_node );
+        }
 
-            // if ( zdj_perf_enabled( ) ) {
-                
-                
-
-            //     zdj_perf_tag_t * move_tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_DECK_AUDIO_CYCLE );
-            //     move_tag->name = ZDJ_PERF_TAG_DECK_MOVE;
-            //     move_tag->start = zdj_perf_time( );
-            //     decode_node->move_window( decode_node, head_move_val );
-            //     decode_node->update_wait( decode_node );
-            //     move_tag->end = zdj_perf_time( );
-            
-            // d_start = zdj_perf_time( );
-
-            // } else {
-                decode_node->move_window( decode_node, head_move_val );
-                decode_node->update_wait( decode_node );
-            // }
-
-            // d_end = zdj_perf_time( );
-
-            
-
-            // decode_state->get_win_start_addr( decode_node, &win_start );
-            // decode_state->get_win_end_addr( decode_node, &win_end );
-            // printf( "1 %p ffwd tsm:%1.1f (%p)win:%1.1f\n", deck, tsm_pitch_state->decode_start_coord, decode_node, win_start.transport_d );
-            // printf( "post-move win: %1.0f/%1.0f -> %1.0f/%1.0f\n", 
-            //     win_start.transport_d, win_start.origin_d,
-            //     win_end.transport_d, win_end.origin_d
-            // );
+        // If we've moved off the end of the song, trigger a playback stop.
+        if( decode_state->head.origin_d > decode_state->song_pcm_duration &&
+            deck->controls.platter.motor.enabled &&
+            !deck->controls.loop_state.is_enabled
+        ) {
+            // Pause
+            if( deck->controls.platter.slip.state == ZDJ_PLATTER_SLIP_LAMINAR_TEMPO ) {
+                // If we're in tempo mode, we need to sync the needle head with tempo node.
+                zdj_dj_deck_reset_platter( &deck->controls.platter, tsm_tempo_state->decode_coord );
+                // We also need to set the pitch node's sample addresses to something reasonable
+                tsm_pitch_state->decode_start_coord = tsm_tempo_state->decode_coord - ZDJ_SOUNDCARD_BUF_LEN;
+            }
+            deck->controls.platter.motor.enabled = false;
+            deck->controls.platter.motor.state = ZDJ_PLATTER_MOTOR_SPIN_DOWN;
+            deck->controls.platter.motor.cur_spin_down_cycle = 0;
+            // Ensure slip is in pitch mode so we hear spin down.
+            deck->controls.platter.slip.state = ZDJ_PLATTER_SLIP_LAMINAR_PITCH;
         }
 
         decode_state->get_win_start_addr( decode_node, &win_start );
@@ -503,13 +497,13 @@ static void * _pipeline_thread_main( void * arg ) {
         // printf( "d:%1.2f\n", ( p_end - p_start ) / 1000000.0 );
         int sval;
         sem_getvalue( &deck_state->start_cycle, &sval );
-        if( sval > 0 ){ 
-            printf( "deck sem miss con:%1.3f dcd:%1.3f tsm:%1.3f\n",
-                ( con_end - con_start ) / 1000000.0,
-                ( dcd_end - dcd_start ) / 1000000.0,
-                ( tsm_end - tsm_start ) / 1000000.0
-            ); 
-        }
+        // if( sval > 0 ){ 
+        //     printf( "deck sem miss con:%1.3f dcd:%1.3f tsm:%1.3f\n",
+        //         ( con_end - con_start ) / 1000000.0,
+        //         ( dcd_end - dcd_start ) / 1000000.0,
+        //         ( tsm_end - tsm_start ) / 1000000.0
+        //     ); 
+        // }
         sem_wait( &deck_state->start_cycle );
     }
 

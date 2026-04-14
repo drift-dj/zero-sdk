@@ -75,7 +75,7 @@ zdj_launch_req_t * zdj_registry_process_new_launch_req( void ) {
 // then populate the reg_install pointers by loading
 // a matching persisted zdj_install_t from storage.
 zdj_launch_req_t * zdj_registry_load_launch_req( char * path ) {
-    printf( "zdj_registry_load_launch_req\n" );
+    // printf( "zdj_registry_load_launch_req: %s\n", path );
     // Load the request from storage
     FILE * fp;
     zdj_launch_req_t * req = calloc( 1, sizeof( zdj_launch_req_t ) );
@@ -102,7 +102,7 @@ int zdj_registry_write_launch_req(
     zdj_launch_req_t * launch_req 
 ) {
     FILE * fp = fopen( path, "w" );
-    printf( "zdj_registry_write_launch_req path: %s fp: %p\n", path, fp );
+    // printf( "zdj_registry_write_launch_req path: %s fp: %p\n", path, fp );
     int bw = 0;
     if( fp ) {
         bw = fwrite( launch_req, sizeof( zdj_launch_req_t ), 1, fp );

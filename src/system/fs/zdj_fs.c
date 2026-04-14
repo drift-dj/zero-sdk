@@ -12,10 +12,30 @@
 #include <errno.h>
 
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/hash/zdj_hash.h>
+#include <zerodj/system/error/zdj_error.h>
 #include <zerodj/health/zdj_health_type.h>
 
 bool _zdj_fs_filename_match( char * filename, zdj_fs_scan_pattern_t * pattern );
 static int _zdj_maybe_mkdir(const char* path, mode_t mode);
+
+// Get available bytes on the media volume
+float zdj_fs_get_free_media_space( void ) {
+    struct statvfs stat;
+    statvfs( "/media/internal/", &stat );
+    return ((double)stat.f_bavail * (double)stat.f_frsize) / 1000000.0;
+}
+
+// Get filesize in bytes
+float zdj_fs_get_filesize( char * path ) {
+    struct stat st;
+
+    // stat() returns 0 on success, -1 on failure
+    if ( stat( path, &st ) == -1 ) { return 0; }
+
+    // st_size contains the file size in bytes
+    return (double)st.st_size / 1000000.0;
+}
 
 // Copy a file from source to destination.
 zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite ) {
@@ -60,6 +80,67 @@ zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite ) {
     
     return ZDJ_HEALTH_STATUS_OKAY;
 }
+
+// Copy a file from source to destination - fail if hashes don't match
+int zdj_fs_copy_file_with_hash( char * src, char * dst, bool overwrite ) {
+    printf( "zdj_fs_copy_file_with_hash: %s -> %s, o/w: %d\n", src, dst, overwrite );
+    // TODO - Add free space check
+
+    // Confirm source file exists.
+    FILE * src_fd = fopen( src, "r" );
+    if( !src_fd ) { return ZDJ_ERROR_FILE_MISSING; }
+
+    // hash the input file
+    char pre_sum[ ZDJ_HASH_LEN ];
+    zdj_put_file_hash( src, pre_sum );
+
+    if( overwrite && ( access(dst, F_OK) == 0 ) ) {
+        // TODO - backup before overwrite
+        // If overwrite, remove dest file if it exists and perms are okay.
+        remove( dst );
+    } else if( !overwrite && ( access(dst, F_OK) == 0 ) ) {
+        // If no overwrite, return error if dest file exists.
+        return ZDJ_ERROR_FILE_EXISTS;
+    }
+    
+    // Ensure dest dir exists
+    char * tmp = strdup( dst );
+    char * dir_name = dirname( tmp );
+    zdj_fs_mkdir_p( dir_name );
+    free( tmp );
+
+    // Copy bytes from source to destination
+    FILE * dst_fd = fopen( dst, "w" );
+    // printf( "opend dst_fd: %s, %p\n", dst, dst_fd );
+    if( !dst_fd ) { return ZDJ_ERROR_BAD_DIR; }
+    int a;
+    while ( ( a = fgetc( src_fd ) ) != EOF ) {
+        fputc( a, dst_fd );
+    }
+
+    // Set permissions for new file
+    // printf( "chmod 0744 %s\n", dst );
+    if( chmod( dst, 0744 ) == -1 ) {
+        return ZDJ_ERROR_BAD_PERMS;
+    }
+
+    // hash the copied file
+    char post_sum[ ZDJ_HASH_LEN ];
+    zdj_put_file_hash( src, post_sum );
+
+    if( strcmp( pre_sum, post_sum ) ) {
+        printf( "copy w/hash failed! pre:%s post:%s", pre_sum, post_sum );
+        // TODO - copy backup if hash fails
+        // Return failure
+        return ZDJ_ERROR_FAILED_COPY;
+    }
+
+    fclose( dst_fd );
+    fclose( src_fd );
+    
+    return ZDJ_HEALTH_STATUS_OKAY;
+}
+
 
 zdj_health_status_t zdj_fs_extract_file_from_binary( 
     char * bin, 
@@ -444,7 +525,8 @@ void zdj_fs_get_popen( char * cmd, char * res ) {
 
     // Read the output of the command
     while ( fgets( ret, sizeof( ret ), fp ) != NULL ) {
-        printf( "%s", ret );
+        // printf( "%s", ret );
+        ;
     }
 
     // Close the pipe
@@ -454,5 +536,5 @@ void zdj_fs_get_popen( char * cmd, char * res ) {
     }
 
     // return strdup( &res[ 8 ] );
-    strcpy( res, &res[ 8 ] );
+    strcpy( res, ret );
 }

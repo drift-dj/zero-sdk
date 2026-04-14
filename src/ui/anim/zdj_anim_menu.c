@@ -2,14 +2,17 @@
 
 #include <zerodj/ui/anim/zdj_anim.h>
 
+
+
 void zdj_anim_init_menu_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn ) {
     anim->start_point.x = view->frame.x;
     anim->start_point.y = view->frame.y;
     anim->end_point.x = view->frame.x;
     anim->end_point.y = ZDJ_MENU_Y;
+    anim->frames = zdj_anim_show_hide_frames( );
 
     // Delay the in anim by a few frames to let the old menu's out animation happen.
-    anim->frame = -12;
+    anim->frame = zdj_anim_show_predelay( );
     anim->alive = true;
 }
 
@@ -18,9 +21,10 @@ void zdj_anim_init_menu_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn
     anim->start_point.y = view->frame.y;
     anim->end_point.x = view->frame.x;
     anim->end_point.y = ZDJ_SCREEN_H+1;
+    anim->frames = zdj_anim_show_hide_frames( );
 
     // Delay the out anim by a few frames to give the button flash time to happen.
-    anim->frame = -5;
+    anim->frame = zdj_anim_hide_predelay( );
     anim->alive = true;
 }
 
@@ -40,7 +44,8 @@ void zdj_anim_update_menu( zdj_anim_t * anim, zdj_view_t * view ) {
             view->frame.y = anim->start_point.y;
         } else {
             // During animation
-            float coeff = anim->ease( (float)anim->frame, (float)anim->frames );
+            // float coeff = anim->ease( (float)anim->frame, (float)anim->frames );
+            float coeff = anim->ease( (float)anim->frame, anim->frames );
             view->frame.x = anim->start_point.x + ( ( anim->end_point.x - anim->start_point.x ) * coeff );
             view->frame.y = anim->start_point.y + ( ( anim->end_point.y - anim->start_point.y ) * coeff );
         }

@@ -108,6 +108,7 @@ void zdj_soundcard_handle_deck_event(
     // printf( "zdj_soundcard_handle_deck_event %p %d\n", soundcard, event->id );
     if( !soundcard ) { return; }
     if( event->id == ZDJ_DECK_CONTROL_LR_VOL ) {
+        // printf( "soundcard lr vol event\n" );
         zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( 
             zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS 
         );
@@ -129,6 +130,13 @@ void zdj_soundcard_handle_deck_event(
         node_b->dsp_dto->set_gain( node_b, round(a_coeff*255.0) );
 
         // printf( "XFade Adjust A:%1.2f/%1.2f/%1.2f B:%1.2f/%1.2f/%1.2f\n", a_curve_pow, a_input_val, a_coeff, b_curve_pow, b_input_val, b_coeff );
+    } else if( event->id == ZDJ_DECK_CONTROL_RECORD_VOL ) {
+        // printf( "soundcard record vol event\n" );
+        zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( 
+            zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS 
+        );
+        node->dsp_dto->adjust_gain( node, event->i_val );
+        // printf( "Record Vol Adjust: %d\n", node->dsp_dto->gain );
     } else if( event->id == ZDJ_DECK_CONTROL_TOGGLE_RECORD ) {
         // printf( "toggling record\n" );
         // Get soundcard record node
@@ -136,15 +144,27 @@ void zdj_soundcard_handle_deck_event(
         
         if( recording_node_state->status == ZDJ_AUDIO_RECORD_ACTIVE ) {
             // Stop recording if currently running
-            // zdj_disable_audio_record_capture( zdj_soundcard->recording_node );
             zdj_finish_audio_record_capture( zdj_soundcard->recording_node, true );
-            // Retract recording panel
         } else {
             // Start a recording if not running
             zdj_new_audio_record_capture( zdj_soundcard->recording_node );
-            // Deploy recording panel
-            // zdj_enable_audio_record_capture( zdj_soundcard->recording_node );
         }
+    } else if( event->id == ZDJ_DECK_1_2_BASS_SWAP ) {
+        // printf( "dj deck bass swap\n" );
+        zdj_soundcard_node_t * soundcard_node;
+        zdj_soundcard_dsp_dto_t * dsp_dto;
+        zdj_soundcard_dsp_stage_dto_t * dsp_stage;
+        // Invert event input to deck 1 knob
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 0, event->i_val * -1 ); }
+
+        // Send event input to deck 2 knob
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 0, event->i_val ); }
     }
 }
 

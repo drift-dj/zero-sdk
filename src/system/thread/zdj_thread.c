@@ -22,7 +22,8 @@ bool zdj_thread_deck_2_station_available = true;
 pthread_t _zdj_thread_deck_station_ext;
 bool zdj_thread_deck_ext_station_available = true;
 
-pthread_t _zdj_thread_record_post_proc;
+// pthread_t _zdj_thread_record_proc;
+// pthread_t _zdj_thread_record_post_proc;
 
 zdj_error_type_t zdj_thread_launch_control_cycle( zdj_thread_main main, void * arg ) {
     pthread_create( &_zdj_thread_control, NULL, main, arg );
@@ -72,6 +73,10 @@ zdj_error_type_t zdj_thread_launch_deck_station_ext_cycle( zdj_thread_main main,
     pthread_create( &_zdj_thread_deck_station_ext, NULL, main, arg );
 }
 
-zdj_error_type_t zdj_thread_launch_record_post_proc_cycle( zdj_thread_main main, void * arg ) {
-    pthread_create( &_zdj_thread_record_post_proc, NULL, main, arg );
-}
+// zdj_error_type_t zdj_thread_launch_record_proc_cycle( zdj_thread_main main, void * arg ) {
+//     pthread_create( &_zdj_thread_record_proc, NULL, main, arg );
+// }
+
+// zdj_error_type_t zdj_thread_launch_record_post_proc_cycle( zdj_thread_main main, void * arg ) {
+//     pthread_create( &_zdj_thread_record_post_proc, NULL, main, arg );
+// }

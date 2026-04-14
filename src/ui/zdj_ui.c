@@ -8,6 +8,7 @@
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/system/display/zdj_display.h>
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -24,6 +25,8 @@ int zdj_view_count;
 int zdj_new_view_count;
 bool zdj_screen_cap_armed;
 
+int zdj_ui_refresh_hz = 10; // Init at a very low value and update from settings
+
 void _zdj_view_deinit( struct zdj_view_t * view );
 
 void zdj_ui_init( void ) {
@@ -38,6 +41,7 @@ void zdj_ui_init( void ) {
     }
 
     zdj_display_surface = SDL_CreateRGBSurface( 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, 32, 0, 0, 0, 0 );
+    printf( "Surface format: %s\n", SDL_GetPixelFormatName( zdj_display_surface->format->format ) );
     zdj_display_renderer = SDL_CreateSoftwareRenderer( zdj_display_surface );
     zdj_ui_pixels = zdj_display_surface->pixels;
     if( !zdj_display_renderer || !zdj_ui_pixels ) {
@@ -64,6 +68,45 @@ void zdj_ui_init( void ) {
     zdj_view_stack_init( );
     zdj_ui_panel_init( );
     zdj_ui_widget_init( );
+}
+
+void zdj_ui_min_init( void ) {
+    // Grab the display memory
+    zdj_display_init( );
+
+    // Bringup SDL - exit on fail
+    int err = SDL_Init( SDL_INIT_VIDEO );
+    if( err != 0 ) {
+        printf( "Zero failed to init graphics lib: %s\n", SDL_GetError( ) );
+        exit( ZDJ_HEALTH_STATUS_SDL_FAILED );
+    }
+
+    zdj_display_surface = SDL_CreateRGBSurface( 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, 32, 0, 0, 0, 0 );
+    printf( "Surface format: %s\n", SDL_GetPixelFormatName( zdj_display_surface->format->format ) );
+    zdj_display_renderer = SDL_CreateSoftwareRenderer( zdj_display_surface );
+    zdj_ui_pixels = zdj_display_surface->pixels;
+    if( !zdj_display_renderer || !zdj_ui_pixels ) {
+        printf( "Zero failed to init renderer... exiting\n" );
+        exit( ZDJ_HEALTH_STATUS_SDL_FAILED );
+    }
+
+    err = zdj_font_init( );
+    if( err != 0 ) {
+        printf( "Zero failed to init system fonts... exiting\n" );
+        exit( ZDJ_HEALTH_STATUS_MISSING_GFX_RESOURCE );
+    }
+
+    err = zdj_ui_asset_init( );
+    if( err != 0 ) {
+        printf( "Zero failed to init system assets... exiting\n" );
+        exit( ZDJ_HEALTH_STATUS_MISSING_GFX_RESOURCE );
+    }
+
+    zdj_view_count = 0;
+    zdj_screen_cap_armed = false;
+
+    // Bringup the display stack
+    zdj_view_stack_min_init( );
 }
 
 void zdj_ui_deinit( void ) {
@@ -214,10 +257,10 @@ void zdj_push_subview( zdj_view_t * view, zdj_view_t * subview, bool animated ) 
     // Activate view's control map
     if( subview->map != ZDJ_CONTROL_MAP_NONE ){ zdj_activate_control_map( subview->map ); }
 
-    // printf( "zdj_push_subview: %p old %p new: %p\n", 
-    //     view, 
-    //     old_subview,
-    //     subview 
+    // printf( "zdj_push_subview: %p/%d old %p/%d new: %p/%d\n", 
+    //     view, view->tag, 
+    //     old_subview, old_subview->tag,
+    //     subview, subview->tag
     // );
     // printf( "zdj_push_subview type: %d, map: %d\n", subview->type, subview->map );
 
@@ -256,7 +299,7 @@ void zdj_pop_subview_of( zdj_view_t * view, bool animated ) {
     // Get next highest subview to show
     zdj_view_t * prev_subview = top_subview->prev;
 
-    // printf( "zdj_pop_subview_of: %p top: %p prev: %p\n", view, top_subview, prev_subview );
+    printf( "zdj_pop_subview_of: %p/%d top: %p/%d prev: %p/%d\n", view, view->tag, top_subview, top_subview->tag, prev_subview, prev_subview->tag );
 
     // Activate view's control map
     if( prev_subview->map != ZDJ_CONTROL_MAP_NONE ){ zdj_activate_control_map( prev_subview->map ); }

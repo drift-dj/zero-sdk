@@ -28,8 +28,11 @@
 typedef struct {
     SDL_Texture * tex;
     zdj_rect_t asset_rect;
+    bool clip_to_frame;
 } zdj_asset_view_state_t;
 
 zdj_view_t * zdj_new_asset_view( SDL_Rect * rect, SDL_Texture * tex );
+zdj_view_t * zdj_new_asset_view_at( SDL_Rect * rect, SDL_Texture * tex, zdj_point_t * screen_coords );
+zdj_view_t * zdj_new_noclip_asset_view( SDL_Rect * rect, SDL_Texture * tex );
 
 #endif

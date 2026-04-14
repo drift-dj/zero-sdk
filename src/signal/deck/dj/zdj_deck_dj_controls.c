@@ -37,28 +37,11 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
     zdj_soundcard_node_t * node;
     zdj_soundcard_dsp_dto_t * dsp_dto;
     zdj_soundcard_dsp_stage_dto_t * dsp_stage;
+    double sample_target;
     double val;
     int dir;
 
     switch ( event->id ) {
-
-
-    /////////////
-    // Out Vol //
-    /////////////  
-
-    // case ZDJ_DECK_CONTROL_LR_VOL:
-    //     node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
-    //     node->dsp_dto->adjust_gain( node, event->i_val );
-    //     event->blocked = true;
-    //     break;
-
-    // case ZDJ_DECK_CONTROL_CUE_VOL:
-    //     node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
-    //     node->dsp_dto->adjust_gain( node, event->i_val );
-    //     event->blocked = true;
-    //     break;
-
 
     //////////////////
     // Play / Pause //
@@ -66,8 +49,11 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
      
     case ZDJ_DECK_1_CONTROL_PLAY_PAUSE:
     case ZDJ_DECK_2_CONTROL_PLAY_PAUSE:
+    
         // Play
-        if( !platter->motor.enabled ) {
+        if( !platter->motor.enabled &&
+            decode_state->head.origin_d < decode_state->song_pcm_duration 
+        ) {
             platter->motor.enabled = true;
             platter->motor.set_rate = platter->motor.pitch_setting;
             platter->motor.state = ZDJ_PLATTER_MOTOR_SPIN_UP;
@@ -98,12 +84,35 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
 
     case ZDJ_DECK_1_CONTROL_HOTCUE_START:
     case ZDJ_DECK_2_CONTROL_HOTCUE_START:
-        printf( "dj deck hotcue start\n" );
-    
+
+        // TODO: If a loop is enabled, jump to loop start.
+        if( deck->controls.loop_state.is_enabled ) { break; }
+        //  Requires working skip-in-loop before implementation.
+
+        // Get current cuepoint or beatgrid start or song start.
+        sample_target = 0;
+        if( deck_state->song->performance ) {
+            if( deck_state->song->performance->cuepoint_count > 0 ) {
+                sample_target = deck_state->song->performance->cuepoints[ deck_state->song->performance->current_cuepoint ]->sample;
+            } else if( deck_state->song->performance->has_beat_grid ) {
+                sample_target = deck_state->song->performance->beat_grid_start_sample;
+            }
+        }
+
+        // printf( "dj deck hotcue start: %1.0f\n", sample_target );
+        
+        // We are not playing
         if( !platter->motor.enabled ) {
+            // // TEMPORARY
+            // // If loop is enabled, set target to loop start
+            // if( deck->controls.loop_state.is_enabled ) {
+            //     sample_target = deck->controls.loop_state.start_origin_d;
+            // }
+            // //
+
             // If we're not playing and head is near current cuepoint, just play
-            printf( "head origin:%1.0f\n", decode_state->head.origin_d );
-            if( fabs( decode_state->head.origin_d - deck->controls.hotcue_state.current_target_d ) < zdj_eps ) {
+            // printf( "head origin:%1.0f\n", decode_state->head.origin_d );
+            if( fabs( decode_state->head.origin_d - sample_target ) < decode_state->estimated_packet_sample_count ) {
                 printf( "hotcue play\n" );
                 platter->motor.enabled = true;
                 platter->motor.set_rate = platter->motor.pitch_setting;
@@ -113,26 +122,21 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
             
             // If we're not playing and head is away from current cuepoint, needledrop
             } else {
-                printf( "hotcue needledrop\n" );
-                deck->new_needledrop( deck, deck->controls.hotcue_state.current_target_d );
+                // printf( "hotcue needledrop\n" );
+                deck->new_needledrop( deck, sample_target );
             }
             
+        // We are playing
         } else {
-            printf( "hotcue skip\n" );
-            // If we're already playing, add a skip discon to the current cuepoint/bg start
-            double bg_offset = deck->controls.discon_quantize_val;
-            double sample_offset;
-            if( decode_state->song->performance && decode_state->song->performance->has_beat_grid ) {
-                sample_offset = decode_state->get_d_offset_for_beatgrid_dist( 
-                    deck_state->decode_node, bg_offset 
-                );
-            } else {
-                sample_offset = ZDJ_SOUNDCARD_BUF_LEN + 100;
-            }
+            // printf( "hotcue skip\n" );
+
+            // Skip to current cuepoint immediately -- no quantize
+            double sample_offset = sample_target - decode_state->head.origin_d;
             deck->new_skip( 
                 deck, 
                 sample_offset,
-                (deck->controls.discon_quantize) ? ZDJ_DECK_SKIP_TYPE_QUANT : ZDJ_DECK_SKIP_TYPE_UNQUANT
+                // (deck->controls.discon_quantize) ? ZDJ_DECK_SKIP_TYPE_QUANT : ZDJ_DECK_SKIP_TYPE_UNQUANT
+                ZDJ_DECK_SKIP_TYPE_UNQUANT
             );
         }
 
@@ -140,7 +144,9 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
 
     case ZDJ_DECK_1_CONTROL_HOTCUE_END:
     case ZDJ_DECK_2_CONTROL_HOTCUE_END:
-        printf( "dj deck hotcue end\n" );
+        // TODO: implement in-loop hotcue
+        if( deck->controls.loop_state.is_enabled ){ break; }
+        // printf( "dj deck hotcue end\n" );
         if( platter->slip.state == ZDJ_PLATTER_SLIP_LAMINAR_TEMPO ) {
             // If we're in tempo mode, we need to sync the needle head with tempo node.
             zdj_dj_deck_reset_platter( platter, tsm_tempo_state->decode_coord );
@@ -152,8 +158,39 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
         platter->motor.cur_spin_down_cycle = deck->controls.platter.motor.spin_down_cycle_count - 2;
         // Ensure slip is in pitch mode so we hear spin down.
         platter->slip.state = ZDJ_PLATTER_SLIP_LAMINAR_PITCH;
+
+        // Stage a needledrop to the current cuepoint
+        // printf( "hotcue needledrop\n" );
+        deck->new_needledrop( deck, deck->controls.hotcue_state.current_target_d );
         break;
 
+    case ZDJ_DECK_1_CONTROL_HOTCUE_NEXT:
+    case ZDJ_DECK_2_CONTROL_HOTCUE_NEXT:
+        printf( "hotcue next\n" );
+        if( deck_state->song->performance &&
+            deck_state->song->performance->cuepoint_count > 0 
+        ){
+            deck_state->song->performance->current_cuepoint++;
+            deck_state->song->performance->current_cuepoint %= deck_state->song->performance->cuepoint_count;
+            zdj_library_cuepoint_t * cuepoint = deck_state->song->performance->cuepoints[ deck_state->song->performance->current_cuepoint ];
+            deck->controls.hotcue_state.current_target_d = (double)cuepoint->sample;
+
+            if( platter->slip.state == ZDJ_PLATTER_SLIP_LAMINAR_TEMPO ) {
+                // If we're in tempo mode, we need to sync the needle head with tempo node.
+                zdj_dj_deck_reset_platter( platter, tsm_tempo_state->decode_coord );
+                // We also need to set the pitch node's sample addresses to something reasonable
+                tsm_pitch_state->decode_start_coord = tsm_tempo_state->decode_coord - ZDJ_SOUNDCARD_BUF_LEN;
+            }
+            platter->motor.enabled = false;
+            platter->motor.state = ZDJ_PLATTER_MOTOR_SPIN_DOWN;
+            platter->motor.cur_spin_down_cycle = deck->controls.platter.motor.spin_down_cycle_count - 2;
+            // Ensure slip is in pitch mode so we hear spin down.
+            platter->slip.state = ZDJ_PLATTER_SLIP_LAMINAR_PITCH;
+
+            // Stage a needledrop to the current cuepoint
+            deck->new_needledrop( deck, deck->controls.hotcue_state.current_target_d );
+        }
+        break;
 
     ///////////
     // Scrub //
@@ -178,6 +215,19 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
         } else {
             // Scratch a non-running or scratch-override platter
             if( !platter->motor.enabled || platter->scratch_override ) {
+                // Bug out early if we're outside the song origin coords.
+                if( event->i_val < 0 && 
+                    (decode_state->head.origin_d < -1000.0)
+                ) {
+                    platter->slip.sim_counter = 0;
+                    break;
+                } else if( event->i_val > 0 && 
+                           (decode_state->head.origin_d > decode_state->song_pcm_duration + 1000.0)
+                ) {
+                    platter->slip.sim_counter = 0;
+                    break;
+                }
+
                 if( platter->slip.state == ZDJ_PLATTER_SLIP_LAMINAR_TEMPO ) {
                     // If we're in tempo drive mode, we need to sync the needle head with tempo node.
                     zdj_dj_deck_reset_platter( platter, tsm_tempo_state->decode_coord );
@@ -309,12 +359,82 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
         break;
 
     case ZDJ_DECK_1_2_BASS_SWAP:
-        // printf( "dj deck bass swap\n" );
+        printf( "dj deck bass swap\n" );
+        // Invert event input to deck 1 knob
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 0, event->i_val * -1 ); }
+
+        // Send event input to deck 2 knob
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 0, event->i_val ); }
         break;
 
     case ZDJ_DECK_1_CONTROL_FILTER_0:
+        // printf( "dj deck filter 0\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { 
+            dsp_stage->adjust_knob( dsp_stage, 0, event->i_val ); 
+        }
+        break;
     case ZDJ_DECK_2_CONTROL_FILTER_0:
-        // printf( "dj deck filter\n" );
+        // printf( "dj deck filter 0\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { 
+            dsp_stage->adjust_knob( dsp_stage, 0, event->i_val ); 
+        }
+        break;
+    
+    case ZDJ_DECK_1_CONTROL_FILTER_1:
+        // printf( "dj deck filter 1\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 1, event->i_val ); }
+        break;
+    case ZDJ_DECK_2_CONTROL_FILTER_1:
+        // printf( "dj deck filter 1\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 1, event->i_val ); }
+        break;
+    
+    case ZDJ_DECK_1_CONTROL_FILTER_2:
+        // printf( "dj deck filter 1\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 2, event->i_val ); }
+        break;
+    case ZDJ_DECK_2_CONTROL_FILTER_2:
+        // printf( "dj deck filter 2\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 2, event->i_val ); }
+        break;
+
+    case ZDJ_DECK_1_CONTROL_FILTER_RESET:
+        // printf( "dj deck filter reset\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->set_knob( dsp_stage, 0, 0.0 ); }
+        break;
+    case ZDJ_DECK_2_CONTROL_FILTER_RESET:
+        // printf( "dj deck filter reset\n" );
+        soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
+        dsp_dto = soundcard_node->dsp_dto;
+        dsp_stage = dsp_dto->get_stage_for_type( soundcard_node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
+        if( dsp_stage ) { dsp_stage->set_knob( dsp_stage, 0, 0.0 ); }
         break;
 
 
@@ -336,39 +456,33 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
         break;
     
     case ZDJ_DECK_1_CONTROL_TRIM:
-        // printf( "dj deck 1 trim\n" );
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
         node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
     case ZDJ_DECK_2_CONTROL_TRIM:
-        // printf( "dj deck 2 trim\n" );
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
         node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
 
     case ZDJ_DECK_1_CONTROL_PFL_TRIM:
-        // printf( "dj deck 1 cue trim\n" );
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_CUE );
         node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
     case ZDJ_DECK_2_CONTROL_PFL_TRIM:
-        // printf( "dj deck 2 cue trim\n" );
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE );
         node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
     
     case ZDJ_DECK_1_CONTROL_PFL_TOGGLE_MUTE:
-        // printf( "dj deck 1 toggle cue mute\n" );
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_CUE );
         node->dsp_dto->toggle_mute( node );
         event->blocked = true;
         break;
     case ZDJ_DECK_2_CONTROL_PFL_TOGGLE_MUTE:
-        // printf( "dj deck 2 toggle cue mute\n" );
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE );
         node->dsp_dto->toggle_mute( node );
         event->blocked = true;
@@ -381,125 +495,143 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
         
     case ZDJ_DECK_1_CONTROL_LOOP_TOGGLE:
         // printf( "toggle loop: %1.1f/%1.2f\n", deck->controls.loop_state.pcm_len, deck->controls.loop_state.beatgrid_len );
+
         // Toggle loop on/off
         if( !deck->controls.loop_state.is_enabled ) {
             deck->new_loop( deck, deck->controls.loop_state.pcm_len, deck->controls.discon_quantize );
             // Takeover hotcue button for loop reset
-            zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START );
-            zdj_deactivate_control( ZDJ_DECK_1_CONTROL_HOTCUE_END );
+            // zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START );
+            // zdj_deactivate_control( ZDJ_DECK_1_CONTROL_HOTCUE_END );
+            zdj_activate_control_map( ZDJ_CONTROL_MAP_STATION_1_LOOP_ON );
         } else {
             // zdj_deck_disable_loop_req( deck );
             deck->disable_loop( deck );
             // Release hotcue button for loop reset
-            zdj_deactivate_control( ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START );
-            zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_END );
+            // zdj_deactivate_control( ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START );
+            // zdj_activate_control( ZDJ_DECK_1_CONTROL_HOTCUE_END );
+            zdj_activate_control_map( ZDJ_CONTROL_MAP_STATION_1_LOOP_OFF );
         }
         break;
     case ZDJ_DECK_2_CONTROL_LOOP_TOGGLE:
         // printf( "toggle loop: %1.1f/%1.2f\n", deck->controls.loop_state.pcm_len, deck->controls.loop_state.beatgrid_len );
+
         // Toggle loop on/off
         if( !deck->controls.loop_state.is_enabled ) {
             deck->new_loop( deck, deck->controls.loop_state.pcm_len, deck->controls.discon_quantize );
             // Takeover hotcue button for loop reset
-            zdj_activate_control( ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START );
-            zdj_deactivate_control( ZDJ_DECK_2_CONTROL_HOTCUE_END );
+            // zdj_activate_control( ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START );
+            // zdj_deactivate_control( ZDJ_DECK_2_CONTROL_HOTCUE_END );
+            zdj_activate_control_map( ZDJ_CONTROL_MAP_STATION_2_LOOP_ON );
         } else {
             // zdj_deck_disable_loop_req( deck );
             deck->disable_loop( deck );
             // Release hotcue button for loop reset
-            zdj_deactivate_control( ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START );
-            zdj_activate_control( ZDJ_DECK_2_CONTROL_HOTCUE_END );
+            // zdj_deactivate_control( ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START );
+            // zdj_activate_control( ZDJ_DECK_2_CONTROL_HOTCUE_END );
+            zdj_activate_control_map( ZDJ_CONTROL_MAP_STATION_2_LOOP_OFF );
         }
         break;
 
     case ZDJ_DECK_1_CONTROL_LOOP_START:
     case ZDJ_DECK_2_CONTROL_LOOP_START:
-        deck->controls.loop_state.c_count_start += event->i_val;
-        if( abs( deck->controls.loop_state.c_count_start ) > 4 ) {
-            deck->controls.loop_state.c_count_start /= 4;
-            if( deck->controls.loop_state.is_enabled ) {
-                if( deck->controls.discon_quantize ) {
+        // printf( "loop start\n" );
+        // deck->controls.loop_state.c_count_start /= 4;
+        if( deck->controls.loop_state.is_enabled ) {
+            if( deck->controls.discon_quantize ) {
+                // printf( "quantize move\n" );
+                deck->controls.loop_state.c_count_start += event->i_val;
+                if( abs( deck->controls.loop_state.c_count_start ) > 6 ) {
                     double bg_offset = (double)deck->controls.loop_state.c_count_start * deck->controls.discon_quantize_val;
                     val = decode_state->get_d_offset_for_beatgrid_dist( 
                         deck_state->decode_node, bg_offset 
                     );
-                } else {
-                    val = (double)deck->controls.loop_state.c_count_start * 1000;
+                    deck->controls.loop_state.c_count_start = 0;
                 }
-                deck->move_loop( deck, val );
+            } else {
+                // printf( "unquantize move\n" );
+                val = (double)event->i_val * 100.0;
             }
-            deck->controls.loop_state.c_count_start = 0;
+            deck->move_loop( deck, val );
         }
+        
+        break;
+
+
+    case ZDJ_DECK_1_CONTROL_LOOP_START_ALT:
+    case ZDJ_DECK_2_CONTROL_LOOP_START_ALT:
+        // printf( "loop start\n" );
+        // deck->controls.loop_state.c_count_start /= 4;
+        if( deck->controls.loop_state.is_enabled ) {
+            // printf( "quantize move alt\n" );
+            if( deck->controls.discon_quantize ) {
+                deck->controls.loop_state.c_count_start += event->i_val;
+                if( abs( deck->controls.loop_state.c_count_start ) > 6 ) {
+                    double bg_offset = (double)deck->controls.loop_state.c_count_start * deck->controls.discon_quantize_val * 4;
+                    val = decode_state->get_d_offset_for_beatgrid_dist( 
+                        deck_state->decode_node, bg_offset 
+                    );
+                    deck->controls.loop_state.c_count_start = 0;
+                }
+            } else {
+                // printf( "unquantize move alt\n" );
+                val = (double)event->i_val * 2000.0;
+            }
+            deck->move_loop( deck, val );
+        }
+        
         break;
 
     case ZDJ_DECK_1_CONTROL_LOOP_LENGTH:
     case ZDJ_DECK_2_CONTROL_LOOP_LENGTH:
-        // printf( "loop length\n" );
-        deck->controls.loop_state.c_count_len += event->i_val;
-        if( abs( deck->controls.loop_state.c_count_len ) > 4 ) {
-            double len = deck->controls.loop_state.beatgrid_len;
-            dir = (event->i_val > 0) ? 1 : -1;
-            if( deck->controls.discon_quantize ) {
-                // printf( "quant len: %1.3f\n", deck->controls.loop_state.beatgrid_len );
-                if( dir == 1 ) {
-                    if( fabs( len - 0.25 ) < zdj_eps ) { // Quarter note
-                        deck->controls.loop_state.beatgrid_len = 0.5;
-                    } else if( fabs( len - 0.5 ) < zdj_eps ) { // Half note
-                        deck->controls.loop_state.beatgrid_len = 1.0;
-                    } else if( fabs( len - 1.0 ) < zdj_eps ) { // 1-Bar
-                        deck->controls.loop_state.beatgrid_len = 4.0;
-                    } else if( fabs( len - 4.0 ) < zdj_eps ) { // 4-Bar
-                        deck->controls.loop_state.beatgrid_len = 8.0;
-                    } else if( fabs( len - 8.0 ) < zdj_eps ) { // 16-Bar
-                        deck->controls.loop_state.beatgrid_len = 16.0;
-                    } else if( fabs( len - 16.0 ) < zdj_eps ) { // 32-Bar
-                        deck->controls.loop_state.beatgrid_len = 32.0;
-                    } else if( fabs( len - 32.0 ) < zdj_eps ) { // 64-Bar
-                        deck->controls.loop_state.beatgrid_len = 64.0;
-                    }
+        if( deck->controls.discon_quantize ) {
+            deck->controls.loop_state.c_count_len += event->i_val;
+            if( abs( deck->controls.loop_state.c_count_len ) > 8 ) {
+                double bg_offset;
+                if( deck->controls.loop_state.c_count_len > 0 ) {
+                    bg_offset = deck->controls.discon_quantize_val;
                 } else {
-                    if( fabs( len - 0.5 ) < zdj_eps ) { // Quarter note
-                        deck->controls.loop_state.beatgrid_len = 0.25;
-                    } else if( fabs( len - 1.0 ) < zdj_eps ) { // Half note
-                        deck->controls.loop_state.beatgrid_len = 0.5;
-                    } else if( fabs( len - 4.0 ) < zdj_eps ) { // 1-Bar
-                        deck->controls.loop_state.beatgrid_len = 1.0;
-                    } else if( fabs( len - 8.0 ) < zdj_eps ) { // 4-Bar
-                        deck->controls.loop_state.beatgrid_len = 4.0;
-                    } else if( fabs( len - 16.0 ) < zdj_eps ) { // 16-Bar
-                        deck->controls.loop_state.beatgrid_len = 8.0;
-                    } else if( fabs( len - 32.0 ) < zdj_eps ) { // 32-Bar
-                        deck->controls.loop_state.beatgrid_len = 16.0;
-                    } else if( fabs( len - 64.0 ) < zdj_eps ) { // 32-Bar
-                        deck->controls.loop_state.beatgrid_len = 32.0;
-                    }
+                    bg_offset = deck->controls.discon_quantize_val * -1.0;
                 }
-                if( deck_state->song->performance &&
-                    deck_state->song->performance->bpm 
-                ) {
-                    deck->controls.loop_state.pcm_len = zdj_signal_pcm_count_for_beatgrid_count(
-                        deck->controls.loop_state.beatgrid_len, deck_state->song->performance->bpm, deck_state->song->audio->av_sample_rate
-                    );
-                    // If loop is active, put the loop in resize mode
-                    if( deck->controls.loop_state.phase == ZDJ_DECK_LOOP_PHASE_RUN ) {
-                        double bg_offset = deck->controls.loop_state.beatgrid_len - len;
-                        double pcm_offset = zdj_signal_pcm_count_for_beatgrid_count(
-                            bg_offset, deck_state->song->performance->bpm, deck_state->song->audio->av_sample_rate
-                        );
-                        // printf( "len: %1.3f bg_len:%1.3f bg_offset: %1.1f pcm_offset: %1.1f\n", len,  deck->controls.loop_state.beatgrid_len, bg_offset, pcm_offset );
-                        deck->resize_loop( deck, pcm_offset );
-                    }
-                }
-            } else {
                 
+                val = decode_state->get_d_offset_for_beatgrid_dist( 
+                    deck_state->decode_node, bg_offset 
+                );
+                deck->controls.loop_state.c_count_len = 0;
+                deck->resize_loop( deck, val );
             }
-
+        } else {
+            val = (double)event->i_val * 100.0;
             deck->controls.loop_state.c_count_len = 0;
-
-            
+            deck->resize_loop( deck, val );
         }
+        
         break;
-       
+
+    case ZDJ_DECK_1_CONTROL_LOOP_LENGTH_ALT:
+    case ZDJ_DECK_2_CONTROL_LOOP_LENGTH_ALT:
+        printf( "loop len alt\n" );
+        if( deck->controls.discon_quantize ) {
+            deck->controls.loop_state.c_count_len += event->i_val;
+            if( abs( deck->controls.loop_state.c_count_len ) > 8 ) {
+                printf( "cc_len: %d %1.3f\n", 
+                    deck->controls.loop_state.c_count_len,
+                    deck->controls.discon_quantize_val
+                );
+                double bg_offset = deck->controls.discon_quantize_val;
+                val = decode_state->get_d_offset_for_beatgrid_dist( 
+                    deck_state->decode_node, bg_offset 
+                );
+                deck->controls.loop_state.c_count_len = 0;
+                deck->resize_loop( deck, val );
+            }
+        } else {
+            val = (double)event->i_val * 2000.0;
+            deck->controls.loop_state.c_count_len = 0;
+            deck->resize_loop( deck, val );
+        }
+        
+        break;
+
     case ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START:
     case ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START:
         // printf( "reset to loop start\n" );
@@ -521,6 +653,13 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
     case ZDJ_DECK_1_CONTROL_SKIP:
     case ZDJ_DECK_2_CONTROL_SKIP:
         // printf( "skip\n" );
+
+        // TODO: implement in-loop hotcue
+        if( deck->controls.loop_state.is_enabled ){ break; }
+
+        // Temporarily disable loops for songs w/o beatgrids
+        if( !deck_state->song->performance->has_beat_grid ) { break; }
+
         deck->controls.skip_state.c_count_skip += event->i_val;
         if( abs( deck->controls.skip_state.c_count_skip ) > 4 ) {
             if( deck->controls.platter.motor.enabled || deck->controls.platter.motor.instant_rate > zdj_eps ) {
@@ -552,6 +691,10 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
 
     case ZDJ_DECK_1_CONTROL_SKIP_LENGTH:
     case ZDJ_DECK_2_CONTROL_SKIP_LENGTH:
+
+        // Temporarily disable loops for songs w/o beatgrids
+        if( !deck_state->song->performance->has_beat_grid ) { break; }
+
         deck->controls.c_count_q_val += event->i_val;
         if( abs( deck->controls.c_count_q_val ) > 4 ) {
             dir = (event->i_val > 0) ? 1 : -1;
@@ -575,10 +718,17 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
 
     case ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN:
     case ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN:
+        printf( "setting skip origin\n" );
+        deck->controls.skip_state.current_offset = 0.0;
         break;
 
     case ZDJ_DECK_1_CONTROL_SKIP_RESET_TO_ORIGIN:
     case ZDJ_DECK_2_CONTROL_SKIP_RESET_TO_ORIGIN:
+
+        // Temporarily disable loops for songs w/o beatgrids
+        if( !deck_state->song->performance->has_beat_grid ) { break; }
+
+
         // printf( "reset skip to origin: %1.3f\n", deck->controls.skip_state.current_offset );
         if( deck->controls.platter.motor.enabled || deck->controls.platter.motor.instant_rate > zdj_eps ) {
             // Skip if deck is playing
@@ -605,13 +755,38 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
     //////////  
 
     case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
-        // printf( "sync toggle\n" );
-        // if( deck->can_sync ) { request_sync_toggle( ); }
+        printf( "sync toggle\n" );
+        if( zdj_deck_manager( )->sync.preferred ) {
+            zdj_deck_manager_set_prefer_sync( false );
+        } else {
+            zdj_deck_manager_set_prefer_sync( true );
+        }
         break;
 
     case ZDJ_DECK_1_CONTROL_SYNC_MULT:
     case ZDJ_DECK_2_CONTROL_SYNC_MULT:
-        // if( deck->can_sync ) { request_sync_mult( event->i_val ); }
+        if( deck->can_sync ) { 
+            // printf( "sync mult\n" );
+            deck_state->sync_mult_ui_counter += event->i_val;
+            if( abs( deck_state->sync_mult_ui_counter ) > 4 ) {
+                deck_state->sync_mult_ui_counter = 0;
+                if( fabs( 1.0 - deck->sync_factor ) < zdj_eps ) {
+                    if( event->i_val > 0 ) {
+                        deck->request_sync_mult( deck, 2.0 ); 
+                    } else {
+                        deck->request_sync_mult( deck, 0.5 ); 
+                    }
+                } else if( fabs( 2.0 - deck->sync_factor ) < zdj_eps ) {
+                    if( event->i_val < 0 ) {
+                        deck->request_sync_mult( deck, 1.0 ); 
+                    }
+                } else if( fabs( 0.5 - deck->sync_factor ) < zdj_eps ) {
+                    if( event->i_val > 0 ) {
+                        deck->request_sync_mult( deck, 1.0 ); 
+                    }
+                }
+            }
+        }
         break;
 
 

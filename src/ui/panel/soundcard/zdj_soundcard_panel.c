@@ -39,28 +39,30 @@ static bool _single_meter_for_port( zdj_soundcard_node_name_t name );
 
 static void _text_input_cb( zdj_text_input_view_action_t action, char * result );
 
-static zdj_soundcard_view_state_t * _zdj_soundcard_view_state;
+static zdj_soundcard_panel_state_t * _zdj_soundcard_view_state;
 
 zdj_view_t * zdj_new_soundcard_view( void ) {
-    zdj_view_t * soundcard_view = zdj_new_modal_view( zdj_modal_rect( ) );
+    // zdj_view_t * soundcard_view = zdj_new_modal_view( zdj_modal_rect( ) );
+    zdj_view_t * soundcard_view = zdj_new_modal_view( zdj_screen_rect( ) );
     soundcard_view->draw = &_draw;
     soundcard_view->handle_control_event = &_handle_control;
     soundcard_view->deinit_state = &_deinit_state;
     soundcard_view->map = ZDJ_CONTROL_MAP_SOUNDCARD_PANEL;
 
     // Add a state instance
-    zdj_soundcard_view_state_t * state = calloc( 1, sizeof( zdj_soundcard_view_state_t ) );
+    zdj_soundcard_panel_state_t * state = calloc( 1, sizeof( zdj_soundcard_panel_state_t ) );
     _zdj_soundcard_view_state = state; // store for access during options cb func
     state->needs_layout_update = true;
     soundcard_view->state = state;
 
     // Make menu
-    zdj_view_t * menu = zdj_new_menu_view( ZDJ_HORIZONTAL, zdj_modal_rect( ) );
+    // zdj_view_t * menu = zdj_new_menu_view( ZDJ_HORIZONTAL, zdj_modal_rect( ) );
+    zdj_view_t * menu = zdj_new_menu_view( ZDJ_HORIZONTAL, zdj_screen_rect( ) );
     zdj_add_subview( soundcard_view, menu );
     menu->frame.x = 0;
     menu->frame.y = 0;
-    menu->frame.w = ZDJ_MODAL_WIDTH;
-    menu->frame.h = ZDJ_MODAL_HEIGHT;
+    menu->frame.w = ZDJ_SCREEN_W;
+    menu->frame.h = ZDJ_SCREEN_H;
     state->menu = menu;
     
     // Set up header
@@ -68,11 +70,14 @@ zdj_view_t * zdj_new_soundcard_view( void ) {
         "Soundcard",
         " ",
         ZDJ_MENU_HEADER_STYLE_NORMAL,
-        ZDJ_MENU_HEADER_BACK_STYLE_EXIT
+        ZDJ_MENU_HEADER_BACK_STYLE_NONE
     );
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_header->state;
-    header_state->handle_back = &_handle_back;
+    // header_state->handle_back = &_handle_back;
     zdj_menu_view_add_header( menu, menu_header );
+
+    state->overlay = zdj_ui_panel_new_overlay( "Mixer" );
+    zdj_add_subview( soundcard_view, state->overlay );
 
     return soundcard_view;
 }
@@ -80,7 +85,7 @@ zdj_view_t * zdj_new_soundcard_view( void ) {
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
     // printf( "soundcard _handle_control\n" );
     zdj_control_event_t * e = (zdj_control_event_t *)_event;
-    zdj_soundcard_view_state_t * state = (zdj_soundcard_view_state_t*)view->state;
+    zdj_soundcard_panel_state_t * state = (zdj_soundcard_panel_state_t*)view->state;
     
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
@@ -110,9 +115,12 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    zdj_soundcard_view_state_t * state = (zdj_soundcard_view_state_t*)view->state;
+    zdj_soundcard_panel_state_t * state = (zdj_soundcard_panel_state_t*)view->state;
 
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
+
+    if( state->overlay_counter > 0 ) { state->overlay->frame.x = 0; state->overlay_counter--; }
+    else { state->overlay->frame.x = 129; }
 
     if( state->needs_layout_update ) {
         _update_layout( view, clip );
@@ -123,7 +131,9 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // printf( "_update_layout\n" );
 
-    zdj_soundcard_view_state_t * state = (zdj_soundcard_view_state_t*)view->state;
+    printf( "frames: %d\n", zdj_ui_msec_to_frames( 400 ) );
+
+    zdj_soundcard_panel_state_t * state = (zdj_soundcard_panel_state_t*)view->state;
     zdj_view_t * menu_view = state->menu;
     // zdj_soundcard_t * soundcard = state->soundcard;
     zdj_soundcard_t * soundcard = zdj_soundcard;
@@ -156,15 +166,16 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
     );
 
     // Add deck divider
-    zdj_view_t * decks = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DECKS_DIV ], NULL );
-    decks->frame.x = meter_x;
-    decks->frame.y = 32;
-    zdj_menu_view_add_item( menu_view, decks );
+    // zdj_view_t * decks = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DECKS_DIV ], NULL );
+    // decks->frame.x = meter_x;
+    // decks->frame.y = 37;
+    // zdj_menu_view_add_item( menu_view, decks );
     zdj_view_t * decks_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-    decks_div->frame.x = meter_x+5;
-    decks_div->frame.y = 2;
+    decks_div->frame.x = meter_x+3;
+    decks_div->frame.y = 5;
     zdj_menu_view_add_item( menu_view, decks_div );
     meter_x += 11;
+
 
     // // Add any connected USB devices
     // zdj_soundcard_node_t * usb_out_0 = zdj_soundcard_get_node_for_name( 
@@ -191,24 +202,6 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
         zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3 )->input_link_count ) {
         meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_3, true, false, meter_x );
     }
-
-    // User Clock busses
-    // if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->output_link_count ||
-    //     zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0 )->input_link_count ) {
-    //     meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_0, true, false, meter_x );
-    // }
-    // if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->output_link_count ||
-    //     zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1 )->input_link_count ) {
-    //     meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_CLOCK_1, true, false, meter_x );
-    // }
-    // if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_2 )->output_link_count ||
-    //     zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_2 )->input_link_count ) {
-    //     meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_XPORT_2, true, false, meter_x );
-    // }
-    // if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_3 )->output_link_count ||
-    //     zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_3 )->input_link_count ) {
-    //     meter_x += zdj_soundcard_view_add_meter_for_node( menu_view, ZDJ_SOUNDCARD_NODE_NAME_XPORT_3, true, false, meter_x );
-    // }
 
     // User CV busses
     if( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_CV_0 )->output_link_count ||
@@ -249,8 +242,6 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
         menu_view, ZDJ_SOUNDCARD_NODE_NAME_XPORT_1, true, false, meter_x 
     );
 
-
-
     // Add Button Stack
     int btn_x = meter_x;
     int bus_btn_y = 2;
@@ -271,38 +262,6 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
         bus_btn_y += bus_btn_h;
     }
 
-    // // Add Clock btn
-    // if( zdj_soundcard_can_add_clock_bus( soundcard ) ) {
-    //     zdj_view_t * clk_btn = zdj_new_asset_menu_item( 
-    //         ZDJ_UI_ASSET_MIXER_ADD_CLK,
-    //         ZDJ_UI_ASSET_MIXER_ADD_CLK_HI,
-    //         false
-    //     );
-    //     clk_btn->handle_control_event = &_handle_clock_btn;
-    //     clk_btn->frame.x = btn_x + 1;
-    //     clk_btn->frame.y = 9;
-    //     clk_btn->frame.w = 16;
-    //     clk_btn->frame.h = 5;
-    //     zdj_menu_view_add_item( menu_view, clk_btn );
-    //     bus_btn_y += bus_btn_h;
-    // }
-
-    // // Add CV btn
-    // if( zdj_soundcard_can_add_cv_bus( soundcard ) ) {
-    //     zdj_view_t * cv_btn = zdj_new_asset_menu_item( 
-    //         ZDJ_UI_ASSET_MIXER_ADD_CV,
-    //         ZDJ_UI_ASSET_MIXER_ADD_CV_HI,
-    //         false
-    //     );
-    //     cv_btn->handle_control_event = &_handle_cv_btn;
-    //     cv_btn->frame.x = btn_x + 4;
-    //     cv_btn->frame.y = 16;
-    //     cv_btn->frame.w = 16;
-    //     cv_btn->frame.h = 5;
-    //     zdj_menu_view_add_item( menu_view, cv_btn );
-    //     bus_btn_y += bus_btn_h;
-    // }
-
     // Add Midi btn
     if( zdj_soundcard_can_add_midi_bus( soundcard ) ) {
         zdj_view_t * midi_btn = zdj_new_asset_menu_item( 
@@ -321,18 +280,31 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     meter_x += 12;
 
-
     // Add bus divider
-    zdj_view_t * bus = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_BUS_DIV ], NULL );
-    bus->frame.x = meter_x;
-    bus->frame.y = 39;
-    zdj_menu_view_add_item( menu_view, bus );
+    // zdj_view_t * bus = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_BUS_DIV ], NULL );
+    // bus->frame.x = meter_x;
+    // bus->frame.y = 39;
+    // zdj_menu_view_add_item( menu_view, bus );
     zdj_view_t * bus_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-    bus_div->frame.x = meter_x+5;
-    bus_div->frame.y = 2;
+    bus_div->frame.x = meter_x+9;
+    bus_div->frame.y = 5;
     zdj_menu_view_add_item( menu_view, bus_div );
-    meter_x += 11;
+    meter_x += 16;
+    
 
+    // Add analog out ports 2+3
+    if( _single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 ) ) {
+        meter_x += zdj_soundcard_view_add_meter_for_node( 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, false, meter_x 
+        );
+    } else {
+        meter_x += zdj_soundcard_view_add_meter_for_node( 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, false, meter_x 
+        );
+        meter_x += zdj_soundcard_view_add_meter_for_node( 
+            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3, true, false, meter_x 
+        );
+    }
 
     // Add analog out ports 0+1
     if( _single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 ) ) {
@@ -350,30 +322,6 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
             menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1, true, false, meter_x 
         );
     }
-    // Add analog out ports 2+3
-    if( _single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 ) ) {
-        meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, false, meter_x 
-        );
-    } else {
-        meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2, true, false, meter_x 
-        );
-        meter_x += zdj_soundcard_view_add_meter_for_node( 
-            menu_view, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3, true, false, meter_x 
-        );
-    }
-    
-    // // Add in/out divider
-    // zdj_view_t * out = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_OUT_DIV ], NULL );
-    // out->frame.x = meter_x;
-    // out->frame.y = 39;
-    // zdj_menu_view_add_item( menu_view, out );
-    // zdj_view_t * inout_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-    // inout_div->frame.x = meter_x+5;
-    // inout_div->frame.y = 2;
-    // zdj_menu_view_add_item( menu_view, inout_div );
-    // meter_x += 11;
 
     // Add analog in ports 0+1
     if( _single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 ) ) {
@@ -403,17 +351,6 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
         );
     }
 
-    // // Add in/out divider
-    // zdj_view_t * in = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_IN_DIV ], NULL );
-    // in->frame.x = meter_x+1;
-    // in->frame.y = 44;
-    // zdj_menu_view_add_item( menu_view, in );
-    // zdj_view_t * outbus_div = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_DIV ], NULL );
-    // outbus_div->frame.x = meter_x+5;
-    // outbus_div->frame.y = 2;
-    // zdj_menu_view_add_item( menu_view, outbus_div );
-    // meter_x += 11;
-
 
     // Add Button Stack
 
@@ -426,7 +363,7 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
     );
     save_btn->handle_control_event = &_handle_save_btn;
     save_btn->frame.x = btn_x;
-    save_btn->frame.y = 38;
+    save_btn->frame.y = 2;
     save_btn->frame.w = 16;
     save_btn->frame.h = 5;
     zdj_menu_view_add_item( menu_view, save_btn );
@@ -439,7 +376,7 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
     );
     // load_btn->handle_control_event = &_zdj_soundcard_view_handle_bus_btn;
     load_btn->frame.x = btn_x;
-    load_btn->frame.y = 44;
+    load_btn->frame.y = 8;
     load_btn->frame.w = 16;
     load_btn->frame.h = 5;
     zdj_menu_view_add_item( menu_view, load_btn );
@@ -495,7 +432,7 @@ int zdj_soundcard_view_add_meter_for_node(
     if( !meter ) { return 0; }
     meter->frame.x = x;
     meter->frame.y = 2;
-    meter->frame.h = 49;
+    meter->frame.h = 55;
 
     // Keep a ref to context inside meter state
     zdj_soundcard_node_config_context_t * context = zdj_soundcard_new_node_config_context( );
@@ -554,7 +491,7 @@ static void _handle_back( zdj_view_t * menu_view ) {
 // Handle a callback invoked from somewhere within the souncard config view stack
 static void _cb( void * _context ) {
     zdj_soundcard_node_config_context_t * context = (zdj_soundcard_node_config_context_t*)_context;
-    zdj_soundcard_view_state_t * state = (zdj_soundcard_view_state_t*)context->main_view_state;
+    zdj_soundcard_panel_state_t * state = (zdj_soundcard_panel_state_t*)context->main_view_state;
     // Set needs_layout_update
     state->needs_layout_update = true;
 }

@@ -15,6 +15,8 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip );
 
 static void _draw_cue_mini( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _draw_cue_norm( zdj_view_t * view, zdj_view_clip_t * clip );
+static void _draw_cue_norm_top( zdj_view_t * view, zdj_view_clip_t * clip );
+static void _draw_cue_norm_bottom( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _draw_cue_loop( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _draw_bar( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _draw_text( zdj_view_t * view, zdj_view_clip_t * clip );
@@ -64,6 +66,8 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     switch ( flag_state->type ) {
         case ZDJ_FLAG_TYPE_CUE_MINI: _draw_cue_mini( view, clip ); break;
         case ZDJ_FLAG_TYPE_CUE_NORM: _draw_cue_norm( view, clip ); break;
+        case ZDJ_FLAG_TYPE_CUE_NORM_TOP: _draw_cue_norm_top( view, clip ); break;
+        case ZDJ_FLAG_TYPE_CUE_NORM_BOTTOM: _draw_cue_norm_bottom( view, clip ); break;
         case ZDJ_FLAG_TYPE_CUE_LOOP: _draw_cue_loop( view, clip ); break;
         case ZDJ_FLAG_TYPE_BAR: _draw_bar( view, clip ); break;
         default: break;
@@ -123,6 +127,69 @@ static void _draw_cue_norm( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Add label
     zdj_add_subview( view, cue_label );
     cue_label->frame.x = 6;
+}
+
+static void _draw_cue_norm_top( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    zdj_flag_state_t * state = (zdj_flag_state_t*)view->state; 
+
+    zdj_remove_all_subviews_of( view ); 
+
+    zdj_view_t * cue_label = zdj_new_label_view( 
+        state->str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK 
+    );
+    zdj_label_state_t * label_state = (zdj_label_state_t*)cue_label->state;
+
+    view->frame.w = label_state->tex_w + 6;
+
+    // Add BG
+    zdj_view_t * cue_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_CUEPOINT_L ], NULL );
+    zdj_add_subview( view, cue_l );
+    cue_l->frame.w = label_state->tex_w+4;
+
+    zdj_view_t * cue_r = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_CUEPOINT_R ], NULL );
+    zdj_add_subview( view, cue_r );
+    cue_r->frame.x = label_state->tex_w+4;
+
+    // Add type icon
+    zdj_view_t * icon = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_PLAY_SM ], NULL );
+    zdj_add_subview( view, icon );
+    icon->frame.x = 2;
+    icon->frame.y = 3;
+    // Add label
+    zdj_add_subview( view, cue_label );
+    cue_label->frame.x = 5;
+}
+
+static void _draw_cue_norm_bottom( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    zdj_flag_state_t * state = (zdj_flag_state_t*)view->state; 
+
+    zdj_remove_all_subviews_of( view ); 
+
+    zdj_view_t * cue_label = zdj_new_label_view( 
+        state->str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK 
+    );
+    zdj_label_state_t * label_state = (zdj_label_state_t*)cue_label->state;
+
+    view->frame.w = label_state->tex_w + 8;
+
+    // Add BG
+    zdj_view_t * cue_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DJ_CUEPOINT_L_BOTTOM ], NULL );
+    zdj_add_subview( view, cue_l );
+    cue_l->frame.w = label_state->tex_w+5;
+
+    zdj_view_t * cue_r = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DJ_CUEPOINT_R_BOTTOM ], NULL );
+    zdj_add_subview( view, cue_r );
+    cue_r->frame.x = label_state->tex_w+5;
+
+    // Add type icon
+    zdj_view_t * icon = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_PLAY_SM ], NULL );
+    zdj_add_subview( view, icon );
+    icon->frame.x = 3;
+    icon->frame.y = 5;
+    // Add label
+    zdj_add_subview( view, cue_label );
+    cue_label->frame.x = 6;
+    cue_label->frame.y = 2;
 }
 
 static void _draw_cue_loop( zdj_view_t * view, zdj_view_clip_t * clip ) {

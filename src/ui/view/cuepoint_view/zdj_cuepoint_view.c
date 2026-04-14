@@ -108,15 +108,43 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         // printf( "%s: %1.0f - %ld - %1.0f\n", cuepoint->name, win_start, cuepoint->sample, win_end );
         if( (double)cuepoint->sample > (win_start-(11*samples_per_pixel)) && (double)cuepoint->sample < win_end ) {
             // Add flag
-            zdj_view_t * flag_view = zdj_new_flag_view( 
-                (cuepoint->is_loop) ? ZDJ_FLAG_TYPE_CUE_LOOP : ZDJ_FLAG_TYPE_CUE_NORM, 
-                cuepoint->name 
-            );
+            zdj_view_t * flag_view;
+            switch ( view_state->style ) {
+            case ZDJ_CUEPOINT_STYLE_EDIT:
+                flag_view = zdj_new_flag_view( 
+                    (cuepoint->is_loop) ? ZDJ_FLAG_TYPE_CUE_LOOP : ZDJ_FLAG_TYPE_CUE_NORM, 
+                    cuepoint->name 
+                );
+                flag_view->frame.x = round((cuepoint->sample - win_start) / samples_per_pixel);
+                flag_view->frame.y = 2;
+                flag_view->frame.w = 11;
+                flag_view->frame.h = 10;
+                break;
+            case ZDJ_CUEPOINT_STYLE_STATION_1_PLAYBACK:
+                flag_view = zdj_new_flag_view( 
+                    (cuepoint->is_loop) ? ZDJ_FLAG_TYPE_CUE_LOOP_TOP : ZDJ_FLAG_TYPE_CUE_NORM_TOP, 
+                    cuepoint->name 
+                );
+                flag_view->frame.x = round((cuepoint->sample - win_start) / samples_per_pixel);
+                flag_view->frame.y = 2;
+                flag_view->frame.w = 11;
+                flag_view->frame.h = 10;
+                break;
+            case ZDJ_CUEPOINT_STYLE_STATION_2_PLAYBACK:
+                flag_view = zdj_new_flag_view( 
+                    (cuepoint->is_loop) ? ZDJ_FLAG_TYPE_CUE_LOOP_BOTTOM : ZDJ_FLAG_TYPE_CUE_NORM_BOTTOM, 
+                    cuepoint->name 
+                );
+                flag_view->frame.x = round((cuepoint->sample - win_start) / samples_per_pixel) - 1;
+                flag_view->frame.y = 1;
+                flag_view->frame.w = 13;
+                flag_view->frame.h = 12;
+                break;
+            default: break;
+            }
+            
             zdj_add_subview( view, flag_view );
-            flag_view->frame.x = round((cuepoint->sample - win_start) / samples_per_pixel);
-            flag_view->frame.y = 2;
-            flag_view->frame.w = 11;
-            flag_view->frame.h = 10;
+            
         }
         cuepoint = cuepoint->next;
     }

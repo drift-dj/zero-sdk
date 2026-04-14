@@ -82,13 +82,13 @@ static void _draw_playback( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     double draw_x = start_screen_x;
     while( draw_x < end_screen_x ) {
-        boxColor( zdj_renderer( ), draw_x, view->frame.y, draw_x+2, view->frame.y+2, ZDJ_BLACK );
-        pixelColor( zdj_renderer( ), draw_x+1, view->frame.y+1, ZDJ_WHITE );
+        boxColor( zdj_renderer( ), draw_x, view_state->draw_y, draw_x+2, view_state->draw_y+2, ZDJ_BLACK );
+        pixelColor( zdj_renderer( ), draw_x+1, view_state->draw_y+1, ZDJ_WHITE );
         draw_x += 4;
     }
 
-    // printf( "loop ph:%1.1f so:%1.1f st:%1.1f eo:%1.1f en:%1.1f\n", 
-    //     pcm_head, start_pcm_offset, start_screen_x, end_pcm_offset, end_screen_x 
+    // printf( "loop so:%1.1f st:%1.1f eo:%1.1f en:%1.1f\n", 
+    //     start_pcm_offset, start_screen_x, end_pcm_offset, end_screen_x 
     // );
     // printf( "loop_view draw done\n" );
 }

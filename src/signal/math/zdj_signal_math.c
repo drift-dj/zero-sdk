@@ -181,10 +181,16 @@ float zdj_signal_gen_sine(
     return p;
 }
 
+// float zdj_signal_accum_floats( float val_1, float val_2 ) {
+// 	val_1 += val_2;
+// 	if( val_1 > 1.0f ) { val_1 = 1.0f; }
+// 	if( val_1 < -1.0f ) { val_1 = -1.0f; }
+// 	return val_1;
+// }
 float zdj_signal_accum_floats( float val_1, float val_2 ) {
 	val_1 += val_2;
-	if( val_1 > 1.0f ) { val_1 = 1.0f; }
-	if( val_1 < -1.0f ) { val_1 = -1.0f; }
+	if( val_1 > 3.0f ) { val_1 = 3.0f; }
+	if( val_1 < -3.0f ) { val_1 = -3.0f; }
 	return val_1;
 }
 
