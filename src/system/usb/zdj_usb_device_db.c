@@ -110,24 +110,24 @@ zdj_usb_attached_devices_t * zdj_usb_update_attached_devices( void ) {
             } else if ( (p = strstr( line, "Vendor=" )) ) {
                 ind = p - line;
                 memcpy( &usb_vendor, &line[ ind+7 ], sizeof(char)*4 );
-                zdj_usb_device_cleanup_str( &usb_vendor, sizeof( usb_vendor ) );
+                zdj_usb_device_cleanup_str( usb_vendor, sizeof( usb_vendor ) );
 
                 p = strstr( line, "ProdID=" );
                 ind = p - line;
                 memcpy( &usb_product_id, &line[ ind+7 ], sizeof(char)*4 );
-                zdj_usb_device_cleanup_str( &usb_product_id, sizeof( usb_product_id ) );
+                zdj_usb_device_cleanup_str( usb_product_id, sizeof( usb_product_id ) );
             } else if ( (p = strstr( line, "Manufacturer=" )) ) {
                 ind = p - line;
                 memcpy( &manufacturer, &line[ ind+13 ], sizeof( line )-ind-1 );
-                zdj_usb_device_cleanup_str( &manufacturer, sizeof( manufacturer ) );
+                zdj_usb_device_cleanup_str( manufacturer, sizeof( manufacturer ) );
             } else if ( (p = strstr( line, "Product=" )) ) {
                 ind = p - line;
                 memcpy( &product, &line[ ind+8 ], sizeof( line )-ind-1 );
-                zdj_usb_device_cleanup_str( &product, sizeof( product ) );
+                zdj_usb_device_cleanup_str( product, sizeof( product ) );
             } else if ( (p = strstr( line, "SerialNumber=" )) ) {
                 ind = p - line;
                 memcpy( &serial_number, &line[ ind+13 ], sizeof( line )-ind-1 );
-                zdj_usb_device_cleanup_str( &serial_number, sizeof( serial_number ) );
+                zdj_usb_device_cleanup_str( serial_number, sizeof( serial_number ) );
             } else if ( (p = strstr( line, "Cls=01(audio)" )) ) {
                 has_audio = true;
                 // has_midi = true; // This can only be discovered by ALSA
