@@ -107,7 +107,7 @@ void zdj_installer_iterate_manifest(
         while ( ( res = sqlite3_step( c_stmt ) ) == SQLITE_ROW ) {
             zdj_installer_manifest_item_t item;
             // Build dest/extract/rollback paths
-            strcpy( &item.dest_path, (char*)sqlite3_column_text( c_stmt, 0 ) );
+            strcpy( item.dest_path, (char*)sqlite3_column_text( c_stmt, 0 ) );
             snprintf( item.extract_path, sizeof( item.extract_path ), "%s/%s", 
                 ZDJ_INSTALLER_EXTRACT_DIR, 
                 basename( item.dest_path )

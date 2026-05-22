@@ -56,7 +56,7 @@ typedef struct {
     zdj_perf_tag_t * tags;
 } zdj_perf_state_t;
 
-typedef struct {
+typedef struct zdj_perf_report_line_t {
     zdj_perf_tag_name_t name;
     uint32_t count;
     uint64_t max_dur;

@@ -58,7 +58,7 @@ typedef struct {
     zdj_os_sysreg_installer_props_t installer_props;
 } zdj_os_sysreg_t;
 
-typedef struct {
+typedef struct zdj_install_t {
     char registry_name[256];
     char display_name[128];
     char short_name[16];
