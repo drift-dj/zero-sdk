@@ -71,6 +71,8 @@ static volatile int g_ring_r, g_ring_w;  // frame read/write cursors
 static SDL_mutex *  g_ring_lock;
 static volatile int g_audio_run;
 
+static volatile long g_underrun_fr;  // frames the callback had to zero-fill (diagnostic)
+
 static int _ring_fill( void ) {
     return ( g_ring_w - g_ring_r + EMU_RING_FRAMES ) % EMU_RING_FRAMES;
 }
@@ -126,6 +128,7 @@ static void _audio_cb( void * ud, Uint8 * stream, int len ) {
         dst += 2; need--;
     }
     SDL_UnlockMutex( g_ring_lock );
+    if( need > 0 ) { g_underrun_fr += need; }
     for( int i = 0; i < need * 2; i++ ) { dst[ i ] = 0; }  // underrun -> silence
 }
 
@@ -321,6 +324,12 @@ int main( int argc, char ** argv ) {
             printf( "zero-emu: deck RUNNING -> play\n" );
             _deck_play_pause( );
             played = true;
+        }
+        // Report audio-bridge underruns (~1/s) so we can see if the ring starves.
+        if( g_audio_dev && frame_n > 0 && ( frame_n % refresh_hz ) == 0 ) {
+            static long last_ur = 0;
+            long ur = g_underrun_fr;
+            if( ur != last_ur ) { printf( "zero-emu: underrun frames +%ld (total %ld)\n", ur - last_ur, ur ); last_ur = ur; }
         }
 
         // Drive the library: renders the view stack to its surface, packs the
