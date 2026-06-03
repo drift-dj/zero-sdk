@@ -52,49 +52,79 @@ static void  _unpack_video( const uint32_t * vid, uint32_t * argb );
 // playback clock and must match the audio device's consumption clock, or the
 // stream drifts and underruns.
 //
-// We therefore drive it from an SDL *pull* callback: SDL asks for N frames at
-// the device's exact rate, and we run exactly enough M7 cycles to supply them.
-// This locks the deck clock to the device clock -- no drift, no underruns.
+// To keep the blocking handshake out of the SDL callback (any jitter there is
+// an instant glitch), a producer thread runs the M7 cycles into a ring buffer
+// and the callback just drains it. The producer is paced by the ring fill
+// level: it only produces while the ring is below a target depth. Because the
+// callback drains at the exact device rate, that backpressure pins the
+// producer's average rate -- and thus the deck's playback speed -- to 1x, while
+// the target depth gives ~tens of ms of slack to absorb a slow cycle.
 
 static volatile zdj_shared_audio_state_t * g_audio_state;
 static volatile int32_t *                  g_dac;
 static SDL_AudioDeviceID                    g_audio_dev;
 
-// One mixed cycle's worth of stereo frames, buffered across callback boundaries
-// (the device's buffer size is not a multiple of ZDJ_SOUNDCARD_BUF_LEN).
-static int32_t g_cycle_buf[ ZDJ_SOUNDCARD_BUF_LEN * 2 ];
-static int     g_cycle_have;  // frames left in g_cycle_buf
-static int     g_cycle_pos;   // next frame to emit
+#define EMU_RING_FRAMES 16384
+#define EMU_RING_TARGET ( ZDJ_SOUNDCARD_BUF_LEN * 4 )  // ~36ms of slack
+static int32_t      g_ring[ EMU_RING_FRAMES * 2 ];
+static volatile int g_ring_r, g_ring_w;  // frame read/write cursors
+static SDL_mutex *  g_ring_lock;
+static volatile int g_audio_run;
+
+static int _ring_fill( void ) {
+    return ( g_ring_w - g_ring_r + EMU_RING_FRAMES ) % EMU_RING_FRAMES;
+}
 
 // Run one M7 audio cycle: request a DAC fill, wait for the io thread to take it,
-// then copy the freshly-mixed main LR output.
-static void _pull_one_cycle( void ) {
+// then return the freshly-mixed main LR output via `out` (ZDJ_SOUNDCARD_BUF_LEN
+// stereo frames). Off the realtime callback path, so the guard can be generous.
+static void _pull_one_cycle( int32_t * out ) {
     g_audio_state->cycle_ready = 1;
-    // io thread polls ~8x/cycle; wait (bounded) for it to consume the request.
-    for( int spin = 0; g_audio_state->cycle_ready && spin < 3000; spin++ ) {
+    for( int spin = 0; g_audio_state->cycle_ready && spin < 5000; spin++ ) {
         struct timespec t = { 0, 1000 }; nanosleep( &t, NULL );  // 1us
     }
-    // Brief guard so update_cb finishes filling the DAC before we read it.
-    struct timespec guard = { 0, 200000 }; nanosleep( &guard, NULL );  // 200us
+    struct timespec guard = { 0, 500000 }; nanosleep( &guard, NULL );  // 500us
     for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-        g_cycle_buf[ i*2+0 ] = g_dac[ i*4+0 ];   // analog out 0 L
-        g_cycle_buf[ i*2+1 ] = g_dac[ i*4+1 ];   // analog out 0 R
+        out[ i*2+0 ] = g_dac[ i*4+0 ];   // analog out 0 L
+        out[ i*2+1 ] = g_dac[ i*4+1 ];   // analog out 0 R
     }
-    g_cycle_have = ZDJ_SOUNDCARD_BUF_LEN;
-    g_cycle_pos  = 0;
+}
+
+static int _audio_producer( void * arg ) {
+    (void)arg;
+    int32_t cycle[ ZDJ_SOUNDCARD_BUF_LEN * 2 ];
+    while( g_audio_run ) {
+        if( _ring_fill( ) >= EMU_RING_TARGET ) {
+            struct timespec t = { 0, 1000000 }; nanosleep( &t, NULL );  // 1ms
+            continue;
+        }
+        _pull_one_cycle( cycle );
+        SDL_LockMutex( g_ring_lock );
+        for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+            int nw = ( g_ring_w + 1 ) % EMU_RING_FRAMES;
+            if( nw == g_ring_r ) { break; }  // full (shouldn't happen below target)
+            g_ring[ g_ring_w*2+0 ] = cycle[ i*2+0 ];
+            g_ring[ g_ring_w*2+1 ] = cycle[ i*2+1 ];
+            g_ring_w = nw;
+        }
+        SDL_UnlockMutex( g_ring_lock );
+    }
+    return 0;
 }
 
 static void _audio_cb( void * ud, Uint8 * stream, int len ) {
     (void)ud;
     int32_t * dst = (int32_t *)stream;
-    int frames_needed = len / (int)( 2 * sizeof( int32_t ) );
-    while( frames_needed > 0 ) {
-        if( g_cycle_have == 0 ) { _pull_one_cycle( ); }
-        int n = frames_needed < g_cycle_have ? frames_needed : g_cycle_have;
-        memcpy( dst, &g_cycle_buf[ g_cycle_pos * 2 ], (size_t)n * 2 * sizeof( int32_t ) );
-        dst += n * 2;
-        g_cycle_pos += n; g_cycle_have -= n; frames_needed -= n;
+    int need = len / (int)( 2 * sizeof( int32_t ) );
+    SDL_LockMutex( g_ring_lock );
+    while( need > 0 && g_ring_r != g_ring_w ) {
+        dst[ 0 ] = g_ring[ g_ring_r*2+0 ];
+        dst[ 1 ] = g_ring[ g_ring_r*2+1 ];
+        g_ring_r = ( g_ring_r + 1 ) % EMU_RING_FRAMES;
+        dst += 2; need--;
     }
+    SDL_UnlockMutex( g_ring_lock );
+    for( int i = 0; i < need * 2; i++ ) { dst[ i ] = 0; }  // underrun -> silence
 }
 
 // Probe the file with ffmpeg to fill the metadata the decode node needs, build
@@ -224,6 +254,8 @@ int main( int argc, char ** argv ) {
         g_audio_state = zdj_platform_map_shared( ZDJ_SHARED_AUDIO_STATE_ADDR, 0x1000 );
         g_dac = zdj_platform_map_shared( ZDJ_SHARED_DAC_BUF, 0x8000 );
 
+        g_ring_lock = SDL_CreateMutex( );
+
         SDL_InitSubSystem( SDL_INIT_AUDIO );
         SDL_AudioSpec want; SDL_zero( want );
         want.freq = 44100; want.format = AUDIO_S32SYS; want.channels = 2;
@@ -232,7 +264,12 @@ int main( int argc, char ** argv ) {
         if( !g_audio_dev ) { printf( "zero-emu: SDL audio open failed: %s\n", SDL_GetError( ) ); }
 
         deck = _load_track( track );
-        SDL_PauseAudioDevice( g_audio_dev, 0 );  // start pulling once the deck exists
+
+        // Start the producer and prebuffer to the target depth before unpausing.
+        g_audio_run = 1;
+        SDL_CreateThread( _audio_producer, "zero-emu-audio", NULL );
+        for( int i = 0; i < 500 && _ring_fill( ) < EMU_RING_TARGET; i++ ) { SDL_Delay( 1 ); }
+        SDL_PauseAudioDevice( g_audio_dev, 0 );
     }
 
     _print_keymap( );
