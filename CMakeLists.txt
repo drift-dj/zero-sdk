@@ -270,6 +270,7 @@ if(ZDJ_EMU)
     # sysroot include dirs here.
     target_include_directories(zerodj PUBLIC
         ${CMAKE_SOURCE_DIR}/tools/emu/include
+        /usr/include/ffmpeg4.4   # libav* headers: ffmpeg 4.4 matches the device API
         /usr/include/libxml2
     )
     # Link against the host's own x86_64 shared libraries (default search path).
@@ -327,11 +328,16 @@ target_link_libraries(
 if(ZDJ_EMU)
     # Native desktop harness: the host-side "fake M7" + SDL window + keyboard.
     add_executable(zero-emu tools/emu/src/zero_emu_main.c)
-    # ffmpeg is an implicit dependency of the decode/record nodes (not in the
-    # device's explicit link list -- drift-os provides it). The host has ffmpeg
-    # 7.x; the modern function names still resolve, and these code paths don't
-    # execute in the UI prototype, so the old-headers/new-lib skew never runs.
-    target_link_libraries(zero-emu PRIVATE zerodj avformat avcodec avutil)
+    # ffmpeg is an implicit dependency of the decode/record nodes (the device's
+    # drift-os provides it). Link the ffmpeg 4.4 build (libav*.so.58/56) whose
+    # ABI matches the v58 headers above -- NOT the host's ffmpeg 7. The -L puts
+    # ffmpeg4.4's dev symlinks ahead of the default ffmpeg 7 ones; the recorded
+    # SONAMEs (libavformat.so.58 etc.) resolve at runtime from /usr/lib.
+    target_link_directories(zero-emu PRIVATE /usr/lib/ffmpeg4.4)
+    # asound: the USB audio I/O + device-scan nodes call ALSA directly (added
+    # upstream). On the device drift-os supplies it; the native harness links
+    # the host libasound so the fake-M7 build resolves the snd_* symbols.
+    target_link_libraries(zero-emu PRIVATE zerodj avformat avcodec avutil swresample asound)
 endif()
 
 # add_custom_command(

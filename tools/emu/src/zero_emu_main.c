@@ -15,11 +15,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <pthread.h>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/display/zdj_display.h>
@@ -40,6 +46,83 @@ static int   _env_int( const char * name, int fallback );
 static void  _print_keymap( void );
 static void  _handle_key( SDL_Keysym key, bool down );
 static void  _unpack_video( const uint32_t * vid, uint32_t * argb );
+
+// --- Track load + fake-M7 audio bridge --------------------------------------
+// The audio fast-cycle thread (in libzerodj) fills the DAC ring buffer whenever
+// shared_audio_state->cycle_ready is asserted. On the device the M7 asserts it
+// each ~9ms (ZDJ_SOUNDCARD_BUF_LEN/44100 s) and drains the DAC to the codec.
+// Here the harness plays that role: assert the flag, then read the DAC (main LR
+// = interleaved int32 at dac[i*4+0/1]) and queue it to host audio.
+
+static volatile zdj_shared_audio_state_t * g_audio_state;
+static volatile int32_t *                  g_dac;
+static SDL_AudioDeviceID                    g_audio_dev;
+static volatile int                         g_audio_run;
+
+static void * _fake_m7_audio_thread( void * arg ) {
+    (void)arg;
+    long cycle_ns = (long)( (double)ZDJ_SOUNDCARD_BUF_LEN / 44100.0 * 1e9 );
+    struct timespec ts = { 0, cycle_ns };
+    int32_t out[ ZDJ_SOUNDCARD_BUF_LEN * 2 ];
+    int32_t peak = 0; long cycles = 0;
+    while( g_audio_run ) {
+        g_audio_state->cycle_ready = 1;       // ask the A53 for a DAC buffer
+        nanosleep( &ts, NULL );               // io thread polls ~8x/cycle + fills
+        for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+            int32_t l = g_dac[ i*4+0 ], r = g_dac[ i*4+1 ];  // analog out 0 L/R
+            out[ i*2+0 ] = l;
+            out[ i*2+1 ] = r;
+            int32_t a = l < 0 ? -l : l; if( a > peak ) { peak = a; }
+        }
+        if( g_audio_dev ) { SDL_QueueAudio( g_audio_dev, out, sizeof( out ) ); }
+        // ~ every 2s, report the DAC peak so a headless run can confirm signal.
+        if( ++cycles % 220 == 0 ) {
+            printf( "zero-emu: DAC peak %.3f (queued %u bytes)\n",
+                    (double)peak / 2147483647.0, SDL_GetQueuedAudioSize( g_audio_dev ) );
+            peak = 0;
+        }
+    }
+    return NULL;
+}
+
+// Probe the file with ffmpeg to fill the metadata the decode node needs, build
+// a song graph, and load it onto DJ deck station 1.
+static zdj_deck_t * _load_track( const char * path ) {
+    AVFormatContext * fmt = NULL;
+    if( avformat_open_input( &fmt, path, NULL, NULL ) != 0 ) {
+        printf( "zero-emu: could not open track: %s\n", path );
+        return NULL;
+    }
+    avformat_find_stream_info( fmt, NULL );
+    int sidx = -1;
+    for( unsigned i = 0; i < fmt->nb_streams; i++ ) {
+        if( fmt->streams[ i ]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ) { sidx = (int)i; break; }
+    }
+    if( sidx < 0 ) { printf( "zero-emu: no audio stream in %s\n", path ); avformat_close_input( &fmt ); return NULL; }
+
+    AVCodecParameters * cp = fmt->streams[ sidx ]->codecpar;
+    double dur_sec = fmt->duration > 0 ? (double)fmt->duration / AV_TIME_BASE : 0.0;
+
+    zdj_library_song_t * song = zdj_library_create_file_import_song_graph( (char *)path, zdj_library_db );
+    song->audio->av_codec_id     = cp->codec_id;
+    song->audio->av_stream_index = sidx;
+    song->audio->av_sample_rate  = cp->sample_rate;
+    song->audio->av_channel_count= cp->channels;
+    song->audio->av_sample_format= cp->format;
+    song->audio->duration_sec    = dur_sec;
+    song->audio->duration_pcm    = (int64_t)( dur_sec * 44100.0 );
+    printf( "zero-emu: track '%s' codec=0x%x ch=%d sr=%d dur=%.1fs\n",
+            path, cp->codec_id, cp->channels, cp->sample_rate, dur_sec );
+    avformat_close_input( &fmt );
+
+    return zdj_deck_manager_add_deck( ZDJ_DECK_TYPE_DJ, ZDJ_DECK_STATION_1, (void *)song, 16 );
+}
+
+// Enqueue a play/pause toggle for deck 1; the control thread dispatches it.
+static void _deck_play_pause( void ) {
+    int w = zdj_get_next_deck_event_ind( );
+    zdj_deck_event_buf[ w ].id = ZDJ_DECK_1_CONTROL_PLAY_PAUSE;
+}
 
 int main( int argc, char ** argv ) {
     (void)argc; (void)argv;
@@ -119,6 +202,27 @@ int main( int argc, char ** argv ) {
 
     static uint32_t argb[ EMU_W * EMU_H ];
 
+    // Optional: load a track onto a deck and bridge audio to the host.
+    zdj_deck_t * deck = NULL;
+    bool played = false;
+    const char * track = getenv( "ZERO_EMU_TRACK" );
+    if( full_ui && track && *track ) {
+        SDL_InitSubSystem( SDL_INIT_AUDIO );
+        SDL_AudioSpec want; SDL_zero( want );
+        want.freq = 44100; want.format = AUDIO_S32SYS; want.channels = 2; want.samples = 512;
+        g_audio_dev = SDL_OpenAudioDevice( NULL, 0, &want, NULL, 0 );
+        if( !g_audio_dev ) { printf( "zero-emu: SDL audio open failed: %s\n", SDL_GetError( ) ); }
+        SDL_PauseAudioDevice( g_audio_dev, 0 );
+
+        // Same shared regions the soundcard's analog-io node fills.
+        g_audio_state = zdj_platform_map_shared( ZDJ_SHARED_AUDIO_STATE_ADDR, 0x1000 );
+        g_dac = zdj_platform_map_shared( ZDJ_SHARED_DAC_BUF, 0x8000 );
+        g_audio_run = 1;
+        pthread_t th; pthread_create( &th, NULL, _fake_m7_audio_thread, NULL );
+
+        deck = _load_track( track );
+    }
+
     _print_keymap( );
 
     // --- Frame loop ----------------------------------------------------------
@@ -159,6 +263,13 @@ int main( int argc, char ** argv ) {
                 default:
                     break;
             }
+        }
+
+        // Once the loaded deck finishes spinning up its pipeline, start playback.
+        if( deck && !played && deck->status == ZDJ_DECK_STATUS_RUNNING ) {
+            printf( "zero-emu: deck RUNNING -> play\n" );
+            _deck_play_pause( );
+            played = true;
         }
 
         // Drive the library: renders the view stack to its surface, packs the
@@ -232,6 +343,7 @@ static void _handle_key( SDL_Keysym key, bool down ) {
         // Transport / nav / hotcue.
         case SDLK_ESCAPE: zdj_emu_input_button( ZDJ_EMU_BTN_NAV, down ); break;
         case SDLK_TAB:    if( down ) { zdj_ui_panel_toggle( ); } break;
+        case SDLK_p:      if( down ) { _deck_play_pause( ); } break;  // deck 1 play/pause
         case SDLK_SPACE:  zdj_emu_input_button( ZDJ_EMU_BTN_PLAY, down ); break;
         case SDLK_h:      zdj_emu_input_button( ZDJ_EMU_BTN_HOTCUE, down ); break;
 
@@ -261,6 +373,7 @@ static void _print_keymap( void ) {
         "  Tab ........... deploy/retract panel    Enter-hold ... same (jog long-press)\n"
         "  1 / 3 ......... prev / next panel        (FN1/FN3; 2 = FN2)\n"
         "  q/a w/s e/d ... tone 1/2/3 encoder (turn down/up)\n"
+        "  p ............. deck 1 play/pause (with ZERO_EMU_TRACK)\n"
         "  Shift+Esc ..... quit\n\n" );
 }
 
