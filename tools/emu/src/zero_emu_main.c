@@ -15,8 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <pthread.h>
-
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
@@ -48,32 +46,55 @@ static void  _handle_key( SDL_Keysym key, bool down );
 static void  _unpack_video( const uint32_t * vid, uint32_t * argb );
 
 // --- Track load + fake-M7 audio bridge --------------------------------------
-// The audio fast-cycle thread (in libzerodj) fills the DAC ring buffer whenever
-// shared_audio_state->cycle_ready is asserted. On the device the M7 asserts it
-// each ~9ms (ZDJ_SOUNDCARD_BUF_LEN/44100 s) and drains the DAC to the codec.
-// Here the harness plays that role: assert the flag, then read the DAC (main LR
-// = interleaved int32 at dac[i*4+0/1]) and queue it to host audio.
+// libzerodj's audio fast-cycle thread fills the DAC buffer once each time
+// shared_audio_state->cycle_ready is asserted, advancing the deck transport by
+// exactly ZDJ_SOUNDCARD_BUF_LEN frames per assertion. So the assert rate IS the
+// playback clock and must match the audio device's consumption clock, or the
+// stream drifts and underruns.
+//
+// We therefore drive it from an SDL *pull* callback: SDL asks for N frames at
+// the device's exact rate, and we run exactly enough M7 cycles to supply them.
+// This locks the deck clock to the device clock -- no drift, no underruns.
 
 static volatile zdj_shared_audio_state_t * g_audio_state;
 static volatile int32_t *                  g_dac;
 static SDL_AudioDeviceID                    g_audio_dev;
-static volatile int                         g_audio_run;
 
-static void * _fake_m7_audio_thread( void * arg ) {
-    (void)arg;
-    long cycle_ns = (long)( (double)ZDJ_SOUNDCARD_BUF_LEN / 44100.0 * 1e9 );
-    struct timespec ts = { 0, cycle_ns };
-    int32_t out[ ZDJ_SOUNDCARD_BUF_LEN * 2 ];
-    while( g_audio_run ) {
-        g_audio_state->cycle_ready = 1;       // ask the A53 for a DAC buffer
-        nanosleep( &ts, NULL );               // io thread polls ~8x/cycle + fills
-        for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-            out[ i*2+0 ] = g_dac[ i*4+0 ];    // analog out 0 L
-            out[ i*2+1 ] = g_dac[ i*4+1 ];    // analog out 0 R
-        }
-        if( g_audio_dev ) { SDL_QueueAudio( g_audio_dev, out, sizeof( out ) ); }
+// One mixed cycle's worth of stereo frames, buffered across callback boundaries
+// (the device's buffer size is not a multiple of ZDJ_SOUNDCARD_BUF_LEN).
+static int32_t g_cycle_buf[ ZDJ_SOUNDCARD_BUF_LEN * 2 ];
+static int     g_cycle_have;  // frames left in g_cycle_buf
+static int     g_cycle_pos;   // next frame to emit
+
+// Run one M7 audio cycle: request a DAC fill, wait for the io thread to take it,
+// then copy the freshly-mixed main LR output.
+static void _pull_one_cycle( void ) {
+    g_audio_state->cycle_ready = 1;
+    // io thread polls ~8x/cycle; wait (bounded) for it to consume the request.
+    for( int spin = 0; g_audio_state->cycle_ready && spin < 3000; spin++ ) {
+        struct timespec t = { 0, 1000 }; nanosleep( &t, NULL );  // 1us
     }
-    return NULL;
+    // Brief guard so update_cb finishes filling the DAC before we read it.
+    struct timespec guard = { 0, 200000 }; nanosleep( &guard, NULL );  // 200us
+    for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+        g_cycle_buf[ i*2+0 ] = g_dac[ i*4+0 ];   // analog out 0 L
+        g_cycle_buf[ i*2+1 ] = g_dac[ i*4+1 ];   // analog out 0 R
+    }
+    g_cycle_have = ZDJ_SOUNDCARD_BUF_LEN;
+    g_cycle_pos  = 0;
+}
+
+static void _audio_cb( void * ud, Uint8 * stream, int len ) {
+    (void)ud;
+    int32_t * dst = (int32_t *)stream;
+    int frames_needed = len / (int)( 2 * sizeof( int32_t ) );
+    while( frames_needed > 0 ) {
+        if( g_cycle_have == 0 ) { _pull_one_cycle( ); }
+        int n = frames_needed < g_cycle_have ? frames_needed : g_cycle_have;
+        memcpy( dst, &g_cycle_buf[ g_cycle_pos * 2 ], (size_t)n * 2 * sizeof( int32_t ) );
+        dst += n * 2;
+        g_cycle_pos += n; g_cycle_have -= n; frames_needed -= n;
+    }
 }
 
 // Probe the file with ffmpeg to fill the metadata the decode node needs, build
@@ -198,20 +219,20 @@ int main( int argc, char ** argv ) {
     bool played = false;
     const char * track = getenv( "ZERO_EMU_TRACK" );
     if( full_ui && track && *track ) {
-        SDL_InitSubSystem( SDL_INIT_AUDIO );
-        SDL_AudioSpec want; SDL_zero( want );
-        want.freq = 44100; want.format = AUDIO_S32SYS; want.channels = 2; want.samples = 512;
-        g_audio_dev = SDL_OpenAudioDevice( NULL, 0, &want, NULL, 0 );
-        if( !g_audio_dev ) { printf( "zero-emu: SDL audio open failed: %s\n", SDL_GetError( ) ); }
-        SDL_PauseAudioDevice( g_audio_dev, 0 );
-
-        // Same shared regions the soundcard's analog-io node fills.
+        // Map the shared regions the soundcard's analog-io node fills BEFORE the
+        // device is unpaused (the callback touches them immediately).
         g_audio_state = zdj_platform_map_shared( ZDJ_SHARED_AUDIO_STATE_ADDR, 0x1000 );
         g_dac = zdj_platform_map_shared( ZDJ_SHARED_DAC_BUF, 0x8000 );
-        g_audio_run = 1;
-        pthread_t th; pthread_create( &th, NULL, _fake_m7_audio_thread, NULL );
+
+        SDL_InitSubSystem( SDL_INIT_AUDIO );
+        SDL_AudioSpec want; SDL_zero( want );
+        want.freq = 44100; want.format = AUDIO_S32SYS; want.channels = 2;
+        want.samples = 1024; want.callback = _audio_cb;
+        g_audio_dev = SDL_OpenAudioDevice( NULL, 0, &want, NULL, 0 );
+        if( !g_audio_dev ) { printf( "zero-emu: SDL audio open failed: %s\n", SDL_GetError( ) ); }
 
         deck = _load_track( track );
+        SDL_PauseAudioDevice( g_audio_dev, 0 );  // start pulling once the deck exists
     }
 
     _print_keymap( );
