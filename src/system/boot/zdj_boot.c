@@ -10,11 +10,12 @@
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/controls/hmi/zdj_hmi_input.h>
 #include <zerodj/controls/hmi/zdj_hmi_m7_state_model.h>
+#include <zerodj/system/m7/zdj_platform.h>
 
 void zdj_boot_scan_hmi( void ) {
-    int mem_fd = open( "/dev/mem", O_RDWR );
-	zdj_hmi_m7_state_model = mmap(0, 0x20000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a11000);
+	zdj_hmi_m7_state_model = zdj_platform_map_shared( ZDJ_SHARED_HMI_STATE_ADDR, 0x20000 );
 
+#ifndef ZDJ_EMU
     // Setup GPIO bitbang for encoders
     int fd = open( "/sys/class/gpio/export", O_WRONLY );
     if ( fd == -1 ) { printf( "Unable to open GPIO export sysfs\n" ); }
@@ -112,6 +113,7 @@ void zdj_boot_scan_hmi( void ) {
     close( a_fd );
     close( b_fd );
     close( sw_fd );
+#endif // ZDJ_EMU
 }
 
 zdj_boot_mode_t zdj_boot_get_normal_override( void ) {

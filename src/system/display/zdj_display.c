@@ -8,6 +8,7 @@
 
 #include <zerodj/system/display/zdj_display.h>
 #include <zerodj/system/m7/zdj_m7.h>
+#include <zerodj/system/m7/zdj_platform.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 
@@ -18,8 +19,7 @@ void zdj_display_init( void ) {
     // printf( "zdj_display_init\n" );
     // Grab references to the shared (M7+A53) memory.
     // See zero kernel 'drift-a106.dtsi' reserved-memory section.
-	int mem_fd = open( "/dev/mem", O_RDWR );
-    zdj_vid_buffer = (uint32_t *)mmap(NULL, 0x2000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_VIDEO_BUF_ADDR);
+    zdj_vid_buffer = (uint32_t *)zdj_platform_map_shared( ZDJ_SHARED_VIDEO_BUF_ADDR, 0x2000 );
 
     zdj_display_flip = false;
 }

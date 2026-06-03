@@ -9,6 +9,7 @@
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/controls/hmi/zdj_hmi_input.h>
 #include <zerodj/controls/hmi/zdj_hmi_m7_state_model.h>
+#include <zerodj/system/m7/zdj_platform.h>
 #include <zerodj/system/perf/zdj_perf.h>
 
 volatile zdj_hmi_m7_state_model_t * zdj_hmi_m7_state_model;
@@ -21,8 +22,7 @@ int zdj_hmi_input_event_buf_read = 0;
 
 void zdj_control_hmi_input_init( void ) {
     // Grab a ref to the hmi model memory region used by the m7
-    int mem_fd = open( "/dev/mem", O_RDWR );
-	zdj_hmi_m7_state_model = mmap(0, 0x20000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, 0x55a11000);
+	zdj_hmi_m7_state_model = zdj_platform_map_shared( ZDJ_SHARED_HMI_STATE_ADDR, 0x20000 );
     // memset( zdj_hmi_m7_state_model, 0, sizeof( zdj_hmi_m7_state_model_t ) );
     // Reset pushbutton states to inactive/hi
     zdj_hmi_m7_state_model->out_pb_state = 0;

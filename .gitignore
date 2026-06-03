@@ -44,6 +44,7 @@ dkms.conf
 
 # Build directory
 build/
+build-emu/
 
 # SDK path file
 *sdk_path.cmake

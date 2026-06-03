@@ -10,6 +10,10 @@
 #include <zerodj/controls/hmi/zdj_hmi_m7_state_model.h>
 #include <zerodj/system/perf/zdj_perf.h>
 
+#ifdef ZDJ_EMU
+#include <zerodj/system/emu/zdj_emu_input.h>
+#endif
+
 typedef struct {
     int32_t cursam;
     int32_t presam;
@@ -40,6 +44,11 @@ static zdj_hmi_enco_scan_model_t * enco_4_t2;
 static zdj_hmi_enco_scan_model_t * enco_5_t3;
 
 void zdj_control_prepare_hmi_input_scan( void ) {
+#ifdef ZDJ_EMU
+    // No GPIO on a dev host: the zero-emu harness injects HMI input instead.
+    zdj_emu_input_init( );
+    return;
+#else
     // Setup GPIO bitbang for encoders
     int fd = open( "/sys/class/gpio/export", O_WRONLY );
     if ( fd == -1 ) { printf( "Unable to open GPIO export sysfs\n" ); }
@@ -82,11 +91,19 @@ void zdj_control_prepare_hmi_input_scan( void ) {
     enco_3_t1 = calloc( 1, sizeof( zdj_hmi_enco_scan_model_t ) );
     enco_4_t2 = calloc( 1, sizeof( zdj_hmi_enco_scan_model_t ) );
     enco_5_t3 = calloc( 1, sizeof( zdj_hmi_enco_scan_model_t ) );
+#endif // ZDJ_EMU
 }
 
 // Scan HMI encoders in the background
 // void * hmi_input_scan_thread_main( void * arg ) {
 void zdj_control_scan_hmi_input( void ) {
+#ifdef ZDJ_EMU
+    // Publish the harness-injected HMI state into the shared model, playing the
+    // exact role the GPIO quadrature scan plays on hardware (fresh encoder
+    // deltas + current button/pot state, deltas consumed each cycle).
+    zdj_emu_input_apply( zdj_hmi_m7_state_model );
+    return;
+#else
     struct timespec settle_sleep = { 0, 100 }; // ~100 µsec
 
     write( a0_fd, "0", 1 );
@@ -266,4 +283,5 @@ void zdj_control_scan_hmi_input( void ) {
     enco_3_t1->upval = 0;
     enco_4_t2->upval = 0;
     enco_5_t3->upval = 0;
+#endif // ZDJ_EMU
 }

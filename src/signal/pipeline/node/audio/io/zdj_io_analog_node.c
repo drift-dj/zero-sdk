@@ -11,6 +11,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/system/m7/zdj_m7.h>
+#include <zerodj/system/m7/zdj_platform.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/system/perf/zdj_perf.h>
 #include <zerodj/system/thread/zdj_thread.h>
@@ -30,11 +31,9 @@ zdj_pipeline_node_t * zdj_new_io_analog_node( void ) {
     zdj_io_analog_node_state_t * state = calloc( 1, sizeof( zdj_io_analog_node_state_t ) );
     node->state = state;
 
-    int mem_fd = open( "/dev/mem", O_RDWR );
-    state->shared_audio_state = (zdj_shared_audio_state_t*)mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_AUDIO_STATE_ADDR);
-    state->shared_adc_buffer = (volatile int32_t*)mmap(0, 0x8000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_ADC_BUF);
-    state->shared_dac_buffer = (int32_t*)mmap(0, 0x8000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, ZDJ_SHARED_DAC_BUF);
-    close( mem_fd );
+    state->shared_audio_state = (zdj_shared_audio_state_t*)zdj_platform_map_shared( ZDJ_SHARED_AUDIO_STATE_ADDR, 0x1000 );
+    state->shared_adc_buffer = (volatile int32_t*)zdj_platform_map_shared( ZDJ_SHARED_ADC_BUF, 0x8000 );
+    state->shared_dac_buffer = (int32_t*)zdj_platform_map_shared( ZDJ_SHARED_DAC_BUF, 0x8000 );
 
     state->in_1_buffer = zdj_new_audio_buffer_node( 
         ZDJ_SOUNDCARD_BUF_LEN, ZDJ_AUDIO_BUFFER_STEREO 

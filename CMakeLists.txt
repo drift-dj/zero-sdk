@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.23)
 project(zerodj VERSION 0.1.0 LANGUAGES C)
 
-add_library(zerodj 
+# ZDJ_EMU builds libzerodj natively for the host (x86_64) and a `zero-emu`
+# desktop harness, instead of cross-compiling the aarch64 device library.
+# Configure WITHOUT cmake/toolchain.cmake and with -DZDJ_EMU=ON (see
+# scripts/build_emu.sh). The device build path is unchanged when OFF.
+option(ZDJ_EMU "Build the native host emulator instead of the aarch64 device library" OFF)
+
+add_library(zerodj
     src/controls/zdj_controls.c
     src/controls/zdj_control_map.c
     src/controls/hmi/zdj_hmi_input.c
@@ -94,6 +100,7 @@ add_library(zerodj
     src/system/hash/zdj_hash.c
     src/system/log/zdj_log.c
     src/system/m7/zdj_m7.c
+    src/system/m7/zdj_platform.c
     src/system/installer/zdj_installer.c
     src/system/perf/zdj_perf.c
     src/system/registry/zdj_registry_install.c
@@ -246,22 +253,50 @@ target_compile_definitions(
     _GNU_SOURCE
 )
 
-target_include_directories(
-    zerodj
-    PUBLIC
-    sysroot/usr/include/
-    sysroot/usr/include/aarch64-linux-gnu/
-    sysroot/usr/local/include/
-)
+if(ZDJ_EMU)
+    # Native host build: select the emulator backend in zdj_platform.c and the
+    # #ifndef ZDJ_EMU hardware guards (GPIO bitbang, etc.).
+    target_compile_definitions(zerodj PUBLIC ZDJ_EMU)
 
-target_link_directories(
-    zerodj
-    PUBLIC
-    lib
-    sysroot/usr/lib
-    sysroot/lib/aarch64-linux-gnu
-    sysroot/lib/gcc/aarch64-linux-gnu/9
-)
+    # Emulator-only sources (host-side HMI injection consumed by the scan stub).
+    target_sources(zerodj PRIVATE src/system/emu/zdj_emu_input.c)
+
+    # Headers: borrow ONLY the arch-neutral zerodj project headers from the
+    # sysroot (via the tools/emu/include/zerodj symlink) plus thin shims that
+    # remap the device include conventions (<uuid.h>, <rubberband-c.h>,
+    # <mutils/mhash.h>, <libfdt/libfdt.h>) onto host paths. libc and the rest
+    # of the third-party headers come from the host's own include paths, so the
+    # x86_64 ABI stays consistent. We deliberately do NOT add the aarch64
+    # sysroot include dirs here.
+    target_include_directories(zerodj PUBLIC
+        ${CMAKE_SOURCE_DIR}/tools/emu/include
+        /usr/include/libxml2
+    )
+    # Link against the host's own x86_64 shared libraries (default search path).
+else()
+    target_include_directories(
+        zerodj
+        PUBLIC
+        sysroot/usr/include/
+        sysroot/usr/include/aarch64-linux-gnu/
+        sysroot/usr/local/include/
+    )
+
+    target_link_directories(
+        zerodj
+        PUBLIC
+        lib
+        sysroot/usr/lib
+        sysroot/lib/aarch64-linux-gnu
+        sysroot/lib/gcc/aarch64-linux-gnu/9
+    )
+
+    target_link_options(
+        zerodj
+        PUBLIC
+        -fuse-ld=lld
+    )
+endif()
 
 target_compile_options(
     zerodj
@@ -269,12 +304,6 @@ target_compile_options(
     -gdwarf-4
     # -march=armv8-a
     # -O3
-)
-
-target_link_options(
-    zerodj
-    PUBLIC
-    -fuse-ld=lld
 )
 
 target_link_libraries(
@@ -294,6 +323,16 @@ target_link_libraries(
     rubberband
     fdt
 )
+
+if(ZDJ_EMU)
+    # Native desktop harness: the host-side "fake M7" + SDL window + keyboard.
+    add_executable(zero-emu tools/emu/src/zero_emu_main.c)
+    # ffmpeg is an implicit dependency of the decode/record nodes (not in the
+    # device's explicit link list -- drift-os provides it). The host has ffmpeg
+    # 7.x; the modern function names still resolve, and these code paths don't
+    # execute in the UI prototype, so the old-headers/new-lib skew never runs.
+    target_link_libraries(zero-emu PRIVATE zerodj avformat avcodec avutil)
+endif()
 
 # add_custom_command(
 #     TARGET zerodj POST_BUILD
