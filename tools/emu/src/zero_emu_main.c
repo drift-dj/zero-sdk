@@ -19,12 +19,17 @@
 #include <SDL2/SDL_image.h>
 
 #include <zerodj/controls/zdj_controls.h>
+#include <zerodj/library/zdj_library.h>
+#include <zerodj/signal/deck/zdj_deck_manager.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/display/zdj_display.h>
 #include <zerodj/system/emu/zdj_emu_input.h>
+#include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/system/m7/zdj_m7.h>
 #include <zerodj/system/m7/zdj_platform.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/ui/view/label_view/zdj_label_view.h>
 
@@ -42,7 +47,7 @@ int main( int argc, char ** argv ) {
 
     int   scale      = _env_int( "ZERO_EMU_SCALE", 6 );
     int   refresh_hz = _env_int( "ZERO_EMU_HZ", 30 );
-    bool  full_ui    = _env_int( "ZERO_EMU_FULL_UI", 0 ) != 0;
+    bool  full_ui    = _env_int( "ZERO_EMU_FULL_UI", 1 ) != 0;  // set 0 for the bare min-UI
     if( scale < 1 )      { scale = 1; }
     if( refresh_hz < 1 ) { refresh_hz = 1; }
 
@@ -56,8 +61,23 @@ int main( int argc, char ** argv ) {
     // UI: brings up SDL video, the software renderer + offscreen surface, fonts,
     // the texture atlas and the view stack. min-init skips the panel/widget
     // subsystems (which expect soundcard/library state); full-init builds them.
-    if( full_ui ) { zdj_ui_init( ); }
-    else          { zdj_ui_min_init( ); }
+    if( full_ui ) {
+        // The panels (soundcard is the default) read these subsystems during
+        // draw, so they must exist before zdj_ui_init builds + draws the panels.
+        // library DB (self-creates db/dirs/default data sources) for the browser.
+        zdj_library_open_db( );
+        // usb subsystem: allocates zdj_usb_state, which the browser panel draws.
+        zdj_usb_init( );
+        // deck manager first: zdj_soundcard_init adds a clock deck to it.
+        zdj_deck_manager_init( );
+        zdj_soundcard_init( NULL );  // NULL -> __temp__ record; self-creates the DB
+        zdj_ui_init( );
+        // Panels are retracted by default; deploy the current one (soundcard)
+        // so there's something on screen. Tab toggles it at runtime.
+        zdj_ui_panel_toggle( );
+    } else {
+        zdj_ui_min_init( );
+    }
 
     // In min-UI mode there are no panels, so the screen is otherwise blank.
     // Push a couple of label views onto the root so the window visibly proves
@@ -103,9 +123,21 @@ int main( int argc, char ** argv ) {
 
     // --- Frame loop ----------------------------------------------------------
     bool running = true;
-    bool first_frame = true;
+    long  frame_n = 0;
+    bool  dumped = false;
+    const char * dump_path  = getenv( "ZERO_EMU_DUMP" );
+    long  dump_frame = _env_int( "ZERO_EMU_DUMP_FRAME", 90 );  // settle anims first
+    bool  autokey   = _env_int( "ZERO_EMU_AUTOKEY", 0 ) != 0; // scripted next-panel tap
     Uint32 frame_ms = (Uint32)( 1000 / refresh_hz );
     while( running ) {
+        // Scripted-input self-test: tap FN_3 (NEXT_PANEL) every ~40 frames so a
+        // headless run can cycle through every panel and verify the keyboard ->
+        // control thread -> UI loop drives the UI without crashing.
+        if( autokey ) {
+            long ph = frame_n % 40;
+            if( ph == 30 ) { zdj_emu_input_button( ZDJ_EMU_BTN_FN_3, true ); }
+            if( ph == 33 ) { zdj_emu_input_button( ZDJ_EMU_BTN_FN_3, false ); }
+        }
         Uint32 t0 = SDL_GetTicks( );
 
         SDL_Event e;
@@ -141,16 +173,15 @@ int main( int argc, char ** argv ) {
             SDL_RenderCopy( ren, tex, NULL, NULL );
             SDL_RenderPresent( ren );
             msg->update_display_req = 0;  // ack, like the M7 would
-            if( first_frame ) {
-                printf( "zero-emu: first frame presented\n" );
-                const char * dump = getenv( "ZERO_EMU_DUMP" );
-                if( dump && *dump ) {
-                    SDL_Surface * s = SDL_CreateRGBSurfaceWithFormatFrom(
-                        argb, EMU_W, EMU_H, 32, EMU_W * 4, SDL_PIXELFORMAT_ARGB8888 );
-                    if( s ) { IMG_SavePNG( s, dump ); SDL_FreeSurface( s ); }
-                    printf( "zero-emu: dumped frame to %s\n", dump );
-                }
-                first_frame = false;
+            if( frame_n == 0 ) { printf( "zero-emu: first frame presented\n" ); }
+            frame_n++;
+
+            if( dump_path && *dump_path && !dumped && frame_n >= dump_frame ) {
+                SDL_Surface * s = SDL_CreateRGBSurfaceWithFormatFrom(
+                    argb, EMU_W, EMU_H, 32, EMU_W * 4, SDL_PIXELFORMAT_ARGB8888 );
+                if( s ) { IMG_SavePNG( s, dump_path ); SDL_FreeSurface( s ); }
+                printf( "zero-emu: dumped frame %ld to %s\n", frame_n, dump_path );
+                dumped = true;
             }
         }
 
@@ -200,6 +231,7 @@ static void _handle_key( SDL_Keysym key, bool down ) {
 
         // Transport / nav / hotcue.
         case SDLK_ESCAPE: zdj_emu_input_button( ZDJ_EMU_BTN_NAV, down ); break;
+        case SDLK_TAB:    if( down ) { zdj_ui_panel_toggle( ); } break;
         case SDLK_SPACE:  zdj_emu_input_button( ZDJ_EMU_BTN_PLAY, down ); break;
         case SDLK_h:      zdj_emu_input_button( ZDJ_EMU_BTN_HOTCUE, down ); break;
 
@@ -226,7 +258,8 @@ static void _print_keymap( void ) {
         "  Up/Down ....... jog wheel scroll        Enter ... jog press (select)\n"
         "  Left/Right .... output encoder          o ....... output encoder press\n"
         "  Esc ........... NAV (back)              Space ... PLAY        h ... HOTCUE\n"
-        "  1 / 2 / 3 ..... FN1 / FN2 / FN3\n"
+        "  Tab ........... deploy/retract panel    Enter-hold ... same (jog long-press)\n"
+        "  1 / 3 ......... prev / next panel        (FN1/FN3; 2 = FN2)\n"
         "  q/a w/s e/d ... tone 1/2/3 encoder (turn down/up)\n"
         "  Shift+Esc ..... quit\n\n" );
 }
