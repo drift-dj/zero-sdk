@@ -25,7 +25,12 @@ if ! command -v bwrap >/dev/null 2>&1; then
   exit 1
 fi
 
-# Pick a substitute font.
+# Real device fonts (not redistributable, so kept outside the repo). If present
+# they're used as-is; otherwise we fall back to a substitute mono font so the
+# UI still comes up. Override the dir with ZERO_EMU_FONTS_DIR.
+FONTS_DIR="${ZERO_EMU_FONTS_DIR:-$HOME/.local/share/fonts}"
+
+# Pick a substitute font (used only for any device font that's missing).
 FONT="${ZERO_EMU_FONT:-}"
 if [ -z "$FONT" ]; then
   for cand in \
@@ -36,11 +41,6 @@ if [ -z "$FONT" ]; then
     [ -f "$cand" ] && { FONT="$cand"; break; }
   done
 fi
-if [ -z "$FONT" ] || [ ! -f "$FONT" ]; then
-  echo "No substitute font found; set ZERO_EMU_FONT=/path/to/font.ttf" >&2
-  exit 1
-fi
-echo "zero-emu: substitute font = $FONT"
 
 # Stage the fake /root/res tree.
 RES_SRC="$ROOT_DIR/res"
@@ -48,8 +48,17 @@ STAGE="$ROOT_DIR/build-emu/emu-root"
 mkdir -p "$STAGE/res/fonts" "$ROOT_DIR/build-emu/media-internal/.system"
 cp -f "$RES_SRC/zero_atlas-32bit.bmp" "$STAGE/res/zero_atlas-32bit.bmp"
 for f in pixelated.ttf pixelsix14.ttf lo-res09-nar.ttf; do
-  cp -f "$FONT" "$STAGE/res/fonts/$f"
+  if [ -f "$FONTS_DIR/$f" ]; then
+    cp -f "$FONTS_DIR/$f" "$STAGE/res/fonts/$f"
+  elif [ -n "$FONT" ] && [ -f "$FONT" ]; then
+    echo "zero-emu: $f not in $FONTS_DIR; using substitute $FONT" >&2
+    cp -f "$FONT" "$STAGE/res/fonts/$f"
+  else
+    echo "Missing font $f and no substitute (set ZERO_EMU_FONTS_DIR or ZERO_EMU_FONT)" >&2
+    exit 1
+  fi
 done
+if [ -d "$FONTS_DIR" ]; then echo "zero-emu: device fonts from $FONTS_DIR"; fi
 
 # Fresh tmpfs root so bwrap can create any mountpoint (incl. /media, which may
 # not exist on the host), with just the essentials bound in for SDL + wayland.
