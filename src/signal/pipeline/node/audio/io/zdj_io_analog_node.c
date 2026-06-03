@@ -250,11 +250,6 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
                     // printf( " n:%1.2f\n", ( n_end - n_start ) / 1000000.0 );
                 // }
             }
-#ifdef ZDJ_EMU
-            // No M7 to swap buffers: signal the fill is complete so the emulator's
-            // audio bridge can read the DAC without racing update_cb (torn reads).
-            node_state->shared_audio_state->cycle_count++;
-#endif
         }
 
         // Exit thread on command
