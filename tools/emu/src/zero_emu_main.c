@@ -64,23 +64,14 @@ static void * _fake_m7_audio_thread( void * arg ) {
     long cycle_ns = (long)( (double)ZDJ_SOUNDCARD_BUF_LEN / 44100.0 * 1e9 );
     struct timespec ts = { 0, cycle_ns };
     int32_t out[ ZDJ_SOUNDCARD_BUF_LEN * 2 ];
-    int32_t peak = 0; long cycles = 0;
     while( g_audio_run ) {
         g_audio_state->cycle_ready = 1;       // ask the A53 for a DAC buffer
         nanosleep( &ts, NULL );               // io thread polls ~8x/cycle + fills
         for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-            int32_t l = g_dac[ i*4+0 ], r = g_dac[ i*4+1 ];  // analog out 0 L/R
-            out[ i*2+0 ] = l;
-            out[ i*2+1 ] = r;
-            int32_t a = l < 0 ? -l : l; if( a > peak ) { peak = a; }
+            out[ i*2+0 ] = g_dac[ i*4+0 ];    // analog out 0 L
+            out[ i*2+1 ] = g_dac[ i*4+1 ];    // analog out 0 R
         }
         if( g_audio_dev ) { SDL_QueueAudio( g_audio_dev, out, sizeof( out ) ); }
-        // ~ every 2s, report the DAC peak so a headless run can confirm signal.
-        if( ++cycles % 220 == 0 ) {
-            printf( "zero-emu: DAC peak %.3f (queued %u bytes)\n",
-                    (double)peak / 2147483647.0, SDL_GetQueuedAudioSize( g_audio_dev ) );
-            peak = 0;
-        }
     }
     return NULL;
 }
