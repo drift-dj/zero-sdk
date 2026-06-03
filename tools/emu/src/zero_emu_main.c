@@ -75,15 +75,17 @@ static int _ring_fill( void ) {
     return ( g_ring_w - g_ring_r + EMU_RING_FRAMES ) % EMU_RING_FRAMES;
 }
 
-// Run one M7 audio cycle: request a DAC fill, wait for the io thread to take it,
-// then return the freshly-mixed main LR output via `out` (ZDJ_SOUNDCARD_BUF_LEN
-// stereo frames). Off the realtime callback path, so the guard can be generous.
+// Run one M7 audio cycle: request a DAC fill and wait for the io thread to
+// finish the mix (cycle_count advances), then return the freshly-mixed main LR
+// output via `out` (ZDJ_SOUNDCARD_BUF_LEN stereo frames). Waiting on the
+// completion counter (rather than a fixed guard) avoids reading a half-written
+// buffer when the mix runs long.
 static void _pull_one_cycle( int32_t * out ) {
+    uint64_t c0 = g_audio_state->cycle_count;
     g_audio_state->cycle_ready = 1;
-    for( int spin = 0; g_audio_state->cycle_ready && spin < 5000; spin++ ) {
-        struct timespec t = { 0, 1000 }; nanosleep( &t, NULL );  // 1us
+    for( int spin = 0; g_audio_state->cycle_count == c0 && spin < 20000; spin++ ) {
+        struct timespec t = { 0, 1000 }; nanosleep( &t, NULL );  // 1us, ~20ms cap
     }
-    struct timespec guard = { 0, 500000 }; nanosleep( &guard, NULL );  // 500us
     for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
         out[ i*2+0 ] = g_dac[ i*4+0 ];   // analog out 0 L
         out[ i*2+1 ] = g_dac[ i*4+1 ];   // analog out 0 R
