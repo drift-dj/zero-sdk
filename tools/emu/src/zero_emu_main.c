@@ -40,6 +40,15 @@
 #define EMU_W ZDJ_DISPLAY_WIDTH   // 128
 #define EMU_H ZDJ_DISPLAY_HEIGHT  // 64
 
+// Counts injected per encoder keypress. On hardware one physical detent of a
+// quadrature encoder emits a burst of edges (the quad decode in the HMI scan
+// yields ~4 per click), and the consumers are tuned for that -- notably the
+// menu scroll filter is a momentum sim whose snap threshold a single count
+// can't cross, so a +/-1 keypress decays without advancing an item (you'd have
+// to hold the key to accumulate force). One detent's worth makes a discrete tap
+// step exactly once. See zdj_menu_view_scroll_filter.c.
+#define EMU_ENC_DETENT 4
+
 static int   _env_int( const char * name, int fallback );
 static void  _print_keymap( void );
 static void  _handle_key( SDL_Keysym key, bool down );
@@ -385,18 +394,19 @@ static void _unpack_video( const uint32_t * vid, uint32_t * argb ) {
     }
 }
 
-// PC keyboard -> HMI. Encoders inject a per-press delta (key repeat scrolls);
-// buttons track held state. See _print_keymap for the layout.
+// PC keyboard -> HMI. Each encoder keypress injects one detent's worth of
+// counts (so a discrete tap steps once; key repeat keeps stepping); buttons
+// track held state. See _print_keymap for the layout.
 static void _handle_key( SDL_Keysym key, bool down ) {
     switch( key.sym ) {
         // Jog / nav wheel: scroll + select.
-        case SDLK_UP:    if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, +1 ); } break;
-        case SDLK_DOWN:  if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, -1 ); } break;
+        case SDLK_UP:    if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, -EMU_ENC_DETENT ); } break;
+        case SDLK_DOWN:  if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, +EMU_ENC_DETENT ); } break;
         case SDLK_RETURN: zdj_emu_input_button( ZDJ_EMU_BTN_JOG, down ); break;
 
         // Output volume encoder (often drives panel scroll too).
-        case SDLK_LEFT:  if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, -1 ); } break;
-        case SDLK_RIGHT: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, +1 ); } break;
+        case SDLK_LEFT:  if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, -EMU_ENC_DETENT ); } break;
+        case SDLK_RIGHT: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, +EMU_ENC_DETENT ); } break;
         case SDLK_o:     zdj_emu_input_button( ZDJ_EMU_BTN_OUT, down ); break;
 
         // Transport / nav / hotcue.
@@ -412,12 +422,12 @@ static void _handle_key( SDL_Keysym key, bool down ) {
         case SDLK_3: zdj_emu_input_button( ZDJ_EMU_BTN_FN_3, down ); break;
 
         // Tone encoders (q/a, w/s, e/d = turn down/up) and their push switches.
-        case SDLK_q: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, -1 ); } break;
-        case SDLK_a: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, +1 ); } break;
-        case SDLK_w: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, -1 ); } break;
-        case SDLK_s: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, +1 ); } break;
-        case SDLK_e: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, -1 ); } break;
-        case SDLK_d: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, +1 ); } break;
+        case SDLK_q: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, -EMU_ENC_DETENT ); } break;
+        case SDLK_a: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, +EMU_ENC_DETENT ); } break;
+        case SDLK_w: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, -EMU_ENC_DETENT ); } break;
+        case SDLK_s: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, +EMU_ENC_DETENT ); } break;
+        case SDLK_e: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, -EMU_ENC_DETENT ); } break;
+        case SDLK_d: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, +EMU_ENC_DETENT ); } break;
 
         default: break;
     }
