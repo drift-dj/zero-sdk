@@ -58,7 +58,6 @@ void zdj_emu_input_init( void );
 // Harness -> injection buffer. Thread-safe; called from the harness/SDL thread.
 void zdj_emu_input_encoder( zdj_emu_enc_t enc, int32_t delta ); // accumulates
 void zdj_emu_input_button( zdj_emu_btn_t btn, bool pressed );   // held state
-void zdj_emu_input_pot( zdj_emu_pot_t pot, int32_t value );     // absolute 0..MAX
 
 // Injection buffer -> shared model. Called by the control cycle thread each
 // scan; consumes (zeroes) the accumulated encoder deltas, mirroring the

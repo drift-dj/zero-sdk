@@ -47,9 +47,11 @@ RES_SRC="$ROOT_DIR/res"
 STAGE="$ROOT_DIR/build-emu/emu-root"
 mkdir -p "$STAGE/res/fonts" "$ROOT_DIR/build-emu/media-internal/.system"
 cp -f "$RES_SRC/zero_atlas-32bit.bmp" "$STAGE/res/zero_atlas-32bit.bmp"
+real_fonts=0
 for f in pixelated.ttf pixelsix14.ttf lo-res09-nar.ttf; do
   if [ -f "$FONTS_DIR/$f" ]; then
     cp -f "$FONTS_DIR/$f" "$STAGE/res/fonts/$f"
+    real_fonts=$((real_fonts + 1))
   elif [ -n "$FONT" ] && [ -f "$FONT" ]; then
     echo "zero-emu: $f not in $FONTS_DIR; using substitute $FONT" >&2
     cp -f "$FONT" "$STAGE/res/fonts/$f"
@@ -58,7 +60,7 @@ for f in pixelated.ttf pixelsix14.ttf lo-res09-nar.ttf; do
     exit 1
   fi
 done
-if [ -d "$FONTS_DIR" ]; then echo "zero-emu: device fonts from $FONTS_DIR"; fi
+if [ "$real_fonts" -gt 0 ]; then echo "zero-emu: $real_fonts/3 device fonts from $FONTS_DIR"; fi
 
 # Fresh tmpfs root so bwrap can create any mountpoint (incl. /media, which may
 # not exist on the host), with just the essentials bound in for SDL + wayland.

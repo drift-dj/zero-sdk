@@ -36,14 +36,6 @@ void zdj_emu_input_button( zdj_emu_btn_t btn, bool pressed ) {
     pthread_mutex_unlock( &_lock );
 }
 
-void zdj_emu_input_pot( zdj_emu_pot_t pot, int32_t value ) {
-    if( value < 0 )                { value = 0; }
-    if( value > ZDJ_EMU_POT_MAX )  { value = ZDJ_EMU_POT_MAX; }
-    pthread_mutex_lock( &_lock );
-    _pot[ pot ] = value;
-    pthread_mutex_unlock( &_lock );
-}
-
 void zdj_emu_input_apply( volatile zdj_hmi_m7_state_model_t * model ) {
     if( !model ) { return; }
     pthread_mutex_lock( &_lock );

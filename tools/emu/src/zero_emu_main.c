@@ -429,8 +429,8 @@ static void _print_keymap( void ) {
         "  Up/Down ....... jog wheel scroll        Enter ... jog press (select)\n"
         "  Left/Right .... output encoder          o ....... output encoder press\n"
         "  Esc ........... NAV (back)              Space ... PLAY        h ... HOTCUE\n"
-        "  Tab ........... deploy/retract panel    Enter-hold ... same (jog long-press)\n"
-        "  1 / 3 ......... prev / next panel        (FN1/FN3; 2 = FN2)\n"
+        "  Tab ........... deploy/retract panel\n"
+        "  1 / 2 / 3 ..... FN1 / FN2 / FN3\n"
         "  q/a w/s e/d ... tone 1/2/3 encoder (turn down/up)\n"
         "  p ............. deck 1 play/pause (with ZERO_EMU_TRACK)\n"
         "  Shift+Esc ..... quit\n\n" );
