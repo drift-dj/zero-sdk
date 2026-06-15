@@ -33,6 +33,8 @@ typedef struct {
     double decode_start_coord;
     double decode_end_coord;
     double decode_buf_ref_coord;
+    float start_fade_val;
+    float end_fade_val;
 } zdj_tsm_pitch_node_state_t;
 
 zdj_pipeline_node_t * zdj_new_tsm_pitch_node( 
@@ -40,5 +42,7 @@ zdj_pipeline_node_t * zdj_new_tsm_pitch_node(
     int sample_count,
     zdj_pipeline_node_t * decode_node 
 );
+
+void zdj_tsm_pitch_node_clear_out_buf( zdj_pipeline_node_t * node );
 
 #endif

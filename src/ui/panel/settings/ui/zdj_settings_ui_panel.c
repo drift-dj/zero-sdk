@@ -24,6 +24,9 @@ static void _refresh_menu( zdj_view_t * view );
 static void _refresh_rate_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _brightness_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _tooltip_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _handle_show_bpm( zdj_view_t * view, zdj_control_event_t * event );
+static void _handle_show_key( zdj_view_t * view, zdj_control_event_t * event );
+static void _handle_show_camelot( zdj_view_t * view, zdj_control_event_t * event );
 
 zdj_view_t * zdj_new_settings_ui_panel( void (*cb)(void*) ) {
     zdj_view_t * view = zdj_new_modal_view( zdj_modal_rect( ) );
@@ -164,6 +167,37 @@ static void _refresh_menu( zdj_view_t * view ) {
     }
     zdj_menu_view_add_item( state->menu, rate_btn );
 
+    // Library
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( 
+        state->menu, 
+        zdj_new_menu_section( "Library Menu" ) 
+    );
+
+    zdj_view_t * show_bpm_btn = zdj_new_menu_item( "Show BPM", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    show_bpm_btn->handle_control_event = &_handle_show_bpm;
+    zdj_menu_item_view_state_t * show_bpm_state = (zdj_menu_item_view_state_t*)show_bpm_btn->state;
+    show_bpm_state->data.ptr = view;
+    zdj_setting_t * show_bpm_setting = zdj_setting_get( ZDJ_SETTING_LIB_MENU_SHOW_BPM );
+    if( show_bpm_setting ) { show_bpm_state->data.b_val = show_bpm_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, show_bpm_btn );
+
+    zdj_view_t * show_key_btn = zdj_new_menu_item( "Show Key", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    show_key_btn->handle_control_event = &_handle_show_key;
+    zdj_menu_item_view_state_t * show_key_state = (zdj_menu_item_view_state_t*)show_key_btn->state;
+    show_key_state->data.ptr = view;
+    zdj_setting_t * show_key_setting = zdj_setting_get( ZDJ_SETTING_LIB_MENU_SHOW_KEY );
+    if( show_key_setting ) { show_key_state->data.b_val = show_key_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, show_key_btn );
+
+    zdj_view_t * show_camelot_btn = zdj_new_menu_item( "Show Camelot", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    show_camelot_btn->handle_control_event = &_handle_show_camelot;
+    zdj_menu_item_view_state_t * show_camelot_state = (zdj_menu_item_view_state_t*)show_camelot_btn->state;
+    show_camelot_state->data.ptr = view;
+    zdj_setting_t * show_camelot_setting = zdj_setting_get( ZDJ_SETTING_LIB_MENU_SHOW_CAMELOT );
+    if( show_camelot_setting ) { show_camelot_state->data.b_val = show_camelot_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, show_camelot_btn );
+
 
     // Hotkeys
     zdj_menu_view_add_padding( state->menu, 3 );
@@ -274,4 +308,32 @@ static void _brightness_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 
 static void _tooltip_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     // Toggle tooltips
+}
+
+static void _handle_show_bpm( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LIB_MENU_SHOW_BPM );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_ui_panel_state_t * ui_panel_state = (zdj_settings_ui_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+
+}
+
+static void _handle_show_key( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LIB_MENU_SHOW_KEY );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_ui_panel_state_t * ui_panel_state = (zdj_settings_ui_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _handle_show_camelot( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LIB_MENU_SHOW_CAMELOT );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_ui_panel_state_t * ui_panel_state = (zdj_settings_ui_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
 }

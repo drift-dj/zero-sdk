@@ -53,6 +53,8 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Remove grid markers
     zdj_remove_all_subviews_of( view );
 
+    if( view_state->zoom_val > 20.0 ) { return; }
+
     // printf( "needle pcm addr: %f %p\n", pcm_head, view_state->song->performance );
     // Convert song PCM space to beatgrid count
     double pcm_offset = decode_state->head.origin_d - view_state->song->performance->beat_grid_start_sample;

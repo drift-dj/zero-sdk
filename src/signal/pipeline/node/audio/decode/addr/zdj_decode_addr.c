@@ -506,7 +506,7 @@ static double _get_d_offset_for_beatgrid_dist( zdj_pipeline_node_t * node, doubl
 
 static void _get_earliest_core_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t * addr ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
-    if( !state->first_layer ) { return; }
+    if( !state->first_layer ) { printf( "_get_latest_core_addr missing first_layer\n" ); return; }
     state->first_layer->core_start.copy( &state->first_layer->core_start, addr );
 }
 
@@ -519,13 +519,13 @@ static void _get_latest_core_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t
 static void _get_earliest_lead_in_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t * addr ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     if( !state->first_layer ) { return; }
-    state->first_layer->lead_in_start.copy( &state->first_layer->lead_in_start, addr );
+    state->first_layer->lead_in_end.copy( &state->first_layer->lead_in_end, addr );
 }
 
 static void _get_latest_lead_out_addr( zdj_pipeline_node_t * node, zdj_decode_addr_t * addr ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     if( !state->last_layer ) { return; }
-    state->last_layer->lead_out_end.copy( &state->last_layer->lead_out_end, addr );
+    state->last_layer->lead_out_start.copy( &state->last_layer->lead_out_start, addr );
 }
 
 
@@ -594,5 +594,5 @@ static void _update_buf_i_for_node_head( zdj_decode_addr_t * addr, zdj_pipeline_
     zdj_decode_addr_t win_start;
     state->get_win_start_addr( node, &win_start );
     addr->buf_i = addr->transport_i - win_start.transport_i;
-    addr->buf_d = (double)addr->buf_i;
+    addr->buf_d = (double)addr->buf_i;    
 }

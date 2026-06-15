@@ -5,6 +5,7 @@
 
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck.h>
+#include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/deck/xport/zdj_deck_xport.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
@@ -129,6 +130,10 @@ void zdj_soundcard_handle_deck_event(
         node_a->dsp_dto->set_gain( node_a, round(b_coeff*255.0) );
         node_b->dsp_dto->set_gain( node_b, round(a_coeff*255.0) );
 
+        // Push the xfade value back into the deck manager.
+        // Used for deck lock status.
+        zdj_deck_manager_update_xfade( (float)event->i_val / 255.0 );
+
         // printf( "XFade Adjust A:%1.2f/%1.2f/%1.2f B:%1.2f/%1.2f/%1.2f\n", a_curve_pow, a_input_val, a_coeff, b_curve_pow, b_input_val, b_coeff );
     } else if( event->id == ZDJ_DECK_CONTROL_RECORD_VOL ) {
         // printf( "soundcard record vol event\n" );
@@ -144,10 +149,10 @@ void zdj_soundcard_handle_deck_event(
         
         if( recording_node_state->status == ZDJ_AUDIO_RECORD_ACTIVE ) {
             // Stop recording if currently running
-            zdj_finish_audio_record_capture( zdj_soundcard->recording_node, true );
+            zdj_finish_audio_record_capture( zdj_soundcard->recording_node, true, true );
         } else {
             // Start a recording if not running
-            zdj_new_audio_record_capture( zdj_soundcard->recording_node );
+            zdj_new_audio_record_capture( zdj_soundcard->recording_node, true );
         }
     } else if( event->id == ZDJ_DECK_1_2_BASS_SWAP ) {
         // printf( "dj deck bass swap\n" );

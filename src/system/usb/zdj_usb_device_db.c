@@ -129,7 +129,7 @@ zdj_usb_attached_devices_t * zdj_usb_update_attached_devices( void ) {
                 zdj_usb_device_cleanup_str( &serial_number, sizeof( serial_number ) );
             } else if ( (p = strstr( line, "Cls=01(audio)" )) ) {
                 has_audio = true;
-                has_midi = true;
+                // has_midi = true; // This can only be discovered by ALSA
             } else if ( (p = strstr( line, "Cls=03(HID  )" )) ) {
                 has_hid = true;
             } else if ( (p = strstr( line, "Cls=08(stor.)" )) ) {
@@ -292,7 +292,7 @@ static zdj_error_type_t _add_attached_device(
 ) {
     printf( "_add_attached_device: %s, %s, %s, %s, %s\n", usb_vendor, usb_product_id, manufacturer, product, serial_number );
 
-    // Reject the ECHI host controller
+    // Ignore the ECHI host controller
     if( !strcmp( serial_number, "ci_hdrc.0" ) ) { return ZDJ_ERROR_OKAY; }
 
     // Make a CRC from SerialNumber, Vender + ProdID

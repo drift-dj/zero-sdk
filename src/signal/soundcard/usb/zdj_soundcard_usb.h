@@ -24,6 +24,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void zdj_soundcard_launch_usb_admin_thread( void );
+void zdj_soundcard_launch_usb_admin_thread( zdj_soundcard_t * soundcard );
 
 #endif

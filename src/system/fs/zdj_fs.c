@@ -230,6 +230,23 @@ bool zdj_fs_path_is_audio_filename( char * path ) {
     return false;
 }
 
+bool zdj_fs_path_is_image_filename( char * path ) {
+    // Get filename extension
+    char * ext = zdj_fs_get_file_extension( path );
+    
+    // Check for recognized extension
+    if( !strcmp( ext, "bmp" ) || !strcmp( ext, "BMP" ) ) {
+        return true;
+    } else if( !strcmp( ext, "jpg" ) || !strcmp( ext, "JPG" ) ) {
+        return true;
+    } else if( !strcmp( ext, "jpeg" ) || !strcmp( ext, "JPEG" ) ) {
+        return true;
+    } else if( !strcmp( ext, "png" ) || !strcmp( ext, "PNG" ) ) {
+        return true;
+    }
+    return false;
+}
+
 bool zdj_fs_path_is_audio_dir( char * path ) {
     if( !zdj_fs_path_is_dir( path ) ) { return false; }
 
@@ -295,6 +312,15 @@ bool zdj_fs_path_is_dir_with_files( char * path ) {
         return false;
     } else {
         return true;
+    }
+}
+
+bool zdj_fs_path_is_logfile( char * path ) {
+    char * filename = basename( path );
+    if( !strcmp( filename, "log" ) ) {
+        return true; 
+    } else {
+        return false;
     }
 }
 
@@ -516,6 +542,7 @@ int zdj_fs_write_buffer( char * path, char * buffer ) {
 void zdj_fs_get_popen( char * cmd, char * res ) {
     FILE *fp;
     char ret[ 256 ];
+    int ret_len = 0;
     // Open a pipe to execute the command
     fp = popen( cmd, "r" );
     if ( !fp ) {
@@ -525,8 +552,7 @@ void zdj_fs_get_popen( char * cmd, char * res ) {
 
     // Read the output of the command
     while ( fgets( ret, sizeof( ret ), fp ) != NULL ) {
-        // printf( "%s", ret );
-        ;
+        ret_len += strlen( ret );
     }
 
     // Close the pipe
@@ -536,5 +562,7 @@ void zdj_fs_get_popen( char * cmd, char * res ) {
     }
 
     // return strdup( &res[ 8 ] );
-    strcpy( res, ret );
+    if( ret_len > 0 ) {
+        strcpy( res, ret );
+    }
 }

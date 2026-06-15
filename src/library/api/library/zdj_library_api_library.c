@@ -206,20 +206,21 @@ zdj_error_type_t zdj_library_populate_playlists_for_library(
     library->playlist_titles = calloc( library->playlist_count, sizeof( char* ) );
 
     // Fill playlist eids/titles from table
-    for( int t=0; t<library->playlist_count; t++ ) {
-        int res;
-        char sql[ 2048 ];
-        snprintf( sql, sizeof( sql ), "select * from %s", library->playlist_links_table );
+    int res;
+    int t = 0;
+    char sql[ 2048 ];
+    snprintf( sql, sizeof( sql ), "select * from %s", library->playlist_links_table );
 
-        sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
-        if( stmt ) {
-            while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
-                // printf( "found table: %s\n", sqlite3_column_text ( stmt, 1 ) );
-                library->playlist_table_names[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 0 ) );
-                library->playlist_titles[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
-            }
-            sqlite3_finalize( stmt );
+    sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
+    if( stmt ) {
+        while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
+            // printf( "found table %d: %s/%s\n", t, sqlite3_column_text ( stmt, 0 ), sqlite3_column_text ( stmt, 1 ) );
+            library->playlist_table_names[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 0 ) );
+            library->playlist_titles[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
+            // printf( "data %s/%s\n", library->playlist_table_names[ t ], library->playlist_titles[ t ] );
+            t++;
         }
+        sqlite3_finalize( stmt );
     }
 
     return ZDJ_ERROR_OKAY;

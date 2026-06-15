@@ -2,11 +2,16 @@
 #include <stdbool.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/reboot.h>
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/system/display/zdj_display.h>
+#include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/screencap/zdj_screencap.h>
+#include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/registry/zdj_registry.h>
 #include <zerodj/system/settings/zdj_settings.h>
@@ -32,6 +37,7 @@ static void _refresh_menu( zdj_view_t * view );
 
 static void _relaunch_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _usb_offline_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _override_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _viewer_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _flip_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _image_browser_exit( zdj_view_t * browser, zdj_file_browser_exit_context_t * context );
@@ -41,6 +47,13 @@ static void _soundcard_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _drop_soundcard_dialog_exit( zdj_view_t * view, void * data, bool selection );
 static void _settings_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _drop_settings_dialog_exit( zdj_view_t * view, void * data, bool selection );
+static void _recordings_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _drop_recordings_dialog_exit( zdj_view_t * view, void * data, bool selection );
+static void _logs_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _drop_logs_dialog_exit( zdj_view_t * view, void * data, bool selection );
+static void _screencaps_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _drop_screencaps_dialog_exit( zdj_view_t * view, void * data, bool selection );
+static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event );
 
 zdj_view_t * zdj_new_settings_developer_panel( void (*cb)(void*) ) {
     zdj_view_t * view = zdj_new_modal_view( zdj_modal_rect( ) );
@@ -121,6 +134,23 @@ static void _refresh_menu( zdj_view_t * view ) {
         zdj_menu_view_add_item( state->menu, relaunch_btn );
     }
 
+    bool scratch_override = false;
+    zdj_setting_t * scratch_setting = zdj_setting_get( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
+    if( scratch_setting ) { scratch_override = scratch_setting->b_val; }
+    if( scratch_override ) {
+        zdj_view_t * override_btn = zdj_new_menu_item( "Disable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+        override_btn->handle_control_event = _override_btn;
+        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
+        override_state->data.ptr = state;
+        zdj_menu_view_add_item( state->menu, override_btn );
+    } else {
+        zdj_view_t * override_btn = zdj_new_menu_item( "Enable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+        override_btn->handle_control_event = _override_btn;
+        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
+        override_state->data.ptr = state;
+        zdj_menu_view_add_item( state->menu, override_btn );
+    }
+
     zdj_view_t * usb_offline_btn = zdj_new_menu_item( "USB -> Offline", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     usb_offline_btn->handle_control_event = _usb_offline_btn;
     zdj_menu_view_add_item( state->menu, usb_offline_btn );
@@ -152,6 +182,30 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * settings_state = (zdj_menu_item_view_state_t*)settings_btn->state;
     settings_state->data.ptr = state;
     zdj_menu_view_add_item( state->menu, settings_btn );
+
+    zdj_view_t * recordings_btn = zdj_new_menu_item( "Reset Recordings", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    recordings_btn->handle_control_event = _recordings_btn;
+    zdj_menu_item_view_state_t * recordings_state = (zdj_menu_item_view_state_t*)recordings_btn->state;
+    recordings_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, recordings_btn );
+
+    zdj_view_t * logs_btn = zdj_new_menu_item( "Reset Logs", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    logs_btn->handle_control_event = _logs_btn;
+    zdj_menu_item_view_state_t * logs_state = (zdj_menu_item_view_state_t*)logs_btn->state;
+    logs_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, logs_btn );
+
+    zdj_view_t * screencaps_btn = zdj_new_menu_item( "Reset Screencaps", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    screencaps_btn->handle_control_event = _screencaps_btn;
+    zdj_menu_item_view_state_t * screencaps_state = (zdj_menu_item_view_state_t*)screencaps_btn->state;
+    screencaps_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, screencaps_btn );
+
+    zdj_view_t * reboot_btn = zdj_new_menu_item( "Reboot", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    reboot_btn->handle_control_event = _reboot_btn;
+    zdj_menu_item_view_state_t * reboot_state = (zdj_menu_item_view_state_t*)reboot_btn->state;
+    reboot_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, reboot_btn );
 
     state->needs_layout_update = false;
 }
@@ -271,8 +325,15 @@ static void _drop_library_dialog_exit( zdj_view_t * view, void * data, bool sele
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }
 
+static void _override_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_settings_panel_state_t * panel_state = (zdj_settings_panel_state_t*)state->data.ptr;
+    panel_state->needs_layout_update = true;
+    zdj_setting_flip_bool( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
+}
+
 static void _settings_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
-    // Launch drop lib confirm dialog
+    // Launch drop settings confirm dialog
     zdj_view_t * dialog = zdj_new_dialog_view( 
         ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL,
         "Confirm",
@@ -319,4 +380,86 @@ static void _drop_soundcard_dialog_exit( zdj_view_t * view, void * data, bool se
     }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
+}
+
+static void _recordings_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    // Launch drop lib confirm dialog
+    zdj_view_t * dialog = zdj_new_dialog_view( 
+        ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL,
+        "Confirm",
+        "Remove all recordings.",
+        "Are you sure?"
+    );
+    zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
+    dialog_state->handle_dialog_exit = &_drop_recordings_dialog_exit;
+    dialog_state->selection_data = view;
+    // zdj_push_subview( zdj_root_view( ), dialog, true );
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_push_subview( panel_state->settings_panel, dialog, true );
+}
+
+static void _drop_recordings_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
+    if( selection ) {
+        // printf( "clearing recordings folder\n" );
+        // zdj_fs_remove_dir( ZDJ_RECORDING_DIR );
+        // zdj_fs_mkdir_p( ZDJ_RECORDING_DIR );
+        // sync( );
+        printf( "removing recordings from lib\n" );
+        zdj_library_remove_all_recordings( );
+    }
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_pop_subview_of( panel_state->settings_panel, true );
+}
+
+static void _logs_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    // Launch drop lib confirm dialog
+    zdj_view_t * dialog = zdj_new_dialog_view( 
+        ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL,
+        "Confirm",
+        "Remove all crash logs.",
+        "Are you sure?"
+    );
+    zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
+    dialog_state->handle_dialog_exit = &_drop_logs_dialog_exit;
+    dialog_state->selection_data = view;
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_push_subview( panel_state->settings_panel, dialog, true );
+}
+
+static void _drop_logs_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
+    if( selection ) {
+        printf( "clearing logs folder\n" );
+        zdj_error_reset_logs( );
+    }
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_pop_subview_of( panel_state->settings_panel, true );
+}
+
+static void _screencaps_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    // Launch drop lib confirm dialog
+    zdj_view_t * dialog = zdj_new_dialog_view( 
+        ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL,
+        "Confirm",
+        "Remove all screencaps.",
+        "Are you sure?"
+    );
+    zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
+    dialog_state->handle_dialog_exit = &_drop_screencaps_dialog_exit;
+    dialog_state->selection_data = view;
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_push_subview( panel_state->settings_panel, dialog, true );
+}
+
+static void _drop_screencaps_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
+    if( selection ) {
+        printf( "clearing screencaps folder\n" );
+        zdj_reset_screencaps( );
+    }
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_pop_subview_of( panel_state->settings_panel, true );
+}
+
+static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    sync( );
+    reboot( RB_AUTOBOOT );
 }

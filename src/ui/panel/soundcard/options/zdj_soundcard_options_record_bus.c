@@ -89,7 +89,9 @@ void zdj_soundcard_options_update_record_bus_layout( zdj_view_t * view ) {
             // instead of just "out 1"
 
             char adjusted_name[ 64 ];
-            if( zdj_soundcard_node_name_is_analog_input( page_node->input_links[ i ].source_node ) ) {
+            if( zdj_soundcard_node_name_is_analog_input( page_node->input_links[ i ].source_node ) ||
+                zdj_soundcard_node_name_is_usb_input( page_node->input_links[ i ].source_node )
+            ) {
                 zdj_soundcard_get_port_title_with_stereo( 
                     options_state->config_context->soundcard,
                     page_node->input_links[ i ].source_node, 

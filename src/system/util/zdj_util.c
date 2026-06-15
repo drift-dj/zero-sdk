@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <zerodj/system/util/zdj_util.h>
 
@@ -31,4 +32,10 @@ void zdj_util_put_msm_str_for_sample( int sample, int sample_rate, char * str ) 
         secs,
         msec
     );
+}
+
+void zdj_util_str_to_lowercase( char *str ) {
+    for ( int i = 0; str[ i ]; i++ ) {
+        str[ i ] = tolower( ( unsigned char )str[ i ] );
+    }
 }

@@ -28,6 +28,9 @@ static double _xfade_coeff_for_transport_d_coord( zdj_decode_packet_t * packet, 
 
 static void _deinit( zdj_decode_packet_t * packet );
 
+
+// TODO: Allow an EOF packet to be silent.  Don't fail.
+
 zdj_decode_packet_t * zdj_decode_packet( 
     zdj_pipeline_node_t * node,
     zdj_decode_layer_t * layer,
@@ -51,108 +54,121 @@ zdj_decode_packet_t * zdj_decode_packet(
     if( res != 0 ) {
         if( fmt_ctx->pb->eof_reached ) {
             packet_has_eof = true;
+            packet_has_decode_error = true;
             // printf( "%p eof @pts: %lu\n", av_packet, av_packet->pts );
-            return NULL;
+            // return NULL;
         } else {
             packet_has_decode_error = true;
             // printf( "av_read_frame failed\n" );
         }
     }
 
-    // MP3s seem to have trouble sending the first packet or two.
-    // Retry a few times before just giving up.
-    bool exit = false;
-    int attempt = 0;
-    while ( !exit ) {
-        // Push the compressed packet data into the decoder
-        res = avcodec_send_packet( codec_ctx, av_packet );
-        if ( res >= 0 ) { 
-            // printf( "good or no decode - exit\n" );
-            exit = true;
-            continue;
+    // Keep going if there are no errors
+    if( !packet_has_decode_error ) {
+
+        // MP3s seem to have trouble sending the first packet or two.
+        // Retry a few times before just giving up.
+        bool exit = false;
+        int attempt = 0;
+        while ( !exit ) {
+            // Push the compressed packet data into the decoder
+            res = avcodec_send_packet( codec_ctx, av_packet );
+            if ( res >= 0 ) { 
+                // printf( "good or no decode - exit\n" );
+                exit = true;
+                continue;
+            }
+            if( attempt > 3 ) {
+                printf( "failed decode: %s\n", av_err2str( res ) );
+                
+                node_state->song->audio->has_libav_error = true;
+                node_state->song->audio->libav_error = res;
+                node_state->song->has_error = true;
+                packet_has_decode_error = true;
+                // return NULL; 
+            }
+            // Attempt to read another frame to see if things improve
+            attempt++;
+            if( !exit ) { av_read_frame( fmt_ctx, av_packet ); }
         }
-        if( attempt > 3 ) {
-            printf( "failed decode: %s\n", av_err2str( res ) );
+
+
+        // Pull the decompressed samples from the decoder into the packet's data buffer
+        int decoded_frame_count = 0;
+        res = 0;
+        res = avcodec_receive_frame( codec_ctx, av_frame );
+
+        if ( res == AVERROR( EAGAIN ) ) {
+            printf( "eagain\n" );
+        } else if ( res == AVERROR_EOF ) {
+            // Handle decoding error
+            packet_has_eof = true;
+            printf( "%p eof2! samps: %d\n", av_packet, av_frame->nb_samples );
+        } else if ( res < 0 ) {
+            printf( "decode err\n" );
             
-            node_state->song->audio->has_libav_error = true;
-            node_state->song->audio->libav_error = res;
-            node_state->song->has_error = true;
-            return NULL; 
+        } else {
+            decoded_frame_count = av_frame->nb_samples;
         }
-        // Attempt to read another frame to see if things improve
-        attempt++;
-        if( !exit ) { av_read_frame( fmt_ctx, av_packet ); }
     }
 
-    // Pull the decompressed samples from the decoder into the packet's data buffer
-    int decoded_frame_count = 0;
-    res = 0;
-    res = avcodec_receive_frame( codec_ctx, av_frame );
-
-    if ( res == AVERROR( EAGAIN ) ) {
-        printf( "eagain\n" );
-    } else if ( res == AVERROR_EOF ) {
-        // Handle decoding error
-        // break;
-        packet_has_eof = true;
-        printf( "%p eof2! samps: %d\n", av_packet, av_frame->nb_samples );
-    } else if ( res < 0 ) {
-        // continue;
-        printf( "decode err\n" );
-    } else {
-        decoded_frame_count = av_frame->nb_samples;
-    }
-
-    // Make packet and return
+    // Get packet/addrs ready
     zdj_decode_packet_t * packet = calloc( 1, sizeof( zdj_decode_packet_t ) );
-    int64_t av_packet_pts = av_packet->pts;
-    packet->av_packet = av_packet;
-    packet->av_frame = av_frame;
-    packet->sample_count = av_frame->nb_samples;
-    // packet->sample_count = node_state->estimated_packet_sample_count;
-    packet->justify = justify;
-    packet->deinit = &_deinit;
-    packet->intersects_out_buf = &_intersects_out_buf;
-    packet->xfade_coeff_for_transport_d_coord = &_xfade_coeff_for_transport_d_coord;
+    int64_t start_origin_i_coord = 0;
+    int64_t end_origin_i_coord = 0;
 
-    // Add the render func based on data type
-    switch ( av_frame->format ) {
-        case AV_SAMPLE_FMT_S16: // wav, aif, flac
-            // printf( "s16\n" );
-            packet->render_to_out_buf = &_render_s16_data_to_out_buf; 
-            // packet->buf = calloc( node_state->estimated_packet_sample_count * 2, sizeof( int16_t ) );
-            // memcpy( packet->buf, av_frame->data[ 0 ], av_frame->nb_samples * 2 * sizeof( int16_t ) );
-            break;
-        case AV_SAMPLE_FMT_S32: // wav, aif, flac
-            // printf( "s32\n" );
-            packet->render_to_out_buf = &_render_s32_data_to_out_buf; 
-            // packet->buf = calloc( node_state->estimated_packet_sample_count * 2, sizeof( int32_t ) );
-            // memcpy( packet->buf, av_frame->data[ 0 ], av_frame->nb_samples * 2 * sizeof( int32_t ) );
-            break;
-        case AV_SAMPLE_FMT_FLT: 
-            // printf( "flt\n" );
-            packet->render_to_out_buf = &_render_flt_data_to_out_buf; 
-            // packet->buf = calloc( node_state->estimated_packet_sample_count * 2, sizeof( float ) );
-            // memcpy( packet->buf, av_frame->data[ 0 ], av_frame->nb_samples * 2 * sizeof( float ) );
-            // printf( "===>setting flt render format\n" );
-            break;
-        default: 
-            packet->render_to_out_buf = &_render_null_data_to_out_buf; 
-            break;
+    // If we've already errored during decode, make an inert packet.
+    if( packet_has_decode_error ) {
+        packet->sample_count = node_state->estimated_packet_sample_count;
+        packet->has_decode_error = packet_has_decode_error;
+        packet->is_eof = packet_has_eof;
+        packet->render_to_out_buf = &_render_null_data_to_out_buf; 
+        packet->justify = justify;
+        packet->deinit = &_deinit;
+        packet->intersects_out_buf = &_intersects_out_buf;
+        packet->xfade_coeff_for_transport_d_coord = &_xfade_coeff_for_transport_d_coord;
+     
+        
+    // If we have a good decode, build the packet.
+    } else {
+        int64_t av_packet_pts = av_packet->pts;
+        packet->av_packet = av_packet;
+        packet->av_frame = av_frame;
+        packet->sample_count = av_frame->nb_samples;
+        packet->justify = justify;
+        packet->deinit = &_deinit;
+        packet->intersects_out_buf = &_intersects_out_buf;
+        packet->xfade_coeff_for_transport_d_coord = &_xfade_coeff_for_transport_d_coord;
+
+        // Add the render func based on data type
+        switch ( av_frame->format ) {
+            case AV_SAMPLE_FMT_S16: // wav, aif, flac
+                packet->render_to_out_buf = &_render_s16_data_to_out_buf; 
+                break;
+            case AV_SAMPLE_FMT_S32: // wav, aif, flac
+                packet->render_to_out_buf = &_render_s32_data_to_out_buf; 
+                break;
+            case AV_SAMPLE_FMT_FLT: 
+                packet->render_to_out_buf = &_render_flt_data_to_out_buf; 
+                break;
+            default: 
+                packet->render_to_out_buf = &_render_null_data_to_out_buf; 
+                break;
+        }
+
+        start_origin_i_coord = av_packet_pts / av_timebase_factor;
+        end_origin_i_coord = start_origin_i_coord + av_frame->nb_samples;
+
+        // // We're done with the av_packet/frame now.
+        // av_frame_unref( av_frame );
+        // av_frame_free( &av_frame );
+        // av_packet_unref( av_packet );
+        // av_packet_free( &av_packet );
     }
-    
+
+    // Make packet addresses 
     zdj_decode_init_addr( &packet->start_addr );
     zdj_decode_init_addr( &packet->end_addr );
-
-    int64_t start_origin_i_coord = av_packet_pts / av_timebase_factor;
-    int64_t end_origin_i_coord = start_origin_i_coord + av_frame->nb_samples;
-
-    // // We're done with the av_packet/frame now.
-    // av_frame_unref( av_frame );
-    // av_frame_free( &av_frame );
-    // av_packet_unref( av_packet );
-    // av_packet_free( &av_packet );
-
     node_state->addr_for_origin_i_coord_in_layer( 
         node, layer, &packet->start_addr, start_origin_i_coord 
     );
@@ -160,26 +176,6 @@ zdj_decode_packet_t * zdj_decode_packet(
         node, layer, &packet->end_addr, end_origin_i_coord 
     );
 
-    // printf( "[%p].init_addr t:%1.0f/o:%1.0f packet:[%ld - %ld]\n",
-    //     layer, layer->init_addr.transport_d, layer->init_addr.origin_d,
-    //     start_origin_i_coord, end_origin_i_coord
-    // );
-    // printf( "decode_packet:[o:%ld t:%ld - o:%ld t:%ld]\n",
-    //     start_origin_i_coord, 
-    //     packet->start_addr.transport_i,
-    //     end_origin_i_coord,
-    //     packet->end_addr.transport_i
-    // );
-
-    // TODO: find a cleaner way to signal the last packet in a song
-    if( packet_has_eof ) { packet->is_eof = true; return packet; }
-    
-    // printf( "===> decoded packet %s @ %ld/%1.0f->%ld/%1.0f: %ld\n", 
-    //     (justify==ZDJ_DECODE_JUSTIFY_LEFT) ? "LEFT_JUST" : "RIGHT_JUST",
-    //     start_origin_i_coord, packet->start_addr.origin_d,
-    //     end_origin_i_coord, packet->end_addr.origin_d,
-    //     end_origin_i_coord - start_origin_i_coord
-    // );
     return packet;
 }
 
@@ -447,7 +443,7 @@ static void _render_flt_data_to_out_buf( zdj_decode_packet_t * packet, void * _l
     // if( !node->loop_enabled || !packet->contains_xfade( packet, layer ) ) {
 
     // TODO: this needs to be packet specific, not the whole layer
-    if( layer->back_discon_type == ZDJ_DECODE_DISCON_NONE ) {
+    if( layer->back_discon_type == ZDJ_DECODE_LAYER_DISCON_TYPE_NONE ) {
         // printf( "memcpy packet\n" );
         int packet_start_sample, packet_end_sample;
         int packet_start_index, packet_copy_bytes;
@@ -553,41 +549,3 @@ static void _render_flt_data_to_out_buf( zdj_decode_packet_t * packet, void * _l
 static void _render_null_data_to_out_buf( zdj_decode_packet_t * packet, void * _layer, zdj_pipeline_node_t * node ) {
     return; // No-op
 }
-
-// static void _right_justify_av_frame_data( AVFrame * av_frame, int move_sample_distance, int move_sample_count, int channel_count ) {
-//     // Move 
-//     // Add the render func based on data type
-//     printf( "_right_justify_av_frame_data dist: %d cnt: %d chn:  %d\n", move_sample_distance, move_sample_count, channel_count );
-
-//     int move_byte_distance;
-//     int move_byte_count;
-//     uint8_t * buf = av_frame->data[ 0 ];
-    
-//     switch ( av_frame->format ) {
-//         case AV_SAMPLE_FMT_FLT: 
-//             // move_byte_distance = move_sample_distance * channel_count * sizeof( float );
-//             move_byte_count = move_sample_count * channel_count * sizeof( float );
-//             float * packet_buf = (float*)av_frame->data[ 0 ];
-//             memcpy( &packet_buf[ move_sample_distance*channel_count ], &packet_buf[ 0 ], move_byte_count );
-//             // memcpy( &packet_buf[ 800 ], &packet_buf[ 0 ], move_byte_count );
-//             // memset( av_frame->data[ 0 ], 0, 1152 * channel_count * sizeof( float ) );
-//             // for( int i=0; i<move_sample_count; i++ ) {
-//             //     // printf( "s:%d d:%d\n", src, dst );
-//             //     packet_buf[ (move_sample_distance+i)*channel_count ] = packet_buf[ i*channel_count ];
-//             //     packet_buf[ i*channel_count ] = 0;
-//             //     if( channel_count == 2 ) {
-//             //         packet_buf[ ((move_sample_distance+i)*channel_count)+1 ] = packet_buf[ (i*channel_count)+1 ];
-//             //         packet_buf[ (i*channel_count)+1 ] = 0;
-//             //     }
-//             // }
-//             break;
-//         default: return;
-//     }
-//     // uint8_t * src = &buf[ 0 ];
-//     // uint8_t * dst = &buf[ move_byte_distance ];
-//     // uint8_t * dst = &buf[ 1000 ];
-//     // printf( "_right_justify_av_frame_data: %p %p %p %d %d %d\n", buf, src, dst, move_sample_distance, move_byte_distance, move_byte_count );
-//     // memmove( dst, src, move_byte_count );
-//     // memmove( dst, src, 800 );
-//     // memcpy( dst, src, move_byte_count );
-// }

@@ -86,6 +86,10 @@ static void _reset_default( void ) {
     zdj_setting_set_int( ZDJ_SETTING_RECORDING_COUNTER, 0 );
     zdj_setting_set_int( ZDJ_SETTING_DISPLAY_FLIP, 0 );
     zdj_setting_set_int( ZDJ_SETTING_REFRESH_RATE, 0 );
+    zdj_setting_set_int( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE, 0 );
+    zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_BPM, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_KEY, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_CAMELOT, false );
 }
 
 zdj_setting_t * zdj_setting_get( int id ) {
@@ -284,10 +288,13 @@ int zdj_setting_decrement_int( int id) {
 }
 
 bool zdj_setting_flip_bool( int id ) {
+    bool val = false;
     zdj_setting_t * setting = zdj_setting_get( id );
-    bool val = !setting->b_val;
-    zdj_setting_set_bool( id, val );
-    free( setting );
+    if( setting ) {
+        val = !setting->b_val;
+        zdj_setting_set_bool( id, val );
+        free( setting );
+    }
     return val;
 }
 

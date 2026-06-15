@@ -4,10 +4,13 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/panel/browser/zdj_browser_panel.h>
+#include <zerodj/ui/view/dialog_view/zdj_dialog_view.h>
+#include <zerodj/ui/view/log_view/zdj_log_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
 #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
@@ -17,6 +20,8 @@
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_back( zdj_view_t * menu_view );
+
+static void _delete_file_dialog_exit( zdj_view_t * view, void * data, bool selection );
 
 zdj_view_t * zdj_new_browser_panel( void ) {
     char path[ 256 ];
@@ -61,16 +66,6 @@ zdj_view_t * zdj_new_browser_panel( void ) {
     state->menu_container = menu_container;
     zdj_add_subview( browser_view, menu_container );
 
-    // Add first menu to stack
-    // zdj_view_t * menu = zdj_new_browser_panel_file_menu_for_path( 
-    //     browser_view,
-    //     &(zdj_rect_t){browser_view->frame.x, browser_view->frame.y, ZDJ_MODAL_WIDTH, browser_view->frame.h-9}, 
-    //     state->path, 
-    //     state->select_dir_title
-    // );
-    // if( menu ) { zdj_push_subview( menu_container, menu, false ); }
-    // if( menu ) { zdj_add_subview( menu_container, menu ); }
-
     state->devices_menu = zdj_new_browser_panel_device_menu( browser_view, zdj_modal_rect( ) );
     if( state->devices_menu ){ zdj_add_subview( menu_container, state->devices_menu ); }
 
@@ -107,7 +102,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
-    // printf( "browser _handle_control\n" );
+    // printf( "browser _handle_control: %d\n", _event->id );
     zdj_control_event_t * e = (zdj_control_event_t *)_event;
     zdj_browser_panel_state_t * browser_state = (zdj_browser_panel_state_t *)view->state;
     zdj_view_t * header_view = browser_state->header_view;
@@ -141,7 +136,10 @@ static void _handle_back( zdj_view_t * menu_view ) {
 void zdj_browser_panel_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * browser;
-    zdj_browser_panel_state_t * browser_state;    
+    zdj_browser_panel_state_t * browser_state;  
+    
+    zdj_view_t * dialog;
+    zdj_dialog_view_state_t * dialog_state;
 
     switch ( item_state->action ) {
         case ZDJ_MENU_ITEM_ACTION_DIR_BACK:
@@ -184,7 +182,7 @@ void zdj_browser_panel_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t
             }
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_ENTER: // push menu w/path
-            printf( "browser dir_enter: %s\n", item_state->link );
+            // printf( "browser dir_enter: %s\n", item_state->link );
             browser = item_state->data.ptr;
             browser_state = (zdj_browser_panel_state_t*)browser->state;
             browser_state->is_device_menu = false;
@@ -197,7 +195,7 @@ void zdj_browser_panel_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t
             zdj_push_subview( browser_state->menu_container, new_menu, true );
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_SELECT: // exit browser w/dir path
-        printf( "browser dir_select: %s\n", item_state->link );
+            // printf( "browser dir_select: %s\n", item_state->link );
             browser = (zdj_view_t*)item_state->data.ptr;
             if( !browser ){ break; }
             browser_state = (zdj_browser_panel_state_t*)browser->state;
@@ -211,7 +209,71 @@ void zdj_browser_panel_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t
             browser_state->is_device_menu = false;
             
             break;
+        case ZDJ_MENU_ITEM_ACTION_FILE_OPEN: // detect file type and push viewer
+            // printf( "opening:%s\n", item_state->link );
+            browser = (zdj_view_t*)item_state->data.ptr;
+            if( !browser ){ break; }
+            browser_state = (zdj_browser_panel_state_t*)browser->state;
+
+            // Detect file type and open appropriate view
+            // Image, audio, cat, etc.
+            if( zdj_fs_path_is_logfile( item_state->link ) ) {
+                zdj_view_t * log_view = zdj_new_log_view( 
+                    item_state->link, 
+                    ZDJ_LOG_VIEW_TYPE_LOG,
+                    browser_state->menu_container,
+                    zdj_modal_rect( )
+                );
+                zdj_push_subview( browser_state->menu_container, log_view, true );
+            } else if( zdj_fs_path_is_image_filename( item_state->link ) ) {
+                
+            } else if( zdj_fs_path_is_audio_filename( item_state->link ) ) {
+                
+            } else {
+                zdj_view_t * log_view = zdj_new_log_view( 
+                    item_state->link, 
+                    ZDJ_LOG_VIEW_TYPE_CAT,
+                    browser_state->menu_container,
+                    zdj_modal_rect( )
+                );
+                zdj_push_subview( browser_state->menu_container, log_view, true );
+            }
+
+            
+            break;
+        case ZDJ_MENU_ITEM_ACTION_FILE_DELETE: // detect file type and push viewer
+            // printf( "deleting:%s, %p\n", item_state->link, item_state->data.ptr );
+            browser = (zdj_view_t*)item_state->data.ptr;
+            if( !browser ){ break; }
+            browser_state = (zdj_browser_panel_state_t*)browser->state;
+            strcpy( browser_state->selected_file_path, item_state->link );
+
+            // push delete dialog
+            dialog = zdj_new_dialog_view( 
+                ZDJ_DIALOG_VIEW_TYPE_OKAY,
+                "Confirm",
+                "Delete File?",
+                browser_state->selected_file_path
+            );
+            dialog_state = (zdj_dialog_view_state_t*)dialog->state;
+            dialog_state->handle_dialog_exit = &_delete_file_dialog_exit;
+            dialog_state->selection_data = browser;
+            zdj_push_subview( browser_state->menu_container, dialog, true );
+            break;
         default:
             break;
+    }
+}
+
+static void _delete_file_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
+    // printf( "_drop_library_dialog_exit %d\n", selection );
+    if( selection ) {
+        zdj_view_t * browser = (zdj_view_t*)data;
+        if( browser ) {
+            zdj_browser_panel_state_t * browser_state = (zdj_browser_panel_state_t*)browser->state;
+            remove( browser_state->selected_file_path );
+            strcpy( browser_state->selected_file_path, " " );
+            zdj_pop_subview_of( browser_state->menu_container, true );
+        }
     }
 }

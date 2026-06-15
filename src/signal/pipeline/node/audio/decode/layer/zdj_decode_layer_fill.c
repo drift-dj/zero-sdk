@@ -17,383 +17,448 @@
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
+#include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 static void _fill( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node );
-static bool _can_fill( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node, zdj_decode_dir_t dir );
-static int64_t _fill_packet_count( 
-    zdj_decode_layer_t * layer, zdj_pipeline_node_t * node, zdj_decode_dir_t dir
-);
-static int64_t _seek_target( 
-    zdj_decode_layer_t * layer, zdj_pipeline_node_t * node, int packet_count, zdj_decode_dir_t dir 
-);
 static void _seek_and_decode( 
-    zdj_decode_layer_t * layer,
+    zdj_decode_layer_t * layer, 
     zdj_pipeline_node_t * node, 
-    int64_t seek_target, 
-    int seek_flag,
-    zdj_decode_dir_t dir,
-    zdj_decode_packet_justify_t first_packet_justify,
-    int packet_count, 
-    bool predecode_garbage 
+    zdj_decode_profile_t * profile
+);
+
+// Addr helpers
+static bool _layer_end_gt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+);
+
+static bool _layer_end_lt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+);
+static bool _layer_start_inside_win( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start, 
+    zdj_decode_addr_t * win_end 
+);
+static bool _layer_end_inside_win( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start, 
+    zdj_decode_addr_t * win_end 
+);
+static bool _layer_last_packet_gt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+);
+
+static bool _layer_last_packet_lt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+);
+static bool _layer_last_packet_lt_layer_end( zdj_decode_layer_t * layer );
+static bool _layer_last_packet_gt_layer_end( zdj_decode_layer_t * layer );
+static bool _layer_last_packet_inside_win( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start, 
+    zdj_decode_addr_t * win_end 
+);
+static bool _layer_start_lt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+);
+static bool _layer_start_gt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+);
+static bool _layer_first_packet_gt_layer_start( zdj_decode_layer_t * layer );
+static bool _layer_first_packet_lt_layer_start( zdj_decode_layer_t * layer );
+static bool _layer_first_packet_gt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+);
+static bool _layer_first_packet_lt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+);
+static bool _layer_first_packet_lt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
 );
 
 void zdj_decode_layer_init_fill_api( zdj_decode_layer_t * layer ) {
     layer->fill = &_fill;
-    layer->can_fill = &_can_fill;
-    layer->fill_packet_count = &_fill_packet_count;
-    layer->seek_target = &_seek_target;
     layer->seek_and_decode = &_seek_and_decode;
 }
 
 static void _fill( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node ) {
-    // printf( "\nlayer %p _fill node:%p\n", layer, node );
-    zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
+    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
+    zdj_deck_control_loop_state_t * loop_state = (zdj_deck_control_loop_state_t*)state->loop_state;
+    zdj_deck_control_skip_state_t * skip_state = (zdj_deck_control_skip_state_t*)state->skip_state;
+
+    bool debug = false;
 
     // Capture current node win addresses
-    zdj_decode_addr_t win_start; node_state->get_win_start_addr( node, &win_start );
-    zdj_decode_addr_t win_end; node_state->get_win_end_addr( node, &win_end );
+    zdj_decode_addr_t win_start; state->get_win_start_addr( node, &win_start );
+    zdj_decode_addr_t win_end; state->get_win_end_addr( node, &win_end );
 
     // Any discontinuous jump in seek may require garbage packets from the decoder
     bool seek_has_discontinuity = false;
-    int64_t seek_target;
-    int64_t packet_count;
 
-    // Add packet to empty layer
-    if( layer->is_empty( layer ) ) {
-        // printf( "\n[%p] empty layer add [t:%1.0f->%1.0f - o:%1.0f->%1.0f] head:%1.0f\n\n",
-        //     layer,
-        //     layer->lead_in_start.transport_d, layer->lead_out_end.transport_d,
-        //     layer->lead_in_start.origin_d, layer->lead_out_end.origin_d,
-        //     node_state->head.transport_d
-        // );
-        
-        double p_start = zdj_perf_time( );
-
-        packet_count = 1;
-        // If layer start intersects window
-        if( win_start.less_than( &win_start, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT ) &&
-            win_end.greater_than( &win_end, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT )
-        ) {
-            seek_target = layer->lead_in_start.origin_i;
-            // printf( "%p empty layer at start: o:%ld t:%ld\n", layer, seek_target, layer->lead_in_start.transport_i );
-        
-        // Else if layer end intersects window
-        } else if( win_start.less_than( &win_start, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT ) &&
-            win_end.greater_than( &win_end, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT )
-        ) {
-            // Get end origin addr
-            seek_target = layer->lead_out_end.origin_i - node_state->estimated_packet_sample_count;
-            // printf( "empty layer at end: %ld\n", seek_target );
-
-
-        // Else if window is inside layer (new skip layer + needledrop go here)
-        } else if( win_start.greater_than( &win_start, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT ) &&
-            win_end.less_than( &win_end, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT )
-        ) {
-            // Get origin coord 
-            seek_target = node_state->head.origin_i - node_state->estimated_packet_sample_count;
-        }
-        
-        // Layer nay be empty because playhead is outside song file.
-        // Don't attempt to decode first packet in that case.
-        zdj_decode_addr_t * seek_addr = calloc( 1, sizeof( zdj_decode_addr_t ) );
-        zdj_decode_init_addr( seek_addr );
-        seek_addr->origin_d = (double)seek_target;
-        seek_addr->origin_i = seek_target;
-        if( layer->contains_addr( layer, seek_addr, ZDJ_ADDR_COORD_ORIGIN ) ) {
-            layer->seek_and_decode( 
-                layer, node, seek_target, AVSEEK_FLAG_BACKWARD, ZDJ_DECODE_DIR_FWD, ZDJ_DECODE_JUSTIFY_RIGHT, packet_count, node_state->requires_garbage 
-            );
-        } else {
-            // printf( "no empty decode for song outside window\n" );
-            // printf( "s - o:%1.0f l - s:%1.0f e:%1.0f\n", 
-            //     seek_addr->origin_d, 
-            //     layer->core_start.origin_d,
-            //     layer->core_end.origin_d 
-            // );
-        }
-
-        // printf( "%p layer s:%lu e:%lu 1st pac st: %ld\n", 
-        //     layer,
-        //     layer->lead_in_start.transport_i,
-        //     layer->lead_out_end.transport_i,
-        //     layer->first_packet->start_addr.transport_i 
-        // );
-    }
-
-    // If window doesn't contain any song origin coords, we're done.
-    if( win_start.origin_d > node_state->song_pcm_duration ||
-        win_end.origin_d < 0
-    ) {
-        // printf( "no song samples in window - done\n" );
-        return;
-    }
-
-    // Fill backward
-    if( layer->can_fill( layer, node, ZDJ_DECODE_DIR_BACK ) ) {
-        // printf( "\nlayer can fill back hd:%ld fs:%ld le:%ld\n\n",
-        //     node_state->head.origin_i,
-        //     layer->first_packet->start_addr.origin_i,
-        //     layer->last_packet->end_addr.origin_i
-        // );
-
-        double p_start = zdj_perf_time( );
-
-        packet_count = layer->fill_packet_count( layer, node, ZDJ_DECODE_DIR_BACK );
-        seek_target = layer->seek_target( layer, node, packet_count, ZDJ_DECODE_DIR_BACK );
-        // printf( "fill back packet count: %ld\n", packet_count );
-        // layer->seek_and_decode( 
-        //     layer, node, seek_target, AVSEEK_FLAG_BACKWARD, ZDJ_DECODE_DIR_BACK, ZDJ_DECODE_JUSTIFY_LEFT, packet_count, node_state->requires_garbage 
-        // );
-        layer->seek_and_decode( 
-            layer, node, seek_target, AVSEEK_FLAG_FRAME, ZDJ_DECODE_DIR_BACK, ZDJ_DECODE_JUSTIFY_LEFT, packet_count, node_state->requires_garbage 
-        );
-        seek_has_discontinuity = true;
-
-        double p_end = zdj_perf_time( );
-        double p_tot = ( p_end - p_start ) / 1000000.0;
-        // if( p_tot > 4.0 ) { 
-        //     printf( "bak fill:%1.3f p_cnt:%ld targ:%ld\n", p_tot, packet_count, seek_target ); 
-        // }
-    }
-    
-
-    // printf( "fill 2\n" );
-    // Fill forward
-    if( layer->can_fill( layer, node, ZDJ_DECODE_DIR_FWD ) ) {
-        // printf( "\nlayer %p can fill forward hd:%ld fs:%ld le:%ld\n\n",
-        //     layer,
-        //     node_state->head.origin_i,
-        //     layer->first_packet->start_addr.origin_i,
-        //     layer->last_packet->end_addr.origin_i
-        // );
-        double p_start = zdj_perf_time( );
-
-        packet_count = layer->fill_packet_count( layer, node, ZDJ_DECODE_DIR_FWD );
-        seek_target = layer->seek_target( layer, node, packet_count, ZDJ_DECODE_DIR_FWD );
-        layer->seek_and_decode( 
-            layer, node, seek_target, AVSEEK_FLAG_FRAME, ZDJ_DECODE_DIR_FWD, ZDJ_DECODE_JUSTIFY_LEFT, packet_count, seek_has_discontinuity 
-        );
-        // printf( "layer fwd fill done\n" );
-        double p_end = zdj_perf_time( );
-        double p_tot = ( p_end - p_start ) / 1000000.0;
-        // if( p_tot > 4.0 ) { 
-        //     printf( "%p fwd fill:%1.3f p_cnt:%ld targ:%ld\n", layer, p_tot, packet_count, seek_target ); 
-        // }
-    }
-
-    
-    // printf( "fill 3\n" );
-    // Trim any packets outside the window
+    // First remove any packets outside the window
     while( layer->can_remove_packet( layer, node, layer->first_packet ) ) {
         layer->remove_packet( layer, layer->first_packet );
     }
     while( layer->can_remove_packet( layer, node, layer->last_packet ) ) {
         layer->remove_packet( layer, layer->last_packet );
     }
-
-    // printf( "layer fill last packet: %ld\n", layer->last_packet->end_addr.transport_i );
-    // printf( "layer _fill done pkts: %d\n", layer->debug_packet_counter );
-}
-
-static bool _can_fill( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node, zdj_decode_dir_t dir ) {
-    // printf( "layer can_fill: %s %p\n", (dir==ZDJ_DECODE_DIR_FWD) ? "fwd" : "back", node );
-    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
-    // Check current first packet in layer against node's win_start and layer's lead_in start
-    zdj_decode_addr_t win_start; state->get_win_start_addr( node, &win_start );
-    zdj_decode_addr_t win_end; state->get_win_end_addr( node, &win_end );
-
-    if( !layer->last_packet || !layer->first_packet ) {
-        // printf( "_can_fill called on empty layer!: %p\n", layer );
-        return false;
+    if( layer->is_empty( layer ) ) {
     }
-    
-    if( dir == ZDJ_DECODE_DIR_FWD ) {
-        // printf( "fill fwd: %1.0f-%1.0f/%1.0f -> %1.0f | %1.0f -> %1.0f\n", 
-        //     layer->last_packet->start_addr.transport_d,
-        //     layer->last_packet->end_addr.transport_d, 
-        //     layer->last_packet->end_addr.origin_d, 
-        //     layer->lead_out_end.transport_d,
-        //     layer->last_packet->end_addr.transport_d,
-        //     win_end.transport_d
-        // );
-        if( layer->last_packet->end_addr.less_than(
-                &layer->last_packet->end_addr, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT
-            ) &&
-            layer->last_packet->end_addr.less_than(
-                &layer->last_packet->end_addr, &win_end, ZDJ_ADDR_COORD_TRANSPORT
-            )
+    //Decode Profile holds the params for the seek and decode call
+    zdj_decode_profile_t profile;
+
+    /////////////////////////////
+    // EMPTY/NEW LAYER CASES:
+    if( layer->is_empty( layer ) ) {
+        // Layer Lead In Start < Win Start &&
+        // Layer Lead Out End > Win End
+        // Quantize Seek Targ. fwd from 0 by est.pkt.size to include win start coord
+        // Packet Count to cover entire window
+        // Can be a Contig. or Loop layer
+        // --v
+        // __|________________|__
+        //   |________________|
+        if( _layer_start_lt_win_start( layer, &win_start ) &&
+            _layer_end_gt_win_end( layer, &win_end )
         ) {
-            // printf( "===>Can Fill Fwd\n" );
-            return true;
+            double raw_seek_target = floor( win_start.origin_d / state->estimated_packet_sample_count ) * state->estimated_packet_sample_count;
+            profile.seek_target = (int64_t)raw_seek_target;
+            profile.packet_count = ceil( ( win_end.origin_d - raw_seek_target ) / state->estimated_packet_sample_count );
+            profile.dir = ZDJ_DECODE_DIR_FWD;
+            profile.is_valid = true;
+
+            if( debug ) { printf( "%p _[%d>___]_\n", layer, profile.packet_count ); }
         }
-        
-    } else if( dir == ZDJ_DECODE_DIR_BACK ) {
-        // printf( "[%p] can fill back: l[%1.0f-%1.0f] p[%1.0f-%1.0f]\n",
-        //     layer,
-        //     layer->core_start.transport_d, layer->core_end.transport_d,
-        //     layer->first_packet->start_addr.transport_d, layer->first_packet->end_addr.transport_d 
-        // );
-        if( layer->back_discon_type == ZDJ_DECODE_DISCON_LOOP ) {
-            // First packet > layer start && first_packet > win_start
-            if( layer->first_packet->start_addr.greater_than( 
-                    &layer->first_packet->start_addr, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT
-                ) &&
-                layer->first_packet->start_addr.greater_than(
-                    &layer->first_packet->start_addr, &win_start, ZDJ_ADDR_COORD_TRANSPORT
-                )
-            ) {
-                // printf( "===>Can Fill Back\n" );
-                return true;
+        // Layer Lead In Start in Win
+        // Seek Targ. = Loop Start
+        // Packet Count to cover remainder of win.
+        //     v
+        //     *_____________|_
+        //  |________________|
+        // THIS FILLS A NEW LAYER WHEN PLAYING FORWARD
+        // Can be a Contig., Loop, or Skip layer
+        else if( _layer_start_inside_win( layer, &win_start, &win_end ) ) { 
+            if( layer->back_discon_type == ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP ) {
+                profile.seek_target = floor( loop_state->start_origin_d/state->estimated_packet_sample_count ) * state->estimated_packet_sample_count;
+                profile.packet_count = ceil( (win_end.origin_d-loop_state->start_origin_d) / state->estimated_packet_sample_count );
+            } else if( layer->back_discon_type == ZDJ_DECODE_LAYER_DISCON_TYPE_SKIP ) {
+                profile.seek_target = floor( layer->lead_in_start.origin_d/state->estimated_packet_sample_count ) * state->estimated_packet_sample_count;
+                profile.packet_count = ceil( (win_end.origin_d-layer->lead_in_start.origin_d) / state->estimated_packet_sample_count );
+            } else if( layer->back_discon_type == ZDJ_DECODE_LAYER_DISCON_TYPE_NONE ) {
+                profile.seek_target = 0;
+                profile.packet_count = ceil( win_end.origin_d / state->estimated_packet_sample_count );
             }
-        } else if( layer->back_discon_type == ZDJ_DECODE_DISCON_NONE ) {
-            if( layer->first_packet &&
-                layer->first_packet->start_addr.greater_than( 
-                    &layer->first_packet->start_addr, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT
-                ) &&
-                layer->first_packet->start_addr.greater_than(
-                    &layer->first_packet->start_addr, &win_start, ZDJ_ADDR_COORD_TRANSPORT
-                ) &&
-                layer->first_packet->start_addr.origin_d > 0.0
-            ) {
-                // printf( "===>Can Fill Back\n" );
-                return true;
+            profile.dir = ZDJ_DECODE_DIR_FWD;
+            profile.is_valid = true;
+
+            if( debug ) { printf( "%p  [ |>%d_]_\n", layer, profile.packet_count ); }
+        }
+        // Layer Lead Out End in Win
+        // Quantize Seek Targ fwd from 0 by est.pkt.size to include win start coord
+        // Packet Count to cover to end of layer
+        // --v
+        // __|__________*
+        //   |________________|
+        // THIS FILLS A NEW LOOP LAYER WHEN SCRUBBING BACKWARD
+        // Should only be a Loop layer
+        else if( _layer_end_inside_win( layer, &win_start, &win_end ) ) {
+            double raw_seek_target = floor( win_start.origin_d / state->estimated_packet_sample_count ) * state->estimated_packet_sample_count;
+            profile.seek_target = (int64_t)raw_seek_target;
+            profile.packet_count = ceil( ( layer->lead_out_end.origin_d - win_start.origin_d ) / state->estimated_packet_sample_count );
+            profile.dir = ZDJ_DECODE_DIR_FWD;
+            profile.is_valid = true;
+
+            if( debug ) { printf( "%p _[%d>_| ]\n", layer, profile.packet_count ); }
+
+        }
+
+        // DELETE CASES
+        else if( _layer_start_lt_win_start( layer, &win_start ) &&
+                 !_layer_end_inside_win( layer, &win_start, &win_end )
+        ) {
+            if( debug ) { printf( "%p _[     ]\n", layer ); }
+
+            profile.is_valid = false; 
+        }
+        else if( !_layer_start_inside_win( layer, &win_start, &win_end ) &&
+                 _layer_end_gt_win_end( layer, &win_end )
+        ) {
+            if( debug ) { printf( "%p  [     ]_\n", layer ); }
+
+            profile.is_valid = false; 
+        }
+        // UNDEFINED CASES
+        else { 
+
+            printf( "%p (empty) UNDEFINED!!! %1.0f[ ]%1.0f %1.0f|_|%1.0f\n", 
+                layer,
+                win_start.transport_d,
+                win_end.transport_d,
+                layer->lead_in_start.transport_d,
+                layer->lead_out_end.transport_d
+            ); 
+
+            profile.is_valid = false; 
+        }
+        /////////////////////////////
+      
+
+    /////////////////////////////
+    // NON EMPTY LAYER CASES:
+    } else {
+        // Layer Lead Out End in Win &&
+        // Last Packet End < Layer End
+        // Seek Targ = Last Packet End
+        // Count to cover rest of layer
+        //        v
+        // __=====|______*
+        //   |________________|
+        if( _layer_end_inside_win( layer, &win_start, &win_end ) &&
+            _layer_start_lt_win_start( layer, &win_start ) &&
+            _layer_last_packet_inside_win( layer, &win_start, &win_end ) &&
+            _layer_last_packet_lt_layer_end( layer )
+        ) {
+            profile.seek_target = layer->last_packet->end_addr.origin_i;
+            profile.packet_count = ceil( ( layer->lead_out_end.transport_d - layer->last_packet->end_addr.transport_d ) / state->estimated_packet_sample_count );
+            profile.dir = ZDJ_DECODE_DIR_FWD;
+            profile.is_valid = true;
+
+            if( debug ) { printf( "%p _[=%d>| ]\n", layer, profile.packet_count ); }
+            if( debug && profile.packet_count == 0 ) {
+                printf( "%1.0f[ l:%1.0f/p:%1.0f == p:%1.0f/l:%1.0f ]%1.0f\n", 
+                    win_start.transport_d,
+                    layer->lead_in_start.transport_d,
+                    layer->first_packet->start_addr.transport_d,
+                    layer->last_packet->end_addr.transport_d,
+                    layer->lead_out_end.transport_d,
+                    win_end.transport_d
+                ); 
             }
         }
-    }
-    return false;
-    // printf( "layer can_fill done\n" );
-}
-
-static int64_t _fill_packet_count( 
-    zdj_decode_layer_t * layer, zdj_pipeline_node_t * node, zdj_decode_dir_t dir
-) {
-    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
-    zdj_deck_control_loop_state_t * loop_state = (zdj_deck_control_loop_state_t*)layer->_loop_state;
-    int sample_count = 0;
-    zdj_decode_addr_t win_start; 
-    state->get_win_start_addr( node, &win_start );
-    zdj_decode_addr_t win_end; 
-    state->get_win_end_addr( node, &win_end );
-
-    if( dir == ZDJ_DECODE_DIR_BACK ) {
-        // TODO: Bring this up to the fwd fill
-        if( win_start.greater_than( &win_start, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT ) ) {
-            // Layer start is beyond left edge of window
-            sample_count = layer->first_packet->start_addr.transport_i - win_start.transport_i;
-            // printf( "left edge\n" );
-        } else if ( 
-            // Layer start is within window
-            win_start.less_than( &win_start, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT ) &&
-            win_end.greater_than( &win_end, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT )
+        // Layer Lead Out End > Win End &&
+        // Last Packet End in Win &&
+        // First Packet Start < Win Start
+        // Seek Targ = Last Packet End
+        // Count to cover rest of layer
+        //       V
+        // __====|________________
+        //   |________________|
+        else if( _layer_end_gt_win_end( layer, &win_end ) &&
+                 _layer_start_lt_win_start( layer, &win_start ) &&
+                 _layer_last_packet_lt_win_end( layer, &win_end )
         ) {
-            sample_count = layer->first_packet->start_addr.transport_i - layer->lead_in_start.transport_i;
-            // printf( "inside %p -- p:%lu st:%lu win s:%lu e:%lu\n", 
-            //     layer,
-            //     layer->first_packet->start_addr.transport_i, 
-            //     layer->lead_in_start.transport_i,
-            //     win_start.transport_i,
-            //     win_end.transport_i
-            // );
+            profile.seek_target = layer->last_packet->end_addr.origin_i;
+            profile.packet_count = ceil( ( win_end.transport_d - layer->last_packet->end_addr.transport_d ) / state->estimated_packet_sample_count );
+            profile.dir = ZDJ_DECODE_DIR_FWD;
+            profile.is_valid = true;
+
+            if( debug ) { printf( "%p _[===%d>]_\n", layer, profile.packet_count ); }
         }
-        // printf( "back sample_count: %d\n", sample_count );
+        // Layer Lead In Start within Win &&
+        // Last Packet End in Win
+        // Seek Targ = Last Packet End
+        // Count to cover rest of layer
+        //             V
+        //       *=====|_________
+        //   |________________|
+        else if( _layer_start_inside_win( layer, &win_start, &win_end ) &&
+                 _layer_last_packet_lt_win_end( layer, &win_end )
+        ) {
+            profile.seek_target = layer->last_packet->end_addr.origin_i;
+            profile.packet_count = ceil( ( win_end.transport_d - layer->last_packet->end_addr.transport_d ) / state->estimated_packet_sample_count );
+            profile.dir = ZDJ_DECODE_DIR_FWD;
+            profile.is_valid = true;
 
-    } else if( dir == ZDJ_DECODE_DIR_FWD ) {
-        if( win_end.less_than( &win_end, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT ) ) {
-            // Layer end is beyond right edge of window
-            sample_count = win_end.transport_i - layer->last_packet->end_addr.transport_i;
-        } else if (
-            // Layer start is within window
-            win_end.greater_than( &win_end, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT ) &&
-            win_start.less_than( &win_start, &layer->lead_in_start, ZDJ_ADDR_COORD_TRANSPORT )
-        ) {
-            sample_count = win_end.transport_i - layer->lead_in_start.transport_i;
-        } else if (
-            // Layer end is within window
-            win_end.greater_than( &win_end, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT ) &&
-            win_start.less_than( &win_end, &layer->lead_out_end, ZDJ_ADDR_COORD_TRANSPORT )
-        ) {
-            sample_count = layer->lead_out_end.transport_i - layer->last_packet->end_addr.transport_i;
+            if( debug ) { printf( "%p  [ |=%d>]_\n", layer, profile.packet_count ); }
         }
-        // printf( "end: %ld %ld\n", win_end.transport_i, layer->last_packet->end_addr.transport_i );
+        // Layer Lead In Start < Win Start
+        // quantize back from first_packet by est.pkt.size
+        // to include win start coord
+        //   v------
+        // *________===========__
+        //   |________________|
+        else if( _layer_start_lt_win_start( layer, &win_start )  &&
+                //  _layer_start_gt_win_start( layer, &win_start ) &&
+                 _layer_first_packet_lt_win_end( layer, &win_end ) &&
+                 _layer_first_packet_gt_win_start( layer, &win_start )
+        ) {
+            int seek_offset = layer->first_packet->start_addr.transport_d - win_start.transport_d;
+            profile.packet_count = ceil( (double)seek_offset / state->estimated_packet_sample_count );
+            double raw_seek_target = layer->first_packet->start_addr.origin_d - ( profile.packet_count * state->estimated_packet_sample_count );
+            profile.seek_target = (int64_t)fmax( 0.0, raw_seek_target );
+            profile.dir = ZDJ_DECODE_DIR_BACK;
+            profile.is_valid = true;
+
+            if( debug ) { printf( "%p _[<%d===]_\n", layer, profile.packet_count ); }
+        }
+        // Layer Lead In Start within Win &&
+        // First Packet < Win End &&
+        // First Packet > Layer Start
+        // quantize back from first_packet by est.pkt.size
+        // to include lead-in start coord
+        //      v------
+        //      *______========___
+        //   |________________|
+        else if( _layer_start_inside_win( layer, &win_start, &win_end ) &&
+                 _layer_first_packet_lt_win_end( layer, &win_end ) &&
+                 _layer_first_packet_gt_layer_start( layer )
+        ) {
+            int seek_offset = layer->first_packet->start_addr.transport_d - layer->core_start.transport_d;
+            profile.packet_count = ceil( (double)seek_offset / state->estimated_packet_sample_count );
+            double raw_seek_target = layer->first_packet->start_addr.origin_d - ( profile.packet_count * state->estimated_packet_sample_count );
+            profile.seek_target = (int64_t)fmax( 0.0, raw_seek_target );
+            profile.dir = ZDJ_DECODE_DIR_BACK;
+            profile.is_valid = true;
+
+            if( debug ) { printf( "%p  [ |<%d=]_\n", layer, profile.packet_count ); }
+
+        }
+        // Win inside Layer &&
+        // Layer already filled
+        // _==================_
+        //  |________________|
+        else if( _layer_start_lt_win_start( layer, &win_start ) &&
+                 _layer_end_gt_win_end( layer, &win_end ) &&
+                 _layer_first_packet_lt_win_start( layer, &win_start ) &&
+                 _layer_last_packet_gt_win_end( layer, &win_end )
+        ) {
+            if( debug ) { printf( "%p _[=====]_\n", layer ); }
+        }
+        // Layer Start inside Win &&
+        // Layer already filled
+        //     *==============___
+        //  |________________|
+        else if( _layer_start_gt_win_start( layer, &win_start ) &&
+                 _layer_end_gt_win_end( layer, &win_end ) &&
+                 _layer_first_packet_lt_layer_start( layer ) &&
+                 _layer_last_packet_gt_win_end( layer, &win_end )
+        ) {
+            if( debug ) { printf( "%p  [ |===]_\n", layer ); }
+        }
+        // Layer End inside Win &&
+        // Layer already filled
+        // _===========*
+        //  |________________|
+        else if( _layer_start_lt_win_start( layer, &win_start ) &&
+                 _layer_end_lt_win_end( layer, &win_end ) &&
+                 _layer_first_packet_lt_win_start( layer, &win_start ) &&
+                 _layer_last_packet_gt_layer_end( layer )
+        ) {
+            if( debug ) { printf( "%p _[===| ]\n", layer ); }
+        }  
+        /// UNDEFINED CASES
+        else { 
+            if( debug ) { 
+                printf( "%p (non-empty) UNDEFINED!!! %1.0f[ l:%1.0f/p:%1.0f == p:%1.0f/l:%1.0f ]%1.0f\n", 
+                    layer,
+                    win_start.transport_d,
+                    layer->lead_in_start.transport_d,
+                    layer->first_packet->start_addr.transport_d,
+                    layer->last_packet->end_addr.transport_d,
+                    layer->lead_out_end.transport_d,
+                    win_end.transport_d
+                ); 
+            };
+            profile.is_valid = false; 
+        }
+        /////////////////////////////
     }
 
-    return ceil( (double)sample_count / state->estimated_packet_sample_count );
-}
+    if( profile.is_valid &&
+        profile.packet_count > 0 ) {
+        // This doesn't work.  Need to find a way to flag this
+        profile.seek_has_discontinuity = true;
 
-static int64_t _seek_target( 
-    zdj_decode_layer_t * layer, zdj_pipeline_node_t * node, int packet_count, zdj_decode_dir_t dir 
-) {
-    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
-
-    if( dir == ZDJ_DECODE_DIR_BACK ) {
-        return layer->first_packet->start_addr.origin_i - ( packet_count * state->estimated_packet_sample_count );
-
-    } else if ( dir == ZDJ_DECODE_DIR_FWD ) {
-        return layer->last_packet->end_addr.origin_i;
+        profile.av_seek_flag = AVSEEK_FLAG_FRAME;
+        profile.requires_garbage = state->requires_garbage;
+        layer->seek_and_decode( layer, node, &profile );
     }
 }
 
 static void _seek_and_decode( 
     zdj_decode_layer_t * layer, 
     zdj_pipeline_node_t * node, 
-    int64_t seek_target, 
-    int seek_flag,
-    zdj_decode_dir_t dir,
-    zdj_decode_packet_justify_t first_packet_justify,
-    int packet_count, 
-    bool predecode_garbage
+    zdj_decode_profile_t * profile
 ) {
-    // printf( "[%p] seek_and_decode %d packets @:%ld dir:%d garb:%d\n", layer, packet_count, seek_target, dir, predecode_garbage );
+    // printf( "seek_and_decode pkts:%d tgt:%lu\n", profile->packet_count, profile->seek_target );
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
 
     // Note that we handle the garbage packet decode internally here
-    if( predecode_garbage ) { 
-        seek_target -= (node_state->estimated_packet_sample_count * 2);
-        if( seek_target < 0 ) { seek_target = 0; } 
+    if( profile->requires_garbage ) { 
+        profile->seek_target -= (node_state->estimated_packet_sample_count * 3);
+        if( profile->seek_target < 0 ) { profile->seek_target = 0; } 
     }
 
-    // printf( "seek_target: %ld\n", seek_target );
+    av_seek_frame( node_state->fmt_ctx, 0, profile->seek_target*node_state->av_timebase_factor, profile->av_seek_flag );
 
-    av_seek_frame( node_state->fmt_ctx, 0, seek_target*node_state->av_timebase_factor, seek_flag );
-
-    if ( predecode_garbage && seek_target > 0 ) {
-        // printf( "decoding 2 garbage packets\n" ); 
-        // Decode and discard 2 frames
+    if ( profile->requires_garbage && profile->seek_target > 0 ) {
+        // printf( "decoding 3 garbage packets\n" ); 
+        // Decode and discard 3 frames
         zdj_decode_garbage_packet( 
             node, layer, node_state->fmt_ctx, node_state->codec_ctx 
         );
         zdj_decode_garbage_packet( 
             node, layer, node_state->fmt_ctx, node_state->codec_ctx 
         );
-        // zdj_decode_garbage_packet( 
-        //     node, layer, node_state->fmt_ctx, node_state->codec_ctx 
-        // );
+        zdj_decode_garbage_packet( 
+            node, layer, node_state->fmt_ctx, node_state->codec_ctx 
+        );
     }
 
-    if( dir == ZDJ_DECODE_DIR_FWD ) {
-        // printf( "decode fwd: %d\n", packet_count );
-        for( int i=0; i<packet_count; i++ ) {  
-            // printf( "fwd\n" );
+    if( profile->dir == ZDJ_DECODE_DIR_FWD ) {
+        for( int i=0; i<profile->packet_count; i++ ) {  
             zdj_decode_packet_t * packet = zdj_decode_packet( 
                 node, layer, node_state->fmt_ctx, node_state->codec_ctx, node_state->av_timebase_factor,
-                (i==0) ? first_packet_justify : ZDJ_DECODE_JUSTIFY_LEFT
+                (i==0) ? ZDJ_DECODE_JUSTIFY_RIGHT : ZDJ_DECODE_JUSTIFY_LEFT
             );
-            // printf( "packet: [t:%1.0f/o:%1.0f - t:%1.0f/o:%1.0f]\n", 
-            //     packet->start_addr.transport_d, packet->start_addr.origin_d, 
-            //     packet->end_addr.transport_d, packet->end_addr.origin_d
-            // );
+            if( packet->has_decode_error ) {
+                // Packets w/decode error need to have addrs manually set.
+                // They will be silent during accum phase, but addrs still
+                // need to be correct.
+                int64_t start_origin_i_coord;
+                int64_t end_origin_i_coord;
+                if( !layer->is_empty( layer ) ) { 
+                    // If there's a last_packet in layer, pull addrs from there.
+                    start_origin_i_coord = layer->last_packet->end_addr.origin_i;
+                    end_origin_i_coord = start_origin_i_coord + node_state->estimated_packet_sample_count;
+                } else { 
+                    // If layer is empty, back up from layer core_end
+                    end_origin_i_coord = layer->core_end.origin_i;
+                    start_origin_i_coord = end_origin_i_coord - node_state->estimated_packet_sample_count;
+                }
+
+                node_state->addr_for_origin_i_coord_in_layer( 
+                    node, layer, &packet->start_addr, start_origin_i_coord
+                );
+                node_state->addr_for_origin_i_coord_in_layer( 
+                    node, layer, &packet->end_addr, end_origin_i_coord 
+                );
+            }
             layer->append_packet( layer, packet ); 
         }
 
-    } else if ( dir == ZDJ_DECODE_DIR_BACK ) {
+    } else if ( profile->dir == ZDJ_DECODE_DIR_BACK ) {
 
-        for( int i=0; i<packet_count; i++ ) {  
+        for( int i=0; i<profile->packet_count; i++ ) {  
             
             zdj_decode_packet_t * packet = zdj_decode_packet( 
                 node, layer, node_state->fmt_ctx, node_state->codec_ctx, node_state->av_timebase_factor,
-                (i==0) ? first_packet_justify : ZDJ_DECODE_JUSTIFY_LEFT
+                (i==0) ? ZDJ_DECODE_JUSTIFY_RIGHT : ZDJ_DECODE_JUSTIFY_LEFT
             );
+            if( packet->has_decode_error ) {
+                printf( "BACK_FILL PACKET HAS DECODE ERROR!!!\n" );
+                // This is bad.  I don't know how to handle this.
+                // This will corrupt the layer addressing, I think.
+            }
             if( i == 0 ) {
                 layer->prepend_packet( layer, packet );
             } else {
@@ -403,4 +468,162 @@ static void _seek_and_decode(
     } 
 
     // printf( "layer seek_and_decode done\n" );
+}
+
+// NOTE: These are all in TRANSPORT_D
+static bool _layer_end_gt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+) {
+    return layer->lead_out_end.transport_d > win_end->transport_d;
+}
+
+static bool _layer_end_lt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+) {
+    return layer->lead_out_end.transport_d < win_end->transport_d;
+}
+
+static bool _layer_start_inside_win( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start, 
+    zdj_decode_addr_t * win_end 
+) {
+    return layer->lead_in_start.transport_d > win_start->transport_d &&
+           layer->lead_in_start.transport_d < win_end->transport_d;
+}
+
+static bool _layer_end_inside_win( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start, 
+    zdj_decode_addr_t * win_end 
+) { 
+    return layer->lead_out_end.transport_d > win_start->transport_d &&
+           layer->lead_out_end.transport_d < win_end->transport_d;
+}
+
+static bool _layer_last_packet_inside_win( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start, 
+    zdj_decode_addr_t * win_end 
+) {
+    if( !layer->last_packet || layer->last_packet->has_decode_error ) {
+        printf( "_layer_last_packet_inside_win UNDEFINED!!!\n" );
+        return false;
+    }
+    return layer->last_packet->end_addr.transport_d > win_start->transport_d &&
+           layer->last_packet->start_addr.transport_d < win_end->transport_d;
+}
+
+static bool _layer_last_packet_gt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+) {
+    if( !layer->last_packet || layer->last_packet->has_decode_error ) {
+        printf( "_layer_last_packet_inside_win UNDEFINED!!!\n" );
+        return false;
+    }
+    return layer->last_packet->end_addr.transport_d > win_end->transport_d;
+}
+
+static bool _layer_last_packet_lt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+) {
+    if( !layer->last_packet || layer->last_packet->has_decode_error ) {
+        printf( "_layer_last_packet_inside_win UNDEFINED!!!\n" );
+        return false;
+    }
+    return layer->last_packet->end_addr.transport_d < win_end->transport_d;
+}
+
+static bool _layer_last_packet_lt_layer_end( zdj_decode_layer_t * layer ) {
+    if( !layer->last_packet || layer->last_packet->has_decode_error ) {
+        printf( "_layer_last_packet_lt_layer_end UNDEFINED!!!\n" );
+        return false;
+    }
+    // double offset = layer->lead_out_end.transport_d - layer->last_packet->end_addr.transport_d;
+    // return offset > ZDJ_SOUNDCARD_BUF_LEN / 2; // This is totally arbitrary.
+    return layer->last_packet->end_addr.transport_d < layer->lead_out_end.transport_d;
+}
+
+static bool _layer_last_packet_gt_layer_end( zdj_decode_layer_t * layer ) {
+    if( !layer->last_packet || layer->last_packet->has_decode_error ) {
+        printf( "_layer_last_packet_lt_layer_end UNDEFINED!!!\n" );
+        return false;
+    }
+    // double offset = layer->last_packet->end_addr.transport_d - layer->lead_out_end.transport_d;
+    // return offset > ZDJ_SOUNDCARD_BUF_LEN / 2; // This is totally arbitrary.
+    return layer->last_packet->end_addr.transport_d > layer->lead_out_end.transport_d;
+}
+
+
+static bool _layer_start_lt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+) {
+    return layer->lead_in_start.transport_d < win_start->transport_d;
+}
+
+static bool _layer_start_gt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+) {
+    return layer->lead_in_start.transport_d > win_start->transport_d;
+}
+
+static bool _layer_first_packet_gt_layer_start( zdj_decode_layer_t * layer ) {
+    if( !layer->first_packet || layer->first_packet->has_decode_error ) {
+        printf( "_layer_first_packet_gt_layer_start UNDEFINED!!!\n" );
+        return false;
+    }
+
+    // double offset = layer->first_packet->start_addr.transport_d - layer->lead_in_start.transport_d;
+    // return offset > ZDJ_SOUNDCARD_BUF_LEN / 2; // This is totally arbitrary.
+    return layer->first_packet->start_addr.transport_d > layer->lead_in_start.transport_d;
+}
+
+static bool _layer_first_packet_lt_layer_start( zdj_decode_layer_t * layer ) {
+    if( !layer->first_packet || layer->first_packet->has_decode_error ) {
+        printf( "_layer_first_packet_gt_layer_start UNDEFINED!!!\n" );
+        return false;
+    }
+
+    // double offset = layer->lead_in_start.transport_d - layer->first_packet->start_addr.transport_d;
+    // return offset > ZDJ_SOUNDCARD_BUF_LEN / 2; // This is totally arbitrary.
+    return layer->first_packet->start_addr.transport_d < layer->lead_in_start.transport_d;
+}
+
+static bool _layer_first_packet_gt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+) {
+    if( !layer->first_packet || layer->first_packet->has_decode_error ) {
+        printf( "_layer_first_packet_gt_win_start UNDEFINED!!!\n" );
+        return false;
+    }
+    return layer->first_packet->start_addr.transport_d > win_start->transport_d;
+}
+
+static bool _layer_first_packet_lt_win_start( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_start 
+) {
+    if( !layer->first_packet || layer->first_packet->has_decode_error ) {
+        printf( "_layer_first_packet_lt_win_start UNDEFINED!!!\n" );
+        return false;
+    }
+    return layer->first_packet->start_addr.transport_d < win_start->transport_d;
+}
+
+static bool _layer_first_packet_lt_win_end( 
+    zdj_decode_layer_t * layer, 
+    zdj_decode_addr_t * win_end 
+) {
+    if( !layer->first_packet || layer->first_packet->has_decode_error ) {
+        printf( "_layer_first_packet_lt_win_end UNDEFINED!!!\n" );
+        return false;
+    }
+    return layer->first_packet->start_addr.transport_d < win_end->transport_d;
 }

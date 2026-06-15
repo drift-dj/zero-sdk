@@ -20,6 +20,20 @@ zdj_library_audio_t * zdj_library_create_audio_dto( void ) {
     return audio;
 }
 
+zdj_health_status_t zdj_library_delete_audio( 
+    zdj_library_audio_t * audio, 
+    sqlite3 * db 
+) {
+    int res;
+    char sql[ 2048 ];
+    snprintf( sql, sizeof( sql ), "delete from %s where entity_id like \'%s\'", 
+        ZDJ_LIBRARY_TABLE_AUDIO_DATA,
+        audio->entity_id
+    );
+    zdj_sql_exec( sql, db );
+    return ZDJ_HEALTH_STATUS_OKAY;
+}
+
 zdj_library_audio_t * zdj_library_fetch_current_audio_dto_for_song( 
     zdj_library_song_t * song, 
     sqlite3 * db 

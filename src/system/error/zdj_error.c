@@ -2,11 +2,15 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <string.h>
+#include <unistd.h>
 #include <execinfo.h>
 // #include <backtrace.h>
 
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/fs/zdj_fs.h>
 
+static int _get_current_error_log_num( void );
 
 ///////////////////////////////////////////////////////
 // Do some hacking to fix wonky library dependencies //
@@ -111,6 +115,12 @@ void _zdj_error_sig( int code ) {
     if( code == SIGSEGV ) {
         printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
         
+        // Open error log
+        char path[ 512 ];
+        sprintf( path, "%s/crash_log_%03d.txt", ZDJ_LOG_DIR, zdj_new_error_log_num( ) );
+        FILE * log_fp = fopen( path, "w" );
+        printf( "writing crash log: %p %s\n", log_fp, path );
+
         int max_frames = 100;
         void *callstack[ max_frames ];
         int frames;
@@ -121,17 +131,41 @@ void _zdj_error_sig( int code ) {
 
         for (int i = 0; i < frames; ++i) {
             printf("%s\n", strings[i]);
+            // Write to current error log file
+            if( log_fp ) { 
+                fprintf( log_fp, "%s\n", strings[ i ] );
+            }
         }
-        
-        // printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
-        
-        // if (__bt_state) { /// make sure init_back_trace() is called
-        //     // backtrace_full((backtrace_state *) __bt_state, 0, bt_callback, bt_error_callback, nullptr);
-        //     backtrace_full(__bt_state, 0, bt_callback, bt_error_callback, NULL);
-        // }
 
+        // Finish up the crash log file
+        if( log_fp ) { fclose( log_fp ); }
         exit( code );
     }
+}
+
+static int _get_current_error_log_num( void ) {
+    // Create the logs dir if it's missing
+    if( access( ZDJ_LOG_DIR, F_OK ) != 0 ) {
+        zdj_fs_mkdir_p( ZDJ_LOG_DIR );
+    }
+    // Open the log counter, create if missing
+    int num = 0;
+    FILE * count_fp = fopen( "/media/internal/logs/count", "r" );
+    if( count_fp ) {
+        fread( &num, sizeof( int ), 1, count_fp );
+        fclose( count_fp );
+    }
+    return num;
+}
+
+int zdj_new_error_log_num( void ) {
+    int cur = _get_current_error_log_num( ) + 1;
+    FILE * count_fp = fopen( "/media/internal/logs/count", "w" );
+    if( count_fp ) {
+        fwrite( &cur, sizeof( int ), 1, count_fp );
+        fclose( count_fp );
+    }
+    return cur;
 }
 
 zdj_error_state_t * zdj_error_state( void ) {
@@ -150,4 +184,10 @@ void zdj_error_init( char * binary_path ) {
 
 void zdj_print_error( zdj_error_type_t error ) {
 
+}
+
+void zdj_error_reset_logs( void ) {
+    zdj_fs_remove_dir( ZDJ_LOG_DIR );
+    zdj_fs_mkdir_p( ZDJ_LOG_DIR );
+    sync( );
 }

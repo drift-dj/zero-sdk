@@ -32,7 +32,7 @@
 #include <zerodj/signal/soundcard/db/zdj_soundcard_dto.h>
 #include <zerodj/signal/soundcard/dsp/zdj_soundcard_dsp.h>
 
-#define ZDJ_SOUNDCARD_BUF_LEN 400
+#define ZDJ_SOUNDCARD_BUF_LEN 512
 // #define ZDJ_SOUNDCARD_BUF_LEN 256
 
 #define ZDJ_SOUNDCARD_DB_PATH "/media/internal/.system/soundcard.db"
@@ -134,8 +134,10 @@ typedef enum {
     ZDJ_SOUNDCARD_NODE_NAME_CV_1,
     ZDJ_SOUNDCARD_NODE_NAME_CV_2,
     ZDJ_SOUNDCARD_NODE_NAME_CV_3,
-    ZDJ_SOUNDCARD_NODE_NAME_USB_OUT,
-    ZDJ_SOUNDCARD_NODE_NAME_USB_IN,
+    ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0,
+    ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1,
+    ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0,
+    ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT,
     ZDJ_SOUNDCARD_NODE_NAME_DECK_1_EDGE,
 
@@ -188,8 +190,10 @@ static char * zdj_soundcard_node_name[ ZDJ_SOUNDCARD_NODE_NAME_COUNT ] = {
     "CV 2",// ZDJ_SOUNDCARD_NODE_NAME_CV_1,
     "CV 3",// ZDJ_SOUNDCARD_NODE_NAME_CV_2,
     "CV 4",// ZDJ_SOUNDCARD_NODE_NAME_CV_3,
-    "USB Out",// ZDJ_SOUNDCARD_NODE_NAME_USB_OUT,
-    "USB In",// ZDJ_SOUNDCARD_NODE_NAME_USB_IN,
+    "USB Out 1",// ZDJ_SOUNDCARD_NODE_NAME_USB_OUT,
+    "USB Out 2",// ZDJ_SOUNDCARD_NODE_NAME_USB_OUT,
+    "USB In 1",// ZDJ_SOUNDCARD_NODE_NAME_USB_IN,
+    "USB In 2",// ZDJ_SOUNDCARD_NODE_NAME_USB_IN,
     "Deck 1 Input",// ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT,
     "Deck 1 Edge", // ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE
     "Deck 1 Prefade",// ZDJ_SOUNDCARD_NODE_NAME_DECK_1_BUS,
@@ -420,8 +424,11 @@ bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_io( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_input( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_analog_input( zdj_soundcard_node_name_t name );
+bool zdj_soundcard_node_name_is_usb_input( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_output( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_analog_output( zdj_soundcard_node_name_t name );
+bool zdj_soundcard_node_name_is_usb_output( zdj_soundcard_node_name_t name );
+bool zdj_soundcard_node_name_is_usb( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_internal_bus( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_dj_deck( zdj_soundcard_node_name_t name );
 bool zdj_soundcard_node_name_is_ext_deck( zdj_soundcard_node_name_t name );

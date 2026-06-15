@@ -55,6 +55,8 @@ void zdj_soundcard_options_update_dj_deck_layout( zdj_view_t * view );
 void zdj_soundcard_options_update_ext_deck_layout( zdj_view_t * view );
 void zdj_soundcard_options_update_cv_layout( zdj_view_t * view );
 void zdj_soundcard_options_update_clock_layout( zdj_view_t * view );
+void zdj_soundcard_options_update_usb_output_layout( zdj_view_t * view );
+void zdj_soundcard_options_update_usb_input_layout( zdj_view_t * view );
 void zdj_soundcard_options_annot_bus_event( zdj_view_t * view, zdj_control_event_t * event );
 void zdj_soundcard_options_record_bus_event( zdj_view_t * view, zdj_control_event_t * event );
 void zdj_soundcard_options_port_output_hmi( zdj_view_t * view, zdj_control_event_t * _event );

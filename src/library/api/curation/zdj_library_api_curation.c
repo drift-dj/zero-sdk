@@ -111,3 +111,17 @@ zdj_health_status_t zdj_library_store_curation(
     
     return ZDJ_HEALTH_STATUS_OKAY;
 }
+
+zdj_health_status_t zdj_library_delete_curation( 
+    zdj_library_curation_t * curation, 
+    sqlite3 * db 
+) {
+    int res;
+    char sql[ 2048 ];
+    snprintf( sql, sizeof( sql ), "delete from %s where entity_id like \'%s\'", 
+        ZDJ_LIBRARY_TABLE_CURATION_DATA,
+        curation->entity_id
+    );
+    zdj_sql_exec( sql, db );
+    return ZDJ_HEALTH_STATUS_OKAY;
+}

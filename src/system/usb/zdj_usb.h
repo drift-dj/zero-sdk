@@ -155,9 +155,17 @@ typedef struct zdj_usb_device_t {
     bool mount_path_valid;
     bool attached;
     bool has_audio;
+    bool has_audio_in;
+    char snd_card_capture_name[ 32 ];
+    bool has_audio_out;
+    char snd_card_playback_name[ 32 ];
     bool has_msd;
     bool has_hid;
     bool has_midi;
+    bool has_midi_in;
+    char snd_card_rawmidi_in_name[ 32 ];
+    bool has_midi_out;
+    char snd_card_rawmidi_out_name[ 32 ];
     struct zdj_usb_device_t * next;
 } zdj_usb_device_t;
 
@@ -193,6 +201,8 @@ typedef struct {
     bool has_port_partner_update;
     zdj_usb_host_state_t host_state;
     zdj_usb_gadget_state_t gadget_state;
+    FILE * log_fp;
+    char log_str[ 2048 ];
 } zdj_usb_state_t;
 
 extern zdj_usb_state_t * zdj_usb_state;
@@ -213,7 +223,7 @@ zdj_error_type_t zdj_usb_update_gadget_config_from_functionfs( zdj_usb_gadget_co
 
 // USB Host Mode API
 zdj_usb_attached_devices_t * zdj_usb_update_attached_devices( void );
-void zdj_usb_scan_attached_alsa_devices( zdj_usb_state_t * state );
+void zdj_usb_update_alsa_profiles( zdj_usb_state_t * state, zdj_usb_device_t * device );
 
 // USB Connection State API
 
@@ -247,6 +257,10 @@ zdj_error_type_t zdj_usb_device_cleanup_str( char * buf, size_t buf_len );
 bool zdj_usb_devices_db_needs_init( void );
 sqlite3 * zdj_usb_create_devices_db( void );
 void zdj_usb_reset_devices_db( void );
+void zdj_usb_reset_status( void );
 
+void zdj_usb_log_begin( void );
+void zdj_usb_log( char * str );
+void zdj_usb_log_end( void );
 
 #endif

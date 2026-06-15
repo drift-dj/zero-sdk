@@ -50,9 +50,11 @@ bool zdj_fs_path_is_audio_dir( char * path );
 bool zdj_fs_path_is_external_database_filename( char * path );
 bool zdj_fs_path_is_external_database_dir( char * path );
 bool zdj_fs_path_is_audio_filename( char * path );
+bool zdj_fs_path_is_image_filename( char * path );
 bool zdj_fs_path_is_media_partition( char * path );
 bool zdj_fs_path_is_attached_msd( char * path );
 bool zdj_fs_path_is_dir_with_files( char * path );
+bool zdj_fs_path_is_logfile( char * path );
 
 void zdj_fs_scan_dir( 
     char * path,

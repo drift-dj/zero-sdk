@@ -10,10 +10,12 @@
 // #include <SDL2/SDL_image.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/screencap/zdj_screencap.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/widget/notify/zdj_notify_widget.h>
 
 // NEW API FOR IMAGE/VIDEO CAPTURE
 void zdj_request_screencap( zdj_screencap_type_t type ) {
@@ -49,8 +51,7 @@ void zdj_update_screencap( void ) {
 
     printf( "saving screenshot: %s\n", path );
 
-    // SDL_PIXELFORMAT_RGB565
-    // SDL_PIXELFORMAT_RGB24
+
     int width, height;
     SDL_GetRendererOutputSize( zdj_renderer( ), &width, &height);
     SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, width, height, 32, SDL_PIXELFORMAT_ARGB8888);
@@ -62,4 +63,15 @@ void zdj_update_screencap( void ) {
     SDL_FreeSurface( surface );
 
     sync( );
+
+    char note[ 32 ];
+    snprintf( note, sizeof( note ), "zero_screencap_%03d.bmp", screencap_num );
+    zdj_show_notify_widget( note, NULL, NULL );
+}
+
+void zdj_reset_screencaps( void ) {
+    zdj_fs_remove_dir( ZDJ_SCREEN_CAP_DIR );
+    zdj_fs_mkdir_p( ZDJ_SCREEN_CAP_DIR );
+    sync( );
+    zdj_setting_set_int( ZDJ_SETTING_SCREENSHOT_COUNTER, 0 );
 }

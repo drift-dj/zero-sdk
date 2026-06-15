@@ -38,7 +38,7 @@ zdj_health_status_t zdj_library_store_song_graph(
     zdj_library_song_t * song, 
     sqlite3 * db
 ) {
-    // printf( "zdj_library_store_song_graph: %p/%s - %s %s %s %s\n", song, song->entity_id, song->audio->entity_id, song->catalog->entity_id, song->curation->entity_id, song->performance->entity_id );
+    printf( "zdj_library_store_song_graph: %p/%s - %s %s %s %s\n", song, song->entity_id, song->audio->entity_id, song->catalog->entity_id, song->curation->entity_id, song->performance->entity_id );
     if( !song ) { return ZDJ_HEALTH_STATUS_MISSING_SONG; }
     
     // Insert record into db.
@@ -72,7 +72,52 @@ zdj_health_status_t zdj_library_store_song_graph(
         }
     }
     zdj_library_store_song( song, db );
+    zdj_library_db_flush( );
 
+    return ZDJ_HEALTH_STATUS_OKAY;
+}
+
+zdj_health_status_t zdj_library_delete_song_graph( 
+    zdj_library_song_t * song, 
+    sqlite3 * db 
+) {
+    if( !song ) { return ZDJ_HEALTH_STATUS_MISSING_SONG; }
+    // Remove graph from db.
+    if( song->audio ) {
+        zdj_health_status_t res = zdj_library_delete_audio( song->audio, db );
+        if( res != ZDJ_HEALTH_STATUS_OKAY ) {
+            song->has_error = true;
+            printf( "Library failed to delete audio: %s\n", song->audio->filepath );
+        }
+    }
+    if( song->catalog ) {
+        zdj_health_status_t res = zdj_library_delete_catalog( song->catalog, db );
+        if( res != ZDJ_HEALTH_STATUS_OKAY ) {
+            song->has_error = true;
+            printf( "Library failed to delete catalog: %s\n", song->catalog->title );
+        }
+    }
+
+    if( song->curation ) {
+        zdj_health_status_t res = zdj_library_delete_curation( song->curation, db );
+        if( res != ZDJ_HEALTH_STATUS_OKAY ) {
+            song->has_error = true;
+            printf( "Library failed to delete curation: %p\n", song->curation );
+        }
+    }
+    if( song->performance ) {
+        zdj_health_status_t res = zdj_library_delete_performance( song->performance, db );
+        if( res != ZDJ_HEALTH_STATUS_OKAY ) {
+            song->has_error = true;
+            printf( "Library failed to delete performance: %p\n", song->performance );
+        }
+    }
+    if( song->has_error ) {
+        printf( "Library failed to delete song graph\n" );
+    } else {
+        zdj_library_delete_song( song, db );
+    }
+    
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
@@ -177,6 +222,13 @@ zdj_library_song_t * zdj_library_fetch_menu_song_graph(
     if( !song->catalog ) {
         printf( "catalog failed to load for %p\n", song );
     }
+
+    // Fetch Performance DTO
+    song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db );
+    if( !song->performance ) {
+        printf( "performance failed to load for %p\n", song );
+    }
+
     // Standup Graph
     return song;
 }

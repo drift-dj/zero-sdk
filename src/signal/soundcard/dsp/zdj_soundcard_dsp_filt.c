@@ -41,6 +41,7 @@ void zdj_soundcard_dsp_filt_bi_adjust_knob( void * _stage, int knob, int input_v
             if( new_val > 1.0 ) { new_val = 1.0; }
             else if( new_val < -1.0 ) { new_val = -1.0; }
             stage->knob_0 = new_val; 
+            // printf( "cur: %1.3f, new:%1.3f\n", cur_val, new_val );
             break;
         case 1: stage->knob_1 = new_val; break;
         case 2: 

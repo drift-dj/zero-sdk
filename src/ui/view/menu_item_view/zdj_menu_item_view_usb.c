@@ -36,7 +36,7 @@ void zdj_menu_item_usb_device_init_layout( zdj_view_t * view ) {
     // Setup normal view
     zdj_usb_device_t * device = (zdj_usb_device_t*)state->data.ptr;
 
-    zdj_view_t * title = zdj_new_label_view( device->name_user, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title = zdj_new_label_view( device->name_user, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, title );
     // if( title_norm->frame.w < view->frame.w ) {
     //     title_norm->frame.x =  (view->frame.w / 2) - (title_norm->frame.w / 2);
@@ -66,7 +66,15 @@ void zdj_menu_item_usb_device_init_layout( zdj_view_t * view ) {
         icon->frame.x =  10;
         icon->frame.y = _y;
 
-        zdj_view_t * path = zdj_new_label_view( "ALSA: Card 0, Device 0", ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+        char audio_str[ 64 ];
+        if( device->has_audio_in && device->has_audio_out ) { 
+            strcpy( audio_str, "Audio Input + Output" );
+        } else if( device->has_audio_in ) {
+            strcpy( audio_str, "Audio Input" );
+        } else if( device->has_audio_out ) {
+            strcpy( audio_str, "Audio Output" );
+        }
+        zdj_view_t * path = zdj_new_label_view( audio_str, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
         zdj_add_subview( view, path );
         path->frame.x = 28;
         path->frame.y = _y + 1;
@@ -81,7 +89,15 @@ void zdj_menu_item_usb_device_init_layout( zdj_view_t * view ) {
         icon->frame.x =  10;
         icon->frame.y = _y;
 
-        zdj_view_t * path = zdj_new_label_view( "ALSA: Card 0, Device 1", ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+        char midi_str[ 64 ];
+        if( device->has_midi_in && device->has_midi_out ) { 
+            strcpy( midi_str, "MIDI Input + Output" );
+        } else if( device->has_midi_in ) {
+            strcpy( midi_str, "MIDI Input" );
+        } else if( device->has_midi_out ) {
+            strcpy( midi_str, "MIDI Output" );
+        }
+        zdj_view_t * path = zdj_new_label_view( midi_str, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
         zdj_add_subview( view, path );
         path->frame.x = 28;
         path->frame.y = _y + 1;

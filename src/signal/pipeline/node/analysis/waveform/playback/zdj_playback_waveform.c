@@ -132,7 +132,7 @@ static void _render( zdj_pipeline_node_t * node, zdj_rect_t * frame ) {
     // if( state->needs_full_render ) {
         // Clear the thingy
         boxColor( zdj_renderer( ), 0, 0, frame->w, frame->h, ZDJ_BLACK );
-        if( state->zoom_val > 1.5 || !state->has_hires ) { 
+        if( state->zoom_val > 1.0 || !state->has_hires ) { 
             _render_points( node, frame );
         } else {
             _render_waveform( node, frame );

@@ -79,6 +79,9 @@ static void _update_state ( zdj_deck_t * deck ) {
             // printf( "ZDJ_EXT_DECK_STATUS_WAIT_THREAD_READY\n" );             
             // Start serving deck samples to soundcard.
             zdj_soundcard_link_deck( zdj_soundcard, deck );
+            // Mute the headphone cue channel
+            zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+            node->dsp_dto->mute = true;
             // Accept control events when we're ready for playback
             deck->handle_control_event = &_handle_control;
             // Advance state to running

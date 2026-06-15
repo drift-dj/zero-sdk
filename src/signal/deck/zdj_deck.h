@@ -27,6 +27,7 @@
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
+#include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 
 typedef enum {
     ZDJ_DECK_TYPE_DJ,
@@ -84,73 +85,26 @@ typedef struct {
     double move_req_len;
     double length_change_req_len;
     int fade_len;
-    int c_count_start;
-    int c_count_len;
 } zdj_deck_control_loop_state_t;
 
-typedef enum {
-    ZDJ_DECK_HOTCUE_PHASE_INACTIVE, // Idle - do nothing
-    ZDJ_DECK_HOTCUE_PHASE_ACTIVATE, // Request received from control thread
-    ZDJ_DECK_HOTCUE_PHASE_STAGED, // Address has been determined, skip has not been requested
-    ZDJ_DECK_HOTCUE_PHASE_RUN // Skip has been requested
-} zdj_deck_control_hotcue_phase_t;
+// typedef enum {
+//     ZDJ_DECK_HOTCUE_PHASE_INACTIVE, // Idle - do nothing
+//     ZDJ_DECK_HOTCUE_PHASE_ACTIVATE, // Request received from control thread
+//     ZDJ_DECK_HOTCUE_PHASE_STAGED, // Address has been determined, skip has not been requested
+//     ZDJ_DECK_HOTCUE_PHASE_RUN // Skip has been requested
+// } zdj_deck_control_hotcue_phase_t;
+
+// typedef struct {
+//     zdj_deck_control_hotcue_phase_t phase;
+//     double current_target_d;
+// } zdj_deck_control_hotcue_state_t;
 
 typedef struct {
-    zdj_deck_control_hotcue_phase_t phase;
-    double current_target_d;
-} zdj_deck_control_hotcue_state_t;
-
-// Beat skip can't be updated while actively crossfading.
-typedef enum {
-    ZDJ_DECK_SKIP_PHASE_INACTIVE, // Idle - do nothing
-    ZDJ_DECK_SKIP_PHASE_ACTIVATE, // Request received from control thread
-    ZDJ_DECK_SKIP_PHASE_STAGED, // Address has been determined, crossfade has not yet started
-    ZDJ_DECK_SKIP_PHASE_RUN // Skip is in layer stack
-} zdj_deck_control_skip_phase_t;
-
-typedef enum {
-    ZDJ_DECK_SKIP_TYPE_QUANT,
-    ZDJ_DECK_SKIP_TYPE_UNQUANT,
-    ZDJ_DECK_SKIP_TYPE_SCRUB
-} zdj_deck_control_skip_type_t;
-
-typedef struct {
-    zdj_deck_control_skip_phase_t phase;
     double current_offset;
     double skip_req_len;
-    zdj_deck_control_skip_type_t skip_req_type;
-    double depart_origin_d;
     double dest_origin_d;
-    int fade_len;
-    int counter;
-    int c_count_skip;
+    bool locked;
 } zdj_deck_control_skip_state_t;
-
-typedef enum {
-    ZDJ_DECK_HYPERSCRUB_PHASE_INACTIVE,
-    ZDJ_DECK_HYPERSCRUB_PHASE_ACTIVATE,
-    ZDJ_DECK_HYPERSCRUB_PHASE_STAGED,
-    ZDJ_DECK_HYPERSCRUB_PHASE_RUN
-} zdj_deck_control_hyperscrub_phase_t;
-
-typedef struct {
-    zdj_deck_control_hyperscrub_phase_t phase;
-    double req_offset;
-    int counter;
-} zdj_deck_control_hyperscrub_state_t;
-
-typedef enum {
-    ZDJ_DECK_NEEDLEDROP_PHASE_INACTIVE,
-    ZDJ_DECK_NEEDLEDROP_PHASE_ACTIVATE,
-    ZDJ_DECK_NEEDLEDROP_PHASE_STAGED,
-    ZDJ_DECK_NEEDLEDROP_PHASE_RUN
-} zdj_deck_control_needledrop_phase_t;
-
-typedef struct {
-    zdj_deck_control_needledrop_phase_t phase;
-    double origin_coord;
-    int counter;
-} zdj_deck_control_needledrop_state_t;
 
 typedef enum {
     ZDJ_PLATTER_MOTOR_IDLE,
@@ -160,13 +114,13 @@ typedef enum {
 } zdj_deck_platter_motor_state_t;
 
 typedef struct {
-    double head; // Montotonic location of the direct-drive platter.
     // pitch_setting - The physical position of the pitch slider (or value set by beatgrid sync)
     // Stays same whether playback is engaged or not.
     double pitch_setting; 
     bool enabled; // If motor is powered or not.
     double set_rate; // Target speed at which the deck motor should be running.
     double instant_rate; // set_rate, but filtered by simulation params.
+    double instant_val; // number of samples to advance
 
     int cur_spin_up_cycle;
     int spin_up_cycle_count; // Number of sound card buf cycles to finish motor spin up
@@ -176,14 +130,14 @@ typedef struct {
 } zdj_deck_platter_motor_t;
 
 typedef enum {
-    ZDJ_PLATTER_SLIP_SCRATCH,
-    ZDJ_PLATTER_SLIP_NUDGE_PITCH,
-    ZDJ_PLATTER_SLIP_NUDGE_TEMPO,
-    ZDJ_PLATTER_SLIP_TO_LAM,
-    ZDJ_PLATTER_SLIP_LAMINAR_PITCH,
-    ZDJ_PLATTER_SLIP_LAMINAR_TEMPO,
-    ZDJ_PLATTER_SLIP_TO_SCRATCH
+    ZDJ_PLATTER_MODE_SLIP,
+    ZDJ_PLATTER_MODE_LAMINAR
 } zdj_deck_platter_slip_state_t;
+typedef enum {
+    ZDJ_PLATTER_MODE_TX_NONE,
+    ZDJ_PLATTER_MODE_TX_TO_SLIP,
+    ZDJ_PLATTER_MODE_TX_TO_LAMINAR
+} zdj_deck_platter_slip_tx_flag_t;
 
 typedef struct {
     // Damped spring sim values
@@ -201,44 +155,65 @@ typedef struct {
     double instant_val;
     double tempo_nudge_rate; // bypass the slipmat sim in tempo tsm mode
     int slip_dwell; // Hysteresis - how long after input does platter remain in slip state
-
-    double scrub_skip_offset; // Distance to skip when scrubbing faster than window allows
     zdj_deck_platter_slip_state_t state;
 } zdj_deck_platter_slip_t;
 
+typedef enum {
+    ZDJ_DECK_ANTIPOP_STATE_INACTIVE,
+    ZDJ_DECK_ANTIPOP_STATE_TO_ZERO,
+    ZDJ_DECK_ANTIPOP_STATE_AT_ZERO,
+    ZDJ_DECK_ANTIPOP_STATE_FROM_ZERO,
+    ZDJ_DECK_ANTIPOP_STATE_DEACTIVATE,
+} zdj_deck_platter_antipop_state_t;
 
 typedef struct {
-    double head; // Output in decode-space of platter simulation
-} zdj_deck_platter_needle_t;
-
-typedef struct {
-    double baseline;
-    double instant_val;
+    zdj_deck_platter_antipop_state_t state;
+    bool enabled;
+    double tracking_val;
+    float lowpass_val;
+    float slew_limit;
+    float start_fade_val;
+    float end_fade_val;
+    float engage_thresh; // slip.instant val below which AC coupling is active
 } zdj_deck_platter_antipop_t;
 
+typedef struct {
+    float start_fade_val;
+    float end_fade_val;
+    float fade_start_rate; // slip.instant_val below which fade coeff = 1.0
+    float fade_complete_rate; // slip.instant_val above which fade coeff = 0.0
+} zdj_deck_platter_scrub_fade_t;
+
 typedef enum {
-    // The needle RATE+ADDRESS is driven from the motor->slipmat simulation.
-    // Used during pitch-mode playback/scrubbing/nudging.
-    // Also used during transitions to/from tempo-mode.
-    ZDJ_DECK_DRIVE_MOTOR,
-    // The needle RATE is driven from the motor,
-    // but the needle ADDRESS is driven by the output of the
-    // tempo-stretch TSM node (which takes rate as an input).
-    // Used only during tempo-mode playback/nudging.
-    ZDJ_DECK_DRIVE_TSM_NODE
-} zdj_deck_platter_drive_mode_t;
+    ZDJ_DECK_HYPERSCRUB_INACTIVE,
+    ZDJ_DECK_HYPERSCRUB_ACTIVATE,
+    ZDJ_DECK_HYPERSCRUB_ACTIVE,
+    ZDJ_DECK_HYPERSCRUB_DEACTIVATE
+} zdj_deck_platter_hyperscrub_state_t;
 
 typedef struct {
-    zdj_deck_platter_drive_mode_t drive_mode;
+    zdj_deck_platter_hyperscrub_state_t state;
+    float exit_thresh;
+    float reentry_thresh;
+    float ui_rate; // used by playback ui to zoom out while scrubbing
+} zdj_deck_platter_hyperscrub_t;
+
+typedef struct {
+    double slip_input_samps; // set by control input - used to clamp max scrub rate
+    double slip_input_head; // set by control input - slip+motor sim chases this while slipping
+    double internal_instant_head; // internal tracking of slip+motor sim
+    double internal_instant_head_prev; // internal tracking of slip+motor sim
+    double head_move_samps;
+    double head_move_rate;
     zdj_deck_platter_motor_t motor;
     zdj_deck_platter_slip_t slip;
-    zdj_deck_platter_needle_t needle;
     zdj_deck_platter_antipop_t antipop;
-    double scrub_factor_inst;
-    double scrub_factor_set;
+    zdj_deck_platter_hyperscrub_t hyperscrub;
+    zdj_deck_platter_scrub_fade_t scrub_fade;
     bool scratch_override;
     double nudge_coeff;
     double scratch_coeff;
+    float hyperscrub_coeff;
 } zdj_deck_platter_t;
 
 typedef struct {
@@ -253,18 +228,79 @@ typedef struct {
     double pan;
 } zdj_deck_control_knob_state_t;
 
+
+typedef struct {
+    bool reset_pending;
+    bool hotcue_pending;
+    bool is_cueing;
+    double dest_origin_d;
+} zdj_deck_control_cue_state_t;
+
 typedef struct zdj_deck_control_state_t { 
     zdj_deck_platter_t platter;
-    zdj_deck_control_hotcue_state_t hotcue_state;
+    zdj_deck_control_cue_state_t cue_state;
     zdj_deck_control_skip_state_t skip_state;
     zdj_deck_control_loop_state_t loop_state;
-    zdj_deck_control_hyperscrub_state_t hyperscrub_state;
-    zdj_deck_control_needledrop_state_t needledrop_state;
+    // zdj_deck_control_needledrop_state_t needledrop_state;
     zdj_deck_control_knob_state_t knob_state;
     bool discon_quantize;
     double discon_quantize_val;
-    int c_count_q_val;
+    // int c_count_q_val;
 } zdj_deck_control_state_t;
+
+typedef enum {
+    ZDJ_DECK_PLATTER_REQUEST_START_MOTOR,
+    ZDJ_DECK_PLATTER_REQUEST_STOP_MOTOR,
+    ZDJ_DECK_PLATTER_REQUEST_TOGGLE_MOTOR,
+    ZDJ_DECK_PLATTER_REQUEST_SCRUB,
+    ZDJ_DECK_PLATTER_REQUEST_SCRUB_ALT_0,
+    ZDJ_DECK_PLATTER_REQUEST_SCRUB_ALT_1
+} zdj_deck_control_platter_request_type_t;
+
+typedef enum {
+    ZDJ_DECK_PLATTER_REQUEST_PHASE_NONE,
+    ZDJ_DECK_PLATTER_REQUEST_PHASE_NEW,
+    ZDJ_DECK_PLATTER_REQUEST_PHASE_RECEIVED
+} zdj_deck_control_platter_request_phase_t;
+
+typedef struct {
+    zdj_deck_control_platter_request_type_t type;
+    zdj_deck_control_platter_request_phase_t phase;
+    bool spin_up;
+    bool spin_down;
+    int event_i_val;
+    double target_coord;
+    zdj_decode_addr_coord_t coord;
+} zdj_deck_control_platter_request_t;
+
+typedef enum {
+    ZDJ_DECK_COMMAND_REQUEST_NONE,
+    ZDJ_DECK_COMMAND_REQUEST_TOGGLE_LOOP,
+    ZDJ_DECK_COMMAND_REQUEST_MOVE_LOOP,
+    ZDJ_DECK_COMMAND_REQUEST_RESIZE_LOOP,
+    ZDJ_DECK_COMMAND_REQUEST_JUMP_TO_LOOP_START,
+    ZDJ_DECK_COMMAND_REQUEST_SKIP,
+    ZDJ_DECK_COMMAND_REQUEST_CHANGE_SKIP_LENGTH,
+    ZDJ_DECK_COMMAND_REQUEST_SET_SKIP_ORIGIN,
+    ZDJ_DECK_COMMAND_REQUEST_JUMP_TO_SKIP_ORIGIN,
+    ZDJ_DECK_COMMAND_REQUEST_SET_CUEPOINT,
+    ZDJ_DECK_COMMAND_REQUEST_NEXT_CUEPOINT,
+    ZDJ_DECK_COMMAND_REQUEST_CUE_START,
+    ZDJ_DECK_COMMAND_REQUEST_CUE_END,
+    ZDJ_DECK_COMMAND_REQUEST_HOTCUE,
+    ZDJ_DECK_COMMAND_REQUEST_PROCESSING,
+    ZDJ_DECK_COMMAND_REQUEST_RECEIVED,
+    ZDJ_DECK_COMMAND_REQUEST_COUNT
+} zdj_deck_control_command_request_state_t;
+
+typedef struct {
+    zdj_deck_control_command_request_state_t state;
+    int event_i_val;
+    int hotcue_num;
+    double d_val;
+    int req_sens[ ZDJ_DECK_COMMAND_REQUEST_COUNT ]; // sensitivity settings for req inputs
+    int req_sens_count[ ZDJ_DECK_COMMAND_REQUEST_COUNT ]; // sensitivity tracking for req inputs
+} zdj_deck_control_command_request_t;
 
 typedef struct zdj_deck_t {
     zdj_deck_type_t type;
@@ -273,13 +309,11 @@ typedef struct zdj_deck_t {
     bool safe_to_deinit; // playback is stopped - okay to run teardown.
 
     // Deck Manager API
-    // update_state is called from the slow deck_manager thread.
-    void ( *update_state )( struct zdj_deck_t * );
+    void ( *update_state )( struct zdj_deck_t * ); // Deck Mgr. thread @ 4Hz
     void ( *begin_teardown )( struct zdj_deck_t * );
     void ( *deinit )( struct zdj_deck_t * );
 
     // UI API
-    // UI load/unload CBs
     void ( *ui_load_cb )( struct zdj_deck_t * );
     void ( *ui_unload_cb )( struct zdj_deck_t * );
 
@@ -289,12 +323,24 @@ typedef struct zdj_deck_t {
     void ( *push_edge_data )( void *, zdj_pipeline_node_t *, bool );
 
     // Transport Control API
-    // update_controls is called from the Controls thread ~900 kHz.
-    void ( *handle_control_event )( struct zdj_deck_t *, zdj_control_event_t * );
-    // void ( *update_transport )( struct zdj_deck_t * );
-    void ( *update_transport_inputs )( struct zdj_deck_t * );
-    void ( *update_transport_outputs )( struct zdj_deck_t * );
     zdj_deck_control_state_t controls;
+    void ( *handle_control_event )( struct zdj_deck_t *, zdj_control_event_t * ); // Control thread @800Hz
+
+    // Platter API
+    zdj_deck_control_platter_request_t platter_reqs[ 8 ]; // Handle up to 8 reqs in a cycle
+    int platter_req_write_index;
+    void ( *update_platter_req )( struct zdj_deck_t * ); // Control thread @800Hz
+    void ( *update_platter_model )( struct zdj_deck_t * ); // Soundcard thread @buffer rate   
+    
+    // DEPRECATED
+    void ( *update_transport_inputs )( struct zdj_deck_t * deck ); 
+    void ( *update_transport_outputs )( struct zdj_deck_t * deck ); 
+    // DEPRECATED
+
+    // Command API
+    zdj_deck_control_command_request_t command_req;
+    void ( *update_command_req )( struct zdj_deck_t * ); // Control thread @800Hz
+    bool ( *update_command_models )( struct zdj_deck_t * ); // Soundcard thread @buffer rate
 
     // Sync API
     bool can_sync;
@@ -303,19 +349,6 @@ typedef struct zdj_deck_t {
     void ( *offset_sync_bpm )( struct zdj_deck_t *, double );
     void ( *offset_pitch_setting )( struct zdj_deck_t *, double );
     void ( *request_sync_mult )( struct zdj_deck_t *, float );
-
-    // Public Thread-Safe Loop/Skip API
-    void ( *new_loop )( struct zdj_deck_t *, double, bool );
-    void ( *disable_loop )( struct zdj_deck_t * );
-    void ( *move_loop )( struct zdj_deck_t *, double );
-    void ( *resize_loop )( struct zdj_deck_t *, double );
-    void ( *new_skip )( struct zdj_deck_t *, double, zdj_deck_control_skip_type_t );
-    void ( *new_hyperscrub )( struct zdj_deck_t *, double );
-    void ( *new_needledrop )( struct zdj_deck_t *, double );
-
-    // Address API
-    int64_t ( *get_resource_addr )( struct zdj_deck_t * );
-    void ( *set_resource_addr )( struct zdj_deck_t *, int64_t );
 
     // internal state
     void * state;

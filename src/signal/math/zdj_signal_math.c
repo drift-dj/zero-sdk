@@ -94,7 +94,9 @@ void zdj_signal_naive_resample_audio(
     int in_channel_count,
     float * out_buf,
     int64_t out_sample_count,
-    int out_channel_count
+    int out_channel_count,
+	float start_fade,
+    float end_fade
 ) {
 	double rate = (in_end_coord - in_start_coord) / (double)out_sample_count;
 
@@ -107,17 +109,9 @@ void zdj_signal_naive_resample_audio(
 	double interp_val;
 	double samp;
 
-	double hyperscrub_fade = 1.0;
-	// if( rate > 20.0 ) {
-	// 	hyperscrub_fade = (140.0 - rate - 20.0) / 140.0;
-	// } else if ( rate < -20.0 ) { 
-	// 	hyperscrub_fade = (140 - fabs(rate) - 20.0) / 140.0;
-	// }
-	if( fabs( rate ) > 17 ) { hyperscrub_fade = (90.0 - fabs(rate) - 17.0) / 90.0; }
-	if( hyperscrub_fade < 0.0 ) { hyperscrub_fade = 0.0; }
-
 	// printf( "%1.1f\n", rate );
-
+	float fade_diff = (end_fade - start_fade);
+	float fade_val;
 	for( int i=0; i<out_sample_count; i++ ) {
 		// printf( "resamp: rat: %1.3f, out i %d, src cur_sam: %1.3f\n", rate, i, cur_sample );
 		// Gather neighboring samples for interpolation
@@ -132,11 +126,12 @@ void zdj_signal_naive_resample_audio(
 		right_neighbor_index = right_neighbor_sample * in_channel_count;
 
 		// printf( "1.1: %1.1f %d %d %1.3f\n", rate, left_neighbor_index, right_neighbor_index, interp_val );
+		fade_val = start_fade + (fade_diff * ((float)i / (float)out_sample_count));
 		
 		samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
 		samp += in_buf[ right_neighbor_index ] * interp_val;
 		// printf( "1.2 %d\n", i*out_channel_count );
-		out_buf[ i*out_channel_count ] = samp * hyperscrub_fade;
+		out_buf[ i*out_channel_count ] = samp * fade_val;
 
 		// printf( "1.3\n" );
 		if( out_channel_count == 2 ) {
@@ -150,7 +145,7 @@ void zdj_signal_naive_resample_audio(
 			}
 			samp = in_buf[ left_neighbor_index ] * (1.0 - interp_val);
 			samp += in_buf[ right_neighbor_index ] * interp_val;
-			out_buf[ i*out_channel_count+1 ] = samp * hyperscrub_fade;
+			out_buf[ i*out_channel_count+1 ] = samp * fade_val;
 			// printf( "3\n" );
 		}
 
@@ -179,6 +174,10 @@ float zdj_signal_gen_sine(
         // printf( "%1.2f/%1.0f\n", p, v );
     }
     return p;
+}
+
+bool zdj_signal_bounds_check( double coord, double start, double end ) {
+	return ( coord >= start ) && ( coord <= end );
 }
 
 // float zdj_signal_accum_floats( float val_1, float val_2 ) {

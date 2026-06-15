@@ -377,7 +377,7 @@ void _init_key_layout( zdj_view_t * view ) {
     // Setup normal view
     zdj_view_t * char_label = zdj_new_label_view( title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, char_label );
-    char_label->frame.x = (ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH/2) - (char_label->frame.w/2) + 1;
+    char_label->frame.x = round((ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH/2) - (char_label->frame.w/2) + 1);
     char_label->frame.y = -1;
     
     // Setup hilite view
@@ -448,7 +448,7 @@ void _add_key_item( zdj_view_t * menu, zdj_keyboard_key_t * key, int row, int co
     item->state = state;
     item->frame.x = 1 + (col * ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH);
     item->frame.y = (row * ZDJ_TEXT_INPUT_VIEW_ROW_HEIGHT) + 1;
-    item->frame.w = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH;
+    // item->frame.w = ZDJ_TEXT_INPUT_VIEW_COLUMN_WIDTH;
     item->frame.h = ZDJ_TEXT_INPUT_VIEW_ROW_HEIGHT;
     state->handles_hmi = true;
     zdj_menu_view_add_item( menu, item );

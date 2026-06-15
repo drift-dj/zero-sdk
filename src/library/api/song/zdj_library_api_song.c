@@ -160,3 +160,23 @@ zdj_health_status_t zdj_library_fetch_song_entity_ids(
         sqlite3_finalize( stmt );
     }
 }
+
+zdj_health_status_t zdj_library_delete_song( 
+    zdj_library_song_t * song, 
+    sqlite3 * db 
+) {
+    int count = 0;
+    int res;
+    char sql[ 4096 ];
+    snprintf( sql, sizeof( sql ), 
+        // Delete record
+        "DELETE FROM %s WHERE entity_id LIKE '%s'",
+        ZDJ_LIBRARY_TABLE_SONG,
+        song->entity_id
+    );
+    zdj_sql_exec( sql, db );
+    
+    zdj_sql_db_flush( db );
+    
+    return ZDJ_HEALTH_STATUS_OKAY;
+}

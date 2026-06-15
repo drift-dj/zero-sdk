@@ -22,7 +22,7 @@ static void _deinit_state( zdj_view_t * view );
 zdj_view_t * zdj_new_record_meter_view( void ) {
     // printf( "zdj_new_audio_stereo_meter_view\n" );
     zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,115,15} );
-    audio_meter_view->type = ZDJ_VIEW_BASE;
+    audio_meter_view->type = ZDJ_VIEW_MENU_ITEM;
     audio_meter_view->draw = &_draw;
     audio_meter_view->deinit_state = &_deinit_state;
 

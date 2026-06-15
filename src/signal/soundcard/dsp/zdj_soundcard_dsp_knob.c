@@ -80,7 +80,7 @@ static double _display_val_for_12db_gain_val( float val ) {
 
 static void _process_12db_gain_fast( float * knob, zdj_soundcard_dsp_knob_model_t model, int input_val ) {
     float knob_val = *knob;
-    knob_val += ((float)input_val * 0.069) * (1+(knob_val * 0.41));
+    knob_val += ((float)input_val * 0.02) * (1+(knob_val * 0.4));
     if( knob_val > (float)ZDJ_SOUNDCARD_12DB_GAIN ) { knob_val = (float)ZDJ_SOUNDCARD_12DB_GAIN; }
     else if( knob_val < 0 ) { knob_val = 0; }
     *knob = knob_val;
@@ -88,7 +88,7 @@ static void _process_12db_gain_fast( float * knob, zdj_soundcard_dsp_knob_model_
 
 static void _process_0_1_fast( float * knob, zdj_soundcard_dsp_knob_model_t model, int input_val ) {
     float knob_val = *knob;
-    knob_val += ((float)input_val * 0.043) * (0.04+(knob_val * 0.071));
+    knob_val += ((float)input_val * 0.03) * (0.04+(knob_val * 0.07));
     if( knob_val > 1.0 ) { knob_val = 1.0; }
     else if( knob_val < 0.0 ) { knob_val = 0.0; }
     *knob = knob_val;

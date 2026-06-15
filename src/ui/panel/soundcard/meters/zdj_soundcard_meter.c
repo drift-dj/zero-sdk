@@ -59,8 +59,14 @@ zdj_soundcard_meter_label_t zdj_meter_label_for_node( zdj_soundcard_node_t * nod
         case ZDJ_SOUNDCARD_NODE_NAME_CV_1: return ZDJ_SOUNDCARD_LABEL_CV_2;
         case ZDJ_SOUNDCARD_NODE_NAME_CV_2: return ZDJ_SOUNDCARD_LABEL_CV_3;
         case ZDJ_SOUNDCARD_NODE_NAME_CV_3: return ZDJ_SOUNDCARD_LABEL_CV_4;
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT: return ZDJ_SOUNDCARD_LABEL_USB_12;
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN: return ZDJ_SOUNDCARD_LABEL_USB_12;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0: 
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_USB_OUT; } else { return ZDJ_SOUNDCARD_LABEL_USB_OUT_L; }
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_USB_OUT; } else { return ZDJ_SOUNDCARD_LABEL_USB_OUT_R; }
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: 
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_USB_IN; } else { return ZDJ_SOUNDCARD_LABEL_USB_IN_L; }
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1:
+            if( node->stereo ) { return ZDJ_SOUNDCARD_LABEL_USB_IN; } else { return ZDJ_SOUNDCARD_LABEL_USB_IN_R; }
         default: ZDJ_SOUNDCARD_LABEL_MAIN_BUS;
     }
 }
@@ -86,12 +92,12 @@ zdj_ui_asset_t zdj_meter_asset_for_label( zdj_soundcard_meter_label_t label ) {
         case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_2: return ZDJ_UI_ASSET_MIXER_ANA_OUT_2;
         case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_3: return ZDJ_UI_ASSET_MIXER_ANA_OUT_3;
         case ZDJ_SOUNDCARD_LABEL_ANALOG_OUT_4: return ZDJ_UI_ASSET_MIXER_ANA_OUT_4;
-        case ZDJ_SOUNDCARD_LABEL_USB_12: return ZDJ_UI_ASSET_MIXER_USB_IO_12;
-        case ZDJ_SOUNDCARD_LABEL_USB_34: return ZDJ_UI_ASSET_MIXER_USB_IO_34;
-        case ZDJ_SOUNDCARD_LABEL_USB_1: return ZDJ_UI_ASSET_MIXER_USB_IO_1;
-        case ZDJ_SOUNDCARD_LABEL_USB_2: return ZDJ_UI_ASSET_MIXER_USB_IO_2;
-        case ZDJ_SOUNDCARD_LABEL_USB_3: return ZDJ_UI_ASSET_MIXER_USB_IO_3;
-        case ZDJ_SOUNDCARD_LABEL_USB_4: return ZDJ_UI_ASSET_MIXER_USB_IO_4;
+        case ZDJ_SOUNDCARD_LABEL_USB_IN: return ZDJ_UI_ASSET_MIXER_USB_IO_IN;
+        case ZDJ_SOUNDCARD_LABEL_USB_OUT: return ZDJ_UI_ASSET_MIXER_USB_IO_OUT;
+        case ZDJ_SOUNDCARD_LABEL_USB_IN_L: return ZDJ_UI_ASSET_MIXER_USB_IN_L;
+        case ZDJ_SOUNDCARD_LABEL_USB_IN_R: return ZDJ_UI_ASSET_MIXER_USB_IN_R;
+        case ZDJ_SOUNDCARD_LABEL_USB_OUT_L: return ZDJ_UI_ASSET_MIXER_USB_OUT_L;
+        case ZDJ_SOUNDCARD_LABEL_USB_OUT_R: return ZDJ_UI_ASSET_MIXER_USB_OUT_R;
         case ZDJ_SOUNDCARD_LABEL_AUX_12: return ZDJ_UI_ASSET_MIXER_AUX_12;
         case ZDJ_SOUNDCARD_LABEL_AUX_34: return ZDJ_UI_ASSET_MIXER_AUX_34;
         case ZDJ_SOUNDCARD_LABEL_AUX_1: return ZDJ_UI_ASSET_MIXER_AUX_1;

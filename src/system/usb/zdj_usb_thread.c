@@ -155,7 +155,6 @@ static void _update_msd_gadget_state( zdj_usb_state_t * state ) {
     }
 }
 
-
 static void _update_hosted_devices( zdj_usb_state_t * state ) {
     // Count lines in devices output.
     int line_count = 0;
@@ -170,12 +169,17 @@ static void _update_hosted_devices( zdj_usb_state_t * state ) {
     }
     pclose( fp );
 
-
     // If line_count doesn't match last time, refresh the devices and flag.
     if( line_count != state->host_state.devices_line_count ) {
         printf( "found updated line count\n" );
         zdj_usb_update_attached_devices( );
-        // zdj_usb_scan_attached_alsa_devices( state );
+        // Loop thru attached devices and find any matching ALSA cards
+        // IMPORTANT - Currently this isn't fully implemented.
+        // Only 1 device will be recognized at a time
+        if( zdj_usb_state->host_state.attached.count > 0 ) {
+            zdj_usb_device_t * device = zdj_usb_state->host_state.attached.devices;
+            zdj_usb_update_alsa_profiles( state, device );
+        }
 
         state->host_state.devices_line_count = line_count;
 
@@ -197,6 +201,10 @@ static void _update_hosted_devices( zdj_usb_state_t * state ) {
 // Perform a blocking switch sequence to the requested state.
 // This is intended to be called from the USB state thread.
 static void _switch_state( zdj_usb_state_t * state ) {
+    zdj_usb_log_begin( );
+    sprintf( zdj_usb_state->log_str, "USB Switch State\n" );
+    zdj_usb_log( zdj_usb_state->log_str );
+
     // Make sure we have the latest state
     zdj_usb_update_mode_from_sysfs( zdj_usb_state );
     
@@ -212,8 +220,13 @@ static void _switch_state( zdj_usb_state_t * state ) {
     }
 
     printf( "zdj_usb_switch_state: %d/%d %d\n", request.mode, state->mode_state.mode, request.submode );
+    sprintf( zdj_usb_state->log_str, "From:%s To:%s\n", 
+        zdj_usb_mode_name[ state->mode_state.mode ], 
+        zdj_usb_mode_name[ request.mode ] 
+    );
+    zdj_usb_log( zdj_usb_state->log_str );
 
-    struct timespec settle_sleep = { 1, 0 };
+    struct timespec settle_sleep = { 0, 100000000 };
 
     char cmd[ 256 ];
     strcpy( state->switch_data.switch_str_1, " " );
@@ -229,12 +242,15 @@ static void _switch_state( zdj_usb_state_t * state ) {
         }
 
         printf( "Tearing down gadget\n" );
+        sprintf( zdj_usb_state->log_str, "Tearing down gadget state\n" );
+        zdj_usb_log( zdj_usb_state->log_str );
         strcpy( state->switch_data.switch_str_1, "Removing Gadget(s)" );
         state->switch_data.has_update = true;
         strcpy( cmd, "/root/boot/teardown_gadget.sh" );
         system( cmd );
         nanosleep( &settle_sleep, NULL );
-        settle_sleep.tv_sec = 1;
+        // settle_sleep.tv_sec = 1;
+        settle_sleep.tv_nsec = 100000000;
     }
 
 
@@ -242,6 +258,8 @@ static void _switch_state( zdj_usb_state_t * state ) {
     if( request.mode != zdj_usb_state->mode_state.mode &&
         zdj_usb_state->mode_state.mode > ZDJ_USB_MODE_OFFLINE ) {
         printf( "Switching USB to offline\n" );
+        sprintf( zdj_usb_state->log_str, "modprobe reset seq:\n" );
+        zdj_usb_log( zdj_usb_state->log_str );
 
         strcpy( state->switch_data.switch_str_1, "Resetting USB Stack" );
         // strcpy( cmd, "/root/boot/switch_to_usb_offline.sh" );
@@ -250,47 +268,64 @@ static void _switch_state( zdj_usb_state_t * state ) {
         strcpy( state->switch_data.switch_str_2, "Shell" );
         state->switch_data.has_update = true;
         printf( "removing shell\n" );
+        sprintf( zdj_usb_state->log_str, "modprobe -r usb_f_acm\n" );
+        zdj_usb_log( zdj_usb_state->log_str );
         strcpy( cmd, "modprobe -r usb_f_acm" );
         system( cmd );
         nanosleep( &settle_sleep, NULL );
-        settle_sleep.tv_sec = 1;
+        // settle_sleep.tv_sec = 1;
+        settle_sleep.tv_nsec = 100000000;
 
         strcpy( state->switch_data.switch_str_2, "libcomposite" );
         state->switch_data.has_update = true;
         printf( "removing libcomposite\n" );
+        sprintf( zdj_usb_state->log_str, "modprobe -r libcomposite\n" );
+        zdj_usb_log( zdj_usb_state->log_str );
         strcpy( cmd, "modprobe -r libcomposite" );
         system( cmd );
         nanosleep( &settle_sleep, NULL );
-        settle_sleep.tv_sec = 1;
+        // settle_sleep.tv_sec = 1;
+        settle_sleep.tv_nsec = 100000000;
 
         strcpy( state->switch_data.switch_str_2, "tcpci" );
         state->switch_data.has_update = true;
         printf( "removing tcpci\n" );
+        sprintf( zdj_usb_state->log_str, "modprobe -r tcpci\n" );
+        zdj_usb_log( zdj_usb_state->log_str );
         strcpy( cmd, "modprobe -r tcpci" );
         system( cmd );
         nanosleep( &settle_sleep, NULL );
-        settle_sleep.tv_sec = 1;
+        // settle_sleep.tv_sec = 1;
+        settle_sleep.tv_nsec = 100000000;
 
         strcpy( state->switch_data.switch_str_2, "ci_hdrc_imx" );
         state->switch_data.has_update = true;
         printf( "removing ci_hdrc_imx\n" );
+        sprintf( zdj_usb_state->log_str, "modprobe -r ci_hdrc_imx\n" );
+        zdj_usb_log( zdj_usb_state->log_str );
         strcpy( cmd, "modprobe -r ci_hdrc_imx" );
         system( cmd );
         printf( "3\n" );
         nanosleep( &settle_sleep, NULL );
-        settle_sleep.tv_sec = 1;
+        // settle_sleep.tv_sec = 1;
+        settle_sleep.tv_nsec = 100000000;
 
         strcpy( state->switch_data.switch_str_2, "usbmisc_imx" );
         state->switch_data.has_update = true;
         printf( "adding usbmisc_imx\n" );
+        sprintf( zdj_usb_state->log_str, "modprobe usbmisc_imx\n" );
+        zdj_usb_log( zdj_usb_state->log_str );
         strcpy( cmd, "modprobe usbmisc_imx" );
         system( cmd );
         nanosleep( &settle_sleep, NULL );
-        settle_sleep.tv_sec = 1;
+        // settle_sleep.tv_sec = 1;
+        settle_sleep.tv_nsec = 100000000;
         
     }
     
     printf( "Bringing up USB stack:\n" );
+    sprintf( zdj_usb_state->log_str, "Bringing up USB stack script seq:\n" );
+    zdj_usb_log( zdj_usb_state->log_str );
     // printf( "req:%p\n", request );
     // printf( "req:%d\n", request.mode );
     // printf( "cur:%d\n",  zdj_usb_state->mode_state.mode );
@@ -301,6 +336,8 @@ static void _switch_state( zdj_usb_state_t * state ) {
             strcpy( state->switch_data.switch_str_2, " " );
             state->switch_data.has_update = true;
             printf( "Bringing up USB host\n" );
+            sprintf( zdj_usb_state->log_str, "switch_to_usb_host.sh\n" );
+            zdj_usb_log( zdj_usb_state->log_str );
             strcpy( cmd, "/root/boot/switch_to_usb_host.sh" );
             system( cmd );
             break;
@@ -313,15 +350,20 @@ static void _switch_state( zdj_usb_state_t * state ) {
                 strcpy( state->switch_data.switch_str_2, " " );
                 state->switch_data.has_update = true;
                 printf( "Switching to USB Gadget\n" );
+                sprintf( zdj_usb_state->log_str, "switch_to_usb_gadget.sh\n" );
+                zdj_usb_log( zdj_usb_state->log_str );
                 strcpy( cmd, "/root/boot/switch_to_usb_gadget.sh" );
                 system( cmd );
                 nanosleep( &settle_sleep, NULL );
+                settle_sleep.tv_nsec = 100000000;
             }
             // If we're switching to gadget, invoke the appropriate gadget bringup script.
             if( request.gadget_config.shell && request.gadget_config.mass_storage ) {
                 strcpy( state->switch_data.switch_str_2, "Func:  Shell + Drive" );
                 state->switch_data.has_update = true;
                 printf( "Bringing up Drive + Shell gadget\n" );
+                sprintf( zdj_usb_state->log_str, "bringup_shell_drive_gadget.sh\n" );
+                zdj_usb_log( zdj_usb_state->log_str );
                 strcpy( cmd, "/root/boot/bringup_shell_drive_gadget.sh" );
                 system( cmd );
                 nanosleep( &settle_sleep, NULL );
@@ -329,6 +371,8 @@ static void _switch_state( zdj_usb_state_t * state ) {
                 strcpy( state->switch_data.switch_str_2, "Func:  Shell" );
                 state->switch_data.has_update = true;
                 printf( "Bringing up Shell gadget\n" );
+                sprintf( zdj_usb_state->log_str, "bringup_shell_gadget.sh\n" );
+                zdj_usb_log( zdj_usb_state->log_str );
                 strcpy( cmd, "/root/boot/bringup_shell_gadget.sh" );
                 system( cmd );
                 nanosleep( &settle_sleep, NULL );
@@ -337,6 +381,10 @@ static void _switch_state( zdj_usb_state_t * state ) {
     }
 
     printf( "USB switch done\n" );
+    sprintf( zdj_usb_state->log_str, "USB Switch State Done\n" );
+    zdj_usb_log( zdj_usb_state->log_str );
     state->switch_data.state = ZDJ_USB_SUBMODE_SWITCH_SUCCESS;
     state->switch_data.has_update = true;
+
+    zdj_usb_log_end( );
 }

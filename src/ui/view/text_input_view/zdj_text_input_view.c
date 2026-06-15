@@ -194,13 +194,10 @@ static void _zdj_text_input_view_update_keyboard_char( zdj_view_t * view ) {
     zdj_view_t * keyboard_menu = view_state->keyboard_menu;
 
     // Set keyboard to cursor char
-    char c;
-    if( input_buffer_state->cursor_index == strlen( input_buffer_state->str ) ) {
-        c = ' ';
-    } else {
-        c = input_buffer_state->str[ input_buffer_state->cursor_index ];
+    if( input_buffer_state->cursor_index < strlen( input_buffer_state->str ) ) {
+        char c = input_buffer_state->str[ input_buffer_state->cursor_index ];
+        zdj_text_input_keyboard_set_current_char( keyboard_menu, c );
     }
-    zdj_text_input_keyboard_set_current_char( keyboard_menu, c );
 }
 
 void _zdj_text_input_view_handle_key_release( zdj_view_t * view ) {

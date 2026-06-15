@@ -25,6 +25,7 @@ zdj_library_playlist_t * zdj_library_create_playlist_dto( void ) {
 }
 
 zdj_library_playlist_t * zdj_library_make_playlist_dto_for_table_name( char * library_entity_id, char * playlist_table_name, sqlite3 * db ) {
+    // printf( "zdj_library_make_playlist_dto_for_table_name\n" );
     zdj_library_playlist_t * playlist = calloc( 1, sizeof( zdj_library_playlist_t ) );
     playlist->songs = NULL;
 
@@ -35,8 +36,9 @@ zdj_library_playlist_t * zdj_library_make_playlist_dto_for_table_name( char * li
     playlist->song_count = zdj_sql_rows_in_table( playlist->table_name, NULL, db );
 
     if( playlist->song_count > 0 ) {
+
         char * song_eids[ playlist->song_count ];
-        
+
         int res;
         int row = 0;
         char sql[ 2048 ];
@@ -49,16 +51,17 @@ zdj_library_playlist_t * zdj_library_make_playlist_dto_for_table_name( char * li
                 zdj_library_song_t * _song = zdj_library_fetch_song_dto_for_entity_id( 
                     (char*)sqlite3_column_text ( stmt, 0 ), db
                 );
-                zdj_library_fetch_menu_song_graph( _song, db );
-                if( !playlist->songs ) { playlist->songs = _song; }
-                if( _prev_song ) { _prev_song->next = _song; }
-                _song->prev = _prev_song;
-                _prev_song = _song;
+                if( _song ) {
+                    zdj_library_fetch_menu_song_graph( _song, db );
+                    if( !playlist->songs ) { playlist->songs = _song; }
+                    if( _prev_song ) { _prev_song->next = _song; }
+                    _song->prev = _prev_song;
+                    _prev_song = _song;
+                }
             }
             sqlite3_finalize( stmt );
         }
     }
-    
     return playlist;
 }
 
@@ -210,17 +213,17 @@ void zdj_library_playlist_remove_song(
     while ( _song ) {
         zdj_library_song_t * next_song = _song->next;
         if( !strcmp( _song->entity_id, song->entity_id ) ) {
-            printf( "found matching song eid - removing %p %p\n", next_song, _song->prev );
+            // printf( "found matching song eid - removing %p %p\n", next_song, _song->prev );
 
             if( next_song != NULL ) {
-                printf( "next_song: %p\n", next_song );
+                // printf( "next_song: %p\n", next_song );
                 next_song->prev = _song->prev; 
             }
             if( _song->prev != NULL ) { 
-                printf( "song->prev: %p\n", _song->prev );
+                // printf( "song->prev: %p\n", _song->prev );
                 _song->prev->next = next_song; 
             }
-            zdj_library_free_song_graph( _song );
+            // zdj_library_free_song_graph( _song );
             playlist->song_count--;
         }
         _song = _song->next;

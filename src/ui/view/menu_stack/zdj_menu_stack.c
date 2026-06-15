@@ -81,13 +81,6 @@ static void _deinit_state( zdj_view_t * menu_stack ) {
 void zdj_menu_stack_deploy( zdj_view_t * menu_stack ) {
     zdj_menu_stack_state_t * state = (zdj_menu_stack_state_t*)menu_stack->state;
     // Run in_anim
-    // if( menu_stack->in_anim ) {
-    //     menu_stack->in_anim->cb_fn = NULL;
-    //     if( menu_stack->out_anim ) { menu_stack->out_anim->cb_fn = NULL; }
-    //     ((anim_init_t)menu_stack->in_anim->init_fn)( menu_stack->in_anim, menu_stack );
-    //     menu_stack->in_anim->view = menu_stack;
-    //     menu_stack->anim = menu_stack->in_anim;
-    // }
     menu_stack->in_anim.cb_fn = NULL;
     menu_stack->out_anim.cb_fn = NULL;
     ((anim_init_t)menu_stack->in_anim.init_fn)( &menu_stack->in_anim, menu_stack );
@@ -98,6 +91,7 @@ void zdj_menu_stack_deploy( zdj_view_t * menu_stack ) {
     state->is_enabled = true;
     zdj_view_t * top_menu = zdj_view_stack_top_subview_of( menu_stack );
     zdj_activate_control_map( top_menu->map );
+    top_menu->needs_layout_init = true;
 }
 
 void zdj_menu_stack_retract( zdj_view_t * menu_stack ) {

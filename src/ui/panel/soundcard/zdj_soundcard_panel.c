@@ -5,6 +5,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/signal/pipeline/node/audio/io/zdj_io_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -323,6 +324,23 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
         );
     }
 
+    // // Add USB port if connected
+    // zdj_io_usb_node_state_t * usb_io_node_state = (zdj_io_usb_node_state_t*)zdj_soundcard->usb_io_node->state;
+    // if( usb_io_node_state->playback_available ) {
+        if( _single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 ) ) {
+            meter_x += zdj_soundcard_view_add_meter_for_node( 
+                menu_view, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0, true, false, meter_x 
+            );
+        } else {
+            meter_x += zdj_soundcard_view_add_meter_for_node( 
+                menu_view, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0, true, false, meter_x 
+            );
+            meter_x += zdj_soundcard_view_add_meter_for_node( 
+                menu_view, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1, true, false, meter_x 
+            );
+        }
+    // }
+
     // Add analog in ports 0+1
     if( _single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 ) ) {
         meter_x += zdj_soundcard_view_add_meter_for_node( 
@@ -351,6 +369,21 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
         );
     }
 
+    // // Add USB port if connected
+    // if( usb_io_node_state->capture_available ) {
+        if( _single_meter_for_port( ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 ) ) {
+            meter_x += zdj_soundcard_view_add_meter_for_node( 
+                menu_view, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0, true, false, meter_x 
+            );
+        } else {
+            meter_x += zdj_soundcard_view_add_meter_for_node( 
+                menu_view, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0, true, false, meter_x 
+            );
+            meter_x += zdj_soundcard_view_add_meter_for_node( 
+                menu_view, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1, true, false, meter_x 
+            );
+        }
+    // }
 
     // Add Button Stack
 
@@ -465,6 +498,9 @@ zdj_view_t * zdj_soundcard_view_new_meter_for_node(
         // Don't display a meter for something without linkage
         // Revise this to show a severed state
         return NULL;
+    } else if ( zdj_soundcard_node_name_is_usb( node->name ) ) {
+        if( node->stereo ) { meter = zdj_new_usb_stereo_meter_view( node, label, show_detail ); } 
+        else { meter = zdj_new_usb_mono_meter_view( node, label, show_detail ); }
     } else if ( zdj_soundcard_node_name_is_audio( node->name ) ) {
         if( node->stereo && !mono ) { meter = zdj_new_audio_stereo_meter_view( node, label, show_detail ); } 
         else { meter = zdj_new_audio_mono_meter_view( node, label, show_detail ); }
@@ -472,9 +508,6 @@ zdj_view_t * zdj_soundcard_view_new_meter_for_node(
         meter = zdj_new_clock_meter_view( node, label, show_detail );
     } else if ( zdj_soundcard_node_name_is_cv( node->name ) ) {
         meter = zdj_new_cv_meter_view( node, label, show_detail );
-    } else if ( zdj_soundcard_node_name_is_usb( node->name ) ) {
-        if( node->stereo ) { meter = zdj_new_usb_stereo_meter_view( node, label, show_detail ); } 
-        else { meter = zdj_new_usb_mono_meter_view( node, label, show_detail ); }
     } else if ( zdj_soundcard_node_name_is_midi( node->name ) ) {
         meter = zdj_new_midi_meter_view( node, label, show_detail );
     }
@@ -554,6 +587,8 @@ static bool _single_meter_for_port( zdj_soundcard_node_name_t name ) {
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
+    case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0:
+    case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
         // printf( "analog out\n" );
         port_node = zdj_soundcard_get_node_for_name( zdj_soundcard, name );
         source_node = zdj_soundcard_get_node_for_name( zdj_soundcard, port_node->input_links->source_node );
@@ -563,6 +598,8 @@ static bool _single_meter_for_port( zdj_soundcard_node_name_t name ) {
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
     case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3:
+    case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0:
+    case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1:
         // printf( "analog in\n" );
         port_node = zdj_soundcard_get_node_for_name( zdj_soundcard, name );
         if( zdj_soundcard_node_name_is_audio( port_node->name ) && port_node->stereo ) { return true; }

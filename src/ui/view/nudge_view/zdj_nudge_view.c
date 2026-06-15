@@ -40,13 +40,13 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_nudge_state_t * nudge_state = (zdj_nudge_state_t*)view->state;  
     
     // Hide if nudge is not active
-    if( fabs( nudge_state->deck->controls.platter.slip.tempo_nudge_rate ) < 0.028 ) {
+    if( fabs( nudge_state->deck->controls.platter.slip.tempo_nudge_rate ) < 5.0 ) {
         nudge_state->arrow_l->frame.x = -20;
         nudge_state->arrow_r->frame.x = -20;
     
     // Calculate x based on nudge velocity
     } else {
-        double arrow_x = nudge_state->deck->controls.platter.slip.tempo_nudge_rate * -15.0;
+        double arrow_x = nudge_state->deck->controls.platter.slip.tempo_nudge_rate * 0.1;
         if( arrow_x > 0 ) {
             nudge_state->arrow_r->frame.x = (view->frame.w / 2) + arrow_x;
             nudge_state->arrow_l->frame.x = -10;

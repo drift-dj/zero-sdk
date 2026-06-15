@@ -37,6 +37,9 @@
 #define ZDJ_RECORDING_BUF_LEN 	ZDJ_SOUNDCARD_BUF_LEN * ZDJ_RECORDING_BUF_COUNT * 2 // Stereo
 #define ZDJ_RECORDING_BUF_SIZE 	ZDJ_RECORDING_BUF_LEN * sizeof( float ) // Memory size
 
+#define ZDJ_RECORDING_ARTIST "Zero Recording"
+#define ZDJ_RECORDING_PREFIX "recording_"
+
 typedef struct {
 	char chunk_id[4];
 	uint32_t chunk_size;
@@ -83,8 +86,8 @@ typedef struct {
 
 zdj_pipeline_node_t * zdj_new_audio_record_node( zdj_soundcard_node_t * soundcard_node );
 
-void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node );
-void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save );
+void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node, bool notify );
+void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save, bool notify );
 void zdj_audio_record_put_capture_time( zdj_pipeline_node_t * record_node, char * str );
 
 #endif

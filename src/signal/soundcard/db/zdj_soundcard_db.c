@@ -75,6 +75,15 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->ana_out_3_stereo = true;
     dto->ana_out_3_sig = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_LOW;
 
+    // USB I/O
+    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
+    dto->usb_in_0_stereo = true;
+    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
+    dto->usb_in_1_stereo = true;
+
+    dto->usb_out_0_stereo = true;
+    dto->usb_out_1_stereo = true;
+
     // Admin bus outs
     dto->annot_bus_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
     dto->annot_bus_stereo = false;
@@ -84,6 +93,8 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->main_bus_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2;
     dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3;
     dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS;
+    dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0;
+    dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1;
     dto->main_bus_stereo = true;
     dto->record_bus_stereo = true;
     
@@ -180,10 +191,9 @@ static void _zdj_soundcard_create_linkage_table( sqlite3 * db ) {
     // Create tables
     char sql[ 8192 ];
     // Audio
-    strcpy( sql, "CREATE TABLE 'Linkage' ( 'entity_id' TEXT NOT NULL UNIQUE, 'name' TEXT NOT NULL, 'ana_out_0_sig' INT NOT NULL DEFAULT 0, 'ana_out_0_stereo' INT NOT NULL DEFAULT 1, 'ana_out_1_sig' INT NOT NULL DEFAULT 0, 'ana_out_1_stereo' INT NOT NULL DEFAULT 1, 'ana_out_2_sig' INT NOT NULL DEFAULT 0, 'ana_out_2_stereo' INT NOT NULL DEFAULT 1, 'ana_out_3_sig' INT NOT NULL DEFAULT 0, 'ana_out_3_stereo' INT NOT NULL DEFAULT 1, 'ana_in_0_link_map' INT NOT NULL DEFAULT 0, 'ana_in_0_dsp_eid' TEXT NOT NULL, 'ana_in_0_sig' INT NOT NULL DEFAULT 0, 'ana_in_0_stereo' INT NOT NULL DEFAULT 1, 'ana_in_0_mute' INT NOT NULL DEFAULT 0, 'ana_in_1_link_map' INT NOT NULL DEFAULT 0, 'ana_in_1_dsp_eid' TEXT NOT NULL, 'ana_in_1_sig' INT NOT NULL DEFAULT 0, 'ana_in_1_stereo' INT NOT NULL DEFAULT 1, 'ana_in_1_mute' INT NOT NULL DEFAULT 0, 'ana_in_2_link_map' INT NOT NULL DEFAULT 0, 'ana_in_2_dsp_eid' TEXT NOT NULL, 'ana_in_2_sig' INT NOT NULL DEFAULT 0, 'ana_in_2_stereo' INT NOT NULL DEFAULT 1, 'ana_in_2_mute' INT NOT NULL DEFAULT 0, 'ana_in_3_link_map' INT NOT NULL DEFAULT 0, 'ana_in_3_dsp_eid' TEXT NOT NULL, 'ana_in_3_sig' INT NOT NULL DEFAULT 0, 'ana_in_3_stereo' INT NOT NULL DEFAULT 1, 'ana_in_3_mute' INT NOT NULL DEFAULT 0, 'main_bus_link_map' INT NOT NULL DEFAULT 0, 'main_bus_dsp_eid' TEXT NOT NULL, 'main_bus_stereo' INT NOT NULL DEFAULT 1, 'main_bus_mute' INT NOT NULL DEFAULT 0, 'cue_bus_link_map' INT NOT NULL DEFAULT 0, 'cue_bus_dsp_eid' TEXT NOT NULL, 'cue_bus_stereo' INT NOT NULL DEFAULT 1, 'cue_bus_mute' INT NOT NULL DEFAULT 0, 'annot_bus_link_map' INT NOT NULL DEFAULT 0, 'annot_bus_dsp_eid' TEXT NOT NULL, 'annot_bus_stereo' INT NOT NULL DEFAULT 1, 'annot_bus_mute' INT NOT NULL DEFAULT 0, 'record_bus_dsp_eid' TEXT NOT NULL, 'record_bus_stereo' INT NOT NULL DEFAULT 1, 'deck_1_input_link_map' INT NOT NULL DEFAULT 0, 'deck_1_input_dsp_eid' TEXT NOT NULL, 'deck_1_edge_link_map' INT NOT NULL DEFAULT 0, 'deck_1_prefade_link_map' INT NOT NULL DEFAULT 0, 'deck_1_prefade_dsp_eid' TEXT NOT NULL, 'deck_1_postfade_link_map' INT NOT NULL DEFAULT 0, 'deck_1_postfade_dsp_eid' TEXT NOT NULL, 'deck_1_cue_link_map' INT NOT NULL DEFAULT 0, 'deck_1_cue_dsp_eid' TEXT NOT NULL, 'deck_2_input_link_map' INT NOT NULL DEFAULT 0, 'deck_2_input_dsp_eid' TEXT NOT NULL, 'deck_2_edge_link_map' INT NOT NULL DEFAULT 0, 'deck_2_prefade_link_map' INT NOT NULL DEFAULT 0, 'deck_2_prefade_dsp_eid' TEXT NOT NULL, 'deck_2_postfade_link_map' INT NOT NULL DEFAULT 0, 'deck_2_postfade_dsp_eid' TEXT NOT NULL, 'deck_2_cue_link_map' INT NOT NULL DEFAULT 0, 'deck_2_cue_dsp_eid' TEXT NOT NULL, 'deck_ext_input_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_input_dsp_eid' TEXT NOT NULL, 'deck_ext_edge_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_prefade_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_prefade_dsp_eid' TEXT NOT NULL, 'deck_ext_postfade_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_postfade_dsp_eid' TEXT NOT NULL, 'deck_ext_cue_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_cue_dsp_eid' TEXT NOT NULL, 'aux_bus_0_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_0_dsp_eid' TEXT NOT NULL, 'aux_bus_0_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_0_mute' INT NOT NULL DEFAULT 0, 'aux_bus_1_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_1_dsp_eid' TEXT NOT NULL, 'aux_bus_1_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_1_mute' INT NOT NULL DEFAULT 0, 'aux_bus_2_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_2_dsp_eid' TEXT NOT NULL, 'aux_bus_2_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_2_mute' INT NOT NULL DEFAULT 0, 'aux_bus_3_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_3_dsp_eid' TEXT NOT NULL, 'aux_bus_3_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_3_mute' INT NOT NULL DEFAULT 0, 'clock_0_sig' INT NOT NULL DEFAULT 0, 'clock_0_link_map' INT NOT NULL DEFAULT 0, 'clock_0_source' INT NOT NULL DEFAULT 0, 'clock_0_val' REAL NOT NULL DEFAULT 0, 'clock_0_sync' INT NOT NULL DEFAULT 0, 'clock_1_sig' INT NOT NULL DEFAULT 0, 'clock_1_link_map' INT NOT NULL DEFAULT 0, 'clock_1_source' INT NOT NULL DEFAULT 0, 'clock_1_val' REAL NOT NULL DEFAULT 0, 'clock_1_sync' INT NOT NULL DEFAULT 0, 'clock_2_sig' INT NOT NULL DEFAULT 0, 'clock_2_link_map' INT NOT NULL DEFAULT 0, 'clock_2_source' INT NOT NULL DEFAULT 0, 'clock_2_val' REAL NOT NULL DEFAULT 0, 'clock_2_sync' INT NOT NULL DEFAULT 0, 'clock_3_sig' INT NOT NULL DEFAULT 0, 'clock_3_link_map' INT NOT NULL DEFAULT 0, 'clock_3_source' INT NOT NULL DEFAULT 0, 'clock_3_val' REAL NOT NULL DEFAULT 0, 'clock_3_sync' INT NOT NULL DEFAULT 0, 'cv_0_sig' INT NOT NULL DEFAULT 0, 'cv_0_link_map' INT NOT NULL DEFAULT 0, 'cv_0_dsp_eid' TEXT NOT NULL, 'cv_0_source' INT NOT NULL DEFAULT 0, 'cv_0_mute' INT NOT NULL DEFAULT 0, 'cv_1_sig' INT NOT NULL DEFAULT 0, 'cv_1_link_map' INT NOT NULL DEFAULT 0, 'cv_1_dsp_eid' TEXT NOT NULL, 'cv_1_source' INT NOT NULL DEFAULT 0, 'cv_1_mute' INT NOT NULL DEFAULT 0, 'cv_2_sig' INT NOT NULL DEFAULT 0, 'cv_2_link_map' INT NOT NULL DEFAULT 0, 'cv_2_dsp_eid' TEXT NOT NULL, 'cv_2_source' INT NOT NULL DEFAULT 0, 'cv_2_mute' INT NOT NULL DEFAULT 0, 'cv_3_sig' INT NOT NULL DEFAULT 0, 'cv_3_link_map' INT NOT NULL DEFAULT 0, 'cv_3_dsp_eid' TEXT NOT NULL, 'cv_3_source' INT NOT NULL DEFAULT 0, 'cv_3_mute' INT NOT NULL DEFAULT 0, 'xfade_a_link_map' INT NOT NULL DEFAULT 0, 'xfade_a_dsp_eid' TEXT NOT NULL, 'xfade_b_link_map' INT NOT NULL DEFAULT 0, 'xfade_b_dsp_eid' TEXT NOT NULL, PRIMARY KEY('entity_id'))" );
+    strcpy( sql, "CREATE TABLE 'Linkage' ( 'entity_id' TEXT NOT NULL UNIQUE, 'name' TEXT NOT NULL, 'ana_out_0_sig' INT NOT NULL DEFAULT 0, 'ana_out_0_stereo' INT NOT NULL DEFAULT 1, 'ana_out_1_sig' INT NOT NULL DEFAULT 0, 'ana_out_1_stereo' INT NOT NULL DEFAULT 1, 'ana_out_2_sig' INT NOT NULL DEFAULT 0, 'ana_out_2_stereo' INT NOT NULL DEFAULT 1, 'ana_out_3_sig' INT NOT NULL DEFAULT 0, 'ana_out_3_stereo' INT NOT NULL DEFAULT 1, 'ana_in_0_link_map' INT NOT NULL DEFAULT 0, 'ana_in_0_dsp_eid' TEXT NOT NULL, 'ana_in_0_sig' INT NOT NULL DEFAULT 0, 'ana_in_0_stereo' INT NOT NULL DEFAULT 1, 'ana_in_0_mute' INT NOT NULL DEFAULT 0, 'ana_in_1_link_map' INT NOT NULL DEFAULT 0, 'ana_in_1_dsp_eid' TEXT NOT NULL, 'ana_in_1_sig' INT NOT NULL DEFAULT 0, 'ana_in_1_stereo' INT NOT NULL DEFAULT 1, 'ana_in_1_mute' INT NOT NULL DEFAULT 0, 'ana_in_2_link_map' INT NOT NULL DEFAULT 0, 'ana_in_2_dsp_eid' TEXT NOT NULL, 'ana_in_2_sig' INT NOT NULL DEFAULT 0, 'ana_in_2_stereo' INT NOT NULL DEFAULT 1, 'ana_in_2_mute' INT NOT NULL DEFAULT 0, 'ana_in_3_link_map' INT NOT NULL DEFAULT 0, 'ana_in_3_dsp_eid' TEXT NOT NULL, 'ana_in_3_sig' INT NOT NULL DEFAULT 0, 'ana_in_3_stereo' INT NOT NULL DEFAULT 1, 'ana_in_3_mute' INT NOT NULL DEFAULT 0, 'main_bus_link_map' INT NOT NULL DEFAULT 0, 'main_bus_dsp_eid' TEXT NOT NULL, 'main_bus_stereo' INT NOT NULL DEFAULT 1, 'main_bus_mute' INT NOT NULL DEFAULT 0, 'cue_bus_link_map' INT NOT NULL DEFAULT 0, 'cue_bus_dsp_eid' TEXT NOT NULL, 'cue_bus_stereo' INT NOT NULL DEFAULT 1, 'cue_bus_mute' INT NOT NULL DEFAULT 0, 'annot_bus_link_map' INT NOT NULL DEFAULT 0, 'annot_bus_dsp_eid' TEXT NOT NULL, 'annot_bus_stereo' INT NOT NULL DEFAULT 1, 'annot_bus_mute' INT NOT NULL DEFAULT 0, 'record_bus_dsp_eid' TEXT NOT NULL, 'record_bus_stereo' INT NOT NULL DEFAULT 1, 'deck_1_input_link_map' INT NOT NULL DEFAULT 0, 'deck_1_input_dsp_eid' TEXT NOT NULL, 'deck_1_edge_link_map' INT NOT NULL DEFAULT 0, 'deck_1_prefade_link_map' INT NOT NULL DEFAULT 0, 'deck_1_prefade_dsp_eid' TEXT NOT NULL, 'deck_1_postfade_link_map' INT NOT NULL DEFAULT 0, 'deck_1_postfade_dsp_eid' TEXT NOT NULL, 'deck_1_cue_link_map' INT NOT NULL DEFAULT 0, 'deck_1_cue_dsp_eid' TEXT NOT NULL, 'deck_2_input_link_map' INT NOT NULL DEFAULT 0, 'deck_2_input_dsp_eid' TEXT NOT NULL, 'deck_2_edge_link_map' INT NOT NULL DEFAULT 0, 'deck_2_prefade_link_map' INT NOT NULL DEFAULT 0, 'deck_2_prefade_dsp_eid' TEXT NOT NULL, 'deck_2_postfade_link_map' INT NOT NULL DEFAULT 0, 'deck_2_postfade_dsp_eid' TEXT NOT NULL, 'deck_2_cue_link_map' INT NOT NULL DEFAULT 0, 'deck_2_cue_dsp_eid' TEXT NOT NULL, 'deck_ext_input_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_input_dsp_eid' TEXT NOT NULL, 'deck_ext_edge_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_prefade_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_prefade_dsp_eid' TEXT NOT NULL, 'deck_ext_postfade_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_postfade_dsp_eid' TEXT NOT NULL, 'deck_ext_cue_link_map' INT NOT NULL DEFAULT 0, 'deck_ext_cue_dsp_eid' TEXT NOT NULL, 'aux_bus_0_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_0_dsp_eid' TEXT NOT NULL, 'aux_bus_0_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_0_mute' INT NOT NULL DEFAULT 0, 'aux_bus_1_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_1_dsp_eid' TEXT NOT NULL, 'aux_bus_1_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_1_mute' INT NOT NULL DEFAULT 0, 'aux_bus_2_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_2_dsp_eid' TEXT NOT NULL, 'aux_bus_2_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_2_mute' INT NOT NULL DEFAULT 0, 'aux_bus_3_link_map' INT NOT NULL DEFAULT 0, 'aux_bus_3_dsp_eid' TEXT NOT NULL, 'aux_bus_3_stereo' INT NOT NULL DEFAULT 1, 'aux_bus_3_mute' INT NOT NULL DEFAULT 0, 'clock_0_sig' INT NOT NULL DEFAULT 0, 'clock_0_link_map' INT NOT NULL DEFAULT 0, 'clock_0_source' INT NOT NULL DEFAULT 0, 'clock_0_val' REAL NOT NULL DEFAULT 0, 'clock_0_sync' INT NOT NULL DEFAULT 0, 'clock_1_sig' INT NOT NULL DEFAULT 0, 'clock_1_link_map' INT NOT NULL DEFAULT 0, 'clock_1_source' INT NOT NULL DEFAULT 0, 'clock_1_val' REAL NOT NULL DEFAULT 0, 'clock_1_sync' INT NOT NULL DEFAULT 0, 'clock_2_sig' INT NOT NULL DEFAULT 0, 'clock_2_link_map' INT NOT NULL DEFAULT 0, 'clock_2_source' INT NOT NULL DEFAULT 0, 'clock_2_val' REAL NOT NULL DEFAULT 0, 'clock_2_sync' INT NOT NULL DEFAULT 0, 'clock_3_sig' INT NOT NULL DEFAULT 0, 'clock_3_link_map' INT NOT NULL DEFAULT 0, 'clock_3_source' INT NOT NULL DEFAULT 0, 'clock_3_val' REAL NOT NULL DEFAULT 0, 'clock_3_sync' INT NOT NULL DEFAULT 0, 'cv_0_sig' INT NOT NULL DEFAULT 0, 'cv_0_link_map' INT NOT NULL DEFAULT 0, 'cv_0_dsp_eid' TEXT NOT NULL, 'cv_0_source' INT NOT NULL DEFAULT 0, 'cv_0_mute' INT NOT NULL DEFAULT 0, 'cv_1_sig' INT NOT NULL DEFAULT 0, 'cv_1_link_map' INT NOT NULL DEFAULT 0, 'cv_1_dsp_eid' TEXT NOT NULL, 'cv_1_source' INT NOT NULL DEFAULT 0, 'cv_1_mute' INT NOT NULL DEFAULT 0, 'cv_2_sig' INT NOT NULL DEFAULT 0, 'cv_2_link_map' INT NOT NULL DEFAULT 0, 'cv_2_dsp_eid' TEXT NOT NULL, 'cv_2_source' INT NOT NULL DEFAULT 0, 'cv_2_mute' INT NOT NULL DEFAULT 0, 'cv_3_sig' INT NOT NULL DEFAULT 0, 'cv_3_link_map' INT NOT NULL DEFAULT 0, 'cv_3_dsp_eid' TEXT NOT NULL, 'cv_3_source' INT NOT NULL DEFAULT 0, 'cv_3_mute' INT NOT NULL DEFAULT 0, 'xfade_a_link_map' INT NOT NULL DEFAULT 0, 'xfade_a_dsp_eid' TEXT NOT NULL, 'xfade_b_link_map' INT NOT NULL DEFAULT 0, 'xfade_b_dsp_eid' TEXT NOT NULL, 'usb_out_0_stereo' INT NOT NULL DEFAULT 1, 'usb_out_1_stereo' INT NOT NULL DEFAULT 1, 'usb_in_0_link_map' INT NOT NULL DEFAULT 0, 'usb_in_0_dsp_eid' TEXT NOT NULL, 'usb_in_0_stereo' INT NOT NULL DEFAULT 1, 'usb_in_0_mute' INT NOT NULL DEFAULT 0, 'usb_in_1_link_map' INT NOT NULL DEFAULT 0, 'usb_in_1_dsp_eid' TEXT NOT NULL, 'usb_in_1_stereo' INT NOT NULL DEFAULT 1, 'usb_in_1_mute' INT NOT NULL DEFAULT 0, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
 }
-
 
 static void _zdj_soundcard_create_dsp_table( sqlite3 * db ) {
     // Create tables
@@ -382,6 +392,23 @@ zdj_error_type_t zdj_soundcard_fetch_dto( char * entity_id, zdj_soundcard_dto_t 
             str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_XFADE_B_DSP );
             if( str ) { strcpy( dto->xfade_b_dsp_eid, str ); }
 
+            dto->usb_out_0_stereo = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_COL_USB_OUT_0_STEREO );
+            dto->usb_out_1_stereo = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_COL_USB_OUT_1_STEREO );
+
+            dto->usb_in_0_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_0_LINK );
+            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_0_DSP );
+            if( str ) { strcpy( dto->usb_in_0_dsp_eid, str ); }
+            dto->usb_in_0_stereo = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_0_STEREO );
+            dto->usb_in_0_mute = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_0_MUTE );
+
+            dto->usb_in_1_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_1_LINK );
+            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_1_DSP );
+            if( str ) { strcpy( dto->usb_in_1_dsp_eid, str ); }
+            dto->usb_in_1_stereo = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_1_STEREO );
+            dto->usb_in_1_mute = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_COL_USB_IN_1_MUTE );
+
+
+
             // printf( "dto->ana_in_0_link_map:%lu\ndto->ana_in_1_link_map:%lu\ndto->ana_in_2_link_map:%lu\ndto->ana_in_3_link_map:%lu\ndto->main_bus_link_map:%lu\ndto->cue_bus_link_map:%lu\ndto->annot_bus_link_map:%lu\ndto->deck_1_input_link_map:%lu\ndto->deck_1_edge_link_map:%lu\ndto->deck_1_prefade_link_map:%lu\ndto->deck_1_postfade_link_map:%lu\ndto->deck_1_cue_link_map:%lu\ndto->deck_2_input_link_map:%lu\ndto->deck_2_edge_link_map:%lu\ndto->deck_2_prefade_link_map:%lu\ndto->deck_2_postfade_link_map:%lu\ndto->deck_2_cue_link_map:%lu\ndto->deck_ext_input_link_map:%lu\ndto->deck_ext_edge_link_map:%lu\ndto->deck_ext_prefade_link_map:%lu\ndto->deck_ext_postfade_link_map:%lu\ndto->deck_ext_cue_link_map:%lu\ndto->aux_bus_0_link_map:%lu\ndto->aux_bus_1_link_map:%lu\ndto->aux_bus_2_link_map:%lu\ndto->aux_bus_3_link_map:%lu\ndto->clock_0_link_map:%lu\ndto->clock_1_link_map:%lu\ndto->clock_2_link_map:%lu\ndto->clock_3_link_map:%lu\ndto->cv_0_link_map:%lu\ndto->cv_1_link_map:%lu\ndto->cv_2_link_map:%lu\ndto->cv_3_link_map:%lu\n",
             //     dto->ana_in_0_link_map,
             //     dto->ana_in_1_link_map,
@@ -427,6 +454,8 @@ zdj_error_type_t zdj_soundcard_fetch_dto( char * entity_id, zdj_soundcard_dto_t 
     zdj_soundcard_fetch_dsp_for_entity_id( &dto->ana_in_1_dsp, dto->ana_in_1_dsp_eid, db );
     zdj_soundcard_fetch_dsp_for_entity_id( &dto->ana_in_2_dsp, dto->ana_in_2_dsp_eid, db );
     zdj_soundcard_fetch_dsp_for_entity_id( &dto->ana_in_3_dsp, dto->ana_in_3_dsp_eid, db );
+    zdj_soundcard_fetch_dsp_for_entity_id( &dto->usb_in_0_dsp, dto->usb_in_0_dsp_eid, db );
+    zdj_soundcard_fetch_dsp_for_entity_id( &dto->usb_in_1_dsp, dto->usb_in_1_dsp_eid, db );
     zdj_soundcard_fetch_dsp_for_entity_id( &dto->main_bus_dsp, dto->main_bus_dsp_eid, db );
     zdj_soundcard_fetch_dsp_for_entity_id( &dto->cue_bus_dsp, dto->cue_bus_dsp_eid, db );
     zdj_soundcard_fetch_dsp_for_entity_id( &dto->annot_bus_dsp, dto->annot_bus_dsp_eid, db );
@@ -475,14 +504,13 @@ zdj_error_type_t zdj_soundcard_store_dto( zdj_soundcard_dto_t * dto ) {
 
     int count = 0;
     int res;
-    char sql[ 8192 ];
+    char sql[ 9192 ];
     // Set up for prepared stmt w/binds to use built-in string escaping.
     snprintf( sql, sizeof( sql ), 
         // Insert new record
-        "INSERT INTO %s VALUES(\'%s\',\'%s\',%d,%d,%d,%d,%d,%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,\'%s\',%d,%lu,\'%s\',%lu,%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%d,%lu,%d,%f,%d,%d,%lu,%d,%f,%d,%d,%lu,%d,%f,%d,%d,%lu,%d,%f,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%lu,\'%s\')\n"
-
+        "INSERT INTO %s VALUES(\'%s\',\'%s\',%d,%d,%d,%d,%d,%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,\'%s\',%d,%lu,\'%s\',%lu,%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%d,%lu,%d,%f,%d,%d,%lu,%d,%f,%d,%d,%lu,%d,%f,%d,%d,%lu,%d,%f,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d,%lu,\'%s\',%d,%d)\n"
         // Or update existing record
-        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',name=\'%s\',ana_out_0_sig=%d,ana_out_0_stereo=%d,ana_out_1_sig=%d,ana_out_1_stereo=%d,ana_out_2_sig=%d,ana_out_2_stereo=%d,ana_out_3_sig=%d,ana_out_3_stereo=%d,ana_in_0_link_map=%lu,ana_in_0_dsp_eid=\'%s\',ana_in_0_sig=%d,ana_in_0_stereo=%d,ana_in_0_mute=%d,ana_in_1_link_map=%lu,ana_in_1_dsp_eid=\'%s\',ana_in_1_sig=%d,ana_in_1_stereo=%d,ana_in_1_mute=%d,ana_in_2_link_map=%lu,ana_in_2_dsp_eid=\'%s\',ana_in_2_sig=%d,ana_in_2_stereo=%d,ana_in_2_mute=%d,ana_in_3_link_map=%lu,ana_in_3_dsp_eid=\'%s\',ana_in_3_sig=%d,ana_in_3_stereo=%d,ana_in_3_mute=%d,main_bus_link_map=%lu,main_bus_dsp_eid=\'%s\',main_bus_stereo=%d,main_bus_mute=%d,cue_bus_link_map=%lu,cue_bus_dsp_eid=\'%s\',cue_bus_stereo=%d,cue_bus_mute=%d,annot_bus_link_map=%lu,annot_bus_dsp_eid=\'%s\',annot_bus_stereo=%d,annot_bus_mute=%d,record_bus_dsp_eid=\'%s\',record_bus_stereo=%d,deck_1_input_link_map=%lu,deck_1_input_dsp_eid=\'%s\',deck_1_edge_link_map=%lu,deck_1_prefade_link_map=%lu,deck_1_prefade_dsp_eid=\'%s\',deck_1_postfade_link_map=%lu,deck_1_postfade_dsp_eid=\'%s\',deck_1_cue_link_map=%lu,deck_1_cue_dsp_eid=\'%s\',deck_2_input_link_map=%lu,deck_2_input_dsp_eid=\'%s\',deck_2_edge_link_map=%lu,deck_2_prefade_link_map=%lu,deck_2_prefade_dsp_eid=\'%s\',deck_2_postfade_link_map=%lu,deck_2_postfade_dsp_eid=\'%s\',deck_2_cue_link_map=%lu,deck_2_cue_dsp_eid=\'%s\',deck_ext_input_link_map=%lu,deck_ext_input_dsp_eid=\'%s\',deck_ext_edge_link_map=%lu,deck_ext_prefade_link_map=%lu,deck_ext_prefade_dsp_eid=\'%s\',deck_ext_postfade_link_map=%lu,deck_ext_postfade_dsp_eid=\'%s\',deck_ext_cue_link_map=%lu,deck_ext_cue_dsp_eid=\'%s\',aux_bus_0_link_map=%lu,aux_bus_0_dsp_eid=\'%s\',aux_bus_0_stereo=%d,aux_bus_0_mute=%d,aux_bus_1_link_map=%lu,aux_bus_1_dsp_eid=\'%s\',aux_bus_1_stereo=%d,aux_bus_1_mute=%d,aux_bus_2_link_map=%lu,aux_bus_2_dsp_eid=\'%s\',aux_bus_2_stereo=%d,aux_bus_2_mute=%d,aux_bus_3_link_map=%lu,aux_bus_3_dsp_eid=\'%s\',aux_bus_3_stereo=%d,aux_bus_3_mute=%d,clock_0_sig=%d,clock_0_link_map=%lu,clock_0_source=%d,clock_0_val=%f,clock_0_sync=%d,clock_1_sig=%d,clock_1_link_map=%lu,clock_1_source=%d,clock_1_val=%f,clock_1_sync=%d,clock_2_sig=%d,clock_2_link_map=%lu,clock_2_source=%d,clock_2_val=%f,clock_2_sync=%d,clock_3_sig=%d,clock_3_link_map=%lu,clock_3_source=%d,clock_3_val=%f,clock_3_sync=%d,cv_0_sig=%d,cv_0_link_map=%lu,cv_0_dsp_eid=\'%s\',cv_0_source=%d,cv_0_mute=%d,cv_1_sig=%d,cv_1_link_map=%lu,cv_1_dsp_eid=\'%s\',cv_1_source=%d,cv_1_mute=%d,cv_2_sig=%d,cv_2_link_map=%lu,cv_2_dsp_eid=\'%s\',cv_2_source=%d,cv_2_mute=%d,cv_3_sig=%d,cv_3_link_map=%lu,cv_3_dsp_eid=\'%s\',cv_3_source=%d,cv_3_mute=%d,xfade_a_link_map=%lu,xfade_a_dsp_eid=\'%s\',xfade_b_link_map=%lu,xfade_b_dsp_eid=\'%s\'",
+        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',name=\'%s\',ana_out_0_sig=%d,ana_out_0_stereo=%d,ana_out_1_sig=%d,ana_out_1_stereo=%d,ana_out_2_sig=%d,ana_out_2_stereo=%d,ana_out_3_sig=%d,ana_out_3_stereo=%d,ana_in_0_link_map=%lu,ana_in_0_dsp_eid=\'%s\',ana_in_0_sig=%d,ana_in_0_stereo=%d,ana_in_0_mute=%d,ana_in_1_link_map=%lu,ana_in_1_dsp_eid=\'%s\',ana_in_1_sig=%d,ana_in_1_stereo=%d,ana_in_1_mute=%d,ana_in_2_link_map=%lu,ana_in_2_dsp_eid=\'%s\',ana_in_2_sig=%d,ana_in_2_stereo=%d,ana_in_2_mute=%d,ana_in_3_link_map=%lu,ana_in_3_dsp_eid=\'%s\',ana_in_3_sig=%d,ana_in_3_stereo=%d,ana_in_3_mute=%d,main_bus_link_map=%lu,main_bus_dsp_eid=\'%s\',main_bus_stereo=%d,main_bus_mute=%d,cue_bus_link_map=%lu,cue_bus_dsp_eid=\'%s\',cue_bus_stereo=%d,cue_bus_mute=%d,annot_bus_link_map=%lu,annot_bus_dsp_eid=\'%s\',annot_bus_stereo=%d,annot_bus_mute=%d,record_bus_dsp_eid=\'%s\',record_bus_stereo=%d,deck_1_input_link_map=%lu,deck_1_input_dsp_eid=\'%s\',deck_1_edge_link_map=%lu,deck_1_prefade_link_map=%lu,deck_1_prefade_dsp_eid=\'%s\',deck_1_postfade_link_map=%lu,deck_1_postfade_dsp_eid=\'%s\',deck_1_cue_link_map=%lu,deck_1_cue_dsp_eid=\'%s\',deck_2_input_link_map=%lu,deck_2_input_dsp_eid=\'%s\',deck_2_edge_link_map=%lu,deck_2_prefade_link_map=%lu,deck_2_prefade_dsp_eid=\'%s\',deck_2_postfade_link_map=%lu,deck_2_postfade_dsp_eid=\'%s\',deck_2_cue_link_map=%lu,deck_2_cue_dsp_eid=\'%s\',deck_ext_input_link_map=%lu,deck_ext_input_dsp_eid=\'%s\',deck_ext_edge_link_map=%lu,deck_ext_prefade_link_map=%lu,deck_ext_prefade_dsp_eid=\'%s\',deck_ext_postfade_link_map=%lu,deck_ext_postfade_dsp_eid=\'%s\',deck_ext_cue_link_map=%lu,deck_ext_cue_dsp_eid=\'%s\',aux_bus_0_link_map=%lu,aux_bus_0_dsp_eid=\'%s\',aux_bus_0_stereo=%d,aux_bus_0_mute=%d,aux_bus_1_link_map=%lu,aux_bus_1_dsp_eid=\'%s\',aux_bus_1_stereo=%d,aux_bus_1_mute=%d,aux_bus_2_link_map=%lu,aux_bus_2_dsp_eid=\'%s\',aux_bus_2_stereo=%d,aux_bus_2_mute=%d,aux_bus_3_link_map=%lu,aux_bus_3_dsp_eid=\'%s\',aux_bus_3_stereo=%d,aux_bus_3_mute=%d,clock_0_sig=%d,clock_0_link_map=%lu,clock_0_source=%d,clock_0_val=%f,clock_0_sync=%d,clock_1_sig=%d,clock_1_link_map=%lu,clock_1_source=%d,clock_1_val=%f,clock_1_sync=%d,clock_2_sig=%d,clock_2_link_map=%lu,clock_2_source=%d,clock_2_val=%f,clock_2_sync=%d,clock_3_sig=%d,clock_3_link_map=%lu,clock_3_source=%d,clock_3_val=%f,clock_3_sync=%d,cv_0_sig=%d,cv_0_link_map=%lu,cv_0_dsp_eid=\'%s\',cv_0_source=%d,cv_0_mute=%d,cv_1_sig=%d,cv_1_link_map=%lu,cv_1_dsp_eid=\'%s\',cv_1_source=%d,cv_1_mute=%d,cv_2_sig=%d,cv_2_link_map=%lu,cv_2_dsp_eid=\'%s\',cv_2_source=%d,cv_2_mute=%d,cv_3_sig=%d,cv_3_link_map=%lu,cv_3_dsp_eid=\'%s\',cv_3_source=%d,cv_3_mute=%d,xfade_a_link_map=%lu,xfade_a_dsp_eid=\'%s\',xfade_b_link_map=%lu,xfade_b_dsp_eid=\'%s\',usb_out_0_stereo=%d,usb_out_1_stereo=%d, usb_in_0_link_map=%lu,usb_in_0_dsp_eid=\'%s\',usb_in_0_stereo=%d,usb_in_0_mute=%d, usb_in_1_link_map=%lu,usb_in_1_dsp_eid=\'%s\',usb_in_1_stereo=%d,usb_in_1_mute=%d\n",
 
         // Table Name
         ZDJ_SOUNDCARD_LINKAGE_TABLE,
@@ -631,6 +659,19 @@ zdj_error_type_t zdj_soundcard_store_dto( zdj_soundcard_dto_t * dto ) {
         dto->xfade_b_link_map,
         dto->xfade_b_dsp_eid,
 
+        dto->usb_out_0_stereo,
+        dto->usb_out_1_stereo,
+
+        dto->usb_in_0_link_map,
+        dto->usb_in_0_dsp_eid,
+        dto->usb_in_0_stereo,
+        dto->usb_in_0_mute,
+
+        dto->usb_in_1_link_map,
+        dto->usb_in_1_dsp_eid,
+        dto->usb_in_1_stereo,
+        dto->usb_in_1_mute,
+
 
 
         dto->entity_id,
@@ -776,7 +817,20 @@ zdj_error_type_t zdj_soundcard_store_dto( zdj_soundcard_dto_t * dto ) {
         dto->xfade_a_link_map,
         dto->xfade_a_dsp_eid,
         dto->xfade_b_link_map,
-        dto->xfade_b_dsp_eid
+        dto->xfade_b_dsp_eid,
+
+        dto->usb_out_0_stereo,
+        dto->usb_out_1_stereo,
+
+        dto->usb_in_0_link_map,
+        dto->usb_in_0_dsp_eid,
+        dto->usb_in_0_stereo,
+        dto->usb_in_0_mute,
+
+        dto->usb_in_1_link_map,
+        dto->usb_in_1_dsp_eid,
+        dto->usb_in_1_stereo,
+        dto->usb_in_1_mute
     );
 
     zdj_sql_exec( sql, db );
@@ -789,6 +843,8 @@ zdj_error_type_t zdj_soundcard_store_dto( zdj_soundcard_dto_t * dto ) {
     zdj_soundcard_store_dsp_for_entity_id( &dto->ana_in_1_dsp, dto->ana_in_1_dsp_eid, db );
     zdj_soundcard_store_dsp_for_entity_id( &dto->ana_in_2_dsp, dto->ana_in_2_dsp_eid, db );
     zdj_soundcard_store_dsp_for_entity_id( &dto->ana_in_3_dsp, dto->ana_in_3_dsp_eid, db );
+    zdj_soundcard_store_dsp_for_entity_id( &dto->usb_in_0_dsp, dto->usb_in_0_dsp_eid, db );
+    zdj_soundcard_store_dsp_for_entity_id( &dto->usb_in_1_dsp, dto->usb_in_1_dsp_eid, db );
     zdj_soundcard_store_dsp_for_entity_id( &dto->main_bus_dsp, dto->main_bus_dsp_eid, db );
     zdj_soundcard_store_dsp_for_entity_id( &dto->cue_bus_dsp, dto->cue_bus_dsp_eid, db );
     zdj_soundcard_store_dsp_for_entity_id( &dto->annot_bus_dsp, dto->annot_bus_dsp_eid, db );

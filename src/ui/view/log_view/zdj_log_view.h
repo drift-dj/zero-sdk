@@ -29,19 +29,28 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef enum {
+    ZDJ_LOG_VIEW_TYPE_LOG,
     ZDJ_LOG_VIEW_TYPE_TAIL,
-    ZDJ_LOG_VIEW_TYPE_CAT
+    ZDJ_LOG_VIEW_TYPE_CAT,
+    ZDJ_LOG_VIEW_CMD
 } zdj_log_view_type_t;
 
 typedef struct {
     zdj_view_t * scroll_view;
     zdj_log_view_type_t type;
-    char * log_path;
+    zdj_view_t * parent_view;
+    char log_path[ 1024 ];
     FILE * log_fp;
     char log_line[ 1024 ];
     int log_counter;
+    bool needs_layout_update;
 } zdj_log_view_state_t;
 
-zdj_view_t * zdj_new_log_view( char * log_path, zdj_log_view_type_t type, zdj_rect_t * frame );
+zdj_view_t * zdj_new_log_view( 
+    char * log_path, 
+    zdj_log_view_type_t type, 
+    zdj_view_t * parent_view,
+    zdj_rect_t * frame 
+);
 
 #endif

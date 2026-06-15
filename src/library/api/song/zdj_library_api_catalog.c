@@ -16,6 +16,20 @@ zdj_library_catalog_t * zdj_library_create_catalog_dto( void ) {
     return catalog;
 }
 
+zdj_health_status_t zdj_library_delete_catalog( 
+    zdj_library_catalog_t * catalog, 
+    sqlite3 * db 
+) {
+    int res;
+    char sql[ 2048 ];
+    snprintf( sql, sizeof( sql ), "delete from %s where entity_id like \'%s\'", 
+        ZDJ_LIBRARY_TABLE_CATALOG_DATA,
+        catalog->entity_id
+    );
+    zdj_sql_exec( sql, db );
+    return ZDJ_HEALTH_STATUS_OKAY;
+}
+
 zdj_library_catalog_t * zdj_library_fetch_current_catalog_dto_for_song( 
     zdj_library_song_t * song, 
     sqlite3 * db 

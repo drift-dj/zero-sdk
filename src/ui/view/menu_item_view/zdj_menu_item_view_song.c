@@ -20,9 +20,41 @@ static void _draw_deck_2( zdj_view_t * view );
 static void _draw_edit( zdj_view_t * view );
 static void _draw_move_item( zdj_view_t * view );
 static void _draw_delete( zdj_view_t * view );
+static void _draw_add_to_list( zdj_view_t * view );
 
 static void _enter_edit_mode( zdj_view_t * item );
 static void _exit_edit_mode( zdj_view_t * item );
+
+static SDL_Rect * _get_key_asset( zdj_library_key_t key_enum ) {
+    // printf( "_get_key_asset: %d\n", key_enum );
+    switch ( key_enum ) {
+        case ZDJ_LIBRARY_KEY_A: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_A ];
+        case ZDJ_LIBRARY_KEY_AM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_AM ];
+        case ZDJ_LIBRARY_KEY_AB: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_AB ];
+        case ZDJ_LIBRARY_KEY_ABM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_ABM ];
+        case ZDJ_LIBRARY_KEY_B: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_B ];
+        case ZDJ_LIBRARY_KEY_BM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_BM ];
+        case ZDJ_LIBRARY_KEY_BB: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_BB ];
+        case ZDJ_LIBRARY_KEY_BBM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_BBM ];
+        case ZDJ_LIBRARY_KEY_C: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_C ];
+        case ZDJ_LIBRARY_KEY_CM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_CM ];
+        case ZDJ_LIBRARY_KEY_D: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_D ];
+        case ZDJ_LIBRARY_KEY_DM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_DM ];
+        case ZDJ_LIBRARY_KEY_DB: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_DB ];
+        case ZDJ_LIBRARY_KEY_DBM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_DBM ];
+        case ZDJ_LIBRARY_KEY_E: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_E ];
+        case ZDJ_LIBRARY_KEY_EM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_EM ];
+        case ZDJ_LIBRARY_KEY_EB: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_EB ];
+        case ZDJ_LIBRARY_KEY_EBM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_EBM ];
+        case ZDJ_LIBRARY_KEY_F: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_F ];
+        case ZDJ_LIBRARY_KEY_FM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_FM ];
+        case ZDJ_LIBRARY_KEY_FS: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_FS ];
+        case ZDJ_LIBRARY_KEY_FSM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_FSM ];
+        case ZDJ_LIBRARY_KEY_G: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_G ];
+        case ZDJ_LIBRARY_KEY_GM: return &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_GM ];
+        default: return NULL;
+    }
+}
 
 void zdj_menu_item_song_import_init_layout( zdj_view_t * view ) {
     // printf( "zdj_menu_item_song_import_init_layout\n" );
@@ -92,12 +124,6 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
     view->frame.h = 8;
     
     // Setup normal view
-    // zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    // zdj_add_subview( state->normal_view, title_ticker_norm );
-    // title_ticker_norm->frame.x = 1;
-    // title_ticker_norm->frame.y = -1;
-    // title_ticker_norm->frame.w = view->frame.w;
-    // title_ticker_norm->frame.h = view->frame.h;
     zdj_view_t * title_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_norm );
     title_norm->frame.x = 1;
@@ -123,6 +149,123 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
     title_ticker_hilite->frame.w = view->frame.w;
     title_ticker_hilite->frame.h = view->frame.h;
 
+    // Add key/bpm
+    zdj_view_t * xtra_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BLACK ], NULL );
+    zdj_add_subview( state->hilite_view, xtra_bg );
+    hilite_bg->frame.y = 0;
+    hilite_bg->frame.h = 8;
+
+    float xtra_x = view->frame.w;
+    // We're using i_val as a bitfield here.
+    // Clearly the menu item data needs a re-architecting...
+    bool show_divider = false;
+    bool show_key = state->data.i_val & 0x1;
+    bool show_camelot = (state->data.i_val >> 1) & 0x1;
+    bool show_bpm = (state->data.i_val >> 2) & 0x1;
+    int key_enum = (state->data.i_val >> 8) & 0xFF;
+    int bpm = state->data.i_val >> 16;
+    // printf( "init song item: sk:%d sb:%d sc:%d\n", 
+    //     show_key, show_bpm, show_camelot  
+    // );
+    if( show_camelot ) { 
+        zdj_library_camelot_t camelot = zdj_library_get_camelot( 
+            zdj_deck_manager_get_current_key( ), key_enum 
+        );
+        show_divider = true;
+
+        if( camelot == ZDJ_LIBRARY_CAMELOT_EQUAL ) {
+            zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_EQUAL ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = view->frame.w - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+        } else if ( camelot == ZDJ_LIBRARY_CAMELOT_PLUS ) {
+            zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_PLUS ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = view->frame.w - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+        } else if ( camelot == ZDJ_LIBRARY_CAMELOT_PLUS_PLUS ) {
+            zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_PLUS ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = view->frame.w - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+            cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_PLUS ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = xtra_x - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+        } else if ( camelot == ZDJ_LIBRARY_CAMELOT_MINUS ) {
+            zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_MINUS ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = view->frame.w - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+        } else if ( camelot == ZDJ_LIBRARY_CAMELOT_MINUS_MINUS ) {
+            zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_MINUS ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = view->frame.w - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+            cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_MINUS ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = xtra_x - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+        } else if ( camelot == ZDJ_LIBRARY_CAMELOT_TILDA ) {
+            zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_TILDA ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = view->frame.w - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+        } else if ( camelot == ZDJ_LIBRARY_CAMELOT_DELTA ) {
+            zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_DELTA ], NULL );
+            zdj_add_subview( state->hilite_view, cam );
+            cam->frame.x = view->frame.w - cam->frame.w;
+            xtra_x = xtra_x - cam->frame.w;
+        } else {
+            show_divider = false;
+        }
+        
+        
+    }
+    if( show_key ) { 
+        if( show_divider ) {
+            zdj_view_t * spacer = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DJ_KNOB_BG ], NULL );
+            zdj_add_subview( state->hilite_view, spacer );
+            spacer->frame.w = 1;
+            spacer->frame.y = 1;
+            spacer->frame.x = xtra_x - 2;
+            xtra_x = xtra_x - 3;
+        }
+        // Show key
+        SDL_Rect * key_rect = _get_key_asset( key_enum );
+        if( key_rect ) {
+            zdj_view_t * key = zdj_new_asset_view( key_rect, NULL );
+            zdj_add_subview( state->hilite_view, key );
+            xtra_x = xtra_x - key->frame.w;
+            key->frame.h = 8;
+            key->frame.x = xtra_x;
+            show_divider = true;
+        } else {
+            show_divider = false;
+        }
+    }
+    
+    if( show_bpm ) {
+        if( show_divider ) {
+            zdj_view_t * spacer = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DJ_KNOB_BG ], NULL );
+            zdj_add_subview( state->hilite_view, spacer );
+            spacer->frame.w = 1;
+            spacer->frame.y = 1;
+            spacer->frame.x = xtra_x - 2;
+            xtra_x = xtra_x - 3;
+        }
+        char str[ 8 ];
+        sprintf( str, "%3d", bpm );
+        zdj_view_t * bpm_label = zdj_new_label_view( str, ZDJ_FONT_6_BOLD, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+        xtra_x = xtra_x - bpm_label->frame.w;
+        zdj_add_subview( state->hilite_view, bpm_label );
+        bpm_label->frame.x = xtra_x;
+        bpm_label->frame.y = -1;
+    }
+
+    xtra_bg->frame.x = xtra_x - 2;
+    xtra_bg->frame.w = view->frame.w - xtra_bg->frame.x;
+
     state->needs_layout_init = false;
 }
 
@@ -143,19 +286,25 @@ void zdj_menu_item_song_update_layout( zdj_view_t * view ) {
             _draw_deck_1( view );
             break;
         case 4:
+        case 5:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_LEAD_DECK_2;
             _draw_deck_2( view );
             break;
-        case 5:
         case 6:
+        case 7:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_EDIT;
             _draw_edit( view );
             break;
-        case 7:
+        case 8:
+        case 9:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_ADD_TO_PLAYLIST;
+            _draw_add_to_list( view );
+            break;
+        case 10:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
             _draw_base( view );
             break;
-        case 8:
+        case 11:
             break;
     }
 
@@ -368,6 +517,32 @@ static void _draw_delete( zdj_view_t * view ) {
     // zdj_view_t * btn = zdj_new_noclip_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_DECK_2 ], NULL );
     zdj_view_t * btn = zdj_new_noclip_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_DELETE ], NULL );
     btn->frame.x = -12;
+    btn->frame.y = -3;
+    zdj_add_subview( state->hilite_view, btn );
+}
+
+static void _draw_add_to_list( zdj_view_t * view ) {
+    // printf( "_draw_delete\n" );
+    zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_remove_all_subviews_of( state->hilite_view );
+    zdj_remove_all_subviews_of( state->normal_view );
+
+    // Setup normal view
+    zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_HILITE_7_L ], NULL );
+    zdj_add_subview( state->hilite_view, hilite_bg );
+    hilite_bg->frame.y = 0;
+    hilite_bg->frame.w = view->frame.w;
+    hilite_bg->frame.h = 8;
+
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_add_subview( state->hilite_view, title_ticker_norm );
+    title_ticker_norm->frame.x = 1;
+    title_ticker_norm->frame.y = -1;
+    title_ticker_norm->frame.w = view->frame.w;
+    title_ticker_norm->frame.h = view->frame.h;
+
+    zdj_view_t * btn = zdj_new_noclip_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_ADD_TO_PLAYLIST ], NULL );
+    btn->frame.x = -9;
     btn->frame.y = -3;
     zdj_add_subview( state->hilite_view, btn );
 }

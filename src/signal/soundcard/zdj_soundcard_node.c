@@ -398,6 +398,14 @@ zdj_soundcard_node_t * zdj_soundcard_node_get_stereo_partner_node( zdj_soundcard
             return zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3 );
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3:
             return zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 );
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0: 
+            return zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1 );
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
+            return zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 );
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: 
+            return zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1 );
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1:
+            return zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 );
         default: return NULL;
     }
 }
@@ -423,6 +431,14 @@ zdj_error_type_t zdj_soundcard_get_port_title_with_stereo(
         zdj_soundcard_get_node_for_name( soundcard, name )->stereo 
     ) {
         strcpy( str, "Analog Out 3/4" );
+    } else if( name == ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 &&
+        zdj_soundcard_get_node_for_name( soundcard, name )->stereo 
+    ) {
+        strcpy( str, "USB In 1/2" );
+    } else if( name == ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 &&
+        zdj_soundcard_get_node_for_name( soundcard, name )->stereo 
+    ) {
+        strcpy( str, "USB Out 1/2" );
     }
 }
 
@@ -596,8 +612,10 @@ bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS:
         case ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
@@ -634,8 +652,10 @@ bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name ) {
 bool zdj_soundcard_node_name_is_io( zdj_soundcard_node_name_t name ) {
     switch ( name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
@@ -650,8 +670,10 @@ bool zdj_soundcard_node_name_is_io( zdj_soundcard_node_name_t name ) {
 
 bool zdj_soundcard_node_name_is_physical_port( zdj_soundcard_node_name_t name ) {
     switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
@@ -666,7 +688,8 @@ bool zdj_soundcard_node_name_is_physical_port( zdj_soundcard_node_name_t name ) 
 
 bool zdj_soundcard_node_name_is_input( zdj_soundcard_node_name_t name ) {
     switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2:
@@ -688,7 +711,8 @@ bool zdj_soundcard_node_name_is_analog_input( zdj_soundcard_node_name_t name ) {
 bool zdj_soundcard_node_name_is_output( zdj_soundcard_node_name_t name ) {
     switch ( name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS:
-        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2:
@@ -770,7 +794,29 @@ bool zdj_soundcard_node_name_is_midi( zdj_soundcard_node_name_t name ) {
 }
 
 bool zdj_soundcard_node_name_is_usb( zdj_soundcard_node_name_t name ) {
-    return false;
+    switch ( name ) {
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: return true;
+        default: return false;
+    }
+}
+
+bool zdj_soundcard_node_name_is_usb_input( zdj_soundcard_node_name_t name ) {
+    switch ( name ) {
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: return true;
+        default: return false;
+    }
+}
+
+bool zdj_soundcard_node_name_is_usb_output( zdj_soundcard_node_name_t name ) {
+    switch ( name ) {
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1: return true;
+        default: return false;
+    }
 }
 
 bool zdj_soundcard_node_name_is_right_channel( zdj_soundcard_node_name_t name ) {
@@ -778,7 +824,9 @@ bool zdj_soundcard_node_name_is_right_channel( zdj_soundcard_node_name_t name ) 
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3:
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1:
-        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return true;
+        case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1:
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: return true;
         default: return false;
     }
 }

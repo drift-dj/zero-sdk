@@ -156,7 +156,9 @@ void zdj_soundcard_options_update_ext_deck_layout( zdj_view_t * view ) {
             // instead of just "out 1"
             char adjusted_name[ 64 ];
             if( zdj_soundcard_node_name_is_analog_input( page_node->output_links[ i ].dest_node ) ||
-                zdj_soundcard_node_name_is_analog_output( page_node->output_links[ i ].dest_node ) 
+                zdj_soundcard_node_name_is_analog_output( page_node->output_links[ i ].dest_node ) ||
+                zdj_soundcard_node_name_is_usb_input( page_node->output_links[ i ].dest_node ) ||
+                zdj_soundcard_node_name_is_usb_output( page_node->output_links[ i ].dest_node ) 
             ) {
                 zdj_soundcard_get_port_title_with_stereo( 
                     options_state->config_context->soundcard,

@@ -14,13 +14,17 @@
 #include <libavcodec/codec_id.h>
 
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
+#include <zerodj/signal/pipeline/node/analysis/waveform/zdj_waveform.h>
 #include <zerodj/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.h>
+#include <zerodj/signal/pipeline/node/audio/library_decode/zdj_library_decode_node.h>
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/settings/zdj_settings.h>
+#include <zerodj/ui/widget/notify/zdj_notify_widget.h>
 
 static void _update_wait( zdj_pipeline_node_t * node );
 static void _deinit_state( zdj_pipeline_node_t * node );
@@ -124,18 +128,37 @@ static void _deinit_state( zdj_pipeline_node_t * node ) {
 
 // The following commands come from the UI thread.  All audio processing must be done
 // on the audio fast-cycle thread.
-void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node ) {
+void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node, bool notify ) {
     printf( "zdj_new_audio_record_capture\n" );
     zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
     record_state->save_on_finish = false;
 
     // Create tmp file to store sample data.
     record_state->status = ZDJ_AUDIO_RECORD_BEGIN;
+
+    // Show note w/filename
+    if( notify ) {
+        char recording_name[ 32 ];
+        // recording num will update during finalize process
+        int recording_num = zdj_setting_get( ZDJ_SETTING_RECORDING_COUNTER )->i_val + 1;
+        snprintf( recording_name, sizeof( recording_name ), "recording_%03d.wav", recording_num );
+        zdj_show_notify_widget( recording_name, NULL, NULL );
+    }
 }
 
-void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save ) {
+void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save, bool notify ) {
     printf( "zdj_finish_audio_record_capture\n" );
     zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
+    
+    // Show note w/filename
+    if( notify ) {
+        char recording_name[ 32 ];
+        // recording num will update during finalize process
+        int recording_num = zdj_setting_get( ZDJ_SETTING_RECORDING_COUNTER )->i_val + 1;
+        snprintf( recording_name, sizeof( recording_name ), "recording_%03d.wav", recording_num );
+        zdj_show_notify_widget( recording_name, NULL, NULL );
+    }
+    
     // Signal to all threads that we're done capturing data.
     record_state->sample_count = 0;
     record_state->save_on_finish = save;
@@ -271,6 +294,7 @@ void * _zdj_record_proc_thread_main( void * arg ) {
 static void _write_recording( zdj_pipeline_node_t * record_node ) {
     zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
 
+    
     char out_filename[ 256 ];
     int recording_num = zdj_setting_increment_int( ZDJ_SETTING_RECORDING_COUNTER );
     snprintf( out_filename, sizeof( out_filename ), "%s/recording_%03d.wav", 
@@ -278,7 +302,17 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         recording_num 
     );
 
-    // Populate tags from current state.
+    // Create song graph for storage
+    zdj_library_song_t * song = zdj_library_create_file_import_song_graph( out_filename, zdj_library_db );
+    strcpy( song->catalog->artist, ZDJ_RECORDING_ARTIST );
+    char rec_title[ 64 ];
+    sprintf( rec_title, "%s%03d", ZDJ_RECORDING_PREFIX, recording_num );
+    strcpy( song->catalog->title, rec_title );
+    if( zdj_deck_manager( )->sync.active ) {
+        song->performance->has_beat_grid = true;
+        song->performance->bpm = zdj_deck_manager( )->sync.set_bpm;
+    }
+
     // Write tmp data thru AVContext to output file.
 
     AVFormatContext *in_fmt_ctx = NULL;
@@ -308,15 +342,45 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         return;
     }
 
+    // Store AVCodecID, stream index, and song duration for later use.
+    for (int i = 0; i < in_fmt_ctx->nb_streams; i++) {
+        AVCodecParameters * params = in_fmt_ctx->streams[ i ]->codecpar;
+        if ( params->codec_type == AVMEDIA_TYPE_AUDIO) {
+            song->audio->av_codec_id = params->codec_id;
+            song->audio->av_stream_index = i;
+            song->audio->av_sample_rate = params->sample_rate;
+            song->audio->av_sample_format = params->format;
+            song->audio->av_channel_count = params->channels;
+            double tb = (double)(in_fmt_ctx->streams[ i ]->time_base.num) / (double)(in_fmt_ctx->streams[ i ]->time_base.den);
+            song->audio->duration_sec = (double)in_fmt_ctx->streams[ i ]->duration * tb;
+            song->audio->timebase = (double)in_fmt_ctx->streams[ i ]->time_base.den;
+        }
+    }
+
+
     // printf( "1\n" );
 
     // Find the audio stream
     for (int i = 0; i < in_fmt_ctx->nb_streams; i++) {
-        if (in_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        AVCodecParameters * params = in_fmt_ctx->streams[ i ]->codecpar;
+        if ( params->codec_type == AVMEDIA_TYPE_AUDIO) {
+        // if (in_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             stream_index = i;
+
+            // Capture the stream info in the library DTO
+            song->audio->av_codec_id = params->codec_id;
+            song->audio->av_stream_index = i;
+            song->audio->av_sample_rate = params->sample_rate;
+            song->audio->av_sample_format = params->format;
+            song->audio->av_channel_count = params->channels;
+            double tb = (double)(in_fmt_ctx->streams[ i ]->time_base.num) / (double)(in_fmt_ctx->streams[ i ]->time_base.den);
+            song->audio->duration_sec = (double)in_fmt_ctx->streams[ i ]->duration * tb;
+            song->audio->timebase = (double)in_fmt_ctx->streams[ i ]->time_base.den;
+
             break;
         }
     }
+
     if (stream_index == -1) {
         av_log(NULL, AV_LOG_ERROR, "Cannot find an audio stream\n");
         avformat_close_input(&in_fmt_ctx);
@@ -353,19 +417,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         return;
     }
 
-
-    // printf( "4\n" );
-
-    // Set WAV-compatible metadata (RIFF INFO tags)
-    char rec_title[ 64 ];
-    sprintf( rec_title, "recording_%03d", recording_num );
-    av_dict_set(&out_fmt_ctx->metadata, "artist", "Zero Recording", 0);
-    av_dict_set(&out_fmt_ctx->metadata, "title", rec_title, 0);
-    // Use other compatible RIFF INFO keys as needed
-
-
-    // printf( "5\n" );
-
     // Open the output file
     if (!(out_fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
         if ((ret = avio_open(&out_fmt_ctx->pb, out_filename, AVIO_FLAG_WRITE)) < 0) {
@@ -376,8 +427,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         }
     }
 
-    // printf( "6\n" );
-
     // Write the stream headers
     if ((ret = avformat_write_header(out_fmt_ctx, NULL)) < 0) {
         av_log(NULL, AV_LOG_ERROR, "Error occurred when writing header\n");
@@ -386,8 +435,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         avformat_free_context(out_fmt_ctx);
         return;
     }
-
-    // printf( "7\n" );
 
     // Read frames from input and write to output
     while (av_read_frame(in_fmt_ctx, &pkt) >= 0) {
@@ -409,8 +456,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
     // Write the trailer
     av_write_trailer(out_fmt_ctx);
 
-    // printf( "8\n" );
-
     // Clean up
     if (out_fmt_ctx && !(out_fmt_ctx->oformat->flags & AVFMT_NOFILE)) {
         avio_closep(&out_fmt_ctx->pb);
@@ -423,6 +468,76 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
     sync( );
 
     printf( "Wrote file: %s\n", out_filename );
+
+
+    /////////////////////////////////////
+    // Import new recording to Library //
+    /////////////////////////////////////
+    song->analysis_state = ZDJ_LIBRARY_ANALYSIS_STATE_RUNNING;
+
+    // Make waveforms
+    zdj_pipeline_node_t * decode_node = zdj_new_library_decode_node( song );
+    zdj_library_decode_node_state_t * decode_state = (zdj_library_decode_node_state_t*)decode_node->state;
+
+    zdj_fs_mkdir_p( ZDJ_LIBRARY_PLAYBACK_WAVEFORM_TEMP_DIR );
+    zdj_fs_mkdir_p( ZDJ_LIBRARY_THUMB_WAVEFORM_TEMP_DIR );
+
+    char tmp_waveform_path[ 256 ];
+    char tmp_thumb_path[ 256 ];
+
+    snprintf( tmp_waveform_path, sizeof( tmp_waveform_path ), "%s/%s", 
+        ZDJ_LIBRARY_PLAYBACK_WAVEFORM_TEMP_DIR, song->entity_id
+    );
+    zdj_pipeline_node_t * playback_waveform_maker = zdj_new_waveform_maker( 
+        decode_node,
+        tmp_waveform_path,
+        ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE,
+        6500
+    );
+    if( !playback_waveform_maker ) { printf( "playback waveform maker failed\n" ); }
+
+    // Make Thumb waveform node
+    snprintf( tmp_thumb_path, sizeof( tmp_thumb_path ), "%s/%s", ZDJ_LIBRARY_THUMB_WAVEFORM_TEMP_DIR, song->entity_id );
+    // Take a rough guess art duration to figure out thumb waveform stride.  Doesn't have to be accurate.
+    int64_t est_duration = song->audio->duration_sec * song->audio->av_sample_rate;
+    zdj_pipeline_node_t * thumb_waveform_maker = zdj_new_waveform_maker( 
+        decode_node,
+        tmp_thumb_path,
+        fmin( ZDJ_THUMB_WAVEFORM_SAMPLE_STRIDE, est_duration / 300 ),
+        20
+    );
+    if( !thumb_waveform_maker ) { printf( "thumb waveform maker failed\n" ); }
+
+    while( song->analysis_state == ZDJ_LIBRARY_ANALYSIS_STATE_RUNNING ) {
+        // printf( "updating waveform makers\n" );
+        decode_node->update_wait( decode_node );
+        playback_waveform_maker->update_wait( playback_waveform_maker );
+        thumb_waveform_maker->update_wait( thumb_waveform_maker );
+    }
+
+    decode_node->deinit( decode_node );
+    zdj_close_waveform_maker( playback_waveform_maker );
+    playback_waveform_maker->deinit( playback_waveform_maker );
+    zdj_close_waveform_maker( thumb_waveform_maker );
+    thumb_waveform_maker->deinit( thumb_waveform_maker );
+
+    // Store graph
+    zdj_library_store_song_graph( song, zdj_library_db );
+    // Add song entity_id to library's song links
+    zdj_library_add_song_link( zdj_library_config_get_current_library_id( ), song, zdj_library_db );
+
+    // Copy waveforms from temp to final dirs
+    char waveform_path[ 256 ];
+    char thumb_path[ 256 ];
+
+    snprintf( waveform_path, sizeof( waveform_path ), "%s/%s",  ZDJ_LIBRARY_PLAYBACK_WAVEFORM_DIR, song->entity_id );
+    zdj_fs_copy_file( tmp_waveform_path, waveform_path, true );
+    
+    snprintf( thumb_path, sizeof( thumb_path ), "%s/%s",  ZDJ_LIBRARY_THUMB_WAVEFORM_DIR, song->entity_id );
+    zdj_fs_copy_file( tmp_thumb_path, thumb_path, true );
+    
+    zdj_library_db_flush( );
+    zdj_library_free_song_graph( song );
     // return NULL;
 }
 

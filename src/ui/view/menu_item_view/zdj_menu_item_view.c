@@ -118,6 +118,47 @@ zdj_view_t * zdj_new_browser_device_menu_item(
     return menu_item;
 }
 
+zdj_view_t * zdj_new_song_menu_item( 
+    zdj_library_song_t * song,
+    bool show_title_and_artist,
+    bool show_key,
+    bool show_camelot,
+    bool show_bpm,
+    zdj_menu_item_view_layout_t layout
+ ) {
+    if( !song ) { return NULL; }
+    char label[ 256 ];
+    if( show_title_and_artist ) {
+        snprintf( label, sizeof( label ), "%s - %s", song->catalog->artist, song->catalog->title );
+    } else {
+        strcpy( label, song->catalog->title );
+    }
+    zdj_view_t * menu_item = zdj_new_menu_item( label, layout );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    
+    // Use i_val as bitfield
+    // Pack show/hide bpm/key/cam states, BPM val, and key val into i_val bitfield
+    item_state->data.i_val = 0;
+    if( show_camelot && song->performance ) {
+        // Store song key in i_val as bitfield
+        item_state->data.i_val += ( (show_camelot & 0x1) << 1 );
+    }
+    if( show_key && song->performance ) {
+        // Store song key in i_val as bitfield
+        item_state->data.i_val += ( show_key & 0x1 );
+    }
+    if( (show_key || show_camelot) && song->performance ) {
+        item_state->data.i_val += ( (song->performance->key & 0xFF) << 8 );
+        // printf( "song key:%d i_val: %d\n", song->performance->key, item_state->data.i_val );
+    }
+    if( show_bpm && song->performance && song->performance->has_beat_grid ) {
+        item_state->data.i_val += ( (show_bpm & 0x1) << 2 );
+        int bpm = round( song->performance->bpm );
+        item_state->data.i_val += ( (bpm & 0xFF) << 16 );
+    }
+    return menu_item;
+}
+
 // March through any view's subviews, looking for a menu_item_view
 // with a matching scroll_index.
 zdj_view_t * zdj_menu_item_for_scroll_index( zdj_view_t * view, int index ) {
@@ -147,7 +188,10 @@ void zdj_menu_item_scroll_options( zdj_view_t * item, int dir ) {
             edit_option_count = 10;
             break;
         case ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST:
-            edit_option_count = 8;
+            edit_option_count = 11;
+            break;
+        case ZDJ_MENU_ITEM_OPTIONS_FILE:
+            edit_option_count = 11;
             break;
         default:
             edit_option_count = 0;
@@ -157,24 +201,6 @@ void zdj_menu_item_scroll_options( zdj_view_t * item, int dir ) {
     printf( "zdj_menu_item_scroll_options: %d %1.1f %1.0f / %1.0f\n", dir, item_state->edit_option_index, round( item_state->edit_option_index ), edit_option_count );
     item_state->needs_layout_update = true;
 }
-
-// void zdj_menu_item_enter_edit_mode( zdj_view_t * item ) {
-//     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
-    
-//     // Update layout to first edit option state
-//     item_state->edit_active = true;
-//     item_state->edit_option_index = 0.0f;
-//     item_state->needs_layout_update = true;
-// }
-
-// void zdj_menu_item_exit_edit_mode( zdj_view_t * item ) {
-//     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
-    
-//     // Update layout to normal state
-//     item_state->edit_active = false;
-//     item_state->needs_layout_init = true;    
-//     item_state->edit_action = ZDJ_MENU_ITEM_ACTION_SELECT;
-// }
 
 void zdj_menu_item_enter_move_mode( zdj_view_t * item ) {
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
@@ -188,12 +214,6 @@ void zdj_menu_item_exit_move_mode( zdj_view_t * item ) {
     printf( "zdj_menu_item_exit_move_mode\n" );
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
 
-    // item_state->edit_active = true;
-    // item_state->edit_option_index = 3.0f;
-    // item_state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
-    // item_state->needs_layout_update = true;
-
-    // zdj_menu_item_exit_edit_mode( item );
     if( item_state->exit_edit_mode ) {
         item_state->exit_edit_mode( item );
     }
@@ -217,7 +237,6 @@ void _zdj_menu_item_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
             state->is_hilite = true;
         } else {
             // blink on a cycle
-            // if( state->blink_timer % ZDJ_BLINK_PERIOD > ZDJ_BLINK_DUTY ) {
             if( (state->blink_timer % state->blink_period) >= state->blink_duty ) {
                 _zdj_menu_item_set_hilite( state, clip, false );
             } else {
@@ -300,6 +319,11 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             break;
         case ZDJ_MENU_ITEM_LAYOUT_DIR_UP:
             item_state->init_layout = zdj_menu_item_dir_up_init_layout;
+            item_state->handles_hmi = true;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_FILE:
+            item_state->init_layout = zdj_menu_item_file_init_layout;
+            item_state->update_layout = zdj_menu_item_file_update_layout;
             item_state->handles_hmi = true;
             break;
         case ZDJ_MENU_ITEM_LAYOUT_ICON:

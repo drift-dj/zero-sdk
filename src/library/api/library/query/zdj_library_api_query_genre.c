@@ -126,10 +126,10 @@ zdj_error_type_t zdj_library_query_songs_in_genre(
             // Bound results by count input
             if( row < count ) {
                 songs[ row ] = zdj_library_fetch_song_dto_for_entity_id( (char*)sqlite3_column_text ( a_stmt, 0 ), db );
-                printf( "songs[%d]: %p\n", row, songs[ row ] );
+                // printf( "songs[%d]: %p\n", row, songs[ row ] );
                 if( songs[ row ] ) {
                     zdj_library_fetch_menu_song_graph( songs[ row ], db );
-                    printf( "catalog: %p\n", songs[ row ]->catalog );
+                    // printf( "catalog: %p\n", songs[ row ]->catalog );
                 }
             }
             row++;

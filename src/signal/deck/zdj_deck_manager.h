@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+#include <zerodj/library/zdj_library.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/system/error/zdj_error.h>
@@ -60,6 +61,9 @@ typedef struct {
     zdj_deck_manager_sync_t sync;
     zdj_deck_station_t recent_station;
     uint8_t control_change_flags[ ZDJ_CONTROL_ID_COUNT ];
+    float xfade_val;
+    float fade_1_val;
+    float fade_2_val;
 } zdj_deck_manager_t;
 
 zdj_error_type_t zdj_deck_manager_init( void );
@@ -82,6 +86,13 @@ bool zdj_deck_manager_can_activate_sync( void );
 void zdj_deck_manager_set_sync( double bpm );
 void zdj_deck_manager_deactivate_sync( void );
 void zdj_deck_manager_update_sync_bpm( double offset );
+
+void zdj_deck_manager_update_xfade( float val );
+void zdj_deck_manager_update_fade( int fader, float val );
+zdj_deck_station_t zdj_deck_manager_get_xfade_deck( void );
+
+// Key match
+zdj_library_key_t zdj_deck_manager_get_current_key( void );
 
 // Receive a new batch of deck control events.
 void zdj_deck_manager_handle_events( int start_ind, int end_ind );

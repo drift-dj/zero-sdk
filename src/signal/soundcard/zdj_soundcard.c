@@ -12,7 +12,9 @@
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/signal/soundcard/db/zdj_soundcard_dto.h>
+#include <zerodj/signal/soundcard/usb/zdj_soundcard_usb.h>
 #include <zerodj/system/sql/zdj_sql.h>
+#include <zerodj/system/usb/zdj_usb.h>
 
 zdj_soundcard_t * zdj_soundcard;
 
@@ -34,6 +36,12 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     soundcard->analog_io_node->state;
     soundcard->analog_io_node->update_cb = &_zdj_soundcard_io_fast_cycle_cb;
     zdj_io_analog_configure( soundcard->analog_io_node );
+
+    // Bring up the USB I/O node
+    soundcard->usb_io_node = zdj_new_io_usb_node( );
+    zdj_io_usb_node_state_t * io_usb_node_state = (zdj_io_usb_node_state_t*)
+    soundcard->usb_io_node->state;
+    // printf( "usb_io_node_state 0: %p %p %d\n", soundcard->usb_io_node, io_usb_node_state, io_usb_node_state->phase );
 
     if( entity_id ) {
         // If explicitly asked, bring up a specific record from the soundcard db.
@@ -58,6 +66,12 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     io_node_state->in_2_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 )->data_pipe;
     zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3 )->data_pipe = io_node_state->in_2_buffer;
 
+    // Link usb_io pipeline node to io soundcard nodes
+    io_usb_node_state->soundcard_out_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->data_pipe;
+    io_usb_node_state->soundcard_in_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 )->data_pipe;
+    zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1 )->data_pipe = io_usb_node_state->soundcard_in_buffer;
+
+
     // Create a waveform pipeline node to process o-scope data.
     soundcard->scope_waveform = zdj_new_live_waveform( );
     soundcard->scope_node_name = ZDJ_SOUNDCARD_NODE_NAME_NONE;
@@ -70,7 +84,7 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     zdj_soundcard_init_clock_deck( soundcard );
 
     // Bring up USB admin thread
-    // zdj_soundcard_launch_usb_admin_thread( );
+    zdj_soundcard_launch_usb_admin_thread( soundcard );
 
 
     // Start the transport pipeline
@@ -131,6 +145,12 @@ zdj_error_type_t zdj_soundcard_stop( zdj_soundcard_t * soundcard ) {
 void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     // Transform output samples from io_node's output float buffers to shared M7 buffers
     zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
+    if( zdj_usb_state &&
+        zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
+        zdj_usb_state->host_state.attached.count > 0
+    ) {
+        zdj_usb_io_push_samples( zdj_soundcard->usb_io_node );
+    }
     
     // // Transform output samples from io_node's output float buffers to shared M7 buffers
     // zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
@@ -154,6 +174,12 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
 
     // Transform input samples from shared M7 buffer to io_node's input float buffers
     zdj_analog_io_pull_samples( zdj_soundcard->analog_io_node );
+    if( zdj_usb_state &&
+        zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
+        zdj_usb_state->host_state.attached.count > 0
+    ) {
+        zdj_usb_io_pull_samples( zdj_soundcard->usb_io_node );
+    }
 
     // mix_inputs will recursively walk the graph of input nodes for a single node.
     // How to deal with stereo output channels? - do we need to?
@@ -181,4 +207,24 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
 
     // Update the audio recording node - periodically flush samples to file
     zdj_soundcard->recording_node->update_wait( zdj_soundcard->recording_node );
+
+    // If there's a new attached USB device, and it has completed ALSA bringup,
+    // start the ALSA loop on this thread
+    if( zdj_usb_state &&
+        zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
+        zdj_soundcard->usb_io_node 
+    ) {
+        zdj_io_usb_node_state_t * usb_node_state = (zdj_io_usb_node_state_t*)zdj_soundcard->usb_io_node ->state;
+        if( usb_node_state->phase == ZDJ_IO_USB_PHASE_READY ) {
+            zdj_io_usb_alsa_start( zdj_soundcard->usb_io_node );
+        }
+    }
+
+
+    // DON'T DO THIS HERE IF WE CAN AVOID IT - TRY IT ON A CORE 0 THREAD
+    // // Update linkages if any USB audio/midi devices have been attached or removed
+    // if( zdj_usb_state->host_state.has_soundcard_update ) {
+    //     // Unlink any nodes for devices which have been removed
+    //     // Link in new nodes for attached devices
+    // }
 }

@@ -23,22 +23,16 @@
 
 #include <zerodj/ui/anim/zdj_anim.h>
 
-// typedef struct {
-//     bool deployed;
-//     bool event_capture;
-//     zdj_view_t * container_view;
-//     zdj_view_t * thread_view;
-//     zdj_anim_t * in_anim;
-//     zdj_anim_t * out_anim;
-// } zdj_perf_widget_state_t;
-
 typedef struct {
     bool deployed;
+    int deploy_counter;
     zdj_view_t * container;
     int line_count;
     zdj_view_t * label_1;
     zdj_view_t * label_2;
     zdj_view_t * label_3;
+    float w;
+    float h;
     zdj_anim_t * in_anim;
     zdj_anim_t * out_anim;
     void ( *toggle )( zdj_view_t* );
@@ -46,7 +40,7 @@ typedef struct {
 
 zdj_view_t * zdj_new_notify_widget( void );
 
-void zdj_show_notify_widget( int line_count, char * line_1, char * line_2, char * line_3 );
+void zdj_show_notify_widget( char * line_1, char * line_2, char * line_3 );
 
 
 #endif

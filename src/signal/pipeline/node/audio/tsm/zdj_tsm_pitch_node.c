@@ -68,7 +68,9 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         decode_state->channel_count,
         state->out_buffer,
         ZDJ_SOUNDCARD_BUF_LEN,
-        state->channel_count
+        state->channel_count,
+        state->start_fade_val,
+        state->end_fade_val
     );
     // float pre_p = _tsm1_p;
     // _tsm1_p = zdj_signal_gen_sine( 
@@ -89,4 +91,10 @@ static void _deinit_state( zdj_pipeline_node_t * node ) {
     zdj_tsm_pitch_node_state_t * state = (zdj_tsm_pitch_node_state_t*)node->state;
     if( state->out_buffer ) { free( state->out_buffer ); }
     if( state ) { node->state = NULL; free( state );  }
+}
+
+
+void zdj_tsm_pitch_node_clear_out_buf( zdj_pipeline_node_t * node ) {
+    zdj_tsm_pitch_node_state_t * state = (zdj_tsm_pitch_node_state_t*)node->state;
+    memset( state->out_buffer, 0, state->sample_count * state->channel_count * sizeof( float ) );
 }

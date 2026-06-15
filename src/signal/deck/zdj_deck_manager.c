@@ -260,6 +260,85 @@ void zdj_deck_manager_update_sync_bpm( double offset ) {
     }
 }
 
+void zdj_deck_manager_update_xfade( float val ) {
+    zdj_deck_manager( )->xfade_val = val;
+}
+
+void zdj_deck_manager_update_fade( int fader, float val ) {
+    if( fader == 1 ) {
+        zdj_deck_manager( )->fade_1_val = val;
+    } else if( fader == 2 ) {
+        zdj_deck_manager( )->fade_2_val = val;
+    }
+}
+
+// Return the DJ deck which currently has the highest fade value.
+// Used by key match system to determine the currently dominant key in the mix.
+zdj_deck_station_t zdj_deck_manager_get_xfade_deck( void ) {
+    // Get position of xfader
+    if( zdj_deck_manager( )->xfade_val < 0.5 ) {
+        return ZDJ_DECK_STATION_1;
+    } else {
+        return ZDJ_DECK_STATION_2;
+    }
+}
+
+// Slightly complex logic here:
+// If no decks are loaded yet, return none.
+// If deck 1 exists, and deck 2 doesn't return deck 1's key regardless of fade val.
+// If deck 2 exists, and deck 1 doesn't return deck 2's key regardless of fade val.
+// If deck 1 exists and has the higher fade value, return deck 1's key.
+// If deck 2 exists and has the higher fade value, return deck 2's key.
+
+zdj_library_key_t zdj_deck_manager_get_current_key( void ) {
+
+    float deck_1_val = 0.0;
+    float deck_2_val = 0.0;
+    zdj_deck_t * deck_1 = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_1 );
+    zdj_deck_t * deck_2 = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_2 );
+
+    if( !deck_1 && !deck_2 ) { return ZDJ_LIBRARY_KEY_NONE; }
+
+    zdj_dj_deck_state_t * deck_1_state = NULL;
+    zdj_soundcard_node_t * deck_1_node = NULL;
+    zdj_dj_deck_state_t * deck_2_state = NULL;
+    zdj_soundcard_node_t * deck_2_node = NULL;
+    
+    // printf( "xf:%1.2f\n", zdj_deck_manager( )->xfade_val );
+
+    if( deck_1 ) { 
+        deck_1_state = (zdj_dj_deck_state_t*)deck_1->state;
+        deck_1_node =  zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE );
+        deck_1_val = (1.0 - zdj_deck_manager( )->xfade_val ) * deck_1_node->dsp_dto->gain; 
+        // printf( "d1:%1.2f/%1.2f\n", deck_1_node->dsp_dto->gain, deck_1_val );
+    }
+    if( deck_2 ) { 
+        deck_2_state = (zdj_dj_deck_state_t*)deck_2->state;
+        deck_2_node =  zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
+        deck_2_val = zdj_deck_manager( )->xfade_val * deck_2_node->dsp_dto->gain; 
+        // printf( "d2:%1.2f/%1.2f\n", deck_2_node->dsp_dto->gain, deck_2_val );
+    }
+
+    
+    
+    if( deck_1 && !deck_2 && deck_1_state->song->performance ) { 
+        // printf( "returning d1/no d2 key\n" );
+        return deck_1_state->song->performance->key;
+    } else if( !deck_1 && deck_2 && deck_2_state->song->performance ) { 
+        // printf( "returning d2/no d1 key\n" );
+        return deck_2_state->song->performance->key;
+    } else if( (deck_1_val > deck_2_val) && deck_1_state->song->performance ) {
+        // printf( "returning d1 > d2 key\n" );
+        return deck_1_state->song->performance->key;
+    } else if( (deck_1_val < deck_2_val) && deck_2_state->song->performance ) {
+        // printf( "returning d1 < d2 key\n" );
+        return deck_2_state->song->performance->key;
+    } else {
+        // printf( "no key found\n" );
+        return ZDJ_LIBRARY_KEY_NONE;
+    }
+}
+
 // Clear all control flags
 void zdj_deck_manager_clear_control_flags( zdj_deck_t * deck ) {
     memset( zdj_deck_manager( )->control_change_flags, 0, ZDJ_CONTROL_ID_COUNT * sizeof( uint8_t ) );
@@ -273,7 +352,9 @@ void zdj_deck_manager_control_update_cycle( void ) {
     // printf( "zdj_deck_manager_control_update_cycle\n" );
     zdj_deck_t * deck = zdj_deck_manager( )->decks;
     while( deck ) {
-        if( deck->update_transport_inputs ){ deck->update_transport_inputs( deck ); }
+        // if( deck->update_transport_inputs ){ deck->update_transport_inputs( deck ); }
+        if( deck->update_platter_req ){ deck->update_platter_req( deck ); }
+        if( deck->update_command_req ){ deck->update_command_req( deck ); }
         deck = deck->next;
     }
     // printf( "zdj_deck_manager_control_update_cycle done\n" );
@@ -364,7 +445,11 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_LOOP_END:
         case ZDJ_DECK_1_CONTROL_LOOP_LENGTH:
         case ZDJ_DECK_1_CONTROL_LOOP_LENGTH_ALT:
+        case ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START:
+        case ZDJ_DECK_1_CONTROL_QUANT_TOGGLE:
+        case ZDJ_DECK_1_CONTROL_QUANT_VAL:
         case ZDJ_DECK_1_CONTROL_SKIP:
+        case ZDJ_DECK_1_CONTROL_SKIP_ALT:
         case ZDJ_DECK_1_CONTROL_SKIP_LENGTH:
         case ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN:
         case ZDJ_DECK_1_CONTROL_SKIP_RESET_TO_ORIGIN:
@@ -381,13 +466,32 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_FILTER_RESET:
         case ZDJ_DECK_1_CONTROL_SYNC_MULT:
         case ZDJ_DECK_1_CONTROL_SCRUB:
+        case ZDJ_DECK_1_CONTROL_SCRUB_ALT_0:
+        case ZDJ_DECK_1_CONTROL_SCRUB_ALT_1:
         case ZDJ_DECK_1_CONTROL_TEMPO:
         case ZDJ_DECK_1_CONTROL_TEMPO_FINE:
         case ZDJ_DECK_1_CONTROL_PLAY_PAUSE:
         case ZDJ_DECK_1_CONTROL_PAUSE:
-        case ZDJ_DECK_1_CONTROL_HOTCUE_START:
-        case ZDJ_DECK_1_CONTROL_HOTCUE_END: 
-        case ZDJ_DECK_1_CONTROL_HOTCUE_NEXT: return station == ZDJ_DECK_STATION_1;
+        case ZDJ_DECK_1_CONTROL_CUE_START:
+        case ZDJ_DECK_1_CONTROL_CUE_END: 
+        case ZDJ_DECK_1_CONTROL_CUE_NEXT:
+        case ZDJ_DECK_1_CONTROL_CUE_SET:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_0:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_1:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_2:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_3:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_4:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_5:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_6:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_7:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_8:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_9:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_10:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_11:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_12:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_13:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_14:
+        case ZDJ_DECK_1_CONTROL_HOTCUE_15: return station == ZDJ_DECK_STATION_1;
 
 
         case ZDJ_DECK_2_CONTROL_FADE:
@@ -405,7 +509,11 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_LOOP_END:
         case ZDJ_DECK_2_CONTROL_LOOP_LENGTH:
         case ZDJ_DECK_2_CONTROL_LOOP_LENGTH_ALT:
+        case ZDJ_DECK_2_CONTROL_LOOP_RESET_TO_START:
+        case ZDJ_DECK_2_CONTROL_QUANT_TOGGLE:
+        case ZDJ_DECK_2_CONTROL_QUANT_VAL:
         case ZDJ_DECK_2_CONTROL_SKIP:
+        case ZDJ_DECK_2_CONTROL_SKIP_ALT:
         case ZDJ_DECK_2_CONTROL_SKIP_LENGTH:
         case ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN:
         case ZDJ_DECK_2_CONTROL_SKIP_RESET_TO_ORIGIN:
@@ -422,13 +530,32 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_FILTER_RESET:
         case ZDJ_DECK_2_CONTROL_SYNC_MULT:
         case ZDJ_DECK_2_CONTROL_SCRUB:
+        case ZDJ_DECK_2_CONTROL_SCRUB_ALT_0:
+        case ZDJ_DECK_2_CONTROL_SCRUB_ALT_1:
         case ZDJ_DECK_2_CONTROL_TEMPO:
         case ZDJ_DECK_2_CONTROL_TEMPO_FINE:
         case ZDJ_DECK_2_CONTROL_PLAY_PAUSE:
         case ZDJ_DECK_2_CONTROL_PAUSE:
-        case ZDJ_DECK_2_CONTROL_HOTCUE_START:
-        case ZDJ_DECK_2_CONTROL_HOTCUE_END:
-        case ZDJ_DECK_2_CONTROL_HOTCUE_NEXT: return station == ZDJ_DECK_STATION_2;
+        case ZDJ_DECK_2_CONTROL_CUE_START:
+        case ZDJ_DECK_2_CONTROL_CUE_END:
+        case ZDJ_DECK_2_CONTROL_CUE_NEXT:
+        case ZDJ_DECK_2_CONTROL_CUE_SET:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_0:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_1:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_2:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_3:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_4:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_5:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_6:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_7:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_8:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_9:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_10:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_11:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_12:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_13:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_14:
+        case ZDJ_DECK_2_CONTROL_HOTCUE_15: return station == ZDJ_DECK_STATION_2;
 
 
         case ZDJ_DECK_EXT_CONTROL_TRIM:
@@ -461,7 +588,9 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_EXT_CONTROL_FILTER_2:
         case ZDJ_DECK_EXT_CONTROL_FILTER_RESET:
         case ZDJ_DECK_EXT_CONTROL_SYNC_MULT:
-        case ZDJ_DECK_EXT_CONTROL_SCRUB: return station == ZDJ_DECK_STATION_EXT;
+        case ZDJ_DECK_EXT_CONTROL_SCRUB:
+        case ZDJ_DECK_EXT_CONTROL_SCRUB_ALT_0:
+        case ZDJ_DECK_EXT_CONTROL_SCRUB_ALT_1: return station == ZDJ_DECK_STATION_EXT;
 
         case ZDJ_DECK_XPORT_CONTROL_SCRUB:
         case ZDJ_DECK_XPORT_CONTROL_SYNC_MULT:
@@ -469,9 +598,9 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE:
         case ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE:
         case ZDJ_DECK_XPORT_CONTROL_PAUSE:
-        case ZDJ_DECK_XPORT_CONTROL_HOTCUE_START:
-        case ZDJ_DECK_XPORT_CONTROL_HOTCUE_STOP:
-        case ZDJ_DECK_XPORT_CONTROL_HOTCUE_END: return station == ZDJ_DECK_STATION_XPORT;
+        case ZDJ_DECK_XPORT_CONTROL_CUE_START:
+        case ZDJ_DECK_XPORT_CONTROL_CUE_STOP:
+        case ZDJ_DECK_XPORT_CONTROL_CUE_END: return station == ZDJ_DECK_STATION_XPORT;
 
         // Everyone hears these
         case ZDJ_DECK_CONTROL_SYNC_TOGGLE:

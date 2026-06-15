@@ -18,6 +18,20 @@ zdj_library_performance_t * zdj_library_create_performance_dto( void ) {
     return performance;
 }
 
+zdj_health_status_t zdj_library_delete_performance( 
+    zdj_library_performance_t * performance, 
+    sqlite3 * db 
+) {
+    int res;
+    char sql[ 2048 ];
+    snprintf( sql, sizeof( sql ), "delete from %s where entity_id like \'%s\'", 
+        ZDJ_LIBRARY_TABLE_PERFORMANCE_DATA,
+        performance->entity_id
+    );
+    zdj_sql_exec( sql, db );
+    return ZDJ_HEALTH_STATUS_OKAY;
+}
+
 zdj_library_performance_t * zdj_library_fetch_current_performance_dto_for_song( 
     zdj_library_song_t * song, 
     sqlite3 * db 

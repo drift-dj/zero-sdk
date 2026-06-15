@@ -80,6 +80,9 @@ void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     if( menu_state->scroll_filter->out_index != menu_state->scroll_index ) {
         _update_scroll( view, menu_state->scroll_filter->out_index );
     }
+
+    if( view->needs_layout_init && view->init_layout ) { view->init_layout( view ); }
+    if( view->needs_subview_update && view->update_subviews ) { view->update_subviews( view ); }
 }
 
 void zdj_menu_view_set_scrollview_frame( zdj_view_t * menu_view, zdj_rect_t * frame ) {
@@ -473,7 +476,17 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
                     }
                 } else if( item_state->edit_options_type == ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST ) {
                     if( round(item_state->edit_option_index) == 0 ||
-                        round(item_state->edit_option_index) == 8
+                        round(item_state->edit_option_index) == 11
+                    ) {
+                        // printf( "exit edit on scroll\n" );  
+                        menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
+                        if( item_state->exit_edit_mode ) {
+                            item_state->exit_edit_mode( item );
+                        }
+                    }
+                } else if( item_state->edit_options_type == ZDJ_MENU_ITEM_OPTIONS_FILE ) {
+                    if( round(item_state->edit_option_index) == 0 ||
+                        round(item_state->edit_option_index) == 10
                     ) {
                         // printf( "exit edit on scroll\n" );  
                         menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
@@ -499,7 +512,7 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
     ) {
         
         if( menu_state->scroll_index == ZDJ_BACK_INDEX ) {
-            printf( "handling back jog release\n" );
+            // printf( "handling back jog release\n" );
             // Blink the back btn
             menu_header_state->is_blinking = true;
             menu_header_state->blink_timer = 0;

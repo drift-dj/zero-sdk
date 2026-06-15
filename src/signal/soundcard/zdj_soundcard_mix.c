@@ -81,8 +81,10 @@ zdj_error_type_t zdj_soundcard_mix_input( zdj_soundcard_t * soundcard, zdj_sound
             // Note that we can't meter an edge node - there are no input links to an edge node.
             zdj_soundcard_accumulate_node( soundcard, input_node, node, &map );
         }
-    } else if ( zdj_soundcard_node_name_is_analog_input( node->name ) ) {
-        // Analog inputs have no input linkage - manually update metering.
+    } else if ( zdj_soundcard_node_name_is_analog_input( node->name ) ||
+                zdj_soundcard_node_name_is_usb_input( node->name ) 
+    ) {
+        // Inputs have no input linkage - manually update metering.
         _meter_analog_input_node( soundcard, node );
     } else {
         // Reset meter
@@ -365,7 +367,8 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
     // If dest node is analog out right channel, we need to grab a ref to the left buffer
     // because that's where the samples are.  This is dubm.
     if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1 || 
-        node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 
+        node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 ||
+        node->name == ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1
     ) { 
         zdj_soundcard_node_t * left_node = zdj_soundcard_node_get_stereo_partner_node( node );
         dest_buf = left_node->data_pipe->get_data( left_node->data_pipe );
@@ -389,6 +392,12 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
         //     input_node->dsp_dto->pan, pan_coeff_l, pan_coeff_r 
         // );
     }
+
+
+    // if( input_node->name == ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 ) {
+    //     printf( "usb in 0[ 5 ]: %f\n", source_buf[ 5 ] );
+    // }
+
 
     for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
 

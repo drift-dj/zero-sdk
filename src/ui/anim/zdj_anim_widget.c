@@ -137,6 +137,7 @@ void zdj_anim_update_perf_widget( zdj_anim_t * anim, zdj_view_t * view ) {
 
 
 void zdj_anim_init_notify_widget_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn ) {
+    // printf( "zdj_anim_init_notify_widget_show\n" );
     anim->start_point.x = 0;
     anim->start_point.y = ZDJ_SCREEN_H + 2;
     anim->end_point.x = 0;
@@ -147,6 +148,7 @@ void zdj_anim_init_notify_widget_show( zdj_anim_t * anim, zdj_view_t * view, voi
 }
 
 void zdj_anim_init_notify_widget_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn ) {
+    // printf( "zdj_anim_init_notify_widget_hide\n" );
     anim->start_point.x = 0;
     anim->start_point.y = ZDJ_SCREEN_H - 8;
     anim->end_point.x = 0;
@@ -157,6 +159,7 @@ void zdj_anim_init_notify_widget_hide( zdj_anim_t * anim, zdj_view_t * view, voi
 }
 
 void zdj_anim_update_notify_widget( zdj_anim_t * anim, zdj_view_t * view ) {
+    // printf( "zdj_anim_update_notify_widget\n" );
     if( anim->frame == anim->frames ) {
         // At anim end
         anim->alive = false;

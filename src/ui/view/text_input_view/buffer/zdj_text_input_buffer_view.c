@@ -35,12 +35,14 @@ zdj_view_t * zdj_new_text_input_buffer_view( char * input_str ) {
 
 void zdj_text_input_buffer_backspace( zdj_view_t * input_buffer ) {
     zdj_text_input_buffer_view_state_t * buffer_state = (zdj_text_input_buffer_view_state_t*)input_buffer->state;
+    if( buffer_state->cursor_index == 0 ) { return; }
     if( buffer_state->cursor_index >= strlen( buffer_state->str ) ) {
         // Move cursor back a char if we're at end of string.
         buffer_state->cursor_index--;
     }
     // Copy chars after cursor to cursor index.
     strcpy( &buffer_state->str[ buffer_state->cursor_index ], &buffer_state->str[ buffer_state->cursor_index + 1 ] );
+    printf( "backspace buf index: %d\n", buffer_state->cursor_index );
 }
 
 void zdj_text_input_buffer_insert( zdj_view_t * input_buffer ) {

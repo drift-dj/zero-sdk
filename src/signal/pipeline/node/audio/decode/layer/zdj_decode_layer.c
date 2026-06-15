@@ -19,7 +19,6 @@
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 
 static void _accum( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node );
-// static void _truncate( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, void * _controls, double origin_d, zdj_decode_discon_type_t type, void * _loop_state );
 static void _truncate_to_loop( 
     zdj_decode_layer_t * layer, 
     zdj_pipeline_node_t * node, 
@@ -35,7 +34,8 @@ static void _retruncate_loop(
 static void _truncate_to_skip( 
     zdj_decode_layer_t * layer, 
     zdj_pipeline_node_t * node,
-    double depart_origin_d
+    double depart_origin_d,
+    double dest_origin_d
 );
 void _untruncate( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node );
 static void _deinit( zdj_decode_layer_t * layer );
@@ -49,8 +49,8 @@ zdj_decode_layer_t * zdj_new_decode_continuous_layer(
     zdj_decode_layer_t * layer = calloc( 1, sizeof( zdj_decode_layer_t ) );
 
     layer->accum = &_accum;
-    layer->fwd_discon_type = ZDJ_DECODE_DISCON_NONE;
-    layer->back_discon_type = ZDJ_DECODE_DISCON_NONE;
+    layer->fwd_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_NONE;
+    layer->back_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_NONE;
 
     zdj_decode_layer_init_addr_api( layer );
     zdj_decode_layer_init_fill_api( layer );
@@ -92,22 +92,21 @@ zdj_decode_layer_t * zdj_new_decode_continuous_layer(
 
 zdj_decode_layer_t * zdj_new_decode_loop_layer( 
     zdj_pipeline_node_t * node, 
-    zdj_decode_addr_t * loop_start_addr, 
-    void * _loop_state
+    zdj_decode_addr_t * loop_start_addr
 ) {
-    if( !_loop_state ) { printf( "New loop layer missing loop_state!\n" ); return NULL; }
+    // if( !_loop_state ) { printf( "New loop layer missing loop_state!\n" ); return NULL; }
     // printf( "zdj_new_decode_loop_layer\n" );
     // Set up layer core_start/end + lead_in/out
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     zdj_decode_layer_t * layer = calloc( 1, sizeof( zdj_decode_layer_t ) );
-    zdj_deck_control_loop_state_t * loop_state = (zdj_deck_control_loop_state_t*)_loop_state;
+    zdj_deck_control_loop_state_t * loop_state = (zdj_deck_control_loop_state_t*)state->loop_state;
 
-    // printf( "zdj_new_decode_loop_layer: %1.0f/%1.0f %1.0f\n", loop_start_addr->transport_d, loop_start_addr->origin_d, loop_state->pcm_len );
+    // printf( "zdj_new_decode_loop_layer: st:%1.0f len:%1.0f\n", loop_start_addr->transport_d, loop_state->pcm_len );
 
     layer->accum = &_accum;
-    layer->fwd_discon_type = ZDJ_DECODE_DISCON_LOOP;
-    layer->back_discon_type = ZDJ_DECODE_DISCON_LOOP;
-    layer->_loop_state = _loop_state;
+    layer->fwd_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP;
+    layer->back_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP;
+    // layer->_loop_state = _loop_state;
 
     zdj_decode_layer_init_addr_api( layer );
     zdj_decode_layer_init_fill_api( layer );
@@ -151,16 +150,6 @@ zdj_decode_layer_t * zdj_new_decode_loop_layer(
     layer->lead_out_end.origin_d = layer->core_end.origin_d + loop_state->fade_len;
     layer->lead_out_end.origin_i = layer->core_end.origin_i + loop_state->fade_len;
 
-    // printf( "new loop layer:\nloop_start_addr - o:%ld t:%ld\nstart - [o:%ld|t:%ld  o:%ld t:%ld  o:%ld t:%ld]\nend - [o:%ld|t:%ld  o:%ld|t:%ld  o:%ld|t:%ld]\n",
-    //     loop_start_addr->origin_i, loop_start_addr->transport_i,
-    //     layer->lead_in_start.origin_i, layer->lead_in_start.transport_i,
-    //     layer->core_start.origin_i, layer->core_start.transport_i,
-    //     layer->lead_in_end.origin_i, layer->lead_in_end.transport_i,
-    //     layer->lead_out_start.origin_i, layer->lead_out_start.transport_i,
-    //     layer->core_end.origin_i, layer->core_end.transport_i,
-    //     layer->lead_out_end.origin_i, layer->lead_out_end.transport_i
-    // );
-
     layer->truncate_to_loop = &_truncate_to_loop;
     layer->retruncate_loop = &_retruncate_loop;
     layer->truncate_to_skip = &_truncate_to_skip;
@@ -181,9 +170,8 @@ zdj_decode_layer_t * zdj_new_decode_skip_layer(
     zdj_decode_layer_t * layer = calloc( 1, sizeof( zdj_decode_layer_t ) );
 
     layer->accum = &_accum;
-    layer->fwd_discon_type = ZDJ_DECODE_DISCON_NONE;
-    layer->back_discon_type = ZDJ_DECODE_DISCON_SKIP;
-    layer->_loop_state = NULL;
+    layer->fwd_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_NONE;
+    layer->back_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_SKIP;
 
     zdj_decode_layer_init_addr_api( layer );
     zdj_decode_layer_init_fill_api( layer );
@@ -214,18 +202,6 @@ zdj_decode_layer_t * zdj_new_decode_skip_layer(
     state->addr_for_origin_d_coord_in_layer( 
         node, layer, &layer->lead_out_end, state->song_pcm_duration
     );
-    
-    // printf( "new skip layer:%p\ndepart_addr - o:%ld t:%ld\nstart - [o:%ld|t:%ld  o:%ld t:%ld  o:%ld t:%ld]\nend - [o:%ld|t:%ld  o:%ld|t:%ld  o:%ld|t:%ld]\n",
-    //     layer,
-    //     depart_addr->origin_i, depart_addr->transport_i,
-    //     layer->lead_in_start.origin_i, layer->lead_in_start.transport_i,
-    //     layer->core_start.origin_i, layer->core_start.transport_i,
-    //     layer->lead_in_end.origin_i, layer->lead_in_end.transport_i,
-    //     layer->lead_out_start.origin_i, layer->lead_out_start.transport_i,
-    //     layer->core_end.origin_i, layer->core_end.transport_i,
-    //     layer->lead_out_end.origin_i, layer->lead_out_end.transport_i
-    // );
-
 
     layer->truncate_to_loop = &_truncate_to_loop;
     layer->retruncate_loop = &_retruncate_loop;
@@ -238,13 +214,6 @@ zdj_decode_layer_t * zdj_new_decode_skip_layer(
     return layer;
 }
 
-zdj_decode_layer_t * zdj_new_decode_hyperscrub_layer( 
-    zdj_pipeline_node_t * node,  
-    zdj_decode_addr_t * depart_addr,
-    zdj_decode_dir_t dir
-) {
-}
-
 static void _accum( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node ) {
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
@@ -253,7 +222,9 @@ static void _accum( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node ) {
     // into the out_buf with lead_in/out fades.
     zdj_decode_packet_t * packet = layer->first_packet;
     while( packet ) {
-        if( packet->intersects_out_buf( packet, node ) ) {
+        if( !packet->has_decode_error && 
+            packet->intersects_out_buf( packet, node ) 
+        ) {
             // if( packet->render_to_out_buf ) { // <-- debug only
                 packet->render_to_out_buf( packet, layer, node );
             // }
@@ -262,65 +233,19 @@ static void _accum( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node ) {
     }
 }
 
-// static void _truncate( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer, void * _controls, double origin_d, zdj_decode_discon_type_t type, void * _loop_state ) {
-//     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)node->state;
-//     zdj_deck_control_state_t * controls = (zdj_deck_control_state_t*)_controls;
-    
-//     // Update layer's core_end + lead_out addrs for given coord
-//     if( type == ZDJ_DECODE_DISCON_SKIP ) {
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->core_end, origin_d 
-//         );
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->lead_out_start, origin_d - decode_state->layer_fade_len
-//         );
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->lead_out_end, origin_d + decode_state->layer_fade_len
-//         );
-
-//         layer->fwd_discon_type = type;
-
-
-//     } else if( type == ZDJ_DECODE_DISCON_LOOP && _loop_state ) {
-//         layer->fwd_discon_type = ZDJ_DECODE_DISCON_LOOP;
-//         layer->back_discon_type = ZDJ_DECODE_DISCON_LOOP;
-//         zdj_deck_control_loop_state_t * loop_state = (zdj_deck_control_loop_state_t*)_loop_state;
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->core_start, loop_state->start_origin_d 
-//         );
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->lead_in_start, loop_state->start_origin_d - decode_state->layer_fade_len
-//         );
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->lead_in_end, loop_state->start_origin_d + decode_state->layer_fade_len
-//         );
-
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->core_end, loop_state->end_origin_d 
-//         );
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->lead_out_start, loop_state->end_origin_d - decode_state->layer_fade_len
-//         );
-//         decode_state->addr_for_origin_d_coord_in_layer( 
-//             node, layer, &layer->lead_out_end, loop_state->end_origin_d + decode_state->layer_fade_len
-//         );
-//     }
-
-//     layer->_loop_state = _loop_state; // Will be null during skip
-
-//     // printf( "truncate layer: %p %p\n", layer, layer->_loop_state );
-// }
-
 static void _truncate_to_loop( 
     zdj_decode_layer_t * layer, 
     zdj_pipeline_node_t * node, 
     double layer_start_origin_d,
     double layer_end_origin_d
 ) {
+    // printf( "_truncate_to_loop: %1.0f -> %1.0f: %1.0f\n", 
+    //     layer_start_origin_d, layer_end_origin_d, layer_end_origin_d - layer_start_origin_d
+    // );
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)node->state;
     
-    layer->fwd_discon_type = ZDJ_DECODE_DISCON_LOOP;
-    layer->back_discon_type = ZDJ_DECODE_DISCON_LOOP;
+    layer->fwd_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP;
+    layer->back_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP;
     
     decode_state->addr_for_origin_d_coord_in_layer( 
         node, layer, &layer->core_start, layer_start_origin_d 
@@ -351,8 +276,8 @@ static void _retruncate_loop(
 ) {
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)node->state;
     
-    layer->fwd_discon_type = ZDJ_DECODE_DISCON_LOOP;
-    layer->back_discon_type = ZDJ_DECODE_DISCON_LOOP;
+    layer->fwd_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP;
+    layer->back_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP;
     
     decode_state->addr_for_origin_d_coord_in_layer( 
         node, layer, &layer->core_start, layer_start_origin_d 
@@ -378,11 +303,14 @@ static void _retruncate_loop(
 static void _truncate_to_skip( 
     zdj_decode_layer_t * layer, 
     zdj_pipeline_node_t * node,
-    double depart_origin_d
+    double depart_origin_d,
+    double dest_origin_d
 ) {
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)node->state;
 
-    layer->fwd_discon_type = ZDJ_DECODE_DISCON_SKIP;
+    // printf( "truncate to skip: dep%1.0f: des:%1.0f\n", depart_origin_d, dest_origin_d );
+
+    layer->fwd_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_SKIP;
 
     decode_state->addr_for_origin_d_coord_in_layer( 
         node, layer, &layer->core_end, depart_origin_d 
@@ -396,10 +324,9 @@ static void _truncate_to_skip(
 }
 
 void _untruncate( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node ) {
-    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
-    
     // printf( "layer _untruncate\n" );
-    layer->_loop_state = NULL;
+
+    zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
 
     // Expand layer's start/end addrs back to song start/end
     state->addr_for_origin_d_coord_in_layer( node, layer, &layer->core_start, 0.0 );
@@ -412,29 +339,8 @@ void _untruncate( zdj_decode_layer_t * layer, zdj_pipeline_node_t * node ) {
     state->addr_for_origin_d_coord_in_layer( node, layer, &layer->lead_out_end, duration );
 
     // Reset layer's discon types
-    layer->fwd_discon_type = ZDJ_DECODE_DISCON_NONE;
-    layer->back_discon_type = ZDJ_DECODE_DISCON_NONE;
-
-    // Remove all previous layers
-    zdj_decode_layer_t * p_layer = layer->prev;
-    while( p_layer ) {
-        zdj_decode_layer_t * prev_layer = p_layer->prev;
-        p_layer->deinit( p_layer );
-        p_layer = prev_layer;
-    }
-    layer->prev = NULL;
-
-    // Remove all next layers
-    zdj_decode_layer_t * n_layer = layer->next;
-    while( n_layer ) {
-        zdj_decode_layer_t * next_layer = n_layer->next;
-        n_layer->deinit( n_layer );
-        n_layer = next_layer;
-    }
-    layer->next = NULL;
-
-    state->first_layer = layer;
-    state->last_layer = layer;
+    layer->fwd_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_NONE;
+    layer->back_discon_type = ZDJ_DECODE_LAYER_DISCON_TYPE_NONE;
 }
 
 static void _deinit( zdj_decode_layer_t * layer ) {

@@ -92,27 +92,27 @@ zdj_pipeline_node_t * zdj_new_waveform_maker(
     state->waveform_header = calloc( 1, sizeof( zdj_waveform_header_t ) );
     strcpy( state->waveform_header->song_entity_id, decode_state->song->entity_id );
     state->waveform_fd = fopen( filepath, "w" );
+
     if( !state->waveform_fd ) { return NULL; }
     fwrite( state->waveform_header, sizeof( zdj_waveform_header_t ), 1, state->waveform_fd );
-
-    // printf( "%s zdj_new_waveform_maker done: %p\n", decode_state->song->audio->filepath, maker );
 
     return maker;
 }
 
 void zdj_close_waveform_maker( zdj_pipeline_node_t * node ) {
-    // printf( "zdj_close_waveform_maker\n" );
+    printf( "zdj_close_waveform_maker: %p\n", node );
     // Update waveform header with point count and re-write
     zdj_waveform_maker_state_t * node_state = (zdj_waveform_maker_state_t*)node->state;
     node_state->waveform_header->frame_count = node_state->point_tally;
     node_state->waveform_header->norm_val = (uint8_t)(node_state->accum_norm * 255.0);
     node_state->waveform_header->samples_per_point = node_state->samples_per_point;
 
-    // printf( "writing %d points\n", node_state->waveform_header->frame_count );
+    printf( "writing %d points\n", node_state->waveform_header->frame_count );
 
     fseek( node_state->waveform_fd, 0, SEEK_SET );
     fwrite( node_state->waveform_header, sizeof( zdj_waveform_header_t ), 1, node_state->waveform_fd );
     fclose( node_state->waveform_fd );
+
 }
 
 // Note waveform maker behavior is undefined if discontinuities are present in decode_node.
@@ -123,11 +123,6 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
 
     // Accumulate available samples from decode node into points.
     for( int i=0; i<decode_state->available_samples; i++ ) {
-        // float samp = fabs(decode_state->out_buffer[ i*decode_state->channel_count ]);
-        // if( decode_state->channel_count == 2 ) {
-        //     samp = fmax( samp, fabs(decode_state->out_buffer[ i*decode_state->channel_count+1 ]) );
-        // }
-
         float samp = fabs( 
             node_state->norm_fn( decode_state->out_buffer, i*decode_state->channel_count ) 
         );

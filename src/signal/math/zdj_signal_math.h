@@ -21,6 +21,7 @@
 #ifndef ZDJ_SIGNAL_MATH_H
 #define ZDJ_SIGNAL_MATH_H
 
+#include <stdbool.h>
 #include <zerodj/system/error/zdj_error.h>
 
 # define SIG_M_PI		3.14159265358979323846
@@ -49,7 +50,9 @@ void zdj_signal_naive_resample_audio(
     int in_channel_count,
     float * out_buf,
     int64_t out_sample_count,
-    int out_channel_count
+    int out_channel_count,
+    float start_fade,
+    float end_fade
 );
 
 float zdj_signal_gen_sine( 
@@ -61,6 +64,8 @@ float zdj_signal_gen_sine(
 	int offset, 
 	double scale 
 );
+
+bool zdj_signal_bounds_check( double coord, double start, double end );
 
 float zdj_signal_accum_floats( float val_1, float val_2 );
 

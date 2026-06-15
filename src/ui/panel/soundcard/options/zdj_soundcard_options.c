@@ -118,7 +118,11 @@ soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_no
 ) {
     if ( zdj_soundcard_node_name_is_audio( node->name ) ) {
         
-        if( node->name == ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) {
+        if ( zdj_soundcard_node_name_is_usb_output( node->name) ) {
+            return &zdj_soundcard_options_update_usb_output_layout;
+        } else if ( zdj_soundcard_node_name_is_usb_input( node->name) ) {
+            return &zdj_soundcard_options_update_usb_input_layout;
+        } else if( node->name == ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) {
             return &zdj_soundcard_options_update_record_bus_layout;
         } else if ( zdj_soundcard_node_name_is_output( node->name ) ) {
             return &zdj_soundcard_options_update_port_output_layout;
@@ -135,8 +139,6 @@ soundcard_options_update_layout_t zdj_soundcard_options_get_update_layout_for_no
         return &zdj_soundcard_options_update_clock_layout;
     } else if ( zdj_soundcard_node_name_is_cv( node->name ) ) {
        return &zdj_soundcard_options_update_cv_layout;
-    } else if ( zdj_soundcard_node_name_is_usb( node->name) ) {
-        
     } else if ( zdj_soundcard_node_name_is_midi( node->name ) ) {
         
     }

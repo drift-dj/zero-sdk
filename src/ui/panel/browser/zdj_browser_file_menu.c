@@ -39,6 +39,7 @@ zdj_view_t * zdj_new_browser_panel_file_menu_for_path(
     // We need to use menu's back button scroll index to show/hide browser's cancel button.
     menu_state->has_back = false;
     menu_state->header_view = browser_state->header_view;
+    menu_state->edit_enabled = true;
     menu->map = ZDJ_CONTROL_MAP_SETTINGS_PANEL;
 
     zdj_view_t * nav_up;
@@ -93,10 +94,11 @@ static void _add_dir_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, char
 
 static void _add_file_item_to_menu( zdj_view_t * browser, zdj_view_t * menu, char * filepath ) {
     // printf( "_add_file_item_to_menu: %s\n", filepath );
-    zdj_view_t * item = zdj_new_menu_item( basename( filepath ), ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    zdj_view_t * item = zdj_new_menu_item( basename( filepath ), ZDJ_MENU_ITEM_LAYOUT_FILE );
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)item->state;
     item->handle_control_event = &zdj_browser_panel_item_hmi_delegate;
-    state->action = ZDJ_MENU_ITEM_ACTION_FILE_SELECT;
+    state->edit_enabled = true;
+    state->edit_options_type = ZDJ_MENU_ITEM_OPTIONS_FILE;
     strcpy( state->link, filepath );
     state->data.ptr = browser;
     zdj_menu_view_add_item( menu, item );

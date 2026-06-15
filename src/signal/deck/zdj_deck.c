@@ -12,6 +12,7 @@
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
+#include <zerodj/system/settings/zdj_settings.h>
 
 zdj_deck_t * zdj_new_deck( 
     zdj_deck_type_t type, 
@@ -45,46 +46,35 @@ zdj_deck_t * zdj_new_deck(
         //     break;
     }
 
-    // zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
-    // zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
-
-
     deck->handle_control_event = NULL;
 
     memset( &deck->controls, 0, sizeof( zdj_deck_control_state_t ) );
-    
-    // deck->controls.loop_state.fade_len = 300;
-    // deck->controls.loop_state.beatgrid_len = 4;
-    // deck->controls.loop_state.pcm_len = decode_state->get_d_offset_for_beatgrid_dist( 
-    //     deck_state->decode_node, deck->controls.loop_state.beatgrid_len 
-    // );
-    
-    deck->controls.platter.scratch_override = true;
-    
+
     deck->controls.platter.motor.enabled = false;
     deck->controls.platter.motor.pitch_setting = 1.0f;
     deck->controls.platter.motor.spin_up_cycle_count = 0;
     deck->controls.platter.motor.spin_down_cycle_count = 60;
 
-    deck->controls.platter.slip.slip_dwell = 40;
+    // deck->controls.platter.slip.slip_dwell = 40;
+    deck->controls.platter.slip.slip_dwell = 20;
     deck->controls.platter.slip.set_val = 0.0f;
     deck->controls.platter.slip.instant_val = 0.0f;
 
     // Sim constants - adjust to taste
     deck->controls.platter.slip.sim_duration = (double)deck->controls.platter.slip.slip_dwell / 4.0;
-    deck->controls.platter.slip.mass = 10.0;
-    deck->controls.platter.slip.spring_k = 8.0;
-    deck->controls.platter.slip.damp_c = 10.0;
-
-    deck->controls.platter.slip.scrub_skip_offset = 0.0;
+    deck->controls.platter.slip.mass = 8.0;
+    deck->controls.platter.slip.spring_k = 40.0;
+    deck->controls.platter.slip.damp_c = 15.0;
 
     // Scratch/Nudge constants
-    deck->controls.platter.nudge_coeff = 10;
-    deck->controls.platter.scratch_coeff = 1200.0;
-    // deck->controls.platter.scratch_coeff = 50.0;
+    deck->controls.platter.nudge_coeff = 4.0;
+    deck->controls.platter.scratch_coeff = 800.0;
+    deck->controls.platter.hyperscrub_coeff = 100000.0;
 
     // Scratch while playing
     deck->controls.platter.scratch_override = false;
+    zdj_setting_t * setting = zdj_setting_get( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
+    if( setting ) { deck->controls.platter.scratch_override = setting->b_val; }
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
     return deck;

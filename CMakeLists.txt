@@ -10,12 +10,14 @@ add_library(zerodj
     src/controls/hmi/zdj_hmi_sm_analog.c
     src/controls/hmi/zdj_hmi_sm_digital.c
     src/library/zdj_library.c
+    src/library/api/library/zdj_library_api_key.c
     src/library/api/library/zdj_library_api_library_config.c
     src/library/api/library/zdj_library_api_library.c
     src/library/api/library/query/zdj_library_api_query_artist.c
     src/library/api/library/query/zdj_library_api_query_bpm.c
     src/library/api/library/query/zdj_library_api_query_cuepoint.c
     src/library/api/library/query/zdj_library_api_query_genre.c
+    src/library/api/library/query/zdj_library_api_query_key.c
     src/library/api/library/query/zdj_library_api_query_playlist.c
     src/library/api/library/query/zdj_library_api_query_year.c
     src/library/api/curation/zdj_library_api_curation.c
@@ -23,6 +25,7 @@ add_library(zerodj
     src/library/api/data_source/zdj_library_api_data_source.c
     src/library/api/performance/zdj_library_api_cuepoint.c
     src/library/api/performance/zdj_library_api_performance.c
+    src/library/api/recording/zdj_library_api_recording.c
     src/library/api/setting/zdj_library_api_setting.c
     src/library/api/song/zdj_library_api_audio.c
     src/library/api/song/zdj_library_api_catalog.c
@@ -31,11 +34,15 @@ add_library(zerodj
     src/signal/deck/zdj_deck.c
     src/signal/deck/zdj_deck_manager.c
     src/signal/deck/dj/zdj_deck_dj.c
+    src/signal/deck/dj/zdj_deck_dj_command.c
+    src/signal/deck/dj/zdj_deck_dj_command_cuepoint.c
+    src/signal/deck/dj/zdj_deck_dj_command_hotcue.c
+    src/signal/deck/dj/zdj_deck_dj_command_loop.c
+    src/signal/deck/dj/zdj_deck_dj_command_skip.c
     src/signal/deck/dj/zdj_deck_dj_controls.c
-    src/signal/deck/dj/zdj_deck_dj_discon.c
     src/signal/deck/dj/zdj_deck_dj_soundcard.c
     src/signal/deck/dj/zdj_deck_dj_sync.c
-    src/signal/deck/dj/zdj_deck_dj_transport.c
+    src/signal/deck/dj/zdj_deck_dj_platter.c
     src/signal/deck/extern/zdj_deck_extern.c
     src/signal/deck/xport/zdj_deck_xport.c
     src/signal/deck/xport/zdj_deck_xport_sync.c
@@ -52,6 +59,9 @@ add_library(zerodj
     src/signal/pipeline/node/audio/decode/zdj_decode_node.c
     src/signal/pipeline/node/audio/decode/addr/zdj_decode_addr.c
     src/signal/pipeline/node/audio/decode/discon/zdj_decode_discon.c
+    src/signal/pipeline/node/audio/decode/discon/zdj_decode_discon_loop.c
+    src/signal/pipeline/node/audio/decode/discon/zdj_decode_discon_reset.c
+    src/signal/pipeline/node/audio/decode/discon/zdj_decode_discon_skip.c
     src/signal/pipeline/node/audio/decode/layer/zdj_decode_layer.c
     src/signal/pipeline/node/audio/decode/layer/zdj_decode_layer_addr.c
     src/signal/pipeline/node/audio/decode/layer/zdj_decode_layer_fill.c
@@ -76,6 +86,7 @@ add_library(zerodj
     src/signal/soundcard/dsp/zdj_soundcard_dsp_eq.c
     src/signal/soundcard/dsp/zdj_soundcard_dsp_filt.c
     src/signal/soundcard/dsp/zdj_soundcard_dsp_knob.c
+    src/signal/soundcard/usb/zdj_soundcard_usb_admin.c
     src/system/battery/zdj_battery.c
     src/system/boot/zdj_boot.c
     src/system/debug/zdj_debug.c
@@ -143,6 +154,8 @@ add_library(zerodj
     src/ui/panel/soundcard/options/zdj_soundcard_options_port_input.c
     src/ui/panel/soundcard/options/zdj_soundcard_options_port_output.c
     src/ui/panel/soundcard/options/zdj_soundcard_options_record_bus.c
+    src/ui/panel/soundcard/options/zdj_soundcard_options_usb_input.c
+    src/ui/panel/soundcard/options/zdj_soundcard_options_usb_output.c
     src/ui/panel/soundcard/select_node/zdj_soundcard_select_node.c
     src/ui/panel/settings/zdj_settings_panel.c
     src/ui/panel/settings/developer/zdj_settings_developer_panel.c
@@ -182,6 +195,7 @@ add_library(zerodj
     src/ui/view/menu_item_view/zdj_menu_item_view_cuepoint.c
     src/ui/view/menu_item_view/zdj_menu_item_view_data.c
     src/ui/view/menu_item_view/zdj_menu_item_view_dir.c
+    src/ui/view/menu_item_view/zdj_menu_item_view_file.c
     src/ui/view/menu_item_view/zdj_menu_item_view_icon.c
     src/ui/view/menu_item_view/zdj_menu_item_view_inert.c
     src/ui/view/menu_item_view/zdj_menu_item_view_launch.c

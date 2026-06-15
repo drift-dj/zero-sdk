@@ -68,7 +68,9 @@ zdj_view_t * zdj_new_soundcard_select_node(
         // instead of just "out 1"
         char adjusted_name[ 64 ];
         if( zdj_soundcard_node_name_is_analog_input( edit_node_name ) ||
-            zdj_soundcard_node_name_is_analog_output( edit_node_name ) 
+            zdj_soundcard_node_name_is_analog_output( edit_node_name ) ||
+            zdj_soundcard_node_name_is_usb_input( edit_node_name ) ||
+            zdj_soundcard_node_name_is_usb_output( edit_node_name )
         ) {
             zdj_soundcard_get_port_title_with_stereo( 
                 context->soundcard,
@@ -241,6 +243,12 @@ zdj_error_type_t zdj_soundcard_build_select_node_output_menu(
         _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3 );
     }
 
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 );
+    // Only show in 1 if in 0/1 are mono
+    if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 )->stereo ) {
+        _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1 );
+    }
+
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Busses" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
@@ -296,6 +304,12 @@ zdj_error_type_t zdj_soundcard_build_select_node_input_menu(
         _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
     }
 
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 );
+    // Only show out 1 if out 0/1 are mono
+    if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->stereo ) {
+        _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1 );
+    }
+
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Busses" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
@@ -346,6 +360,12 @@ zdj_error_type_t zdj_soundcard_build_select_node_internal_bus_menu(
         _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
     }
 
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 );
+    // Only show out 1 if out 0/1 are mono
+    if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->stereo ) {
+        _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1 );
+    }
+
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Busses" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_AUX_BUS_0 );
@@ -370,6 +390,12 @@ zdj_error_type_t zdj_soundcard_build_select_node_aux_bus_menu(
     // Only show out 3 if out 2/3 are mono
     if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 )->stereo ) {
         _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
+    }
+
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 );
+    // Only show out 1 if out 0/1 are mono
+    if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->stereo ) {
+        _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1 );
     }
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Busses" ) );
@@ -422,6 +448,12 @@ zdj_error_type_t zdj_soundcard_build_select_node_deck_menu(
         _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
     }
 
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 );
+    // Only show out 1 if out 0/1 are mono
+    if( !zdj_soundcard_get_node_for_name( context->soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->stereo ) {
+        _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1 );
+    }
+
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Busses" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
@@ -464,6 +496,8 @@ zdj_error_type_t zdj_soundcard_build_select_node_clock_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1 );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1 );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
 }
 
@@ -477,6 +511,8 @@ zdj_error_type_t zdj_soundcard_build_select_node_cv_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1 );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1 );
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Recording" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );

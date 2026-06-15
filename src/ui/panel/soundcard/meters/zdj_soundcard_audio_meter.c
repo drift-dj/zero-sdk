@@ -200,6 +200,7 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
             else { state->fader->frame.w = 10; }
         }
         state->detail->frame.w = 0;
+        state->fader->frame.w = 0;
     }
     if( config->node->mute ) { 
         state->mute_cover->frame.w = 11; 

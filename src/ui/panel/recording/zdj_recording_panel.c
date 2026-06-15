@@ -7,6 +7,7 @@
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
+#include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -28,6 +29,7 @@ static void _handle_back( zdj_view_t * menu_view );
 static void _refresh_menu( zdj_view_t * view );
 
 static void _handle_record_toggle( zdj_view_t * view, zdj_control_event_t * event );
+static void _handle_meter_gain( zdj_view_t * view, zdj_control_event_t * event );
 static void _handle_save_recording( zdj_view_t * view, zdj_control_event_t * event );
 static void _handle_delete_recording( zdj_view_t * view, zdj_control_event_t * event );
 
@@ -87,14 +89,14 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
     // Ignore events which have been blocked by layers above this one.
     if( event->blocked ) { return; }
+
+    printf( "recording panel _handle_control\n" );
     
     // Send events down into the subview stack
     zdj_recording_panel_state_t * state = (zdj_recording_panel_state_t*)view->state;
 
     // Send events down into the subview stack
-    if( state->event_target ) {
-        state->event_target->handle_control_event( state->event_target, event );
-    }
+    state->menu->handle_control_event( state->menu, event );
 
     event->blocked = true;
 }
@@ -136,29 +138,6 @@ static void _refresh_menu( zdj_view_t * view ) {
     record_toggle_btn->frame.h = 14;
     zdj_menu_view_add_item( state->menu, record_toggle_btn );
 
-    // // If recording has started, add save btn
-    // if( state->has_open_recording ) { 
-    //     zdj_view_t * save_recording_btn = zdj_new_asset_menu_item( 
-    //         ZDJ_UI_ASSET_RECORD_SAVE_BTN, ZDJ_UI_ASSET_RECORD_SAVE_BTN_HI, false 
-    //     );
-    //     save_recording_btn->handle_control_event = &_handle_save_recording;
-    //     zdj_menu_item_view_state_t * save_recording_state = (zdj_menu_item_view_state_t*)save_recording_btn->state;
-    //     save_recording_state->data.ptr = state;
-    //     save_recording_btn->frame.x = 26;
-    //     save_recording_btn->frame.y = 8;
-    //     zdj_menu_view_add_item( state->menu, save_recording_btn );
-
-    //     zdj_view_t * delete_recording_btn = zdj_new_asset_menu_item( 
-    //         ZDJ_UI_ASSET_RECORD_DELETE_BTN, ZDJ_UI_ASSET_RECORD_DELETE_BTN_HI, false 
-    //     );
-    //     delete_recording_btn->handle_control_event = &_handle_delete_recording;
-    //     zdj_menu_item_view_state_t * delete_recording_state = (zdj_menu_item_view_state_t*)delete_recording_btn->state;
-    //     delete_recording_state->data.ptr = state;
-    //     delete_recording_btn->frame.x = 37;
-    //     delete_recording_btn->frame.y = 8;
-    //     zdj_menu_view_add_item( state->menu, delete_recording_btn );
-    // }
-
     // Add counter
     char time_str[ 64 ];
     _hms_string_for_pcm_sample( time_str, recording_node_state->sample_count, 44100 );
@@ -177,13 +156,27 @@ static void _refresh_menu( zdj_view_t * view ) {
 
     // Add Meter
     zdj_view_t * meter = zdj_new_record_meter_view( );
+    meter->handle_control_event = &_handle_meter_gain;
+    zdj_menu_item_view_state_t * meter_state = (zdj_menu_item_view_state_t*)meter->state;
+    meter_state->captures_all_events = true;
     zdj_menu_view_add_item( state->menu, meter );
+
+    zdj_menu_view_add_padding( state->menu, 3 );
+
+    if( recording_node_state->status == ZDJ_AUDIO_RECORD_ACTIVE ) {
+        // Show note w/filename
+        char recording_name[ 32 ];
+        // recording num will update during finalize process
+        int recording_num = zdj_setting_get( ZDJ_SETTING_RECORDING_COUNTER )->i_val + 1;
+        snprintf( recording_name, sizeof( recording_name ), "recording_%03d.wav", recording_num );
+        zdj_menu_view_add_item( state->menu, zdj_new_menu_item( recording_name, ZDJ_MENU_ITEM_LAYOUT_BASIC_L ) );
+    }
 
     zdj_menu_view_add_padding( state->menu, 3 );
 
     // Add Input routing section
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Input" ) );
-    zdj_menu_view_add_item( state->menu, zdj_new_menu_item( "Main Bus LR", ZDJ_MENU_ITEM_LAYOUT_BASIC_R ) );
+    zdj_menu_view_add_item( state->menu, zdj_new_menu_item( "Main Bus LR", ZDJ_MENU_ITEM_LAYOUT_BASIC_L ) );
 
     zdj_menu_view_add_padding( state->menu, 3 );
     // printf( "record_panel _refresh_menu done\n" );
@@ -194,23 +187,22 @@ static void _handle_record_toggle( zdj_view_t * view, zdj_control_event_t * even
     zdj_recording_panel_state_t * panel_state = (zdj_recording_panel_state_t*)state->data.ptr;
     zdj_audio_record_node_state_t * recording_node_state = (zdj_audio_record_node_state_t*)zdj_soundcard->recording_node->state;
 
-    // if( recording_node_state->status == ZDJ_AUDIO_RECORD_ACTIVE ) {
-    //     // Pause the recording
-    //     recording_node_state->status = ZDJ_AUDIO_RECORD_INACTIVE;
-    // } else {
-    //     if( panel_state->has_open_recording ) {
-    //         recording_node_state->status = ZDJ_AUDIO_RECORD_ACTIVE;
-    //     } else {
-    //         panel_state->has_open_recording = true;
-    //         zdj_new_audio_record_capture( zdj_soundcard->recording_node );
-    //     }
-    // }
     if( recording_node_state->status == ZDJ_AUDIO_RECORD_ACTIVE ) {
         // Stop recording if currently running
-        zdj_finish_audio_record_capture( zdj_soundcard->recording_node, true );
+        zdj_finish_audio_record_capture( zdj_soundcard->recording_node, true, false );
     } else {
         // Start a recording if not running
-        zdj_new_audio_record_capture( zdj_soundcard->recording_node );
+        zdj_new_audio_record_capture( zdj_soundcard->recording_node, false );
+    }
+
+    panel_state->needs_layout_update = true;
+}
+
+static void _handle_meter_gain( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_soundcard_node_t * record_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
+    if( record_node ) {
+        printf( "adjusting record gain\n" );
+        record_node->dsp_dto->adjust_gain( record_node, event->i_val );
     }
 }
 
@@ -218,14 +210,14 @@ static void _handle_save_recording( zdj_view_t * view, zdj_control_event_t * eve
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     zdj_recording_panel_state_t * panel_state = (zdj_recording_panel_state_t*)state->data.ptr;
     panel_state->has_open_recording = false;
-    zdj_finish_audio_record_capture( zdj_soundcard->recording_node, true );
+    zdj_finish_audio_record_capture( zdj_soundcard->recording_node, true, false );
 }
 
 static void _handle_delete_recording( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     zdj_recording_panel_state_t * panel_state = (zdj_recording_panel_state_t*)state->data.ptr;
     panel_state->has_open_recording = false;
-    zdj_finish_audio_record_capture( zdj_soundcard->recording_node, false );
+    zdj_finish_audio_record_capture( zdj_soundcard->recording_node, false, false );
 }
 
 static void _hms_string_for_pcm_sample( char * str, double sample, uint32_t sample_rate ) {

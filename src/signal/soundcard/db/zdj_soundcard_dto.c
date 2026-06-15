@@ -22,6 +22,9 @@ zdj_soundcard_dto_t * zdj_soundcard_create_dto( void ) {
     _populate_dsp_dto( &dto->ana_in_2_dsp, dto->ana_in_2_dsp_eid );
     _populate_dsp_dto( &dto->ana_in_3_dsp, dto->ana_in_3_dsp_eid );
 
+    _populate_dsp_dto( &dto->usb_in_0_dsp, dto->usb_in_0_dsp_eid );
+    _populate_dsp_dto( &dto->usb_in_1_dsp, dto->usb_in_1_dsp_eid );
+
     _populate_dsp_dto( &dto->main_bus_dsp, dto->main_bus_dsp_eid );
     _populate_dsp_dto( &dto->cue_bus_dsp, dto->cue_bus_dsp_eid );
     _populate_dsp_dto( &dto->annot_bus_dsp, dto->annot_bus_dsp_eid );
@@ -77,6 +80,8 @@ uint64_t zdj_soundcard_dto_get_linkmap_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: return dto->ana_in_1_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: return dto->ana_in_2_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return dto->ana_in_3_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: return dto->usb_in_0_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: return dto->usb_in_1_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: return dto->main_bus_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS: return dto->cue_bus_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: return dto->annot_bus_link_map;
@@ -122,6 +127,8 @@ int zdj_soundcard_dto_set_linkmap_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: dto->ana_in_1_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: dto->ana_in_2_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: dto->ana_in_3_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: dto->usb_in_0_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: dto->usb_in_1_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: dto->main_bus_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS: dto->cue_bus_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: dto->annot_bus_link_map = link_map; break;
@@ -242,6 +249,10 @@ int zdj_soundcard_dto_get_stereo_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: return dto->ana_in_1_stereo;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: return dto->ana_in_2_stereo;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return dto->ana_in_3_stereo;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0: return dto->usb_out_0_stereo;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1: return dto->usb_out_1_stereo;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: return dto->usb_in_0_stereo;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: return dto->usb_in_1_stereo;
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: return dto->main_bus_stereo;
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS: return dto->cue_bus_stereo;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: return dto->annot_bus_stereo;
@@ -269,6 +280,10 @@ int zdj_soundcard_dto_set_stereo_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: dto->ana_in_1_stereo = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: dto->ana_in_2_stereo = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: dto->ana_in_3_stereo = val; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0: dto->usb_out_0_stereo = val; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1: dto->usb_out_1_stereo = val; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: dto->usb_in_0_stereo = val; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: dto->usb_in_1_stereo = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: dto->main_bus_stereo = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS: dto->cue_bus_stereo = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: dto->annot_bus_stereo = val; break;
@@ -291,6 +306,8 @@ int zdj_soundcard_dto_get_mute_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: return dto->ana_in_1_mute;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: return dto->ana_in_2_mute;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return dto->ana_in_3_mute;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: return dto->usb_in_0_mute;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: return dto->usb_in_1_mute;
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: return dto->main_bus_mute;
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS: return dto->cue_bus_mute;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: return dto->annot_bus_mute;
@@ -317,6 +334,8 @@ int zdj_soundcard_dto_set_mute_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: dto->ana_in_1_mute = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: dto->ana_in_2_mute = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: dto->ana_in_3_mute = val; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: dto->usb_in_0_mute = val; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: dto->usb_in_1_mute = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: dto->main_bus_mute = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS: dto->cue_bus_mute = val; break;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: dto->annot_bus_mute = val; break;
@@ -453,6 +472,8 @@ zdj_soundcard_dsp_dto_t * zdj_soundcard_dto_get_dsp_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: return &dto->ana_in_1_dsp;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: return &dto->ana_in_2_dsp;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3: return &dto->ana_in_3_dsp;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0: return &dto->usb_in_0_dsp;
+        case ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1: return &dto->usb_in_1_dsp;
         case ZDJ_SOUNDCARD_NODE_NAME_ANNOT_BUS: return &dto->annot_bus_dsp;
         case ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS: return &dto->record_bus_dsp;
         case ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS: return &dto->main_bus_dsp;
