@@ -22,6 +22,7 @@
 #define ZDJ_UI_WIDGET_H
 
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/ui/zdj_ui.h>
 
 typedef struct { 
     zdj_view_t * debug_widget;
@@ -33,5 +34,6 @@ typedef struct {
 } zdj_widget_state_t;
 
 zdj_error_type_t zdj_ui_widget_init( void );
+zdj_view_t * zdj_ui_get_notify_widget( void );
 
 #endif

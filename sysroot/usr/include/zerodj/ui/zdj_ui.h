@@ -26,6 +26,8 @@
 
 #include <zerodj/controls/zdj_controls.h>
 
+#define ZDJ_VIEW_RECURSE_LIMIT 2048
+
 #define ZDJ_WHITE 0xFFFFFFFF
 #define ZDJ_SDL_WHITE (SDL_Color){255,255,255,255}
 #define ZDJ_MID_GRAY 0xFF999999
@@ -218,6 +220,7 @@ typedef enum {
     ZDJ_VIEW_SCROLLBAR,
     ZDJ_VIEW_MODAL,
     ZDJ_VIEW_BROWSER,
+    ZDJ_VIEW_LOG,
     ZDJ_VIEW_SOUNDCARD,
     ZDJ_VIEW_PROGRESS,
     ZDJ_VIEW_DIALOG,
@@ -246,6 +249,8 @@ typedef struct zdj_view_t {
     void ( *deinit )( struct zdj_view_t * );
     void ( *deinit_state )( struct zdj_view_t * );
     void ( *draw )( struct zdj_view_t *, zdj_view_clip_t * );
+    void ( *init_layout )( struct zdj_view_t * );
+    void ( *update_subviews )( struct zdj_view_t * );
     void ( *update_subview_clip )( struct zdj_view_t *, zdj_view_clip_t * );
     // control map will be activated on push/pop_to
     zdj_control_map_id_t map;
@@ -257,6 +262,8 @@ typedef struct zdj_view_t {
     zdj_view_clip_t subview_clip;
     zdj_rect_t frame;
     bool is_visible;
+    bool needs_layout_init;
+    bool needs_subview_update;
     zdj_anim_t * anim;
     zdj_anim_t in_anim;
     zdj_anim_t out_anim;
@@ -305,6 +312,7 @@ int zdj_ui_msec_to_frames( int msec );
 // void zdj_ui_stop_events( void );
 
 zdj_view_t * zdj_new_view( zdj_rect_t * frame );
+void zdj_update_subviews( zdj_view_t * view );
 void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview );
 void zdj_add_subview_behind( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview );
 void zdj_add_bottom_subview_to( zdj_view_t * view, zdj_view_t * new_subview );

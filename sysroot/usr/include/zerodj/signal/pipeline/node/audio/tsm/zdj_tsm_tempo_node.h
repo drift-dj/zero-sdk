@@ -23,6 +23,7 @@
 
 #include <rubberband-c.h>
 
+#include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 
 typedef struct {
@@ -41,6 +42,9 @@ typedef struct {
     size_t rb_start_delay;
     size_t rb_preferred_start_pad;
 
+    bool fade_out;
+    bool fade_in;
+
     zdj_pipeline_node_t * decode_node;
     double decode_coord;
     int64_t prev_decode_buf_start_addr;
@@ -53,6 +57,9 @@ zdj_pipeline_node_t * zdj_new_tsm_tempo_node(
     zdj_pipeline_node_t * decode_node 
 );
 
+void zdj_tsm_tempo_node_clear_out_buf( zdj_pipeline_node_t * node );
+
 void zdj_reset_tsm_tempo_node( zdj_pipeline_node_t * node );
+// void zdj_reset_tsm_tempo_node( zdj_deck_t * deck );
 
 #endif

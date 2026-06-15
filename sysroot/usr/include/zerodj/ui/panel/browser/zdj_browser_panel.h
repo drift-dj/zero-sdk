@@ -45,7 +45,7 @@ typedef struct {
     int usb_host_counter;
     bool is_device_menu;
     bool show_hidden;
-
+    char selected_file_path[ 1024 ];
 } zdj_browser_panel_state_t;
 
 

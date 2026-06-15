@@ -21,6 +21,8 @@
 #ifndef ZDJ_ERROR_H
 #define ZDJ_ERROR_H
 
+#define ZDJ_LOG_DIR "/media/internal/logs"
+
 typedef enum {
     ZDJ_ERROR_UNKNOWN,
     ZDJ_ERROR_OKAY,
@@ -99,5 +101,7 @@ typedef struct {
 void zdj_error_init( char * binary_path );
 zdj_error_state_t * zdj_error_state( void );
 void zdj_print_error( zdj_error_type_t error );
+int zdj_new_error_log_num( void );
+void zdj_error_reset_logs( void );
 
 #endif

@@ -23,5 +23,6 @@
 
 void zdj_util_put_hmsm_str_for_sample( int sample, int sample_rate, char * str );
 void zdj_util_put_msm_str_for_sample( int sample, int sample_rate, char * str );
+void zdj_util_str_to_lowercase( char *str );
 
 #endif

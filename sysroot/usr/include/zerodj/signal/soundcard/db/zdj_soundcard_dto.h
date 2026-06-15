@@ -359,7 +359,20 @@ typedef enum {
 	ZDJ_SOUNDCARD_COL_XFADE_A_LINK,
 	ZDJ_SOUNDCARD_COL_XFADE_A_DSP,
 	ZDJ_SOUNDCARD_COL_XFADE_B_LINK,
-	ZDJ_SOUNDCARD_COL_XFADE_B_DSP
+	ZDJ_SOUNDCARD_COL_XFADE_B_DSP,
+
+	ZDJ_SOUNDCARD_COL_USB_OUT_0_STEREO,
+	ZDJ_SOUNDCARD_COL_USB_OUT_1_STEREO,
+
+	ZDJ_SOUNDCARD_COL_USB_IN_0_LINK,
+	ZDJ_SOUNDCARD_COL_USB_IN_0_DSP,
+	ZDJ_SOUNDCARD_COL_USB_IN_0_STEREO,
+	ZDJ_SOUNDCARD_COL_USB_IN_0_MUTE,
+
+	ZDJ_SOUNDCARD_COL_USB_IN_1_LINK,
+	ZDJ_SOUNDCARD_COL_USB_IN_1_DSP,
+	ZDJ_SOUNDCARD_COL_USB_IN_1_STEREO,
+	ZDJ_SOUNDCARD_COL_USB_IN_1_MUTE
 } zdj_soundcard_dto_db_col_t;
 
 typedef struct {
@@ -413,6 +426,24 @@ typedef struct {
 	int ana_in_3_sig;
     int ana_in_3_stereo;
 	int ana_in_3_mute;
+
+	// USB Out 0
+    int usb_out_0_stereo;
+    // USB Out 1
+    int usb_out_1_stereo;
+	
+	// USB In 0 //
+	uint64_t usb_in_0_link_map;
+	char usb_in_0_dsp_eid[ ZDJ_SOUNDCARD_ENTITY_ID_LEN ];
+	zdj_soundcard_dsp_dto_t usb_in_0_dsp;
+    int usb_in_0_stereo;
+	int usb_in_0_mute;
+    // USB In 1
+	uint64_t usb_in_1_link_map;
+	char usb_in_1_dsp_eid[ ZDJ_SOUNDCARD_ENTITY_ID_LEN ];
+	zdj_soundcard_dsp_dto_t usb_in_1_dsp;
+    int usb_in_1_stereo;
+	int usb_in_1_mute;
 
     // Main LR Bus //
 	uint64_t main_bus_link_map;

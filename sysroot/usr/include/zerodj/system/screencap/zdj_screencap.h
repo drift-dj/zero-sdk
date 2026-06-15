@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#define ZDJ_SCREEN_CAP_DIR "/media/internal/logs"
+#define ZDJ_SCREEN_CAP_DIR "/media/internal/.developer/screencap"
 
 typedef enum {
     ZDJ_SCREENCAP_TYPE_IMAGE,
@@ -38,5 +38,6 @@ void zdj_end_screencap( );
 
 void zdj_update_screencap( void );
 // void zdj_write_screencap( void );
+void zdj_reset_screencaps( void );
 
 #endif
