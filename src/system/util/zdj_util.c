@@ -12,9 +12,9 @@ void zdj_util_put_hmsm_str_for_sample( int sample, int sample_rate, char * str )
     int mins = sample / sample_rate / 60;
     int secs = (sample / sample_rate) - (mins * 60);
     double secf = ((double)sample / (double)sample_rate);
-    int msec = (int)((secf - secs) * 1000.0);
+    int msec = (int)((secf - secs) * 100.0);
 
-    snprintf( str, -1, "%d:%02d.%03d", 
+    snprintf( str, -1, "%d:%02d.%02d", 
         mins,
         secs,
         msec
@@ -25,9 +25,9 @@ void zdj_util_put_msm_str_for_sample( int sample, int sample_rate, char * str ) 
     int mins = sample / sample_rate / 60;
     int secs = (sample / sample_rate) - (mins * 60);
     double secf = ((double)sample / (double)sample_rate);
-    int msec = (int)((secf - secs) * 1000.0);
+    int msec = (int)((secf - secs) * 100.0);
 
-    snprintf( str, -1, "%d:%02d.%03d", 
+    snprintf( str, -1, "%d:%02d.%02d", 
         mins,
         secs,
         msec

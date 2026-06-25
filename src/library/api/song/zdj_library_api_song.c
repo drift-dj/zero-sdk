@@ -38,6 +38,10 @@ zdj_library_song_t * zdj_library_fetch_song_dto_for_entity_id(
     int _caeid_col = 4;
     int _as_col = 5;
     int _ap_col = 6;
+    int _he_col = 7;
+    int _ef_col = 8;
+
+
     zdj_library_song_t * song = NULL;
 
     sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
@@ -51,6 +55,8 @@ zdj_library_song_t * zdj_library_fetch_song_dto_for_entity_id(
             strcpy( song->current_audio_entity_id, (char*)sqlite3_column_text ( stmt, _caeid_col ) );
             song->analysis_state = sqlite3_column_int ( stmt, _as_col );
             song->analysis_progress = sqlite3_column_double ( stmt, _ap_col );
+            song->has_error = sqlite3_column_int ( stmt, _he_col );
+            song->error_flags = sqlite3_column_int ( stmt, _ef_col );
         }
         sqlite3_finalize( stmt );
     }
@@ -179,4 +185,21 @@ zdj_health_status_t zdj_library_delete_song(
     zdj_sql_db_flush( db );
     
     return ZDJ_HEALTH_STATUS_OKAY;
+}
+
+bool zdj_library_song_has_error_flag( zdj_library_song_t * song, zdj_library_song_error_t flag ) {
+    return (song->error_flags >> flag) & 0x1;
+}
+
+bool zdj_library_song_can_play( zdj_library_song_t * song ) {
+    if( song->has_error ) {
+        if( zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_BAD_FORMAT ) ||
+	        zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_BAD_ENCODING ) ||
+	        zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_MISSING ) ||
+	        zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED ) 
+        ) {
+            return false;
+        }
+    }
+    return true;
 }

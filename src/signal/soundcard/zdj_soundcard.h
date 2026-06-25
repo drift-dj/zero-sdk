@@ -253,6 +253,12 @@ typedef struct {
     bool accum_pan;
 } zdj_soundcard_accumulate_map_t;
 
+typedef enum {
+    ZDJ_SOUNDCARD_STATE_IDLE,
+    ZDJ_SOUNDCARD_STATE_INIT,
+    ZDJ_SOUNDCARD_STATE_RUNNING,
+    ZDJ_SOUNDCARD_STATE_TEARDOWN
+} zdj_soundcard_state_t;
 
 typedef struct  {
     zdj_soundcard_node_name_t name;
@@ -260,8 +266,6 @@ typedef struct  {
     struct zdj_soundcard_node_t * prev;
     bool show_meter; // Show this node's meter in routing mixer UI
     zdj_soundcard_signal_type_t signal_type;
-    int gain; // DEPRECATED
-    int pan; // DEPRECATED
     int stereo;
     int mute;
     int direction;
@@ -270,6 +274,8 @@ typedef struct  {
     int sync;
     volatile zdj_pipeline_node_t * data_pipe;
     volatile zdj_pipeline_node_t * meter_pipe;
+    zdj_pipeline_node_t * live_waveform_node;
+    bool live_waveform_is_active;
     void ( *get_edge_input_data )( void *, zdj_pipeline_node_t *, bool );
     void * edge_input_link;
     void ( *push_edge_output_data )( void *, zdj_pipeline_node_t *, bool );
@@ -284,23 +290,23 @@ typedef struct  {
 } zdj_soundcard_node_t;
 
 typedef struct {
+    zdj_soundcard_state_t state;
     char name[ 128 ];
     zdj_soundcard_dto_t dto;
     zdj_soundcard_node_t * nodes;
     zdj_pipeline_node_t * analog_io_node;
     zdj_pipeline_node_t * usb_io_node;
-    zdj_pipeline_node_t * scope_waveform;
     zdj_pipeline_node_t * recording_node;
-    zdj_soundcard_node_name_t scope_node_name;
     zdj_deck_t * clock_deck;
     bool has_edits;
+    char load_entity_id[ 128 ];
 } zdj_soundcard_t;
 
 extern zdj_soundcard_t * zdj_soundcard;
 
 zdj_error_type_t zdj_soundcard_init( char * entity_id );
 zdj_error_type_t zdj_soundcard_deinit( zdj_soundcard_t * soundcard );
-zdj_error_type_t zdj_soundcard_load( zdj_soundcard_t * soundcard, char * entity_id );
+zdj_error_type_t zdj_soundcard_load_mixer( zdj_soundcard_t * soundcard, char * entity_id );
 zdj_error_type_t zdj_soundcard_save( zdj_soundcard_t * soundcard, char * entity_id );
 zdj_error_type_t zdj_soundcard_save_temp( zdj_soundcard_t * soundcard );
 
@@ -308,8 +314,16 @@ zdj_error_type_t zdj_soundcard_save_temp( zdj_soundcard_t * soundcard );
 void zdj_drop_soundcard( void );
 void zdj_soundcard_reset_db_defaults( void );
 zdj_soundcard_dto_t * zdj_soundcard_create_dto( void );
+bool zdj_soundcard_check_dto_exists_in_db( char * entity_id );
 zdj_error_type_t zdj_soundcard_fetch_dto( char * entity_id, zdj_soundcard_dto_t * dto );
+zdj_error_type_t zdj_soundcard_put_default_entity_id( char * entity_id, zdj_soundcard_dto_t * dto );
 zdj_error_type_t zdj_soundcard_store_dto( zdj_soundcard_dto_t * dto );
+zdj_error_type_t zdj_soundcard_copy_dto( 
+    zdj_soundcard_dto_t * src_dto, 
+    zdj_soundcard_dto_t * dst_dto 
+);
+int zdj_soundcard_count_stored_records( void );
+zdj_error_type_t zdj_soundcard_fetch_all_dtos( int count, zdj_soundcard_dto_t ** dtos );
 void zdj_soundcard_fetch_dsp_for_entity_id( zdj_soundcard_dsp_dto_t * dto, char * dsp_eid, sqlite3 * db ); 
 void zdj_soundcard_store_dsp_for_entity_id( zdj_soundcard_dsp_dto_t * dto, char * dsp_eid, sqlite3 * db );
 

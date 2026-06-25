@@ -101,10 +101,10 @@ static void _update_platter_model( zdj_deck_t * deck ) {
                     break;
 
                 case ZDJ_DECK_PLATTER_REQUEST_TOGGLE_MOTOR:
-                    printf( "toggle motor - is playing:%d can play:%d\n", 
-                        zdj_dj_deck_platter_is_playing( deck ), 
-                        zdj_dj_deck_platter_can_play( deck ) 
-                    );
+                    // printf( "toggle motor - is playing:%d can play:%d\n", 
+                    //     zdj_dj_deck_platter_is_playing( deck ), 
+                    //     zdj_dj_deck_platter_can_play( deck ) 
+                    // );
                     if( zdj_dj_deck_platter_is_playing( deck ) ) { 
                         zdj_dj_deck_platter_stop_motor( deck, platter_req->spin_down ); 
                     } else if( zdj_dj_deck_platter_can_play( deck ) ) { 
@@ -280,6 +280,8 @@ static void _update_platter_model( zdj_deck_t * deck ) {
     } else if( slip->state == ZDJ_PLATTER_MODE_SLIP ) {
         // Integrate any scrub inputs and motor movement
         // TODO: for scratching while motor engaged, cancel out the motor input
+        platter->last_head_move_rate = platter->head_move_rate;
+
         platter->slip_input_head += platter->slip_input_samps;
         platter->slip_input_samps = 0;
         platter->slip_input_head += platter->motor.instant_val;
@@ -304,12 +306,19 @@ static void _update_platter_model( zdj_deck_t * deck ) {
         platter->head_move_rate = platter->head_move_samps / ZDJ_SOUNDCARD_BUF_LEN;
 
         // Keep the sim running while jog is settling
-        if( fabs( displacement ) > 10 ) { slip->sim_counter = 0; }
+        double rate_offset = fabs( platter->last_head_move_rate - platter->head_move_rate );
+        if( rate_offset > 4.0 ) { slip->sim_counter = 0; }
 
-        
         // Once the slip dwell expires, return to laminar mode
         if( slip->sim_counter++ > slip->slip_dwell ) {
             slip->state = ZDJ_PLATTER_MODE_LAMINAR;
+            // After slip, if tempo TSM is available and not already running, req tx to tempo TSM
+            if( zdj_dj_deck_platter_is_playing( deck ) && 
+                deck_state->tempo_tsm_enabled &&
+                !zdj_dj_deck_is_in_tempo_tsm_mode( deck )
+            ) { 
+                deck_state->tsm_tx_req = ZDJ_DECK_TSM_TX_TO_TEMPO; 
+            }
         } 
     } 
 

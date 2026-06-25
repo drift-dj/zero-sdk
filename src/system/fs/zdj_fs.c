@@ -287,7 +287,7 @@ bool zdj_fs_path_is_audio_dir( char * path ) {
 }
 
 bool zdj_fs_path_is_media_partition( char * path ) {
-    if( !strncmp( "/media/internal", path, strlen( path ) ) ) {
+    if( !strncmp( "/media/internal", path, 15 ) ) {
         return true;
     } else {
         return false;

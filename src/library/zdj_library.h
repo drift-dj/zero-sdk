@@ -341,6 +341,15 @@ typedef struct zdj_library_playlist_t {
 	struct zdj_library_playlist_t * prev;
 } zdj_library_playlist_t;
 
+typedef enum {
+	ZDJ_LIBRARY_SONG_ERROR_FLAG_BAD_FORMAT,
+	ZDJ_LIBRARY_SONG_ERROR_FLAG_BAD_ENCODING,
+	ZDJ_LIBRARY_SONG_ERROR_FLAG_COPY_FAILED,
+	ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_MISSING,
+	ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_NOACCESS,
+	ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED,
+} zdj_library_song_error_t;
+
 typedef struct zdj_library_song_t {
 	char entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	char catalog_links_table[ ZDJ_LIBRARY_TABLE_LINK_LEN ];
@@ -363,6 +372,7 @@ typedef struct zdj_library_song_t {
 	float analysis_progress;
 	bool has_error;
 	int error_flags;
+	bool has_db_error; // runtime-only flag for DB-related problems
 	struct zdj_library_song_t * next;
 	struct zdj_library_song_t * prev;
 } zdj_library_song_t;
@@ -505,6 +515,8 @@ zdj_library_song_t * zdj_library_fetch_song_dto_for_entity_id( char * entity_id,
 zdj_health_status_t zdj_library_fetch_song_entity_ids( char ** arr, int count, sqlite3 * db );
 int zdj_library_count_songs_in_library( char * library_entity_id, sqlite3 * db );
 int zdj_library_count_songs_in_db( sqlite3 * db );
+bool zdj_library_song_can_play( zdj_library_song_t * song );
+bool zdj_library_song_has_error_flag( zdj_library_song_t * song, zdj_library_song_error_t flag );
 
 zdj_library_catalog_t * zdj_library_create_catalog_dto( void );
 zdj_library_catalog_t * zdj_library_fetch_current_catalog_dto_for_song( zdj_library_song_t * song, sqlite3 * db );

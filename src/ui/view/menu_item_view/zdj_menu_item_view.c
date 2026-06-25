@@ -156,6 +156,9 @@ zdj_view_t * zdj_new_song_menu_item(
         int bpm = round( song->performance->bpm );
         item_state->data.i_val += ( (bpm & 0xFF) << 16 );
     }
+    if( song->has_error ) {
+        item_state->data.i_val += ( 0x1 << 3 );
+    }
     return menu_item;
 }
 
@@ -198,7 +201,7 @@ void zdj_menu_item_scroll_options( zdj_view_t * item, int dir ) {
             break;
     }
     if( item_state->edit_option_index > edit_option_count ) { item_state->edit_option_index = edit_option_count; }
-    printf( "zdj_menu_item_scroll_options: %d %1.1f %1.0f / %1.0f\n", dir, item_state->edit_option_index, round( item_state->edit_option_index ), edit_option_count );
+    // printf( "zdj_menu_item_scroll_options: %d %1.1f %1.0f / %1.0f\n", dir, item_state->edit_option_index, round( item_state->edit_option_index ), edit_option_count );
     item_state->needs_layout_update = true;
 }
 

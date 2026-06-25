@@ -104,7 +104,7 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     state->codec_ctx->thread_count = 0;
     res = avcodec_open2( state->codec_ctx, codec, NULL );
 
-    printf( "code id: 0x%x\n", state->song->audio->av_codec_id );
+    // printf( "code id: 0x%x\n", state->song->audio->av_codec_id );
     switch( state->song->audio->av_codec_id ) {
         case AV_CODEC_ID_MP3:
             state->estimated_packet_sample_count = 1152;
@@ -259,7 +259,6 @@ static void _refresh_layers( zdj_pipeline_node_t * node ) {
             state->prepend_layer( node, zdj_new_decode_loop_layer( node, &loop_start ) );
             state->first_layer->update_buf_coords_for_head( state->first_layer, node );
             state->first_layer->fill( state->first_layer, node );
-            state->append_layer( node, layer );
         }
         else if( state->refresh_mode == ZDJ_DECODE_REFRESH_DISCON_SKIP ) {
             printf( "empty node @discon: skip\n" );
@@ -274,16 +273,14 @@ static void _refresh_layers( zdj_pipeline_node_t * node ) {
                 state->song->audio->av_sample_rate,
                 state->song->performance->bpm
             );
-            state->prepend_layer( node, zdj_new_decode_loop_layer( node, &skip_start ) );
+            state->prepend_layer( node, zdj_new_decode_continuous_layer( node, &skip_start ) );
             state->first_layer->update_buf_coords_for_head( state->first_layer, node );
             state->first_layer->fill( state->first_layer, node );
-            state->append_layer( node, layer );
         }
     }
 
     // Untruncate/Retruncate Skip Layer under the head
     // -----------------------------------------------
-    // printf( ">>> Untruncate Skip\n" );
     layer = state->get_layer_containing_core_addr( node, &state->head, ZDJ_ADDR_COORD_TRANSPORT );
     if ( layer && layer->back_discon_type == ZDJ_DECODE_LAYER_DISCON_TYPE_SKIP ) {
         
@@ -305,7 +302,6 @@ static void _refresh_layers( zdj_pipeline_node_t * node ) {
 
         if( debug ) { printf( "<<< Untruncate Skip\n" ); }
     }
-    // printf( "<<< Untruncate Skip\n" );
 
     // Groom Existing Layers
     // ---------------------

@@ -156,18 +156,39 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
     hilite_bg->frame.h = 8;
 
     float xtra_x = view->frame.w;
+
     // We're using i_val as a bitfield here.
     // Clearly the menu item data needs a re-architecting...
     bool show_divider = false;
     bool show_key = state->data.i_val & 0x1;
     bool show_camelot = (state->data.i_val >> 1) & 0x1;
     bool show_bpm = (state->data.i_val >> 2) & 0x1;
+    bool show_error = (state->data.i_val >> 3) & 0x1;
     int key_enum = (state->data.i_val >> 8) & 0xFF;
     int bpm = state->data.i_val >> 16;
     // printf( "init song item: sk:%d sb:%d sc:%d\n", 
     //     show_key, show_bpm, show_camelot  
     // );
+    if( show_error ) {
+        show_divider = true;
+
+        zdj_view_t * alert = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ALERT ], NULL );
+        zdj_add_subview( state->hilite_view, alert );
+        alert->frame.x = view->frame.w - alert->frame.w;
+        alert->frame.y = 1;
+        xtra_x = xtra_x - (alert->frame.w + 1);
+    }
+
     if( show_camelot ) { 
+        if( show_divider ) {
+            zdj_view_t * spacer = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_DJ_KNOB_BG ], NULL );
+            zdj_add_subview( state->hilite_view, spacer );
+            spacer->frame.w = 1;
+            spacer->frame.y = 1;
+            spacer->frame.x = xtra_x - 2;
+            xtra_x = xtra_x - 3;
+        }
+        
         zdj_library_camelot_t camelot = zdj_library_get_camelot( 
             zdj_deck_manager_get_current_key( ), key_enum 
         );
@@ -176,17 +197,17 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
         if( camelot == ZDJ_LIBRARY_CAMELOT_EQUAL ) {
             zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_EQUAL ], NULL );
             zdj_add_subview( state->hilite_view, cam );
-            cam->frame.x = view->frame.w - cam->frame.w;
+            cam->frame.x = xtra_x - cam->frame.w;
             xtra_x = xtra_x - cam->frame.w;
         } else if ( camelot == ZDJ_LIBRARY_CAMELOT_PLUS ) {
             zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_PLUS ], NULL );
             zdj_add_subview( state->hilite_view, cam );
-            cam->frame.x = view->frame.w - cam->frame.w;
+            cam->frame.x = xtra_x - cam->frame.w;
             xtra_x = xtra_x - cam->frame.w;
         } else if ( camelot == ZDJ_LIBRARY_CAMELOT_PLUS_PLUS ) {
             zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_PLUS ], NULL );
             zdj_add_subview( state->hilite_view, cam );
-            cam->frame.x = view->frame.w - cam->frame.w;
+            cam->frame.x = xtra_x - cam->frame.w;
             xtra_x = xtra_x - cam->frame.w;
             cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_PLUS ], NULL );
             zdj_add_subview( state->hilite_view, cam );
@@ -195,12 +216,12 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
         } else if ( camelot == ZDJ_LIBRARY_CAMELOT_MINUS ) {
             zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_MINUS ], NULL );
             zdj_add_subview( state->hilite_view, cam );
-            cam->frame.x = view->frame.w - cam->frame.w;
+            cam->frame.x = xtra_x - cam->frame.w;
             xtra_x = xtra_x - cam->frame.w;
         } else if ( camelot == ZDJ_LIBRARY_CAMELOT_MINUS_MINUS ) {
             zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_MINUS ], NULL );
             zdj_add_subview( state->hilite_view, cam );
-            cam->frame.x = view->frame.w - cam->frame.w;
+            cam->frame.x = xtra_x - cam->frame.w;
             xtra_x = xtra_x - cam->frame.w;
             cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_MINUS ], NULL );
             zdj_add_subview( state->hilite_view, cam );
@@ -209,12 +230,12 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
         } else if ( camelot == ZDJ_LIBRARY_CAMELOT_TILDA ) {
             zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_TILDA ], NULL );
             zdj_add_subview( state->hilite_view, cam );
-            cam->frame.x = view->frame.w - cam->frame.w;
+            cam->frame.x = xtra_x - cam->frame.w;
             xtra_x = xtra_x - cam->frame.w;
         } else if ( camelot == ZDJ_LIBRARY_CAMELOT_DELTA ) {
             zdj_view_t * cam = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_KEY_DELTA ], NULL );
             zdj_add_subview( state->hilite_view, cam );
-            cam->frame.x = view->frame.w - cam->frame.w;
+            cam->frame.x = xtra_x - cam->frame.w;
             xtra_x = xtra_x - cam->frame.w;
         } else {
             show_divider = false;
@@ -272,7 +293,7 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
 void zdj_menu_item_song_update_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     int _edit_option_index = (int)round(state->edit_option_index);
-    printf( "zdj_menu_item_song_update_layout: %d\n", _edit_option_index );
+    // printf( "zdj_menu_item_song_update_layout: %d\n", _edit_option_index );
     switch( _edit_option_index ) {
         case 0:
             break;

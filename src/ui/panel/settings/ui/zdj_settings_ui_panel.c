@@ -24,6 +24,7 @@ static void _refresh_menu( zdj_view_t * view );
 static void _refresh_rate_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _brightness_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _tooltip_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _handle_hide_error( zdj_view_t * view, zdj_control_event_t * event );
 static void _handle_show_bpm( zdj_view_t * view, zdj_control_event_t * event );
 static void _handle_show_key( zdj_view_t * view, zdj_control_event_t * event );
 static void _handle_show_camelot( zdj_view_t * view, zdj_control_event_t * event );
@@ -174,6 +175,14 @@ static void _refresh_menu( zdj_view_t * view ) {
         zdj_new_menu_section( "Library Menu" ) 
     );
 
+    zdj_view_t * hide_error_btn = zdj_new_menu_item( "Hide Unplayable Songs", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    hide_error_btn->handle_control_event = &_handle_hide_error;
+    zdj_menu_item_view_state_t * hide_error_state = (zdj_menu_item_view_state_t*)hide_error_btn->state;
+    hide_error_state->data.ptr = view;
+    zdj_setting_t * hide_error_setting = zdj_setting_get( ZDJ_SETTING_LIB_MENU_HIDE_ERROR_SONGS );
+    if( hide_error_setting ) { hide_error_state->data.b_val = hide_error_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, hide_error_btn );
+
     zdj_view_t * show_bpm_btn = zdj_new_menu_item( "Show BPM", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
     show_bpm_btn->handle_control_event = &_handle_show_bpm;
     zdj_menu_item_view_state_t * show_bpm_state = (zdj_menu_item_view_state_t*)show_bpm_btn->state;
@@ -308,6 +317,15 @@ static void _brightness_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 
 static void _tooltip_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     // Toggle tooltips
+}
+
+static void _handle_hide_error( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LIB_MENU_HIDE_ERROR_SONGS );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_ui_panel_state_t * ui_panel_state = (zdj_settings_ui_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
 }
 
 static void _handle_show_bpm( zdj_view_t * view, zdj_control_event_t * event ) {

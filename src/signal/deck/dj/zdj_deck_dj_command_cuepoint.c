@@ -112,7 +112,11 @@ void zdj_dj_deck_play_cuepoint( zdj_deck_t * deck ) {
     // so this forms an instant reset-to-play sequence.
     } else if( !zdj_dj_deck_platter_is_playing( deck ) ) {
         deck->controls.cue_state.reset_pending = true;
-        deck->controls.cue_state.dest_origin_d = perf->cuepoints[ perf->current_cuepoint ]->sample;
+        if( perf && perf->cuepoint_count > 0 ) {
+            deck->controls.cue_state.dest_origin_d = perf->cuepoints[ perf->current_cuepoint ]->sample;
+        } else {
+            deck->controls.cue_state.dest_origin_d = 0;
+        }
     }
 }
 

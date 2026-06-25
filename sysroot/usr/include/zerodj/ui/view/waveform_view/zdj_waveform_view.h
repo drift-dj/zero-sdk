@@ -30,9 +30,7 @@
 #define ZDJ_WAVEFORM_ZOOM_MIN 8192
 
 typedef struct {
-    zdj_pipeline_node_t * pipe;
-    zdj_soundcard_node_t * node;
-    zdj_pipeline_node_t * waveform_node;
+    zdj_soundcard_node_name_t soundcard_node_name;
     double prev_pcm_head;
 
     double raw_point_head;
@@ -48,7 +46,10 @@ typedef struct {
     double ( *get_zoom_ratio )( zdj_view_t * );
 } zdj_waveform_view_state_t;
 
-zdj_view_t * zdj_new_live_waveform_view( zdj_rect_t * frame, zdj_soundcard_node_t * node );
+zdj_view_t * zdj_new_live_waveform_view( 
+    zdj_rect_t * frame, 
+    zdj_soundcard_node_t * soundcard_node
+);
 zdj_view_t * zdj_new_playback_waveform_view( 
     zdj_rect_t * frame, 
     zdj_waveform_style_t style,

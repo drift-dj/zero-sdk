@@ -26,6 +26,10 @@ void zdj_deck_dj_init_controls( zdj_deck_t * deck ) {
 // Called on the soundcard fast audio cycle before mixdown.
 static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // printf( "zdj_dj_deck_handle_controls: %p %d %d\n", deck, deck->station, event->id );
+    
+    // Make sure soundcard isn't in reset before processing inputs
+    if( zdj_soundcard->state != ZDJ_SOUNDCARD_STATE_RUNNING ){ return; }
+
     zdj_deck_platter_t * platter = &deck->controls.platter;
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;

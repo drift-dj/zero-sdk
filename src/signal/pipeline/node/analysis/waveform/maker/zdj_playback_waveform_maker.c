@@ -100,14 +100,14 @@ zdj_pipeline_node_t * zdj_new_waveform_maker(
 }
 
 void zdj_close_waveform_maker( zdj_pipeline_node_t * node ) {
-    printf( "zdj_close_waveform_maker: %p\n", node );
+    // printf( "zdj_close_waveform_maker: %p\n", node );
     // Update waveform header with point count and re-write
     zdj_waveform_maker_state_t * node_state = (zdj_waveform_maker_state_t*)node->state;
     node_state->waveform_header->frame_count = node_state->point_tally;
     node_state->waveform_header->norm_val = (uint8_t)(node_state->accum_norm * 255.0);
     node_state->waveform_header->samples_per_point = node_state->samples_per_point;
 
-    printf( "writing %d points\n", node_state->waveform_header->frame_count );
+    // printf( "writing %d points\n", node_state->waveform_header->frame_count );
 
     fseek( node_state->waveform_fd, 0, SEEK_SET );
     fwrite( node_state->waveform_header, sizeof( zdj_waveform_header_t ), 1, node_state->waveform_fd );

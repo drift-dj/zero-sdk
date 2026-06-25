@@ -91,6 +91,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     } else if( decode_count < 0 ) {
         state->song->audio->has_libav_error = true;
         state->song->has_error = true;
+        state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
         state->song->analysis_state = ZDJ_LIBRARY_ANALYSIS_STATE_DONE; 
     }
 
@@ -185,6 +186,7 @@ static int _decode(
             state->song->audio->has_libav_error = true;
             state->song->audio->libav_error = res;
             state->song->has_error = true;
+            state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
             return 0; 
         }
         // Attempt to read another frame to see if things improve

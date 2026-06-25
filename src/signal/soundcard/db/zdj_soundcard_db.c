@@ -17,12 +17,6 @@ void zdj_drop_soundcard( void ) {
     // If soundcard is running, shut down soundcard
     if( zdj_soundcard ) { zdj_soundcard_deinit( zdj_soundcard ); }
 
-    // printf( "zdj_drop_soundcard 0\n" );
-    // // Delete db
-    // int res = remove( ZDJ_SOUNDCARD_DB_PATH );
-    // if( res ) { printf( "remove failed: %d\n", res ); }
-
-    // printf( "zdj_drop_soundcard 0\n" );
     // Create new db
     sqlite3 * db = zdj_sql_open( ZDJ_SOUNDCARD_DB_PATH );
     if( !db ) { 
@@ -30,23 +24,17 @@ void zdj_drop_soundcard( void ) {
         return; 
     }
 
-    // printf( "zdj_drop_soundcard 1\n" );
     _zdj_soundcard_drop_tables( db );
 
-    // printf( "zdj_drop_soundcard 2\n" );
     // Create tables in new db
     _zdj_soundcard_create_linkage_table( db );
     _zdj_soundcard_create_dsp_table( db );
 
-    // printf( "zdj_drop_soundcard 3\n" );
     zdj_sql_db_flush( db );
     zdj_sql_close( db );
 
-    // printf( "zdj_drop_soundcard 4\n" );
     // Add defaults to new db
     zdj_soundcard_reset_db_defaults( );
-
-    // printf( "zdj_drop_soundcard 5\n" );
 }
 
 void zdj_soundcard_reset_db_defaults( void ) {
@@ -110,8 +98,8 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_1_prefade_dsp.stages[ 0 ].knob_0 = 1.0; // Lo
     dto->deck_1_prefade_dsp.stages[ 0 ].knob_1 = 1.0; // Mid
     dto->deck_1_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
-    dto->deck_1_prefade_dsp.stages[ 0 ].knob_3 = 1.0; // Xover Lo
-    dto->deck_1_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Hi
+    dto->deck_1_prefade_dsp.stages[ 0 ].knob_3 = 0.250; // Xover Hi
+    dto->deck_1_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Lo
     dto->deck_1_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
     dto->deck_1_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
     dto->deck_1_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
@@ -129,8 +117,8 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_2_prefade_dsp.stages[ 0 ].knob_0 = 1.0; // Lo
     dto->deck_2_prefade_dsp.stages[ 0 ].knob_1 = 1.0; // Mid
     dto->deck_2_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
-    dto->deck_2_prefade_dsp.stages[ 0 ].knob_3 = 1.0; // Xover Lo
-    dto->deck_2_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Hi
+    dto->deck_2_prefade_dsp.stages[ 0 ].knob_3 = 0.250; // Xover Hi
+    dto->deck_2_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Lo
     dto->deck_2_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
     dto->deck_2_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
     dto->deck_2_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
@@ -148,8 +136,8 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_ext_prefade_dsp.stages[ 0 ].knob_0 = 1.0; // Lo
     dto->deck_ext_prefade_dsp.stages[ 0 ].knob_1 = 1.0; // Mid
     dto->deck_ext_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
-    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_3 = 1.0; // Xover Lo
-    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Hi
+    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_3 = 0.250; // Xover Hi
+    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Lo
     dto->deck_ext_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
     dto->deck_ext_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
     dto->deck_ext_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
@@ -203,16 +191,56 @@ static void _zdj_soundcard_create_dsp_table( sqlite3 * db ) {
     zdj_sql_exec( (char*)&sql, db );
 }
 
-zdj_error_type_t zdj_soundcard_fetch_dto( char * entity_id, zdj_soundcard_dto_t * dto ) {
-    // printf( "zdj_soundcard_fetch_dto: %p %s\n", entity_id, entity_id );
-    if( !entity_id ) { return ZDJ_ERROR_OKAY; }
+bool zdj_soundcard_check_dto_exists_in_db( char * entity_id ) {
+    if( !entity_id ) { return false; }
     
     sqlite3 * db = zdj_sql_open( ZDJ_SOUNDCARD_DB_PATH );
+    if( !db ) { printf( "failed to open soundcard db\n" ); return false; }
 
-    if( !db ) { 
-        printf( "failed to open zero db\n" );
-        return ZDJ_ERROR_LIBRARY_DB_ERROR; 
+    // Grab all the values from db
+    bool res = false;
+    int sql_res;
+    char _sql[ 1024 ];
+    sprintf( _sql, "select * from %s where entity_id=\'%s\'", ZDJ_SOUNDCARD_LINKAGE_TABLE, entity_id );
+    sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( _sql, db );
+    if( stmt ) {
+        while ( ( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { res = true; }
+        sqlite3_finalize( stmt );
     }
+    zdj_sql_close( db );
+
+    return res;
+}
+
+zdj_error_type_t zdj_soundcard_put_default_entity_id( char * entity_id, zdj_soundcard_dto_t * dto ) {
+    if( !entity_id ) { return false; }
+    
+    sqlite3 * db = zdj_sql_open( ZDJ_SOUNDCARD_DB_PATH );
+    if( !db ) { printf( "failed to open soundcard db\n" ); return ZDJ_ERROR_SOUNDCARD_DB_ERROR; }
+
+    // Grab all the values from db
+    zdj_error_type_t res = ZDJ_ERROR_SOUNDCARD_DB_NO_RECORD;
+    int sql_res;
+    char _sql[ 1024 ];
+    sprintf( _sql, "select * from %s where name=\'Default\'", ZDJ_SOUNDCARD_LINKAGE_TABLE, entity_id );
+    sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( _sql, db );
+    if( stmt ) {
+        while ( ( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW ) {
+            strcpy( entity_id, (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_ENTITY_ID ) );
+            res = ZDJ_ERROR_OKAY;
+        }
+        sqlite3_finalize( stmt );
+    }
+    zdj_sql_close( db );
+
+    return res;
+}
+
+zdj_error_type_t zdj_soundcard_fetch_dto( char * entity_id, zdj_soundcard_dto_t * dto ) {
+    if( !entity_id ) { return ZDJ_ERROR_OKAY; }
+
+    sqlite3 * db = zdj_sql_open( ZDJ_SOUNDCARD_DB_PATH );
+    if( !db ) { printf( "failed to open soundcard db\n" ); return ZDJ_ERROR_LIBRARY_DB_ERROR; }
 
     // Grab all the values from db
     int sql_res;
@@ -1178,4 +1206,80 @@ void zdj_soundcard_store_dsp_for_entity_id( zdj_soundcard_dsp_dto_t * dto, char 
     );
 
     zdj_sql_exec( sql, db );
+}
+
+int zdj_soundcard_count_stored_records( void ) {
+    
+    sqlite3 * db = zdj_sql_open( ZDJ_SOUNDCARD_DB_PATH );
+
+    if( !db ) { 
+        printf( "failed to open soundcard db\n" );
+        return 0; 
+    }
+
+    char _sql[ 512 ];
+    // Build a count of all distinct artists in given library
+    snprintf( _sql, sizeof( _sql ), 
+        "SELECT count(*) from %s",
+        ZDJ_SOUNDCARD_LINKAGE_TABLE
+    );
+    int count = 0;
+    int res;
+    sqlite3_stmt * c_stmt = zdj_sql_prep_row_stepper( (char*)&_sql, db );
+    if( c_stmt ) {
+        while ( ( res = sqlite3_step( c_stmt ) ) == SQLITE_ROW ) {
+            count = sqlite3_column_int ( c_stmt, 0 );
+        }
+        sqlite3_finalize( c_stmt );
+    }
+
+    res = zdj_sql_close( db );
+
+    if( res ) {
+        return 0;
+    } else {
+        return count;
+    }
+}
+
+zdj_error_type_t zdj_soundcard_fetch_all_dtos( int count, zdj_soundcard_dto_t ** dtos ) {
+    sqlite3 * db = zdj_sql_open( ZDJ_SOUNDCARD_DB_PATH );
+
+    if( !db ) { 
+        printf( "failed to open soundcard db\n" );
+        return 0; 
+    }
+
+    char _sql[ 1024 ];
+    char entity_ids[ count ][ 128 ];
+
+    // Populate list of entity_ids
+    snprintf( _sql, sizeof( _sql ), 
+        "SELECT entity_id from %s",
+        ZDJ_SOUNDCARD_LINKAGE_TABLE
+    );
+    int row = 0;
+    int res;
+    sqlite3_stmt * a_stmt = zdj_sql_prep_row_stepper( (char*)&_sql, db );
+    if( a_stmt ) {
+        while ( ( res = sqlite3_step( a_stmt ) ) == SQLITE_ROW ) {
+            // Bound results by count input
+            if( row < count ) {
+                strcpy( entity_ids[ row ], (char*)sqlite3_column_text ( a_stmt, 0 ) );
+            }
+            row++;
+        }
+        sqlite3_finalize( a_stmt );
+    }
+
+    res = zdj_sql_close( db );
+
+    // Populate the DTOs
+    for( int i=0; i<count; i++ ) {
+        printf( "fetching dto: %s\n", entity_ids[ i ] );
+        dtos[ i ] = calloc( 1, sizeof( zdj_soundcard_dto_t ) );
+        zdj_soundcard_fetch_dto( entity_ids[ i ], dtos[ i ] );
+    }
+    
+    return ZDJ_ERROR_LIBRARY_QUERY_OKAY;
 }

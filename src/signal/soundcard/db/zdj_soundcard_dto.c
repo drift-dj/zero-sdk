@@ -7,6 +7,7 @@
 
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/signal/soundcard/db/zdj_soundcard_dto.h>
+#include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/sql/zdj_sql.h>
 #include <zerodj/system/uuid/zdj_uuid.h>
 
@@ -58,6 +59,13 @@ zdj_soundcard_dto_t * zdj_soundcard_create_dto( void ) {
     _populate_dsp_dto( &dto->xfade_a_dsp, dto->xfade_a_dsp_eid );
     _populate_dsp_dto( &dto->xfade_b_dsp, dto->xfade_b_dsp_eid );
     return dto;
+}
+
+zdj_error_type_t zdj_soundcard_copy_dto( 
+    zdj_soundcard_dto_t * src_dto, 
+    zdj_soundcard_dto_t * dst_dto 
+) {
+    memcpy( dst_dto, src_dto, sizeof( zdj_soundcard_dto_t ) );
 }
 
 static void _populate_dsp_dto( zdj_soundcard_dsp_dto_t * dto, char * eid ) {

@@ -136,10 +136,12 @@ add_library(zerodj
     src/ui/panel/debug/zdj_debug_panel.c
     src/ui/panel/recording/zdj_recording_panel.c
     src/ui/panel/soundcard/zdj_soundcard_panel.c
+    src/ui/panel/soundcard/list_menu/zdj_soundcard_list_menu.c
     src/ui/panel/soundcard/meters/zdj_soundcard_meter.c
     src/ui/panel/soundcard/meters/zdj_soundcard_audio_meter.c
     src/ui/panel/soundcard/meters/zdj_soundcard_clock_meter.c
     src/ui/panel/soundcard/meters/zdj_soundcard_cv_meter.c
+    src/ui/panel/soundcard/meters/zdj_soundcard_discon_meter.c
     src/ui/panel/soundcard/meters/zdj_soundcard_midi_meter.c
     src/ui/panel/soundcard/meters/zdj_soundcard_record_meter.c
     src/ui/panel/soundcard/meters/zdj_soundcard_record_mini_meter.c

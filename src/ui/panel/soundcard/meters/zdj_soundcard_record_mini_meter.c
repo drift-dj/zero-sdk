@@ -25,7 +25,6 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip );
 static void _deinit_state( zdj_view_t * view );
 
 zdj_view_t * zdj_new_record_mini_meter_view( void ) {
-    // printf( "zdj_new_audio_stereo_meter_view\n" );
     zdj_view_t * audio_meter_view = zdj_new_view( &(zdj_rect_t){0,0,28,11} );
     audio_meter_view->type = ZDJ_VIEW_BASE;
     audio_meter_view->draw = &_draw;
@@ -64,7 +63,8 @@ zdj_view_t * zdj_new_record_mini_meter_view( void ) {
 }
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    // printf( "mini meter draw\n" );
+    if( zdj_soundcard->state != ZDJ_SOUNDCARD_STATE_RUNNING ) { return; }
+
     zdj_soundcard_meter_state_t * view_state = (zdj_soundcard_meter_state_t*)view->state;
     zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
     zdj_pipeline_node_t * meter_pipe = node->meter_pipe;
@@ -73,7 +73,6 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     float meter_val = fmax(meter_state->instant_val_0, meter_state->instant_val_1) * 28;
     view_state->meter_cover_l->frame.w = meter_val;
-    // view_state->meter_cover_l->frame.x = view->frame.w - view_state->meter_cover_l->frame.w;
 
     bool show_full_ui = false;
 
@@ -83,24 +82,10 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         view_state->hilite_view->frame.w = 0;
     }
 
-    // Time counter
-    // if( view_state->detail ){ 
-    //     zdj_remove_subview_of( view, view_state->detail ); 
-    //     view_state->detail = NULL; 
-    // }
-    // if( recording_state->status == ZDJ_AUDIO_RECORD_ACTIVE ) {
-    //     char str[ 32 ];
-    //     zdj_audio_record_put_capture_time( zdj_soundcard->recording_node, str );
-    //     view_state->detail = zdj_new_label_view( str, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    //     view_state->detail->frame.y = 4;
-    //     // view_state->detail->frame.x = view->frame.w - view_state->detail->frame.w;
-    //     zdj_add_subview( view, view_state->detail );
-    // }
-
     // Fader
-    double fader_val = view_state->config_context->node->dsp_dto->get_gain_display_val( 
-        view_state->config_context->node->dsp_dto->gain_model,
-        view_state->config_context->node->dsp_dto->gain
+    double fader_val = node->dsp_dto->get_gain_display_val( 
+        node->dsp_dto->gain_model,
+        node->dsp_dto->gain
     );
     view_state->fader->frame.x = (fader_val * view->frame.w) - 2;
 }

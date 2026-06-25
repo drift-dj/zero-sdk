@@ -34,7 +34,7 @@ static void _handle_linkage( zdj_view_t * view, zdj_control_event_t * _event );
 static void _cb( void * _context );
 
 void zdj_soundcard_options_update_dj_deck_layout( zdj_view_t * view ) {
-    printf( "zdj_soundcard_options_update_dj_deck_layout\n" );
+    // printf( "zdj_soundcard_options_update_dj_deck_layout\n" );
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view->state;
     zdj_view_t * menu_view = options_state->menu;
     options_state->needs_layout_update = false;
@@ -211,20 +211,12 @@ static void _cb( void * _context ) {
 
     // Handle the selection of a new linked node.
     if ( context->remove_node_selection ) {
-        printf( "_cb remove: %s -> %s\n",
-            zdj_soundcard_node_name[ context->node->name ],
-            zdj_soundcard_node_name[ context->remove_node_selection->name ]
-        );
         zdj_soundcard_unlink_source_node_from_dest_node( 
             context->soundcard,
             context->node,
             context->remove_node_selection
         );
     } else if ( context->new_node_selection ) {
-        printf( "_cb add/edit: %s -> %s\n",
-            zdj_soundcard_node_name[ context->node->name ],
-            zdj_soundcard_node_name[ context->new_node_selection->name ]
-        );
         // If we launched the select_node view by tapping an existing node,
         // we need to remove the linkage to the original node before adding.
         if( context->node_selection_is_edit ) {
@@ -250,7 +242,6 @@ static void _cb( void * _context ) {
 static void _handle_gain( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data.ptr;
-    printf( "handle gain event\n" );
     if( options_state->config_context &&
         options_state->config_context->node &&  
         options_state->config_context->node->dsp_dto
@@ -265,11 +256,9 @@ static void _handle_gain( zdj_view_t * view, zdj_control_event_t * _event ) {
 static void _handle_pan( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data.ptr;
-    printf( "handle pan event\n" );
 }
 
 static void _handle_eq_lo( zdj_view_t * view, zdj_control_event_t * _event ) {
-    printf( "handle eq_lo event\n" );
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data.ptr;
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)options_state->menu->state;
@@ -280,11 +269,9 @@ static void _handle_eq_lo( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _handle_eq_hi( zdj_view_t * view, zdj_control_event_t * _event ) {
-    printf( "handle eq_hi event\n" );
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data.ptr;
     zdj_soundcard_dsp_stage_dto_t * eq_stage = (zdj_soundcard_dsp_stage_dto_t*)zdj_soundcard_dto_get_dsp_stage_for_type( options_state->config_context->node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
-
     zdj_soundcard_dsp_process_knob_input( &eq_stage->knob_3, ZDJ_SOUNDCARD_DSP_KNOB_0_1_FAST, _event->i_val );
     options_state->needs_layout_update = true;
 }
@@ -292,7 +279,6 @@ static void _handle_eq_hi( zdj_view_t * view, zdj_control_event_t * _event ) {
 static void _handle_eq_model( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data.ptr;
-    printf( "handle eq_model event\n" );
 }
 
 static void _handle_stereo( zdj_view_t * view, zdj_control_event_t * _event ) {

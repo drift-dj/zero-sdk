@@ -153,11 +153,8 @@ typedef struct {
     void (*exit_cb) ( void* );
     // PANEL_VIEW_BASE EXTENSION - do not edit
 
-    // zdj_view_t * menu;
     zdj_soundcard_t * soundcard;
-    // zdj_view_t * overlay;
-    // int overlay_counter;
-    // bool needs_layout_update;
+    bool needs_layout_teardown;
 } zdj_soundcard_panel_state_t;
 
 // zdj_view_t * zdj_new_soundcard_view( zdj_soundcard_t * soundcard );
@@ -209,6 +206,16 @@ zdj_view_t * zdj_new_cv_meter_view(
     bool show_detail 
 );
 zdj_view_t * zdj_new_midi_meter_view( 
+    zdj_soundcard_node_t * node, 
+    zdj_soundcard_meter_label_t label,
+    bool show_detail 
+);
+zdj_view_t * zdj_new_discon_stereo_meter_view( 
+    zdj_soundcard_node_t * node, 
+    zdj_soundcard_meter_label_t label,
+    bool show_detail 
+);
+zdj_view_t * zdj_new_discon_mono_meter_view( 
     zdj_soundcard_node_t * node, 
     zdj_soundcard_meter_label_t label,
     bool show_detail 

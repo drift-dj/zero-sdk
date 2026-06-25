@@ -243,15 +243,10 @@ static void _update_state ( zdj_deck_t * deck ) {
             // Immediately stop accepting control events.
             deck->handle_control_event = NULL;
             // Stop deck playback if running.
-            if( deck->controls.platter.motor.enabled ) {
-                deck->safe_to_deinit = false;
-                deck->controls.platter.motor.enabled = false;
-                deck->controls.platter.motor.state = ZDJ_PLATTER_MOTOR_SPIN_DOWN;
-                deck->controls.platter.motor.cur_spin_down_cycle = 0;
-                // Ensure slip is in pitch mode so we hear spin down.
-                deck->controls.platter.slip.state = ZDJ_PLATTER_MODE_SLIP;
+            if( zdj_dj_deck_platter_is_playing( deck ) ) {
+                zdj_dj_deck_platter_stop_motor( deck, true );
             } else {
-                deck->safe_to_deinit = true;
+                zdj_dj_deck_platter_stop_motor( deck, false );
             }
             deck->status = ZDJ_DECK_STATUS_WAIT_SPOOLDOWN; 
 
@@ -276,7 +271,6 @@ static void _update_state ( zdj_deck_t * deck ) {
             break;
         default: break;
     }
-
     // printf( "lib deck _update_state done\n" );
 }
 

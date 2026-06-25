@@ -25,10 +25,6 @@ static void _zdj_soundcard_options_handle_control( zdj_view_t * view, zdj_contro
 static void _zdj_soundcard_options_deinit_state( zdj_view_t * view );
 static void _zdj_soundcard_options_handle_back( zdj_view_t * menu_view );
 
-static void _zdj_soundcard_options_handle_bus_btn( zdj_view_t * view, zdj_control_event_t * _event );
-static void _zdj_soundcard_options_handle_save_btn( zdj_view_t * view, zdj_control_event_t * _event );
-static void _zdj_soundcard_options_handle_load_btn( zdj_view_t * view, zdj_control_event_t * _event );
-
 zdj_view_t * zdj_new_soundcard_options( zdj_soundcard_node_config_context_t * context ) {
     zdj_view_t * soundcard_options = zdj_new_modal_view( zdj_modal_rect( ) );
     soundcard_options->draw = &_zdj_soundcard_options_draw;
@@ -152,45 +148,7 @@ void _zdj_soundcard_options_handle_control( zdj_view_t * view, zdj_control_event
     // Ignore events which have been blocked by layers above this one.
     if( e->blocked ) { return; }
 
-    printf( "_zdj_soundcard_options_handle_control\n" );
-    // Grab Tone 1,2,3 + Jog push turn to send controls into channels.
-    // if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ||
-    //     e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0 ||
-    //     e->id == ZDJ_UI_CONTROL_TONE_1_RELEASE_0 ||
-    //     e->id == ZDJ_UI_CONTROL_TONE_1_ADJUST_0
-    // ) {
-        // Get current menu scroll index
-        // zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)state->menu->state;
-        // zdj_view_t * item = zdj_menu_view_item_at_current_scroll_index( state->menu );
-        
-        // Send events into view's hmi handler
-        
-    //     if ( zdj_soundcard_node_name_is_audio( context->node->name ) ) {
-    //         if ( zdj_soundcard_node_name_is_output( context->node->name ) ) {
-    //             zdj_soundcard_options_port_output_hmi( view, _event );
-    //         } else if( zdj_soundcard_node_name_is_input( context->node->name ) ) {
-    //             zdj_soundcard_options_port_input_hmi( view, _event );
-    //         } else if( zdj_soundcard_node_name_is_dj_deck( context->node->name ) ) { 
-    //             zdj_soundcard_options_dj_deck_hmi( view, _event );
-    //         } else if( zdj_soundcard_node_name_is_ext_deck( context->node->name ) ) { 
-    //             zdj_soundcard_options_ext_deck_hmi( view, _event );
-    //         } else {
-    //             zdj_soundcard_options_audio_bus_hmi( view, _event );
-    //         }
-    //     } else if ( zdj_soundcard_node_name_is_clock( context->node->name ) ) {
-            
-    //     } else if ( zdj_soundcard_node_name_is_cv( context->node->name ) ) {
-        
-    //     } else if ( zdj_soundcard_node_name_is_usb( context->node->name) ) {
-            
-    //     } else if ( zdj_soundcard_node_name_is_midi( context->node->name ) ) {
-            
-    //     }
-    //     e->blocked = true;
-    // } else {
-        // Send remaining events down into the menu
-        state->menu->handle_control_event( state->menu, _event );
-    // }
+    state->menu->handle_control_event( state->menu, _event );
 }
 
 void _zdj_soundcard_options_deinit_state( zdj_view_t * view ) {
@@ -202,17 +160,3 @@ void _zdj_soundcard_options_deinit_state( zdj_view_t * view ) {
 void _zdj_soundcard_options_handle_back( zdj_view_t * view ) {
     zdj_pop_subview_of( zdj_panel_view( ), true );
 }
-
-// void _zdj_soundcard_options_handle_bus_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
-//     // Push bus mixer
-//     // zdj_view_t * soundcard_options = zdj_new_soundcard_soundcard_options( zdj_soundcard );
-//     // zdj_push_subview( zdj_root_view( ), soundcard_options, true );
-// }
-
-// void _zdj_soundcard_options_handle_save_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
-//     // Push text edit for soundcard name
-// }
-
-// void _zdj_soundcard_options_handle_load_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
-//     // Open soundcard selection list
-// }

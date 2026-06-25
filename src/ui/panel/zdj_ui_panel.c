@@ -197,7 +197,7 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
                 }
                 // state->soundcard_panel->handle_control_event( state->soundcard_panel, event );
             } else if( state->deployed && state->current_panel ) {
-                printf( "panel capture event: %d\n", event->id );
+                // printf( "panel capture event: %d\n", event->id );
                 state->current_panel->handle_control_event( state->current_panel, event );
                 event->blocked = true;
             }

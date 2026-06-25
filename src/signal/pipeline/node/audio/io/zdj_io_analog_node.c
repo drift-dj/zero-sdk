@@ -214,7 +214,7 @@ void * _zdj_io_analog_fast_cycle_thread_main( void * arg ) {
     long cycle_time = cycle_nano / 8.0; 
     struct timespec cycle_delay = { 0, cycle_time };
     // struct timespec cycle_delay = { 0, 50 };
-    printf( "cycle time: %ld\n", cycle_time );
+    // printf( "cycle time: %ld\n", cycle_time );
 
     double p_start_prev, p_start;
     double n_start, n_end;

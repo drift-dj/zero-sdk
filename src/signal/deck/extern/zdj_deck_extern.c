@@ -31,12 +31,8 @@ zdj_error_type_t zdj_new_extern_deck( zdj_deck_t * deck ) {
     
     zdj_ext_deck_state_t * state = calloc( 1, sizeof( zdj_ext_deck_state_t ) );
     deck->state = state;
-    // state->dsp_node = zdj_new_deck_dsp_node( );
 
     sem_init( &state->start_cycle, 0, 0 );
-
-    // Reset deck controls
-    // zdj_deck_init_controls( deck );
 
     return ZDJ_ERROR_OKAY;
 }
@@ -131,8 +127,6 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
     zdj_deck_t * deck = (zdj_deck_t*)_deck;
     zdj_ext_deck_state_t * deck_state = (zdj_ext_deck_state_t*)deck->state;
     // printf( "ext get edge data: %p->%p\n", deck_state, deck_state->dsp_node );
-    // Exit early if we haven't stood up the dsp node yet.
-    // if( !deck_state->dsp_node ) { return; }
 
     // Get a reference to external deck input node's buffer
     zdj_soundcard_node_t * ext_input_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
@@ -177,29 +171,16 @@ static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool
 
 static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // printf( "extern _handle_control\n" );
+
+    // Make sure soundcard isn't in reset before processing inputs
+    if( zdj_soundcard->state != ZDJ_SOUNDCARD_STATE_RUNNING ){ return; }
+
     zdj_ext_deck_state_t * deck_state = (zdj_ext_deck_state_t*)deck->state;
     zdj_soundcard_node_t * node;
     zdj_soundcard_dsp_dto_t * dsp_dto;
     zdj_soundcard_dsp_stage_dto_t * dsp_stage;
 
     switch ( event->id ) {
-
-    /////////////
-    // Out Vol //
-    /////////////  
-
-    // case ZDJ_DECK_CONTROL_LR_VOL:
-    //     node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS );
-    //     node->dsp_dto->adjust_gain( node, event->i_val );
-    //     event->blocked = true;
-    //     break;
-
-    // case ZDJ_DECK_CONTROL_CUE_VOL:
-    //     node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS );
-    //     node->dsp_dto->adjust_gain( node, event->i_val );
-    //     event->blocked = true;
-    //     break;
-
 
     //////////////////
     // Play / Pause //

@@ -160,7 +160,9 @@ void zdj_deck_manager_handle_events( int start_ind, int end_ind ) {
         }
 
         // Handle soundcard events
-        if( _is_soundcard_event( event ) ) {
+        if( _is_soundcard_event( event ) &&
+            zdj_soundcard->state == ZDJ_SOUNDCARD_STATE_RUNNING 
+        ) {
             zdj_soundcard_handle_deck_event( zdj_soundcard, event );
         } 
     } 

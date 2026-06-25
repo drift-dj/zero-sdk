@@ -141,10 +141,7 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
     // Get a reference to the soundcard deck edge buffer which needs filling.
     float * out_buf = data_pipe->get_data( data_pipe );
 
-    if( deck->update_transport_outputs ) { deck->update_transport_outputs( deck ); }
-    // Advance the transport head at set_rate
-    double pcm_advance = 0.0;
-    double bg_advance = 0.0;
+    if( deck->update_platter_model ) { deck->update_platter_model( deck ); }
 
     if( deck->controls.platter.motor.enabled ) {
         double ppqn = deck_state->ppqn;
@@ -161,36 +158,22 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
         double start_transport_bg = deck_state->transport_bg;
         double cur_bg = start_transport_bg;
         double quant_bg;
-        // double bg_quant = transport_bg - ( floor( transport_bg / quant_val ) * quant_val );
-        // printf( "\n ----- bg:%1.3f \n", start_transport_bg );
+
         for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
             quant_bg = cur_bg - ( floor( cur_bg / quant_val ) * quant_val );
             if( quant_bg < (quant_val * 0.3) ) {
                 deck_state->meter_on = true;
                 out_buf[ i ] = 0.0;
-                // if( i == ZDJ_SOUNDCARD_BUF_LEN-1 ) { printf( "0\n" ); }
             } else {
                 deck_state->meter_on = false;
                 out_buf[ i ] = 1.0;
-                // if( i == ZDJ_SOUNDCARD_BUF_LEN-1 ) { printf( "1\n" ); }
             }
             cur_bg += bg_offset;
         }
 
-        // printf( "c:%1.5f q:%1.5f [%d]\n", cur_bg, quant_bg, deck_state->meter_on );
-
         deck_state->transport_d += (ZDJ_SOUNDCARD_BUF_LEN * deck->controls.platter.motor.instant_rate);
         deck_state->transport_bg += (ZDJ_SOUNDCARD_BUF_LEN * deck->controls.platter.motor.instant_rate) / samples_per_bar;
-
-        // if( deck_state->meter_counter++ > 2 ) {
-        //     printf( "meter->false\n" );
-        //     deck_state->meter_on = false;
-        // }
     }
-
-    
-
-    // printf( "%1.4f [%1.0f]\n", deck_state->transport_bg, out_buf[ 0 ] );
 }
 
 // We get this call after soundcard accums everything into Deck Ext Input
@@ -215,7 +198,7 @@ static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool
 
 
 static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
-    // printf( "xport _handle_control: %p %d\n", deck, event->id );
+    printf( "xport _handle_control: %p %d\n", deck, event->id );
     // All external clock and transport signals flow through here.
     // They are then re-routed based on instantaneous system state
 

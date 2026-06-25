@@ -205,6 +205,7 @@ typedef struct {
     double internal_instant_head_prev; // internal tracking of slip+motor sim
     double head_move_samps;
     double head_move_rate;
+    double last_head_move_rate;
     zdj_deck_platter_motor_t motor;
     zdj_deck_platter_slip_t slip;
     zdj_deck_platter_antipop_t antipop;
@@ -314,6 +315,7 @@ typedef struct zdj_deck_t {
     void ( *deinit )( struct zdj_deck_t * );
 
     // UI API
+    bool needs_ui_reset;
     void ( *ui_load_cb )( struct zdj_deck_t * );
     void ( *ui_unload_cb )( struct zdj_deck_t * );
 
@@ -331,11 +333,6 @@ typedef struct zdj_deck_t {
     int platter_req_write_index;
     void ( *update_platter_req )( struct zdj_deck_t * ); // Control thread @800Hz
     void ( *update_platter_model )( struct zdj_deck_t * ); // Soundcard thread @buffer rate   
-    
-    // DEPRECATED
-    void ( *update_transport_inputs )( struct zdj_deck_t * deck ); 
-    void ( *update_transport_outputs )( struct zdj_deck_t * deck ); 
-    // DEPRECATED
 
     // Command API
     zdj_deck_control_command_request_t command_req;

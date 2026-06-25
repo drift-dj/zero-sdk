@@ -12,9 +12,11 @@
 
 static void _zdj_live_waveform_render( zdj_pipeline_node_t * waveform );
 static void _handle_soundcard_node_push( void * _waveform, zdj_pipeline_node_t * mix_buffer, bool stereo );
+static void _deinit_state( zdj_pipeline_node_t * node );
 
 zdj_pipeline_node_t * zdj_new_live_waveform( void ) {
     zdj_pipeline_node_t * waveform = zdj_new_pipeline_node( );
+    waveform->deinit_state = &_deinit_state;
 
     zdj_live_waveform_state_t * state = calloc( 1, sizeof( zdj_live_waveform_state_t ) );
     waveform->state = state;
@@ -30,6 +32,14 @@ zdj_pipeline_node_t * zdj_new_live_waveform( void ) {
     state->g = zdj_new_gaussian( state->point_count, 1.0 );
 
     return waveform;
+}
+
+static void _deinit_state( zdj_pipeline_node_t * node ) {
+    zdj_live_waveform_state_t * state = (zdj_live_waveform_state_t*)node->state;
+    if( state->source_buf ) { free( state->source_buf ); }
+    if( state->render_buf ) { free( state->render_buf ); }
+    if( state->g ) { zdj_gaussian_free( state->g ); }
+    if( state ) { node->state = NULL; free( state );  }
 }
 
 // Input will come from UI layer as user adjust scale control.
@@ -133,7 +143,6 @@ void _zdj_live_waveform_render( zdj_pipeline_node_t * waveform ) {
         source_ind = (i*waveform_state->samples_per_point) + waveform_state->source_render_tail;
         source_ind %= ZDJ_LIVE_WAVEFORM_SAMPLE_COUNT;
         val = waveform_state->source_buf[ source_ind ];
-        // val = waveform_state->source_buf[ source_ind ] * waveform_state->g->lut[ 0 ];
         // run out to samples_per_point/2 in each direction to get average over samples_per_point
         for( s=1; s<half_stride; s++ ) {
             temp_source_ind = source_ind + s;
@@ -142,13 +151,6 @@ void _zdj_live_waveform_render( zdj_pipeline_node_t * waveform ) {
             temp_source_ind = source_ind - s;
             if( temp_source_ind < 0 ) { temp_source_ind += ZDJ_LIVE_WAVEFORM_SAMPLE_COUNT; }
             val += waveform_state->source_buf[ temp_source_ind ];
-            
-            // temp_source_ind = source_ind + s;
-            // temp_source_ind %= ZDJ_LIVE_WAVEFORM_SAMPLE_COUNT;
-            // val += waveform_state->source_buf[ temp_source_ind ] * waveform_state->g->lut[ s ];
-            // temp_source_ind = source_ind - s;
-            // if( temp_source_ind < 0 ) { temp_source_ind += ZDJ_LIVE_WAVEFORM_SAMPLE_COUNT; }
-            // val += waveform_state->source_buf[ temp_source_ind ] * waveform_state->g->lut[ s ];
         }
         val /= waveform_state->samples_per_point;
         waveform_state->render_buf[ i ] = val;

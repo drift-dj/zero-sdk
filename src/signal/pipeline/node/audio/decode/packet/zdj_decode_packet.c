@@ -84,6 +84,7 @@ zdj_decode_packet_t * zdj_decode_packet(
                 node_state->song->audio->has_libav_error = true;
                 node_state->song->audio->libav_error = res;
                 node_state->song->has_error = true;
+                node_state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
                 packet_has_decode_error = true;
                 // return NULL; 
             }
@@ -226,6 +227,7 @@ void zdj_decode_garbage_packet(
             node_state->song->audio->has_libav_error = true;
             node_state->song->audio->libav_error = res;
             node_state->song->has_error = true;
+            node_state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
             return; 
         }
         // Attempt to read another frame to see if things improve

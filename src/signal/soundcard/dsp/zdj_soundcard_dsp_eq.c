@@ -96,6 +96,17 @@ void zdj_soundcard_dsp_eq_3_4p_update( void * _stage, float * buf, int channel_c
     float sample_l;
     float sample_r;
 
+    // Update XOver from Knob Vals
+    // Calculate filter cutoff frequencies
+    // Lo - 40 <-> 1000
+    float lo_span = 1000.0 - 40.0;
+    double f_lo = stage->knob_4 * lo_span + 40.0;
+    data->lf = 2 * sin( LOCAL_M_PI * ( f_lo / 44100.0 ) );
+    // Hi - 1000 <-> 11500
+    float hi_span = 11500 - 1000;
+    double f_hi = stage->knob_3 * hi_span + 1000;
+    data->hf = 2 * sin( LOCAL_M_PI * ( f_hi / 44100.0 ) );
+
     // Loop thru buffer
     for ( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
         sample_l = buf[ i*channel_count ];

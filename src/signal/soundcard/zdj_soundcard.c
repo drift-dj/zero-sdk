@@ -19,6 +19,7 @@
 zdj_soundcard_t * zdj_soundcard;
 
 void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node );
+void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node );
 
 zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     // printf( "zdj_soundcard_init 0: %s\n", entity_id );
@@ -30,18 +31,17 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     soundcard->has_edits = false;
     zdj_soundcard = soundcard;
 
+    soundcard->state = ZDJ_SOUNDCARD_STATE_INIT;
+
     // Bring up the M7's soundcard + shared buffers.
     soundcard->analog_io_node = zdj_new_io_analog_node( );
-    zdj_io_analog_node_state_t * io_node_state = (zdj_io_analog_node_state_t*)
-    soundcard->analog_io_node->state;
+    zdj_io_analog_node_state_t * io_node_state = (zdj_io_analog_node_state_t*)soundcard->analog_io_node->state;
     soundcard->analog_io_node->update_cb = &_zdj_soundcard_io_fast_cycle_cb;
     zdj_io_analog_configure( soundcard->analog_io_node );
 
     // Bring up the USB I/O node
     soundcard->usb_io_node = zdj_new_io_usb_node( );
-    zdj_io_usb_node_state_t * io_usb_node_state = (zdj_io_usb_node_state_t*)
-    soundcard->usb_io_node->state;
-    // printf( "usb_io_node_state 0: %p %p %d\n", soundcard->usb_io_node, io_usb_node_state, io_usb_node_state->phase );
+    zdj_io_usb_node_state_t * io_usb_node_state = (zdj_io_usb_node_state_t*)soundcard->usb_io_node->state;
 
     if( entity_id ) {
         // If explicitly asked, bring up a specific record from the soundcard db.
@@ -62,19 +62,12 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     io_node_state->out_1_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 )->data_pipe;
     io_node_state->out_2_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 )->data_pipe;
     io_node_state->in_1_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 )->data_pipe;
-    zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1 )->data_pipe = io_node_state->in_1_buffer;
     io_node_state->in_2_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 )->data_pipe;
-    zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3 )->data_pipe = io_node_state->in_2_buffer;
 
     // Link usb_io pipeline node to io soundcard nodes
     io_usb_node_state->soundcard_out_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->data_pipe;
     io_usb_node_state->soundcard_in_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 )->data_pipe;
     zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1 )->data_pipe = io_usb_node_state->soundcard_in_buffer;
-
-
-    // Create a waveform pipeline node to process o-scope data.
-    soundcard->scope_waveform = zdj_new_live_waveform( );
-    soundcard->scope_node_name = ZDJ_SOUNDCARD_NODE_NAME_NONE;
 
     // Bring up/link an audio recording pipeline node.
     soundcard->recording_node = zdj_new_audio_record_node( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) );
@@ -90,12 +83,15 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     // Start the transport pipeline
     zdj_soundcard_start( soundcard );
 
+    soundcard->state = ZDJ_SOUNDCARD_STATE_RUNNING;
+
     return ZDJ_ERROR_OKAY;
 }
 
 zdj_error_type_t zdj_soundcard_deinit( zdj_soundcard_t * soundcard ) {
     if( !soundcard ) { return ZDJ_ERROR_OKAY; }
     // printf( "zdj_soundcard_deinit\n" );
+    zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_TEARDOWN;
     // Silence DAC buffers
     zdj_io_analog_stop( soundcard->analog_io_node );
     zdj_io_analog_silence( soundcard->analog_io_node );
@@ -105,9 +101,21 @@ zdj_error_type_t zdj_soundcard_deinit( zdj_soundcard_t * soundcard ) {
     zdj_soundcard = NULL;
 }
 
+// THREAD-SAFE - May be called from UI thread
 // Re-init the soundcard with a saved record in the db.
-zdj_error_type_t zdj_soundcard_load( zdj_soundcard_t * soundcard, char * entity_id ) {
+zdj_error_type_t zdj_soundcard_load_mixer( zdj_soundcard_t * soundcard, char * entity_id ) {
+    printf( "zdj_soundcard_load_mixer\n" );
+    // Bug out early if entity_id doesn't exist
+    if( !zdj_soundcard_check_dto_exists_in_db( entity_id ) ) { 
+        printf( "entity not found: %s\n", entity_id );
+        return ZDJ_ERROR_SOUNDCARD_DB_NO_RECORD; 
+    }
+    
+    // Set soundcard state to reset so UI doesn't try to draw meters.
+    zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_TEARDOWN;
 
+    // Redirect analog io node CB to reset
+    soundcard->analog_io_node->update_cb = &_zdj_soundcard_io_reset_cycle_cb;
 }
 
 // Write the current soundcard state to a record in the db.
@@ -151,10 +159,6 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     ) {
         zdj_usb_io_push_samples( zdj_soundcard->usb_io_node );
     }
-    
-    // // Transform output samples from io_node's output float buffers to shared M7 buffers
-    // zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
-
     // Note this is currently running as a 'single-buffered' op.
     // New cycle's data isn't available until after full soundcard has been mixed + DSP'd.
     // If we get into underrun trouble, go to 'double-buffered' model, immediately
@@ -196,14 +200,10 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     if( !ana_out_3->stereo ) { zdj_soundcard_mix_input( zdj_soundcard, ana_out_3 ); }
 
     // Explicitly mix inputs to persistent nodes - Main bus, Cue, Decks, etc.
-    // for( int i=ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
     for( int i=ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
         zdj_soundcard_node_t * bus = zdj_soundcard_get_node_for_name( zdj_soundcard, i );
         zdj_soundcard_mix_input( zdj_soundcard, bus );
     }
-
-    // // Transform output samples from io_node's output float buffers to shared M7 buffers
-    // zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
 
     // Update the audio recording node - periodically flush samples to file
     zdj_soundcard->recording_node->update_wait( zdj_soundcard->recording_node );
@@ -227,4 +227,85 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     //     // Unlink any nodes for devices which have been removed
     //     // Link in new nodes for attached devices
     // }
+}
+
+
+// Perform a Hot Reset of the entire soundcard linkage
+// Silence all I/O buffers then rebuild Soundcard linkage
+void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
+    // Unlink the CB so we don't get re-invoked while we're working
+    zdj_soundcard->analog_io_node->update_cb = NULL;
+
+    // Mute the analog IO while we're doing this - it may take a couple cycles
+    zdj_io_analog_silence( zdj_soundcard->analog_io_node );
+
+    // Unlink and free all current nodes
+    zdj_soundcard_remove_all_nodes( zdj_soundcard );
+
+    zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_INIT;
+
+    // Fetch the new DTO, or default to standard mixer
+    if( zdj_soundcard_check_dto_exists_in_db( zdj_soundcard->load_entity_id ) ) {
+        // If explicitly asked, bring up a specific record from the soundcard db.
+        zdj_soundcard_fetch_dto( zdj_soundcard->load_entity_id, &zdj_soundcard->dto );
+    } else {
+        // Else bring up the Default soundcard
+        char entity_id[ 128 ];
+        zdj_error_type_t res = zdj_soundcard_put_default_entity_id( entity_id, &zdj_soundcard->dto );
+        if( res == ZDJ_ERROR_OKAY ) {
+            zdj_soundcard_fetch_dto( entity_id, &zdj_soundcard->dto );
+        } else {
+            printf( "Failed to find Default Soundcard, loading __temp__\n" );
+            zdj_soundcard_fetch_dto( "__temp__", &zdj_soundcard->dto );
+        }
+    }
+
+    // printf( "reset make new nodes\n" );
+    // Link up new nodes
+    for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
+        // printf( "making node: %s\n", zdj_soundcard_node_name[ i ] );
+        zdj_soundcard_node_t * node = zdj_soundcard_create_node( i );
+        zdj_soundcard_install_node( zdj_soundcard, node );
+    }
+
+    // printf( "reset link ana io nodes\n" );
+    // Link analog_io pipeline node to io soundcard nodes
+    zdj_io_analog_node_state_t * io_node_state = (zdj_io_analog_node_state_t*)zdj_soundcard->analog_io_node->state;
+    io_node_state->out_1_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 )->data_pipe;
+    io_node_state->out_2_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2 )->data_pipe;
+    io_node_state->in_1_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 )->data_pipe;
+    io_node_state->in_2_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 )->data_pipe;
+
+    // printf( "reset link usb nodes\n" );
+    // Link usb_io pipeline node to io soundcard nodes
+    zdj_io_usb_node_state_t * io_usb_node_state = (zdj_io_usb_node_state_t*)zdj_soundcard->usb_io_node->state;
+    io_usb_node_state->soundcard_out_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->data_pipe;
+    io_usb_node_state->soundcard_in_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 )->data_pipe;
+    zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1 )->data_pipe = io_usb_node_state->soundcard_in_buffer;
+
+    // Re-link the audio recording pipeline node.
+    zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)zdj_soundcard->recording_node->state;
+    record_state->soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS );
+
+    zdj_soundcard_init_clock_deck( zdj_soundcard );
+
+    // Re-link any existing Decks
+    // printf( "re-linking decks\n" );
+    zdj_deck_t * deck_1 = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_1 );
+    if( deck_1 ) { zdj_soundcard_link_deck( zdj_soundcard, deck_1 ); }
+    zdj_deck_t * deck_2 = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_2 );
+    if( deck_2 ) { zdj_soundcard_link_deck( zdj_soundcard, deck_2 ); }
+    zdj_deck_t * deck_xport = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
+    if( deck_xport ) { zdj_soundcard_link_deck( zdj_soundcard, deck_xport ); }
+    zdj_deck_t * deck_ext = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_EXT );
+    if( deck_ext ) { 
+        zdj_soundcard_link_deck( zdj_soundcard, deck_ext ); 
+        deck_ext->needs_ui_reset = true;
+    }
+    // printf( "re-linking decks done: %p\n", deck_ext );    
+
+    zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_RUNNING;
+
+    // Relink the CB
+    zdj_soundcard->analog_io_node->update_cb = &_zdj_soundcard_io_fast_cycle_cb;
 }

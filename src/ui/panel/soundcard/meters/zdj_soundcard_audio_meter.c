@@ -57,7 +57,7 @@ zdj_view_t * zdj_new_audio_stereo_meter_view(
     zdj_view_t * meter_cover_r = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BLACK ], NULL );
     meter_cover_r->frame.x = 6;
     meter_cover_r->frame.y = 9;
-    meter_cover_r->frame.w = 5;
+    meter_cover_r->frame.w = 6;
     // meter_cover_r->frame.h = 0;
     meter_cover_r->frame.h = 43;
     zdj_add_subview( audio_meter_view, meter_cover_r );
@@ -127,7 +127,7 @@ zdj_view_t * zdj_new_audio_mono_meter_view(
     zdj_view_t * meter_cover_l = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BLACK ], NULL );
     
     meter_cover_l->frame.y = 9;
-    meter_cover_l->frame.w = 11;
+    meter_cover_l->frame.w = 12;
     meter_cover_l->frame.h = 43;
     zdj_add_subview( audio_meter_view, meter_cover_l );
     state->meter_cover_l = meter_cover_l;
@@ -177,11 +177,6 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_meter_node_state_t * meter_state = (zdj_meter_node_state_t*)meter_pipe->state;
     float meter_l_h = (meter_state->instant_val_0) * 43;
     float meter_r_h = (meter_state->instant_val_1) * 43;
-    // printf( "%1.1f/%1.1f - %1.0f/%1.0f\n", 
-    //     meter_state->lowpass_val_0, 
-    //     meter_state->instant_val_1, 
-    //     meter_l_h, meter_r_h 
-    // );
 
     if( state->is_hilite ) {
         state->detail->frame.w = 7;
@@ -204,7 +199,6 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     }
     if( config->node->mute ) { 
         state->mute_cover->frame.w = 11; 
-        // state->fader->frame.w = 0;
         if( state->fader && state->config_context->node->dsp_dto ) {
             state->fader->frame.w = 0;
         }
@@ -243,20 +237,17 @@ void _zdj_audio_meter_handle_control( zdj_view_t * view, zdj_control_event_t * _
         // Prevent views/menus below this one from getting jog wheel events
         e->blocked = true;
 
-        printf( "toggle mute\n" );
-        // if( !zdj_soundcard_node_name_is_output( context->node->name ) ) {
-            context->node->mute = !context->node->mute;
-            if( options_state ){ options_state->needs_layout_update = true; }
-        // }
+        context->node->mute = !context->node->mute;
+        if( options_state ){ options_state->needs_layout_update = true; }
         
     } else if( e->id == ZDJ_UI_CONTROL_TONE_2_ADJUST_0 ) {
         // Prevent views/menus below this one from getting jog wheel events
         e->blocked = true;
 
         if( !context->node->stereo && context->node->dsp_dto ) {
-            context->node->pan += e->i_val * -2;
-            if( context->node->pan > 127 ) { context->node->pan = 127; }
-            if( context->node->pan < -127 ) { context->node->pan = -127; }
+            if( context->node->dsp_dto ) {
+                context->node->dsp_dto->adjust_pan( context->node, e->i_val );
+            }
             if( options_state ){ options_state->needs_layout_update = true; }
         }
     }

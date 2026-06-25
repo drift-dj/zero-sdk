@@ -4,9 +4,10 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-
+#include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
+#include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -31,6 +32,8 @@ static void _handle_eq_lo( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_eq_hi( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_eq_model( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_linkage( zdj_view_t * view, zdj_control_event_t * _event );
+static void _handle_meter_source( zdj_view_t * view, zdj_control_event_t * _event );
+static void _meter_souce_cb( void * _context );
 static void _cb( void * _context );
 
 void zdj_soundcard_options_update_ext_deck_layout( zdj_view_t * view ) {
@@ -145,6 +148,22 @@ void zdj_soundcard_options_update_ext_deck_layout( zdj_view_t * view ) {
     eq_model_state->data.ptr = options_state;
     zdj_menu_view_add_item( menu_view, eq_model );
 
+    // Waveform Source
+    zdj_menu_view_add_section( menu_view, zdj_new_menu_section( "Waveform Source" ) );
+
+    // Stored in Settings DB, NOT in the soundcard
+    char source_title[ 128 ];
+    zdj_setting_t * waveform_source_setting = zdj_setting_get( ZDJ_SETTING_EXT_WAVEFORM_SOURCE );
+    if( waveform_source_setting ) {
+        strcpy( source_title, zdj_soundcard_node_name[ waveform_source_setting->i_val ] );
+    } else {
+        strcpy( source_title, zdj_soundcard_node_name[ ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS ] );
+    }
+    zdj_view_t * meter_source = zdj_new_menu_item( source_title, ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+    meter_source->handle_control_event = &_handle_meter_source;
+    zdj_menu_item_view_state_t * meter_source_state = (zdj_menu_item_view_state_t*)meter_source->state;
+    meter_source_state->data.ptr = options_state; 
+    zdj_menu_view_add_item( menu_view, meter_source );
 
     // Outputs section
     zdj_menu_view_add_section( menu_view, zdj_new_menu_section( "Outputs" ) );
@@ -336,4 +355,24 @@ static void _handle_linkage( zdj_view_t * view, zdj_control_event_t * _event ) {
         options_state->config_context, state->data.i_val
     );
     zdj_push_subview( zdj_panel_view( ), select_node, true );
+}
+
+static void _handle_meter_source( zdj_view_t * view, zdj_control_event_t * _event ) {
+    printf( "_handle_meter_source\n" );
+    zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_soundcard_options_state_t * options_state = state->data.ptr;
+    // Toggle meter node between ext deck input and Main L/R bus
+    zdj_soundcard_node_name_t node_name = ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
+    zdj_setting_t * waveform_source_setting = zdj_setting_get( ZDJ_SETTING_EXT_WAVEFORM_SOURCE );
+    if( waveform_source_setting ) {
+        if( waveform_source_setting->i_val == ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS ) {
+            node_name = ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
+        } else {
+            node_name = ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
+        }
+    }
+    zdj_setting_set_int( ZDJ_SETTING_EXT_WAVEFORM_SOURCE, node_name );
+    options_state->needs_layout_update = true;
+    zdj_deck_t * deck_ext = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_EXT );
+    if( deck_ext ) { deck_ext->needs_ui_reset = true; }
 }

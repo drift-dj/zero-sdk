@@ -90,13 +90,11 @@ static void _reset_default( void ) {
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_BPM, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_KEY, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_CAMELOT, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_HIDE_ERROR_SONGS, true );
 }
 
 zdj_setting_t * zdj_setting_get( int id ) {
     zdj_setting_t * setting = NULL;
-    // zdj_setting_t * setting = calloc( 1, sizeof( zdj_setting_t ) );
-    // setting->id = id;
-
     char sql[ 256 ];
     sprintf( sql, "select * from Settings where id=%d", id );
     int res;

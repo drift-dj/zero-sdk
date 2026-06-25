@@ -26,27 +26,29 @@ zdj_view_t * zdj_new_live_waveform_view( zdj_rect_t * frame, zdj_soundcard_node_
 
     zdj_live_waveform_view_state_t * state = calloc( 1, sizeof( zdj_live_waveform_view_state_t ) );
     view->state = state;
-    state->node = node;
+    state->soundcard_node_name = node->name;
 
-    // Get a reference to the soundcard's scope pipeline node.
-    state->pipe = zdj_soundcard->scope_waveform;
-    zdj_live_waveform_set_point_count( state->pipe, frame->w / 2);
-    zdj_live_waveform_set_scale( state->pipe, 400 );
-    // Set the soundcard to send sample data to the scope node.
-    zdj_soundcard->scope_node_name = node->name;
+    // Use existing or install new live waveform node into soundcard node
+    if( !node->live_waveform_node ) { node->live_waveform_node = zdj_new_live_waveform( ); }
+    if( node->live_waveform_node ) {
+        node->live_waveform_is_active = true;
+        zdj_live_waveform_set_point_count( node->live_waveform_node, frame->w / 2);
+        zdj_live_waveform_set_scale( node->live_waveform_node, 400 );
+    } else {
+        printf( "NEW LIVE WAVEFORM VIEW FAILED TO CREATE WAVEFORM\n" );
+    }
 
     return view;
 }
 
 void _zdj_live_waveform_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    // boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
-
-    // printf( "_zdj_live_waveform_view_draw: %f\n", view->frame.h );
-
     zdj_live_waveform_view_state_t * view_state = (zdj_live_waveform_view_state_t*)view->state;
-    zdj_live_waveform_state_t * waveform_state = (zdj_live_waveform_state_t*)view_state->pipe->state;
+    zdj_soundcard_node_t * soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, view_state->soundcard_node_name );
+    if( !soundcard_node || !soundcard_node->live_waveform_node ){ return; }
+    zdj_pipeline_node_t * waveform_node = soundcard_node->live_waveform_node;   
+    zdj_live_waveform_state_t * waveform_state = (zdj_live_waveform_state_t*)waveform_node->state;
 
-    waveform_state->render( view_state->pipe );
+    waveform_state->render( waveform_node );
 
     // Make a new texture instance for drawing
     SDL_Texture * waveform_tex = SDL_CreateTexture(
@@ -86,5 +88,17 @@ void _zdj_live_waveform_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 }
 
 void _zdj_live_waveform_view_deinit_state( zdj_view_t * view ) {
+    zdj_live_waveform_view_state_t * view_state = (zdj_live_waveform_view_state_t*)view->state;
+    zdj_soundcard_node_t * soundcard_node = zdj_soundcard_get_node_for_name( zdj_soundcard, view_state->soundcard_node_name );
+    if( soundcard_node ){
+        soundcard_node->live_waveform_is_active = false;
+        soundcard_node->live_waveform_node = NULL;
 
+        zdj_pipeline_node_t * waveform_node = soundcard_node->live_waveform_node;
+        if( waveform_node ){
+            waveform_node->deinit_state( waveform_node );
+        }
+    }
+
+    if( view_state ) { view->state = NULL; free( view_state );  }
 }
