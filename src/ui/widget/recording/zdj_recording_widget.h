@@ -34,6 +34,7 @@ typedef struct {
     zdj_view_t * icon;
     zdj_anim_t * in_anim;
     zdj_anim_t * out_anim;
+    bool needs_soundcard_update;
 } zdj_recording_widget_state_t;
 
 zdj_view_t * zdj_new_recording_widget( void );

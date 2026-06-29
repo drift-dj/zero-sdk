@@ -174,6 +174,10 @@ void zdj_library_reset_db( void ) {
         zdj_library_config_get_current_library_id( ), ZDJ_LIBRARY_SETTING_SCREENSHOT_COUNTER, 0
     );
 
+    // Delete all the waveform data
+    zdj_fs_remove_dir_contents( ZDJ_LIBRARY_THUMB_WAVEFORM_DIR );
+    zdj_fs_remove_dir_contents( ZDJ_LIBRARY_PLAYBACK_WAVEFORM_DIR );
+
     // Flush cache to disk so everything's in sync.
     zdj_library_db_flush( );
 }

@@ -81,6 +81,48 @@ zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite ) {
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
+zdj_health_status_t zdj_fs_copy_dir_contents( char * src, char * dst, bool overwrite ) {
+    DIR *dir = opendir( src );
+    if ( !dir ) {
+        perror("Error opening source directory");
+        return -1;
+    }
+    
+    zdj_fs_mkdir_p( dst );
+
+    struct dirent *entry;
+    while ( ( entry = readdir( dir ) ) != NULL ) {
+        // Skip the special directory hooks "." and ".."
+        if ( strcmp(entry->d_name, "." ) == 0 || strcmp( entry->d_name, ".." ) == 0) { continue; }
+
+        // Construct complete paths for source and destination
+        char src_path[ 512 ];
+        char dest_path[ 512 ];
+        snprintf( src_path, sizeof( src_path ), "%s/%s", src, entry->d_name );
+        snprintf( dest_path, sizeof( dest_path ), "%s/%s", dst, entry->d_name );
+
+        struct stat entry_stat;
+        if ( stat( src_path, &entry_stat ) == -1 ) continue;
+
+        if ( S_ISDIR( entry_stat.st_mode ) ) {
+            // Recursively handle nested directories
+            if ( zdj_fs_copy_dir_contents(src_path, dest_path, overwrite) != ZDJ_HEALTH_STATUS_OKAY ) {
+                closedir( dir );
+                return -1;
+            }
+        } else if ( S_ISREG( entry_stat.st_mode ) ) {
+            // Copy standard files
+            if ( zdj_fs_copy_file(src_path, dest_path, overwrite) != ZDJ_HEALTH_STATUS_OKAY ) {
+                perror( "Error copying file" );
+                closedir( dir );
+                return -1;
+            }
+        }
+    }
+    closedir( dir );
+    return ZDJ_HEALTH_STATUS_OKAY;
+}
+
 // Copy a file from source to destination - fail if hashes don't match
 int zdj_fs_copy_file_with_hash( char * src, char * dst, bool overwrite ) {
     printf( "zdj_fs_copy_file_with_hash: %s -> %s, o/w: %d\n", src, dst, overwrite );
@@ -324,6 +366,18 @@ bool zdj_fs_path_is_logfile( char * path ) {
     }
 }
 
+zdj_health_status_t zdj_fs_put_parent_dir( char * path, char * dir ) {
+    char _path[ 1024 ];
+    strcpy( _path, path );
+    char * res = dirname( _path );
+    if( zdj_fs_path_is_dir( res ) ) {
+        strcpy( dir, res );
+        return ZDJ_HEALTH_STATUS_OKAY;
+    } else {
+        return ZDJ_HEALTH_STATUS_BAD_DIR;
+    }
+}
+
 void zdj_fs_scan_dir( 
     char * path,
     bool recursive,
@@ -439,6 +493,28 @@ void zdj_fs_remove_dir( char * path ) {
     int flags = FTW_CHDIR | FTW_DEPTH | FTW_MOUNT;
     int ret;
     ret = nftw( path, _zdj_fs_remove_dir_nftw, fd_limit, flags );
+}
+
+
+int _zdj_fs_remove_dir_contents_nftw(
+    const char *filename, 
+    const struct stat *statptr,
+    int fileflags, 
+    struct FTW *pfwt
+) {
+    // Don't delete the root path
+    if ( pfwt->level == 0 ) { return 0; }
+
+    int rv = remove( filename );
+    if ( rv ) { perror( filename ); }
+    return rv;
+}
+
+void zdj_fs_remove_dir_contents( char * path ) {
+    int fd_limit = 5;
+    int flags = FTW_CHDIR | FTW_DEPTH | FTW_MOUNT;
+    int ret;
+    ret = nftw( path, _zdj_fs_remove_dir_contents_nftw, fd_limit, flags );
 }
 
 bool _zdj_fs_filename_match( char * filename, zdj_fs_scan_pattern_t * pattern ) {
