@@ -157,5 +157,7 @@ int zdj_get_next_hmi_input_event_ind( void );
 extern int zdj_hmi_input_event_buf_write;
 extern int zdj_hmi_input_event_buf_read;
 
+int zdj_hmi_input_get_fader_val( zdj_hmi_input_id_t id );
+
 
 #endif
