@@ -35,5 +35,6 @@ typedef struct {
 
 zdj_error_type_t zdj_ui_widget_init( void );
 zdj_view_t * zdj_ui_get_notify_widget( void );
+void zdj_ui_widget_update_soundcard( void );
 
 #endif

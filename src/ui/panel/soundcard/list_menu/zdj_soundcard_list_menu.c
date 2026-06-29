@@ -112,7 +112,6 @@ static void _load_dto( zdj_view_t * view, zdj_control_event_t * _event ) {
     
     // Teardown the layout before we start deleting nodes
     panel_state->needs_layout_teardown = true;
-
     zdj_soundcard_load_mixer( zdj_soundcard, state->data.c_val );
 
     // Request a refresh once soundcard is running again

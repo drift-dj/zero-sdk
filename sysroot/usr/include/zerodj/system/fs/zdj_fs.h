@@ -34,6 +34,7 @@ float zdj_fs_get_free_media_space( void );
 float zdj_fs_get_filesize( char * path );
 
 zdj_health_status_t zdj_fs_copy_file( char * src, char * dst, bool overwrite );
+zdj_health_status_t zdj_fs_copy_dir_contents( char * src, char * dst, bool overwrite );
 int zdj_fs_copy_file_with_hash( char * src, char * dst, bool overwrite );
 zdj_health_status_t zdj_fs_extract_file_from_binary( 
     char * bin, 
@@ -56,6 +57,7 @@ bool zdj_fs_path_is_attached_msd( char * path );
 bool zdj_fs_path_is_dir_with_files( char * path );
 bool zdj_fs_path_is_logfile( char * path );
 
+zdj_health_status_t zdj_fs_put_parent_dir( char * path, char * dir );
 void zdj_fs_scan_dir( 
     char * path,
     bool recursive,
@@ -65,6 +67,7 @@ void zdj_fs_scan_dir(
 );
 int zdj_fs_mkdir_p( char * path );
 void zdj_fs_remove_dir( char * path );
+void zdj_fs_remove_dir_contents( char * path );
 int zdj_fs_get_size( char * filepath );
 unsigned long long zdj_fs_sys_space( void );
 unsigned long long zdj_fs_media_space( void );
