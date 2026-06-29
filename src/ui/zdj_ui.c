@@ -271,13 +271,6 @@ void zdj_push_subview( zdj_view_t * view, zdj_view_t * subview, bool animated ) 
     // Activate view's control map
     if( subview->map != ZDJ_CONTROL_MAP_NONE ){ zdj_activate_control_map( subview->map ); }
 
-    // printf( "zdj_push_subview: %p/%d old %p/%d new: %p/%d\n", 
-    //     view, view->tag, 
-    //     old_subview, old_subview->tag,
-    //     subview, subview->tag
-    // );
-    // printf( "zdj_push_subview type: %d, map: %d\n", subview->type, subview->map );
-
     subview->in_anim.cb_fn = NULL;
     subview->out_anim.cb_fn = NULL;
     if( subview->in_anim.init_fn ) {
