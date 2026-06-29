@@ -30,6 +30,7 @@ zdj_view_t * zdj_new_soundcard_options( zdj_soundcard_node_config_context_t * co
     soundcard_options->draw = &_zdj_soundcard_options_draw;
     soundcard_options->handle_control_event = &_zdj_soundcard_options_handle_control;
     soundcard_options->deinit_state = &_zdj_soundcard_options_deinit_state;
+    soundcard_options->map = ZDJ_CONTROL_MAP_SOUNDCARD_OPTIONS_PANEL;
 
     // Add a state instance
     zdj_soundcard_options_state_t * state = calloc( 1, sizeof( zdj_soundcard_options_state_t ) );

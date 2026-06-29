@@ -109,6 +109,28 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
+    case ZDJ_CONTROL_MAP_SOUNDCARD_OPTIONS_PANEL:
+            zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_1_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_2_PRESS_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
+            break;
         case ZDJ_CONTROL_MAP_ASSIST_PANEL:
         case ZDJ_CONTROL_MAP_DEBUG_PANEL:
         case ZDJ_CONTROL_MAP_RECORDING_PANEL:
