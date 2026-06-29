@@ -50,3 +50,5 @@ build/
 
 # Don't distribute RB lib
 *rubberband*
+
+*libzerodj.a
