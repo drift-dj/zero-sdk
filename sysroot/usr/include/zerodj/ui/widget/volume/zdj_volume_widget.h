@@ -31,6 +31,7 @@ typedef struct {
     zdj_view_t * meter;
     zdj_anim_t * in_anim;
     zdj_anim_t * out_anim;
+    bool needs_soundcard_update;
 } zdj_volume_widget_state_t;
 
 zdj_view_t * zdj_new_volume_widget( void );
