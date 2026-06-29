@@ -305,9 +305,32 @@ void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
     zdj_ui_widget_update_soundcard( );
 
     // Get Fader/Crossfade Vals
-    
+    int fader_val;
+    zdj_soundcard_node_t * deck_1_fade = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE );
+    fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_0_CH_1 );
+    deck_1_fade->dsp_dto->set_gain( deck_1_fade, 255 - fader_val );
+    zdj_soundcard_node_t * deck_2_fade = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
+    fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_1_CH_2 );
+    deck_2_fade->dsp_dto->set_gain( deck_2_fade, 255 - fader_val );
 
-    // Reset Deck Gains
+    fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_2_XFADE );
+    zdj_soundcard_node_t * node_a = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
+    double a_curve_pow = node_a->dsp_dto->stages[ 0 ].knob_0 * 5.5;
+    double a_input_val = (255.0 - (double)fader_val) / 255.0;
+    double a_coeff = 1.0 - pow( a_input_val, a_curve_pow );
+
+    zdj_soundcard_node_t * node_b = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_B );
+    double b_curve_pow = node_b->dsp_dto->stages[ 0 ].knob_0 * 5.5;
+    double b_input_val = (double)fader_val / 255.0;
+    double b_coeff = 1.0 - pow( b_input_val, b_curve_pow );
+
+    // FIXME - This is backwards
+    node_a->dsp_dto->set_gain( node_a, round(b_coeff*255.0) );
+    node_b->dsp_dto->set_gain( node_b, round(a_coeff*255.0) );
+
+    // Push the xfade value back into the deck manager.
+    // Used for deck lock status.
+    zdj_deck_manager_update_xfade( (float)fader_val / 255.0 );
 
     zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_RUNNING;
 
