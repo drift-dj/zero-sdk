@@ -224,7 +224,6 @@ static void _cb( void * _context ) {
 static void _handle_gain( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * stereo_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)stereo_state->data.ptr;
-    // printf( "handle gain event\n" );
     if( options_state->config_context &&
         options_state->config_context->node &&  
         options_state->config_context->node->dsp_dto
