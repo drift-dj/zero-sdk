@@ -197,7 +197,8 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         state->detail->frame.w = 0;
         state->fader->frame.w = 0;
     }
-    if( config->node->mute ) { 
+
+    if( config->node->mute ) {
         state->mute_cover->frame.w = 11; 
         if( state->fader && state->config_context->node->dsp_dto ) {
             state->fader->frame.w = 0;
@@ -205,7 +206,7 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     } else { 
         state->mute_cover->frame.w = 0; 
         state->meter_cover_l->frame.h = 43 - meter_l_h;
-        if( config->node->stereo ) {
+        if( config->node->stereo && state->meter_cover_r ) {
             state->meter_cover_r->frame.h = 43 - meter_r_h;
         }
     }
