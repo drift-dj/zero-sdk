@@ -218,7 +218,11 @@ zdj_error_type_t zdj_soundcard_unlink_source_node_from_dest_node(
                     &soundcard->dto, source_node->name, source_link_map 
                 );
             }
-        } else if( zdj_soundcard_node_name_is_analog_input( source_node->name ) ) {
+        
+        // Only unlink partner if we're unlinking a left channel
+        } else if( source_node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 || 
+                   source_node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3 
+        ) {
             zdj_soundcard_node_t * partner_node = zdj_soundcard_node_get_stereo_partner_node( source_node );
             if( source_node->stereo && partner_node ) {
                 printf( "unlinking partner: %s\n", zdj_soundcard_node_name[ partner_node->name ] );
