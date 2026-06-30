@@ -39,6 +39,8 @@ zdj_decode_packet_t * zdj_decode_packet(
     int av_timebase_factor,
     zdj_decode_packet_justify_t justify
 ) {
+    zdj_decode_debug_packet_counter++;
+
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
 
     AVFrame * av_frame = av_frame_alloc( );
@@ -55,11 +57,8 @@ zdj_decode_packet_t * zdj_decode_packet(
         if( fmt_ctx->pb->eof_reached ) {
             packet_has_eof = true;
             packet_has_decode_error = true;
-            // printf( "%p eof @pts: %lu\n", av_packet, av_packet->pts );
-            // return NULL;
         } else {
             packet_has_decode_error = true;
-            // printf( "av_read_frame failed\n" );
         }
     }
 
@@ -80,13 +79,11 @@ zdj_decode_packet_t * zdj_decode_packet(
             }
             if( attempt > 3 ) {
                 printf( "failed decode: %s\n", av_err2str( res ) );
-                
                 node_state->song->audio->has_libav_error = true;
                 node_state->song->audio->libav_error = res;
                 node_state->song->has_error = true;
                 node_state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
                 packet_has_decode_error = true;
-                // return NULL; 
             }
             // Attempt to read another frame to see if things improve
             attempt++;
@@ -107,7 +104,6 @@ zdj_decode_packet_t * zdj_decode_packet(
             printf( "%p eof2! samps: %d\n", av_packet, av_frame->nb_samples );
         } else if ( res < 0 ) {
             printf( "decode err\n" );
-            
         } else {
             decoded_frame_count = av_frame->nb_samples;
         }
@@ -159,12 +155,6 @@ zdj_decode_packet_t * zdj_decode_packet(
 
         start_origin_i_coord = av_packet_pts / av_timebase_factor;
         end_origin_i_coord = start_origin_i_coord + av_frame->nb_samples;
-
-        // // We're done with the av_packet/frame now.
-        // av_frame_unref( av_frame );
-        // av_frame_free( &av_frame );
-        // av_packet_unref( av_packet );
-        // av_packet_free( &av_packet );
     }
 
     // Make packet addresses 
@@ -186,12 +176,8 @@ void zdj_decode_garbage_packet(
     AVFormatContext * fmt_ctx,
     AVCodecContext * codec_ctx
 ) {
-    zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
-
     AVFrame * av_frame = av_frame_alloc( );
     AVPacket * av_packet = av_packet_alloc( );
-    // TODO: Use av_packet data to get a sensible size for this.
-    av_new_packet( av_packet, 4000 );
 
     bool packet_has_eof = false;
     bool packet_has_decode_error = false;
@@ -201,100 +187,71 @@ void zdj_decode_garbage_packet(
     if( res != 0 ) {
         if( fmt_ctx->pb->eof_reached ) {
             packet_has_eof = true;
-            // printf( "%p eof @pts: %lu\n", av_packet, av_packet->pts );
-            return;
+            packet_has_decode_error = true;
         } else {
             packet_has_decode_error = true;
-            // printf( "av_read_frame failed\n" );
         }
     }
 
-    // MP3s seem to have trouble sending the first packet or two.
-    // Retry a few times before just giving up.
-    bool exit = false;
-    int attempt = 0;
-    while ( !exit ) {
-        // Push the compressed packet data into the decoder
-        res = avcodec_send_packet( codec_ctx, av_packet );
-        if ( res >= 0 ) { 
-            // printf( "good or no decode - exit\n" );
-            exit = true;
-            continue;
+    // Keep going if there are no errors
+    if( !packet_has_decode_error ) {
+        // MP3s seem to have trouble sending the first packet or two.
+        // Retry a few times before just giving up.
+        bool exit = false;
+        int attempt = 0;
+        while ( !exit ) {
+            // Push the compressed packet data into the decoder
+            res = avcodec_send_packet( codec_ctx, av_packet );
+            if ( res >= 0 ) { 
+                // printf( "good or no decode - exit\n" );
+                exit = true;
+                continue;
+            }
+            if( attempt > 3 ) {
+                printf( "failed decode: %s\n", av_err2str( res ) );
+                packet_has_decode_error = true;
+                // return NULL; 
+            }
+            // Attempt to read another frame to see if things improve
+            attempt++;
+            if( !exit ) { av_read_frame( fmt_ctx, av_packet ); }
         }
-        if( attempt > 3 ) {
-            printf( "failed decode: %s\n", av_err2str( res ) );
+
+        // Pull the decompressed samples from the decoder into the packet's data buffer
+        int decoded_frame_count = 0;
+        res = 0;
+        res = avcodec_receive_frame( codec_ctx, av_frame );
+
+        if ( res == AVERROR( EAGAIN ) ) {
+            printf( "eagain\n" );
+        } else if ( res == AVERROR_EOF ) {
+            // Handle decoding error
+            packet_has_eof = true;
+            printf( "%p eof2! samps: %d\n", av_packet, av_frame->nb_samples );
+        } else if ( res < 0 ) {
+            printf( "decode err\n" );
             
-            node_state->song->audio->has_libav_error = true;
-            node_state->song->audio->libav_error = res;
-            node_state->song->has_error = true;
-            node_state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
-            return; 
+        } else {
+            decoded_frame_count = av_frame->nb_samples;
         }
-        // Attempt to read another frame to see if things improve
-        attempt++;
-        av_read_frame( fmt_ctx, av_packet );
     }
 
-    // Pull the decompressed samples from the decoder into the packet's data buffer
-    int decoded_frame_count = 0;
-    res = 0;
-    res = avcodec_receive_frame( codec_ctx, av_frame );
-
-    if ( res == AVERROR( EAGAIN ) || res == AVERROR_EOF ) {
-        // Handle decoding error
-        // break;
-        packet_has_eof = true;
-        printf( "%p eof2! samps: %d\n", av_packet, av_frame->nb_samples );
-    } else if ( res < 0 ) {
-        // continue;
-        printf( "decode err\n" );
-    } else {
-        decoded_frame_count = av_frame->nb_samples;
-    }
-
-    // printf( "decoded: %d samps\n", decoded_frame_count );
-
-    if( av_frame ){ av_frame_free( &av_frame ); }
-    if( av_packet ){ av_packet_free( &av_packet ); }
-    
+    if( av_frame ) { av_frame_free( &av_frame ); }
+    if( av_packet ) { av_packet_free( &av_packet ); }
 }
 
 static void _deinit( zdj_decode_packet_t * packet ) {
-    // printf( "packet deinit\n" );
-    // if( packet->av_packet ){ av_packet_unref( packet->av_packet ); av_packet_free( &packet->av_packet ); }
-    // if( packet->av_frame ){ 
-    //     // printf( "freeing frame\n" );
-    //     // av_frame_unref( packet->av_frame ); 
-    //     // av_frame_unref( packet->av_frame ); 
-    //     // av_frame_unref( packet->av_frame ); 
-    //     // av_freep( packet->av_frame->data[ 0 ] );
-    //     av_frame_free( &packet->av_frame ); 
-    // }
     // We're done with the av_packet/frame now.
-    if( packet->av_frame ) {
-        av_frame_unref( packet->av_frame );
-        av_frame_free( &packet->av_frame );
-    }
-    if( packet->av_packet ) {
-        av_packet_unref( packet->av_packet );
-        av_packet_free( &packet->av_packet );
-    }
-    // free( packet->buf );
+    if( packet->av_frame ) { av_frame_free( &packet->av_frame ); }
+    if( packet->av_packet ) { av_packet_free( &packet->av_packet ); }
     free( packet );
 }
 
 static bool _intersects_out_buf( zdj_decode_packet_t * packet, zdj_pipeline_node_t * node ) {
-    // printf( "packet->_intersects_out_buf\n" );
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
     if( packet->start_addr.has_valid_buf && packet->end_addr.has_valid_buf ) {
-        // printf( "0: %d < %ld && %d >= 0\n",
-        //     packet->start_addr.buf_i,
-        //     node_state->win_sample_count,
-        //     packet->end_addr.buf_i
-        // );
         return ( packet->start_addr.buf_i < node_state->win_sample_count && packet->end_addr.buf_i >= 0 );
     } else {
-        // printf( "1\n" );
         return false;
     }
 }
@@ -318,7 +275,6 @@ static double _xfade_coeff_for_transport_d_coord( zdj_decode_packet_t * packet, 
 }
 
 static void _render_s16_data_to_out_buf( zdj_decode_packet_t * packet, void * _layer, zdj_pipeline_node_t * node ) {
-    // printf( "_render_s16_data_to_out_buf\n" );
     zdj_decode_node_state_t * node_state = (zdj_decode_node_state_t*)node->state;
     zdj_decode_layer_t * layer = (zdj_decode_layer_t*)_layer;
     // Cast the av_frame buffer to type

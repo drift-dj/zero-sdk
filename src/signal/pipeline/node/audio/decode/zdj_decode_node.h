@@ -104,8 +104,6 @@ typedef struct zdj_decode_packet_t {
     AVPacket * av_packet; // libav's holder for a chunk of raw, undecoded data
     AVFrame * av_frame; // libav's holder for a chunk of decoded PCM data
 
-    void * buf;
-
     bool has_decode_error;
 
     // Discon extents
@@ -134,12 +132,6 @@ typedef enum {
     ZDJ_DECODE_LAYER_DISCON_TYPE_SKIP,
     ZDJ_DECODE_LAYER_DISCON_TYPE_LOOP
 } zdj_decode_layer_discon_type_t;
-
-// typedef enum {
-//     ZDJ_DECODE_LAYER_EMPTY_REMOVE,
-//     ZDJ_DECODE_LAYER_EMPTY_FILL,
-//     ZDJ_DECODE_LAYER_EMPTY_IGNORE
-// } zdj_decode_layer_empty_behavior_t;
 
 typedef struct {
     bool is_valid;
@@ -179,15 +171,9 @@ typedef struct zdj_decode_layer_t {
     void ( *update_buf_coords_for_head )( struct zdj_decode_layer_t *, zdj_pipeline_node_t * );
     double ( *origin_d_coord_for_transport_d_coord )( struct zdj_decode_layer_t *, double );
 
-    // Empty behavior - Layer can react differently to having no packets
-    // zdj_decode_layer_empty_behavior_t empty_behavior;
-
     // Discon state
-    // void * _loop_state;
-    // void * _skip_state;
     zdj_decode_layer_discon_type_t fwd_discon_type;
     zdj_decode_layer_discon_type_t back_discon_type;
-    // void ( *truncate )( zdj_pipeline_node_t *, struct zdj_decode_layer_t *, void *, double, zdj_decode_layer_discon_type_t, void * );
     void ( *truncate_to_loop )( struct zdj_decode_layer_t *, zdj_pipeline_node_t *, double, double );
     void ( *retruncate_loop )( struct zdj_decode_layer_t *, zdj_pipeline_node_t *, double, double );
     void ( *truncate_to_skip )( struct zdj_decode_layer_t *, zdj_pipeline_node_t *, double, double );
@@ -196,24 +182,12 @@ typedef struct zdj_decode_layer_t {
     // Packet decoding
     void ( *fill )( struct zdj_decode_layer_t *, zdj_pipeline_node_t * );
     bool ( *can_fill )( struct zdj_decode_layer_t *, zdj_pipeline_node_t *, zdj_decode_dir_t );
-    // int ( *fill_packet_count )( struct zdj_decode_layer_t *, zdj_pipeline_node_t *, zdj_decode_dir_t );
-    // int64_t ( *seek_target )( struct zdj_decode_layer_t *, zdj_pipeline_node_t *, int, zdj_decode_dir_t );
     bool ( *build_decode_profile )(
         struct zdj_decode_layer_t *, 
         zdj_pipeline_node_t *, 
         zdj_decode_dir_t, 
         zdj_decode_profile_t *
     );
-    // void ( *seek_and_decode )( 
-    //     struct zdj_decode_layer_t *, 
-    //     zdj_pipeline_node_t *, 
-    //     int64_t, 
-    //     int, 
-    //     zdj_decode_dir_t, 
-    //     zdj_decode_packet_justify_t,
-    //     int, 
-    //     bool 
-    // );
     void ( *seek_and_decode )( 
         struct zdj_decode_layer_t *, 
         zdj_pipeline_node_t *, 
@@ -605,6 +579,8 @@ typedef enum {
     ZDJ_DECODE_QUANTIZE_CEIL,
     ZDJ_DECODE_QUANTIZE_FLOOR
 } zdj_decode_quantize_type_t;
+
+extern int zdj_decode_debug_packet_counter;
 
 // Node
 zdj_pipeline_node_t * zdj_new_decode_node( 
