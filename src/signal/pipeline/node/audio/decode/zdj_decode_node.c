@@ -35,6 +35,8 @@ static void _remove_layer( zdj_pipeline_node_t * node, zdj_decode_layer_t * laye
 static void _remove_all_layers( zdj_pipeline_node_t * node );
 static void _remove_all_layers_except( zdj_pipeline_node_t * node, zdj_decode_layer_t * layer );
 
+int zdj_decode_debug_packet_counter;
+
 zdj_pipeline_node_t * zdj_new_decode_node( 
     zdj_library_song_t * song,
     int64_t address,
@@ -42,6 +44,10 @@ zdj_pipeline_node_t * zdj_new_decode_node(
     size_t fwd_sample_count
 ) {
     // printf( "zdj_new_decode_node\n" );
+
+    // Debug
+    zdj_decode_debug_packet_counter = 0;
+
     // Make node
     zdj_pipeline_node_t * node = zdj_new_pipeline_node( );
     node->deinit_state = &_deinit_state;
@@ -504,7 +510,6 @@ static void _refresh_layers( zdj_pipeline_node_t * node ) {
             break;
         }
     }
-
     // Refresh the head's addr (including origin) since there may be a new layer
     // under the head after all the grooming above.
     state->set_addr_transport_d_coord( node, &state->head, state->head.transport_d );
