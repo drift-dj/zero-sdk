@@ -135,10 +135,13 @@ static void _process_dsp( zdj_soundcard_node_t * node ) {
         return;
     }
     // Process Pan, Gain, Crossfader Gain (if linked)
-    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-        buf[ i*channel_count ] *= node->dsp_dto->gain;
-        if( channel_count > 1 ) {  
-            buf[ (i*channel_count)+1 ] *= node->dsp_dto->gain;
+    // Skip Analog In nodes since they're wonky
+    if( !zdj_soundcard_node_name_is_analog_input( node->name ) ) {
+        for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+            buf[ i*channel_count ] *= node->dsp_dto->gain;
+            if( channel_count > 1 ) {  
+                buf[ (i*channel_count)+1 ] *= node->dsp_dto->gain;
+            }
         }
     }
     // If there are extra DSP stages enabled, process those
@@ -243,7 +246,7 @@ static void _put_map(
         map->dest_channel_stride = 2;
         map->dest_channel_count = 2;
         map->dest_channel_offset = 0;
-        map->source_channel_stride = 2;
+        map->source_channel_stride = 2; // buffer is always stereo even if input is split to mono
         map->source_channel_count = 1;
         map->source_channel_offset = zdj_soundcard_node_name_is_right_channel( input_node->name ) ? 1 : 0;
         // Add pan here
@@ -314,6 +317,12 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
         zdj_soundcard_node_t * left_node = zdj_soundcard_node_get_stereo_partner_node( input_node );
         source_buf = left_node->data_pipe->get_data( left_node->data_pipe );
         input_node_gain = input_node->dsp_dto->gain;
+    } else if( input_node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 || 
+        input_node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 ||
+        input_node->name == ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0
+    ) {
+        source_buf = input_node->data_pipe->get_data( input_node->data_pipe );
+        input_node_gain = input_node->dsp_dto->gain;
     } else {
         source_buf = input_node->data_pipe->get_data( input_node->data_pipe );
     }
@@ -344,7 +353,6 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
     }
 
     for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-
         // Select each destination channel
         for( int c=0; c<map->dest_channel_count; c++ ) {
             // Map source channels to destination channels
@@ -365,7 +373,7 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
                 if( !node->stereo ) { 
                     printf( "panning into a mono buffer !!!" ); 
                 } else {
-                    dest_index = (i*map->dest_channel_stride) + c+map->dest_channel_offset;
+                    dest_index = i*map->dest_channel_stride+c+map->dest_channel_offset;
                     pan_coeff = (c == 0) ? pan_coeff_l : pan_coeff_r;
                     dest_sample = dest_buf[ dest_index ];
                     new_dest_sample = (source_sample*pan_coeff)+dest_sample;

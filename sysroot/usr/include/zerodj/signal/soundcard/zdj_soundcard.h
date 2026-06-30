@@ -272,8 +272,8 @@ typedef struct  {
     double val;
     int invert;
     int sync;
-    volatile zdj_pipeline_node_t * data_pipe;
-    volatile zdj_pipeline_node_t * meter_pipe;
+    zdj_pipeline_node_t * data_pipe;
+    zdj_pipeline_node_t * meter_pipe;
     zdj_pipeline_node_t * live_waveform_node;
     bool live_waveform_is_active;
     void ( *get_edge_input_data )( void *, zdj_pipeline_node_t *, bool );
