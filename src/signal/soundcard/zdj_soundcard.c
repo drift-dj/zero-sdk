@@ -223,13 +223,6 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
             zdj_io_usb_alsa_start( zdj_soundcard->usb_io_node );
         }
     }
-
-    // DON'T DO THIS HERE IF WE CAN AVOID IT - TRY IT ON A CORE 0 THREAD
-    // // Update linkages if any USB audio/midi devices have been attached or removed
-    // if( zdj_usb_state->host_state.has_soundcard_update ) {
-    //     // Unlink any nodes for devices which have been removed
-    //     // Link in new nodes for attached devices
-    // }
 }
 
 
