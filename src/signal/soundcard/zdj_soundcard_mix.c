@@ -317,7 +317,6 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
     zdj_soundcard_accumulate_map_t * map
 ) {
     zdj_audio_buffer_node_state_t * source_buf_state = (zdj_audio_buffer_node_state_t*)input_node->data_pipe->state;
-    
     float input_node_gain = 1.0f;
 
     float * source_buf;
