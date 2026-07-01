@@ -1061,7 +1061,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO );
             // zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE );
             zdj_activate_control( ZDJ_DECK_CONTROL_SYNC_TOGGLE );
-            zdj_activate_control( ZDJ_DECK_EXT_CONTROL_SYNC_MULT );
+            zdj_activate_control( ZDJ_DECK_XPORT_CONTROL_SYNC_MULT );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 ); 
