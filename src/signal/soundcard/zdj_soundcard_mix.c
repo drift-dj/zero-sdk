@@ -70,22 +70,33 @@ zdj_error_type_t zdj_soundcard_mix_input( zdj_soundcard_t * soundcard, zdj_sound
     if( node->input_link_count ) {
         // If there are input links, recurse and accumulate.
         for( int i=0; i<node->input_link_count; i++ ) {
-            // if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1){ printf( "%d links\n", node->input_link_count ); }
             // Recursively mix/dsp the input node.
             zdj_soundcard_node_t * input_node = zdj_soundcard_get_node_for_name( soundcard, node->input_links[ i ].source_node );
             zdj_soundcard_mix_input( soundcard, input_node );
-
             _put_map( soundcard, input_node, node, &map );
-            // 
+
             // Accumulate the input node's samples into this node's buffer + meter.
             // Note that we can't meter an edge node - there are no input links to an edge node.
-            zdj_soundcard_accumulate_node( soundcard, input_node, node, &map );
+            if( !zdj_soundcard_node_name_is_analog_input( input_node->name ) ) {
+                zdj_soundcard_accumulate_node( soundcard, input_node, node, &map );
+            } else if( !input_node->stereo ) {
+                zdj_soundcard_accumulate_node( soundcard, input_node, node, &map );
+            } else if( !zdj_soundcard_node_name_is_right_channel( input_node->name ) ) {
+                // Avoid accumulating right channel of stereo input node
+                zdj_soundcard_accumulate_node( soundcard, input_node, node, &map );
+            }
         }
     } else if ( zdj_soundcard_node_name_is_analog_input( node->name ) ||
                 zdj_soundcard_node_name_is_usb_input( node->name ) 
     ) {
         // Inputs have no input linkage - manually update metering.
-        _meter_analog_input_node( soundcard, node );
+        if( !node->stereo ) {
+            _meter_analog_input_node( soundcard, node );
+        } else if( !zdj_soundcard_node_name_is_right_channel( node->name ) ) {
+            // Avoid accumulating right channel of stereo input node
+            _meter_analog_input_node( soundcard, node );
+        }
+        
     } else {
         // Reset meter
         if( node->meter_pipe ) {
@@ -109,7 +120,7 @@ zdj_error_type_t zdj_soundcard_mix_input( zdj_soundcard_t * soundcard, zdj_sound
     // Push buffer into meter
     if( zdj_soundcard_node_name_is_clock( node->name ) ) {
         // _meter_clock
-    } else {
+    } else if( !zdj_soundcard_node_name_is_analog_input( node->name ) ) {
         _meter_node( soundcard, node, &map );
     }
 
@@ -369,7 +380,7 @@ zdj_error_type_t zdj_soundcard_accumulate_node(
             
             if( map->accum_pan ) {
                 // Panned mix
-                // If accum_pan is true, we know dest_buf has 2 channels.
+                // If accum_pan is true, we know dest_buf is stereo.
                 if( !node->stereo ) { 
                     printf( "panning into a mono buffer !!!" ); 
                 } else {
@@ -395,7 +406,6 @@ static void _meter_node(
     zdj_soundcard_node_t * node,
     zdj_soundcard_accumulate_map_t * map
 ) {
-    // printf( "_meter_node 0: %s\n", zdj_soundcard_node_name[ node->name ] );
     float meter_val[ 2 ] = { 0 };
     int index;
     int channel_count = node->stereo+1;
@@ -469,7 +479,6 @@ static zdj_error_type_t _meter_analog_input_node(
     zdj_soundcard_t * soundcard, 
     zdj_soundcard_node_t * node
 ) {
-    // printf( "_meter_analog_input_node: %s\n", zdj_soundcard_node_name[ node->name ] );
     zdj_soundcard_node_t * output_node = zdj_soundcard_get_node_for_name(
         soundcard,
         node->output_links->dest_node
@@ -478,37 +487,40 @@ static zdj_error_type_t _meter_analog_input_node(
     // If the input node has no linkage, don't meter.
     if( !output_node ) { return ZDJ_ERROR_OKAY; }
 
-    // For Analog input nodes, we're actually metering the node to which it is linked.
-    float * buf = node->data_pipe->get_data( node->data_pipe );
+    // For input node right channels, we need the left channel's data pipe
+    float * buf;
+    if( node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1 || 
+        node->name == ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_3 ||
+        node->name == ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1
+    ) {
+        zdj_soundcard_node_t * left_node = zdj_soundcard_node_get_stereo_partner_node( node );
+        buf = left_node->data_pipe->get_data( left_node->data_pipe );
+    } else {
+        buf = node->data_pipe->get_data( node->data_pipe );
+    }
 
     float meter_val[ 2 ] = { 0 };
-    for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-        if( node->stereo ) {
-            if( zdj_soundcard_node_name_is_audio( output_node->name ) ) {
-                meter_val[ 0 ] += fabs( buf[ i*2 ] );
-                meter_val[ 1 ] += fabs( buf[ i*2+1 ] );
-            } else if( zdj_soundcard_node_name_is_cv( output_node->name ) ) {
-                meter_val[ 0 ] += buf[ i*2 ];
-                meter_val[ 1 ] += buf[ i*2+1 ];
-            }
-        } else {
-            int channel;
-            if( zdj_soundcard_node_name_is_audio( output_node->name ) ) {
-                channel = zdj_soundcard_node_name_is_right_channel( node->name ) ? 0 : 1;
-                meter_val[ 0 ] += fabs( buf[ i*2+channel ] );
-            } else if( zdj_soundcard_node_name_is_cv( output_node->name ) ) {
-                meter_val[ 0 ] += buf[ i*2 ];
-            }
+    if( node->stereo ) {
+        for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+            meter_val[ 0 ] += fabs( buf[ i*2 ] );
+            meter_val[ 1 ] += fabs( buf[ i*2+1 ] );
+        }
+    } else {
+        for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
+            int channel = zdj_soundcard_node_name_is_right_channel( node->name ) ? 1 : 0;
+            meter_val[ 0 ] += fabs( buf[ i*2+channel ] );
         }
     }
 
-    zdj_meter_node_state_t * meter_pipe_state = (zdj_meter_node_state_t*)output_node->meter_pipe->state;
+    // Apply gain
+    meter_val[ 0 ] *= node->dsp_dto->gain;
+    meter_val[ 1 ] *= node->dsp_dto->gain;
 
     // Average meter val + set in meter pipe
+    zdj_meter_node_state_t * meter_pipe_state = (zdj_meter_node_state_t*)node->meter_pipe->state;
     if( meter_pipe_state && meter_pipe_state->add_frame ) { 
         meter_val[ 0 ] /= ZDJ_SOUNDCARD_BUF_LEN;
         meter_val[ 1 ] /= ZDJ_SOUNDCARD_BUF_LEN;
         meter_pipe_state->add_frame( node->meter_pipe, meter_val[ 0 ], meter_val[ 1 ] ); 
     }
-    // printf( "_meter_analog_input_node done\n" );
 }
