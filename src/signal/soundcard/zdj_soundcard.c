@@ -181,6 +181,7 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
 
     // Transform input samples from shared M7 buffer to io_node's input float buffers
     zdj_analog_io_pull_samples( zdj_soundcard->analog_io_node );
+    
     if( zdj_usb_state &&
         zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
         zdj_usb_state->host_state.attached.count > 0

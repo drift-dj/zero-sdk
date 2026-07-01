@@ -173,10 +173,13 @@ void _zdj_audio_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_soundcard_meter_state_t * state = (zdj_soundcard_meter_state_t*)view->state;
     zdj_soundcard_node_config_context_t * config = state->config_context;
 
+    float meter_l_h;
+    float meter_r_h;
+
     zdj_pipeline_node_t * meter_pipe = config->node->meter_pipe;
     zdj_meter_node_state_t * meter_state = (zdj_meter_node_state_t*)meter_pipe->state;
-    float meter_l_h = (meter_state->instant_val_0) * 43;
-    float meter_r_h = (meter_state->instant_val_1) * 43;
+    meter_l_h = (meter_state->instant_val_0) * 43;
+    meter_r_h = (meter_state->instant_val_1) * 43;
 
     if( state->is_hilite ) {
         state->detail->frame.w = 7;
