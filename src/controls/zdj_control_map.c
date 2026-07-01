@@ -13,6 +13,8 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
         case ZDJ_CONTROL_MAP_MENU_BASE:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_PRESS_2 ); // long press for edit mode
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
@@ -26,6 +28,8 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
         case ZDJ_CONTROL_MAP_MENU_DJ_ROOT:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_1 );
+            zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 );
