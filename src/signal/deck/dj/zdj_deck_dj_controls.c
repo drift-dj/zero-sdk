@@ -259,19 +259,6 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
     ///////////////////////
     // Fade / Trim / Cue //
     ///////////////////////  
-
-    case ZDJ_DECK_1_CONTROL_FADE:
-        // printf( "dj deck 1 fade\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE );
-        node->dsp_dto->set_gain( node, 255 - event->i_val );
-        event->blocked = true;
-        break;
-    case ZDJ_DECK_2_CONTROL_FADE:
-        // printf( "dj deck 2 fade\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
-        node->dsp_dto->set_gain( node, 255 - event->i_val );
-        event->blocked = true;
-        break;
     
     case ZDJ_DECK_1_CONTROL_TRIM:
         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
