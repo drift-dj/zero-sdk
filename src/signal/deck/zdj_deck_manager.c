@@ -432,7 +432,6 @@ static void * _zdj_deck_manager_thread_main( void * arg ) {
 
 static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_event_t * event ) {
     switch ( event->id ) {
-        case ZDJ_DECK_1_CONTROL_FADE:
         case ZDJ_DECK_1_CONTROL_TRIM:
         case ZDJ_DECK_1_CONTROL_EQ_LO:
         case ZDJ_DECK_1_CONTROL_EQ_MID:
@@ -496,7 +495,6 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_1_CONTROL_HOTCUE_15: return station == ZDJ_DECK_STATION_1;
 
 
-        case ZDJ_DECK_2_CONTROL_FADE:
         case ZDJ_DECK_2_CONTROL_TRIM:
         case ZDJ_DECK_2_CONTROL_EQ_LO:
         case ZDJ_DECK_2_CONTROL_EQ_MID:
@@ -620,6 +618,8 @@ static bool _is_soundcard_event( zdj_control_event_t * event ) {
         case ZDJ_DECK_CONTROL_RECORD_VOL:
         case ZDJ_DECK_CONTROL_TOGGLE_RECORD: 
         case ZDJ_DECK_1_2_BASS_SWAP:
+        case ZDJ_DECK_1_CONTROL_FADE:
+        case ZDJ_DECK_2_CONTROL_FADE:
         case ZDJ_DECK_CONTROL_XFADE: return true;
 
         default: return false;

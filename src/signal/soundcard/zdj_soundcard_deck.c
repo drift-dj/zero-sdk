@@ -115,6 +115,17 @@ void zdj_soundcard_handle_deck_event(
         );
         node->dsp_dto->adjust_gain( node, event->i_val );
         // printf( "LR Vol Adjust: %d\n", node->dsp_dto->gain );
+
+    } else if( event->id == ZDJ_DECK_1_CONTROL_FADE ) {
+        // printf( "dj deck 1 fade\n" );
+        zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE );
+        node->dsp_dto->set_gain( node, 255 - event->i_val );
+    
+    } else if( event->id == ZDJ_DECK_2_CONTROL_FADE ) {
+        // printf( "dj deck 2 fade\n" );
+        zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
+        node->dsp_dto->set_gain( node, 255 - event->i_val );
+
     } else if( event->id == ZDJ_DECK_CONTROL_XFADE ) {
         zdj_soundcard_node_t * node_a = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
         double a_curve_pow = node_a->dsp_dto->stages[ 0 ].knob_0 * 5.5;
