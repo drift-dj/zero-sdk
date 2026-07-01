@@ -198,7 +198,6 @@ static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool
 
 
 static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
-    printf( "xport _handle_control: %p %d\n", deck, event->id );
     // All external clock and transport signals flow through here.
     // They are then re-routed based on instantaneous system state
 
