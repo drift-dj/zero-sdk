@@ -514,15 +514,6 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // Sync //
     //////////  
 
-    case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
-        printf( "sync toggle\n" );
-        if( zdj_deck_manager( )->sync.preferred ) {
-            zdj_deck_manager_set_prefer_sync( false );
-        } else {
-            zdj_deck_manager_set_prefer_sync( true );
-        }
-        break;
-
     case ZDJ_DECK_1_CONTROL_SYNC_MULT:
     case ZDJ_DECK_2_CONTROL_SYNC_MULT:
         if( deck->can_sync ) { 
