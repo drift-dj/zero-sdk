@@ -509,6 +509,10 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
         zdj_dj_deck_command_request( deck, ZDJ_DECK_COMMAND_REQUEST_JUMP_TO_SKIP_ORIGIN );
         break;
 
+    case ZDJ_DECK_1_CONTROL_QUANT_TOGGLE:
+    case ZDJ_DECK_2_CONTROL_QUANT_TOGGLE:
+        deck->controls.discon_quantize = !deck->controls.discon_quantize;
+        break;
 
     //////////
     // Sync //
