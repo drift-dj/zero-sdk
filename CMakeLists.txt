@@ -80,6 +80,7 @@ add_library(zerodj
     src/signal/soundcard/zdj_soundcard_mix.c
     src/signal/soundcard/zdj_soundcard_node.c
     src/signal/soundcard/db/zdj_soundcard_db.c
+    src/signal/soundcard/db/zdj_soundcard_db_presets.c
     src/signal/soundcard/db/zdj_soundcard_dto.c
     src/signal/soundcard/dsp/zdj_soundcard_dsp_gain_pan.c
     src/signal/soundcard/dsp/zdj_soundcard_dsp_delay.c
