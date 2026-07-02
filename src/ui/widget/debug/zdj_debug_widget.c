@@ -99,10 +99,29 @@ static void _retract( zdj_view_t * view ) {
 static void _put_mem( char * str ) {
     // Build mem size string
     char cmd[ 256 ];
-    char mem[ 256 ];
-    snprintf( cmd, sizeof( cmd ), "cat /proc/%d/status | grep 'VmSize*'", getpid( ) );
-    char p_res[ 256 ];
-    zdj_fs_get_popen( cmd, p_res );
-    if( strlen( p_res ) < 1 ) { return; }
-    strcpy( str, &p_res[ 8 ] );
+
+    snprintf( cmd, sizeof( cmd ), "/proc/%d/statm", getpid( ) );
+    FILE* fp = fopen( cmd, "r" );
+    if( !fp ) { return; }
+
+    long size = 0;
+    long resident = 0;
+    long shared = 0;
+    long text = 0;
+    long lib = 0;
+    long data = 0;
+    long dt = 0;
+
+    if( fscanf( fp, 
+                "%ld %ld %ld %ld %ld %ld %ld", 
+                &size, &resident, &shared, &text, &lib, &data, &dt
+               ) != 7
+    ) {
+        fclose( fp );
+        return;
+    }
+    fclose( fp );
+
+    long page_size_kb = sysconf( _SC_PAGE_SIZE ) / 1024;
+    sprintf( str, "%ld KB", resident * page_size_kb );
 }
