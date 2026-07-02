@@ -288,14 +288,6 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 //     // Sync //
 //     //////////  
 
-    case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
-        if( zdj_deck_manager( )->sync.preferred ) {
-            zdj_deck_manager_set_prefer_sync( false );
-        } else {
-            zdj_deck_manager_set_prefer_sync( true );
-        }
-        break;
-
     case ZDJ_DECK_XPORT_CONTROL_SYNC_MULT:
         if( deck->can_sync ) { 
             deck_state->sync_mult_ui_counter += event->i_val;

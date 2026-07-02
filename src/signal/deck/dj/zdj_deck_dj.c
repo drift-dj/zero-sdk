@@ -81,9 +81,7 @@ static void _update_state ( zdj_deck_t * deck ) {
 
         // Stand up pipeline nodes.
         case ZDJ_DECK_STATUS_MAKE_PIPELINE:
-            // printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE (%p)\n", deck );
-            zdj_deck_dj_init_sync( deck );
-            
+            // printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE (%p)\n", deck );            
             int decode_buf_count = deck_state->decode_win_buf_count; // number of decode buffers which fit in window.
 
             // Set audio fade-out constants - tune these to sound good
@@ -217,9 +215,8 @@ static void _update_state ( zdj_deck_t * deck ) {
                 zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
                 decode_state->get_win_start_addr( deck_state->decode_node, &win_start );
 
-                // Update deck manager tempo
-                deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm );
-
+                // // Update deck manager tempo
+                zdj_deck_dj_init_sync( deck );
 
                 // printf( "3\n" );
                 // Prep loop/skip state

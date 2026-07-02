@@ -11,6 +11,7 @@
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/deck/dj/zdj_deck_dj.h>
+#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 
@@ -195,12 +196,21 @@ void zdj_deck_manager_handle_events( int start_ind, int end_ind ) {
 // Setting prefer sync to true should sync up both DJ decks
 // if they both contains syncable songs.
 void zdj_deck_manager_set_prefer_sync( bool prefer ) {
-    printf( "zdj_deck_manager_prefer_sync\n" );
+    printf( "zdj_deck_manager_prefer_sync: %d\n", prefer );
     // Adopt source_deck's bpm as root bpm.
     zdj_deck_manager( )->sync.preferred = prefer;
     if( prefer && zdj_deck_manager_can_activate_sync( ) ) {
-        // FIXME: Set sync bpm to whichever deck is selected in the UI
-        zdj_deck_manager_set_sync( 120.0 );
+        zdj_deck_station_t station = zdj_deck_manager_get_station_for_map( zdj_control_active_map );
+        if( station == ZDJ_DECK_STATION_1 || station == ZDJ_DECK_STATION_2 ) {
+            zdj_deck_t * deck = zdj_deck_manager_get_deck_for_station( station );
+            zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
+            zdj_deck_manager_set_sync( deck_state->set_bpm );
+       
+        } else if ( station == ZDJ_DECK_STATION_EXT ) { 
+            zdj_deck_t * deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
+            zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+            zdj_deck_manager_set_sync( deck_state->set_bpm );
+        }
     }
     if( !prefer ) { zdj_deck_manager_deactivate_sync( ); }
 }
@@ -245,7 +255,6 @@ void zdj_deck_manager_deactivate_sync( void ) {
 }
 
 void zdj_deck_manager_update_sync_bpm( double offset ) {
-    // printf( "zdj_deck_manager_update_sync_bpm: %f\n", offset );
     if( zdj_deck_manager( )->sync.active ) {
         if( offset > 0.0 || zdj_deck_manager( )->sync.set_bpm + offset > 2.0 ) {
             zdj_deck_manager( )->sync.set_bpm += offset;
@@ -602,11 +611,6 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_XPORT_CONTROL_CUE_STOP:
         case ZDJ_DECK_XPORT_CONTROL_CUE_END: return station == ZDJ_DECK_STATION_XPORT;
 
-        // Everyone hears these
-        case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
-        case ZDJ_DECK_CONTROL_SYNC_ENABLE:
-        case ZDJ_DECK_CONTROL_SYNC_DISABLE:return true;
-
         default: return false;
     }
 }
@@ -617,6 +621,9 @@ static bool _is_soundcard_event( zdj_control_event_t * event ) {
         case ZDJ_DECK_CONTROL_CUE_VOL:
         case ZDJ_DECK_CONTROL_RECORD_VOL:
         case ZDJ_DECK_CONTROL_TOGGLE_RECORD: 
+        case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
+        case ZDJ_DECK_CONTROL_SYNC_ENABLE:
+        case ZDJ_DECK_CONTROL_SYNC_DISABLE:
         case ZDJ_DECK_1_2_BASS_SWAP:
         case ZDJ_DECK_1_CONTROL_FADE:
         case ZDJ_DECK_2_CONTROL_FADE:

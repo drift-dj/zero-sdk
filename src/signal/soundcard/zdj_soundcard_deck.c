@@ -146,6 +146,13 @@ void zdj_soundcard_handle_deck_event(
             zdj_new_audio_record_capture( zdj_soundcard->recording_node, true );
         }
 
+    } else if( event->id == ZDJ_DECK_CONTROL_SYNC_TOGGLE ) {
+        if( zdj_deck_manager( )->sync.preferred ) {
+            zdj_deck_manager_set_prefer_sync( false );
+        } else {
+            zdj_deck_manager_set_prefer_sync( true );
+        }
+
     } else if( event->id == ZDJ_DECK_1_2_BASS_SWAP ) {
         zdj_soundcard_node_t * soundcard_node;
         zdj_soundcard_dsp_dto_t * dsp_dto;
