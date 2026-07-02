@@ -410,9 +410,10 @@ static void _soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 
 static void _drop_soundcard_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
     if( selection ) {
-        printf( "dropping soundcard\n" );
         zdj_drop_soundcard( );
-        printf( "init soundcard\n" );
+
+        // If soundcard is running, first shut down then reinit soundcard
+        if( zdj_soundcard ) { zdj_soundcard_deinit( zdj_soundcard ); }
         zdj_soundcard_init( "__temp__" );
     }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
