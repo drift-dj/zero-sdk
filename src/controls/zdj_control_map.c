@@ -561,6 +561,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_SKIP );
             zdj_activate_control( ZDJ_DECK_1_CONTROL_SKIP_LENGTH );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_QUANT_TOGGLE );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_0 ); 
@@ -845,6 +846,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_DECK_2_CONTROL_SKIP );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_SKIP_LENGTH );
             zdj_activate_control( ZDJ_DECK_2_CONTROL_SKIP_LENGTH );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_QUANT_TOGGLE );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_PRESS_0 ); 
