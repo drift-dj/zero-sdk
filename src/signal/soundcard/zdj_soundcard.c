@@ -328,6 +328,11 @@ void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
 
     zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_RUNNING;
 
+    // Store the new DTO as the Current DTO
+    strcpy( zdj_soundcard->dto.entity_id, "__temp__" );
+    strcpy( zdj_soundcard->dto.name, "Current" );
+    zdj_soundcard_store_dto( &zdj_soundcard->dto );
+
     // Relink the CB
     zdj_soundcard->analog_io_node->update_cb = &_zdj_soundcard_io_fast_cycle_cb;
 }
