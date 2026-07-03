@@ -148,12 +148,18 @@ static void _process_dsp( zdj_soundcard_node_t * node ) {
     // Process Pan, Gain, Crossfader Gain (if linked)
     // Skip Analog In nodes since they're wonky
     if( !zdj_soundcard_node_name_is_analog_input( node->name ) ) {
+        // Interpolate from n-1 control val to current control val
+        float start_val = node->dsp_dto->gain_n1;
+        float inc = (node->dsp_dto->gain - start_val) / ZDJ_SOUNDCARD_BUF_LEN;
+        float val = start_val;
         for( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-            buf[ i*channel_count ] *= node->dsp_dto->gain;
+            buf[ i*channel_count ] *= val;
             if( channel_count > 1 ) {  
-                buf[ (i*channel_count)+1 ] *= node->dsp_dto->gain;
+                buf[ (i*channel_count)+1 ] *= val;
             }
+            val += inc;
         }
+        node->dsp_dto->gain_n1 = node->dsp_dto->gain;
     }
     // If there are extra DSP stages enabled, process those
     if( node->dsp_dto->has_stages ) {

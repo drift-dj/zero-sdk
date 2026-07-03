@@ -72,7 +72,9 @@ static void _populate_dsp_dto( zdj_soundcard_dsp_dto_t * dto, char * eid ) {
     zdj_put_uuid_no_dash( dto->entity_id );
     strcpy( eid, dto->entity_id );
     dto->gain = 1.0;
+    dto->gain_n1 = 1.0;
     dto->pan = 1.0;
+    dto->pan_n1 = 1.0;
     dto->mute = 0.0;
     dto->has_stages = false;
 }
