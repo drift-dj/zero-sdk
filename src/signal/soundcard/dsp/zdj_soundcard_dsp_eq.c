@@ -120,8 +120,6 @@ void zdj_soundcard_dsp_eq_3_4p_update( void * _stage, float * buf, int channel_c
     double h_inc = (stage->knob_2 - h_start_val) / ZDJ_SOUNDCARD_BUF_LEN;
     double h_val = h_start_val;
 
-    printf( "%1.3f->%1.3f: %f\n", l_start_val, stage->knob_0, l_inc );
-
     // Loop thru buffer
     for ( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
         sample_l = buf[ i*channel_count ];
