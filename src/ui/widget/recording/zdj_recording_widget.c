@@ -56,8 +56,17 @@ zdj_view_t * zdj_new_recording_widget( void ) {
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_recording_widget_state_t * state = (zdj_recording_widget_state_t*)view->state;
+
+    if( state->needs_soundcard_update ) {
+        printf( "updating recording widget\n" );
+        if( state->container->subviews ) { zdj_remove_all_subviews_of( state->container ); }
+        state->ui_init = false;
+        state->needs_soundcard_update = false;
+    }
+    
     zdj_audio_record_node_state_t * recording_state = (zdj_audio_record_node_state_t*)zdj_soundcard->recording_node->state;
 
+    
     if( recording_state->status == ZDJ_AUDIO_RECORD_ACTIVE && !state->deployed ) {
         _deploy( state->container, state );
         state->deploy_timer = 0; // Set widget up to hide when recording stops

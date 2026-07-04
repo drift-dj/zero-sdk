@@ -231,3 +231,9 @@ int zdj_get_next_hmi_input_event_ind( void ) {
     zdj_hmi_input_event_buf_write %= ZDJ_CONTROL_EVENT_BUF_LEN;
     return zdj_hmi_input_event_buf_write;
 }
+
+// Used from soundcard layer during reset to capture current fader vals
+int zdj_hmi_input_get_fader_val( zdj_hmi_input_id_t id ) {
+    if( !zdj_hmi_input_states || !zdj_hmi_input_states[ id ] ) { return 0; }
+    return zdj_hmi_input_states[ id ]->adjust_prev_val;
+}

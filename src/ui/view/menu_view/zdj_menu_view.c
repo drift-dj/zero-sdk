@@ -15,6 +15,9 @@
 static void _deinit_state( zdj_view_t * view );
 static void _update_scroll( zdj_view_t * menu_view, int new_scroll );
 
+static bool _put_prev_section_index( zdj_view_t * menu, int current_index, int * scroll_target );
+static bool _put_next_section_index( zdj_view_t * menu, int current_index, int * scroll_target );
+
 zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame ) {
     zdj_view_t * menu_view = zdj_new_view( frame );
     // zdj_view_t * menu_view = zdj_new_view( &(zdj_rect_t){ frame->x-6,frame->y,frame->w+6,frame->h } );
@@ -502,6 +505,21 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
         
         e->blocked = true;
     
+    // Press-scroll should jump to next section
+    } else if( e->id == ZDJ_UI_CONTROL_JOG_ADJUST_1 ) { 
+        // Find next/prev section in menu
+        int target_index;
+        bool should_scroll = false;
+        if( e->i_val > 0 ) {
+            should_scroll = _put_next_section_index( view, menu_state->scroll_index, &target_index );
+        } else if( e->i_val < 0 ) { 
+            should_scroll = _put_prev_section_index( view, menu_state->scroll_index, &target_index );
+            printf( "should scroll %d: %d\n", menu_state->scroll_index, should_scroll );
+        }
+        if( should_scroll ) { 
+            zdj_menu_view_set_scroll_index( view, target_index );
+        }
+
     // Release, mod-scroll, long-press, etc. should invoke hmi handler of menu_item @scroll_index
     } else if( e->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ||
         e->id == ZDJ_UI_CONTROL_JOG_RELEASE_1 ||
@@ -772,4 +790,44 @@ static void _deinit_state( zdj_view_t * view ) {
     zdj_menu_view_state_t * state = (zdj_menu_view_state_t*)view->state;
     free( state );
     view->state = NULL;
+}
+
+static bool _put_prev_section_index( zdj_view_t * menu, int current_index, int * scroll_target ) {
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu->state;
+    zdj_view_t * menu_item = zdj_menu_view_item_at_scroll_index( menu, current_index )->prev;
+    
+    while( menu_item ) {
+        if( menu_item->type == ZDJ_VIEW_MENU_SECTION ) {
+            if( menu_item->prev && menu_item->prev->type == ZDJ_VIEW_MENU_ITEM ) { 
+                zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->prev->state;
+                if( item_state ) {
+                    *scroll_target = item_state->scroll_index;
+                    return true;
+                }
+            }
+        }
+        menu_item = menu_item->prev;
+    }
+
+    return false;
+}
+
+static bool _put_next_section_index( zdj_view_t * menu, int current_index, int * scroll_target ) {
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu->state;
+    zdj_view_t * menu_item = zdj_menu_view_item_at_scroll_index( menu, current_index );
+
+    while( menu_item ) {
+        if( menu_item->type == ZDJ_VIEW_MENU_SECTION ) {
+            if( menu_item->next && menu_item->next->type == ZDJ_VIEW_MENU_ITEM ) { 
+                zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->next->state;
+                if( item_state ) {
+                    *scroll_target = item_state->scroll_index;
+                    return true;
+                }
+            }
+        }
+        menu_item = menu_item->next;
+    }
+
+    return false;
 }

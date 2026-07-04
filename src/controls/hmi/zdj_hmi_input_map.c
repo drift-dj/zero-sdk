@@ -497,6 +497,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_SYNC_MULT ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_SYNC_MULT ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
             }
  
         } else if( in_e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ) {

@@ -56,6 +56,12 @@ zdj_view_t * zdj_new_volume_widget( void ) {
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_volume_widget_state_t * state = (zdj_volume_widget_state_t*)view->state;
 
+    if( state->needs_soundcard_update ) {
+        if( state->container->subviews ) { zdj_remove_all_subviews_of( state->container ); }
+        state->ui_init = false;
+        state->needs_soundcard_update = false;
+    }
+
     // Check for a change in the main volume knob and restart the timer
     if( zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_LR_VOL ] ) {
         // printf( "vol change\n" );

@@ -44,8 +44,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // printf( "xport_beatgrid_view draw\n" );
     zdj_beatgrid_view_state_t * view_state = (zdj_beatgrid_view_state_t*)view->state;
     zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)view_state->deck->state;
-    // zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
-
+    
     // Remove grid markers
     zdj_remove_all_subviews_of( view );
 
@@ -53,7 +52,6 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     double beatgrid_head = deck_state->transport_bg;
     // Get zoom factor in beatgrid count space
     double samples_per_pixel = view_state->zoom_val * ZDJ_PLAYBACK_WAVEFORM_SAMPLE_STRIDE;
-    // printf( "samples per pixel: %f", samples_per_pixel );
     double beats_per_pixel = zdj_signal_beatgrid_count_for_pcm_count( 
         samples_per_pixel,
         44100.0,

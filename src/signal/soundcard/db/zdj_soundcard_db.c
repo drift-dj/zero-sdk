@@ -14,9 +14,6 @@ static void _zdj_soundcard_create_linkage_table( sqlite3 * db );
 static void _zdj_soundcard_create_dsp_table( sqlite3 * db );
 
 void zdj_drop_soundcard( void ) {
-    // If soundcard is running, shut down soundcard
-    if( zdj_soundcard ) { zdj_soundcard_deinit( zdj_soundcard ); }
-
     // Create new db
     sqlite3 * db = zdj_sql_open( ZDJ_SOUNDCARD_DB_PATH );
     if( !db ) { 
@@ -35,136 +32,6 @@ void zdj_drop_soundcard( void ) {
 
     // Add defaults to new db
     zdj_soundcard_reset_db_defaults( );
-}
-
-void zdj_soundcard_reset_db_defaults( void ) {
-    // Make DJ default
-    zdj_soundcard_dto_t * dto = zdj_soundcard_create_dto( );
-    strcpy( dto->name, "Default" );
-
-    // Add default linkages
-
-    // Analog input outs
-    dto->ana_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->ana_in_0_stereo = true;
-    dto->ana_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->ana_in_1_stereo = true;
-    dto->ana_in_2_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->ana_in_2_stereo = true;
-    dto->ana_in_3_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->ana_in_3_stereo = true;
-
-    dto->ana_out_0_stereo = true;
-    dto->ana_out_0_sig = ZDJ_SOUNDCARD_SIGNAL_PRO_PLUS_4_DBU;
-    dto->ana_out_1_stereo = true;
-    dto->ana_out_1_sig = ZDJ_SOUNDCARD_SIGNAL_PRO_PLUS_4_DBU;
-    dto->ana_out_2_stereo = true;
-    dto->ana_out_2_sig = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_LOW;
-    dto->ana_out_3_stereo = true;
-    dto->ana_out_3_sig = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_LOW;
-
-    // USB I/O
-    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->usb_in_0_stereo = true;
-    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->usb_in_1_stereo = true;
-
-    dto->usb_out_0_stereo = true;
-    dto->usb_out_1_stereo = true;
-
-    // Admin bus outs
-    dto->annot_bus_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
-    dto->annot_bus_stereo = false;
-    dto->cue_bus_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0;
-    dto->cue_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_1;
-    dto->cue_bus_stereo = true;
-    dto->main_bus_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_2;
-    dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_3;
-    dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS;
-    dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0;
-    dto->main_bus_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_1;
-    dto->main_bus_stereo = true;
-    dto->record_bus_stereo = true;
-    
-    // Deck 1
-    dto->deck_1_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE;
-    dto->deck_1_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE;
-    dto->deck_1_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE;
-    dto->deck_1_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_1_CUE;
-    dto->deck_1_cue_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
-    dto->deck_1_postfade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_XFADE_A;
-    dto->deck_1_prefade_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ;
-    dto->deck_1_prefade_dsp.stages[ 0 ].id = ZDJ_SOUNDCARD_DSP_ID_EQ_3_4P;
-    dto->deck_1_prefade_dsp.stages[ 0 ].knob_0 = 1.0; // Lo
-    dto->deck_1_prefade_dsp.stages[ 0 ].knob_1 = 1.0; // Mid
-    dto->deck_1_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
-    dto->deck_1_prefade_dsp.stages[ 0 ].knob_3 = 0.250; // Xover Hi
-    dto->deck_1_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Lo
-    dto->deck_1_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
-    dto->deck_1_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
-    dto->deck_1_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
-    dto->deck_1_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
-
-    // Deck 2
-    dto->deck_2_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE;
-    dto->deck_2_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE;
-    dto->deck_2_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE;
-    dto->deck_2_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE;
-    dto->deck_2_cue_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
-    dto->deck_2_postfade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_XFADE_B;
-    dto->deck_2_prefade_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ;
-    dto->deck_2_prefade_dsp.stages[ 0 ].id = ZDJ_SOUNDCARD_DSP_ID_EQ_3_4P;
-    dto->deck_2_prefade_dsp.stages[ 0 ].knob_0 = 1.0; // Lo
-    dto->deck_2_prefade_dsp.stages[ 0 ].knob_1 = 1.0; // Mid
-    dto->deck_2_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
-    dto->deck_2_prefade_dsp.stages[ 0 ].knob_3 = 0.250; // Xover Hi
-    dto->deck_2_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Lo
-    dto->deck_2_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
-    dto->deck_2_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
-    dto->deck_2_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
-    dto->deck_2_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
-
-    // Ext Deck
-    dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->deck_ext_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->deck_ext_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE;
-    dto->deck_ext_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE;
-    dto->deck_ext_cue_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
-    dto->deck_ext_postfade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
-    dto->deck_ext_prefade_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ;
-    dto->deck_ext_prefade_dsp.stages[ 0 ].id = ZDJ_SOUNDCARD_DSP_ID_EQ_3_4P;
-    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_0 = 1.0; // Lo
-    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_1 = 1.0; // Mid
-    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_2 = 1.0; // Hi
-    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_3 = 0.250; // Xover Hi
-    dto->deck_ext_prefade_dsp.stages[ 0 ].knob_4 = 1.0; // Xover Lo
-    dto->deck_ext_prefade_dsp.stages[ 1 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT;
-    dto->deck_ext_prefade_dsp.stages[ 1 ].id = ZDJ_SOUNDCARD_DSP_ID_FILT_BI;
-    dto->deck_ext_prefade_dsp.stages[ 1 ].knob_0 = 0.0; // Freq
-    dto->deck_ext_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
-
-    // Main Clock
-    dto->clock_0_sig = ZDJ_SOUNDCARD_SIGNAL_XPORT_ANALOG_PPQN_4; // Clock output 4 PPQN
-    dto->clock_0_source = ZDJ_SOUNDCARD_CLOCK_DIRECTION_OUTPUT; // Clock source Output
-    dto->clock_0_sync = ZDJ_SOUNDCARD_CLOCK_SYNC_NORMAL;
-    dto->clock_0_val = 120.0; // Clock BPM setting
-
-    // Crossfader
-    dto->xfade_a_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
-    dto->xfade_a_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_XFADE;
-    dto->xfade_a_dsp.stages[ 0 ].id = ZDJ_SOUNDCARD_DSP_ID_XFADE_CURVE;
-    dto->xfade_a_dsp.stages[ 0 ].knob_0 = 0.8; // Crossfader curve
-    dto->xfade_b_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
-    dto->xfade_b_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_XFADE;
-    dto->xfade_b_dsp.stages[ 0 ].id = ZDJ_SOUNDCARD_DSP_ID_XFADE_CURVE;
-    dto->xfade_b_dsp.stages[ 0 ].knob_0 = 0.8; // Crossfader curve
-
-    zdj_soundcard_store_dto( dto );
-
-    // Make __temp__ from DJ default
-    strcpy( dto->entity_id, "__temp__" );
-    strcpy( dto->name, "Current" );
-    zdj_soundcard_store_dto( dto );
 }
 
 static void _zdj_soundcard_drop_tables( sqlite3 * db ) {
@@ -923,95 +790,161 @@ void zdj_soundcard_fetch_dsp_for_entity_id( zdj_soundcard_dsp_dto_t * dto, char 
         while ( ( sql_res = sqlite3_step( stmt ) ) == SQLITE_ROW ) {
             strcpy( dto->entity_id, (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_DSP_COL_ENTITY_ID ) );
             dto->gain = sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_GAIN );
+            dto->gain_n1 = dto->gain;
             dto->pan = sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_PAN );
+            dto->pan_n1 = dto->pan;
 
             dto->stages[ 0 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_TYPE );
             dto->stages[ 0 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_ID );
             dto->stages[ 0 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_0 );
+            dto->stages[ 0 ].knob_0_n1 = dto->stages[ 0 ].knob_0;
             dto->stages[ 0 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_1 );
+            dto->stages[ 0 ].knob_1_n1 = dto->stages[ 0 ].knob_1;
             dto->stages[ 0 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_2 );
+            dto->stages[ 0 ].knob_2_n1 = dto->stages[ 0 ].knob_2;
             dto->stages[ 0 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_3 );
+            dto->stages[ 0 ].knob_3_n1 = dto->stages[ 0 ].knob_3;
             dto->stages[ 0 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_4 );
+            dto->stages[ 0 ].knob_4_n1 = dto->stages[ 0 ].knob_4;
             dto->stages[ 0 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_5 );
+            dto->stages[ 0 ].knob_5_n1 = dto->stages[ 0 ].knob_5;
             dto->stages[ 0 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_6 );
+            dto->stages[ 0 ].knob_6_n1 = dto->stages[ 0 ].knob_6;
             dto->stages[ 0 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_0_KNOB_7 );
+            dto->stages[ 0 ].knob_7_n1 = dto->stages[ 0 ].knob_7;
 
             dto->stages[ 1 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_TYPE );
             dto->stages[ 1 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_ID );
             dto->stages[ 1 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_0 );
+            dto->stages[ 1 ].knob_0_n1 = dto->stages[ 1 ].knob_0;
             dto->stages[ 1 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_1 );
+            dto->stages[ 1 ].knob_1_n1 = dto->stages[ 1 ].knob_1;
             dto->stages[ 1 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_2 );
+            dto->stages[ 1 ].knob_2_n1 = dto->stages[ 1 ].knob_2;
             dto->stages[ 1 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_3 );
+            dto->stages[ 1 ].knob_3_n1 = dto->stages[ 1 ].knob_3;
             dto->stages[ 1 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_4 );
+            dto->stages[ 1 ].knob_4_n1 = dto->stages[ 1 ].knob_4;
             dto->stages[ 1 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_5 );
+            dto->stages[ 1 ].knob_5_n1 = dto->stages[ 1 ].knob_5;
             dto->stages[ 1 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_6 );
+            dto->stages[ 1 ].knob_6_n1 = dto->stages[ 1 ].knob_6;
             dto->stages[ 1 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_1_KNOB_7 );
+            dto->stages[ 1 ].knob_7_n1 = dto->stages[ 1 ].knob_7;
 
             dto->stages[ 2 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_TYPE );
             dto->stages[ 2 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_ID );
             dto->stages[ 2 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_0 );
+            dto->stages[ 2 ].knob_0_n1 = dto->stages[ 2 ].knob_0;
             dto->stages[ 2 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_1 );
+            dto->stages[ 2 ].knob_1_n1 = dto->stages[ 2 ].knob_1;
             dto->stages[ 2 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_2 );
+            dto->stages[ 2 ].knob_2_n1 = dto->stages[ 2 ].knob_2;
             dto->stages[ 2 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_3 );
+            dto->stages[ 2 ].knob_3_n1 = dto->stages[ 2 ].knob_3;
             dto->stages[ 2 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_4 );
+            dto->stages[ 2 ].knob_4_n1 = dto->stages[ 2 ].knob_4;
             dto->stages[ 2 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_5 );
+            dto->stages[ 2 ].knob_5_n1 = dto->stages[ 2 ].knob_5;
             dto->stages[ 2 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_6 );
+            dto->stages[ 2 ].knob_6_n1 = dto->stages[ 2 ].knob_6;
             dto->stages[ 2 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_2_KNOB_7 );
+            dto->stages[ 2 ].knob_7_n1 = dto->stages[ 2 ].knob_7;
 
             dto->stages[ 3 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_TYPE );
             dto->stages[ 3 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_ID );
             dto->stages[ 3 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_0 );
+            dto->stages[ 3 ].knob_0_n1 = dto->stages[ 3 ].knob_0;
             dto->stages[ 3 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_1 );
+            dto->stages[ 3 ].knob_1_n1 = dto->stages[ 3 ].knob_1;
             dto->stages[ 3 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_2 );
+            dto->stages[ 3 ].knob_2_n1 = dto->stages[ 3 ].knob_2;
             dto->stages[ 3 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_3 );
+            dto->stages[ 3 ].knob_3_n1 = dto->stages[ 3 ].knob_3;
             dto->stages[ 3 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_4 );
+            dto->stages[ 3 ].knob_4_n1 = dto->stages[ 3 ].knob_4;
             dto->stages[ 3 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_5 );
+            dto->stages[ 3 ].knob_5_n1 = dto->stages[ 3 ].knob_5;
             dto->stages[ 3 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_6 );
+            dto->stages[ 3 ].knob_6_n1 = dto->stages[ 3 ].knob_6;
             dto->stages[ 3 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_3_KNOB_7 );
+            dto->stages[ 3 ].knob_7_n1 = dto->stages[ 3 ].knob_7;
 
             dto->stages[ 4 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_TYPE );
             dto->stages[ 4 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_ID );
             dto->stages[ 4 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_0 );
+            dto->stages[ 4 ].knob_0_n1 = dto->stages[ 4 ].knob_0;
             dto->stages[ 4 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_1 );
+            dto->stages[ 4 ].knob_1_n1 = dto->stages[ 4 ].knob_1;
             dto->stages[ 4 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_2 );
+            dto->stages[ 4 ].knob_2_n1 = dto->stages[ 4 ].knob_2;
             dto->stages[ 4 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_3 );
+            dto->stages[ 4 ].knob_3_n1 = dto->stages[ 4 ].knob_3;
             dto->stages[ 4 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_4 );
+            dto->stages[ 4 ].knob_4_n1 = dto->stages[ 4 ].knob_4;
             dto->stages[ 4 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_5 );
+            dto->stages[ 4 ].knob_5_n1 = dto->stages[ 4 ].knob_5;
             dto->stages[ 4 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_6 );
+            dto->stages[ 4 ].knob_6_n1 = dto->stages[ 4 ].knob_6;
             dto->stages[ 4 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_4_KNOB_7 );
+            dto->stages[ 4 ].knob_7_n1 = dto->stages[ 4 ].knob_7;
 
             dto->stages[ 5 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_TYPE );
             dto->stages[ 5 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_ID );
             dto->stages[ 5 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_0 );
+            dto->stages[ 5 ].knob_0_n1 = dto->stages[ 5 ].knob_0;
             dto->stages[ 5 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_1 );
+            dto->stages[ 5 ].knob_1_n1 = dto->stages[ 5 ].knob_1;
             dto->stages[ 5 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_2 );
+            dto->stages[ 5 ].knob_2_n1 = dto->stages[ 5 ].knob_2;
             dto->stages[ 5 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_3 );
+            dto->stages[ 5 ].knob_3_n1 = dto->stages[ 5 ].knob_3;
             dto->stages[ 5 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_4 );
+            dto->stages[ 5 ].knob_4_n1 = dto->stages[ 5 ].knob_4;
             dto->stages[ 5 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_5 );
+            dto->stages[ 5 ].knob_5_n1 = dto->stages[ 5 ].knob_5;
             dto->stages[ 5 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_6 );
+            dto->stages[ 5 ].knob_6_n1 = dto->stages[ 5 ].knob_6;
             dto->stages[ 5 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_5_KNOB_7 );
+            dto->stages[ 5 ].knob_7_n1 = dto->stages[ 5 ].knob_7;
 
             dto->stages[ 6 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_TYPE );
             dto->stages[ 6 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_ID );
             dto->stages[ 6 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_0 );
+            dto->stages[ 6 ].knob_0_n1 = dto->stages[ 6 ].knob_0;
             dto->stages[ 6 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_1 );
+            dto->stages[ 6 ].knob_1_n1 = dto->stages[ 6 ].knob_1;
             dto->stages[ 6 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_2 );
+            dto->stages[ 6 ].knob_2_n1 = dto->stages[ 6 ].knob_2;
             dto->stages[ 6 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_3 );
+            dto->stages[ 6 ].knob_3_n1 = dto->stages[ 6 ].knob_3;
             dto->stages[ 6 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_4 );
+            dto->stages[ 6 ].knob_4_n1 = dto->stages[ 6 ].knob_4;
             dto->stages[ 6 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_5 );
+            dto->stages[ 6 ].knob_5_n1 = dto->stages[ 6 ].knob_5;
             dto->stages[ 6 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_6 );
+            dto->stages[ 6 ].knob_6_n1 = dto->stages[ 6 ].knob_6;
             dto->stages[ 6 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_6_KNOB_7 );
+            dto->stages[ 6 ].knob_7_n1 = dto->stages[ 6 ].knob_7;
 
             dto->stages[ 7 ].type = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_TYPE );
             dto->stages[ 7 ].id = sqlite3_column_int ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_ID );
             dto->stages[ 7 ].knob_0 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_0 );
+            dto->stages[ 7 ].knob_0_n1 = dto->stages[ 7 ].knob_0;
             dto->stages[ 7 ].knob_1 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_1 );
+            dto->stages[ 7 ].knob_1_n1 = dto->stages[ 7 ].knob_1;
             dto->stages[ 7 ].knob_2 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_2 );
+            dto->stages[ 7 ].knob_2_n1 = dto->stages[ 7 ].knob_2;
             dto->stages[ 7 ].knob_3 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_3 );
+            dto->stages[ 7 ].knob_3_n1 = dto->stages[ 7 ].knob_3;
             dto->stages[ 7 ].knob_4 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_4 );
+            dto->stages[ 7 ].knob_4_n1 = dto->stages[ 7 ].knob_4;
             dto->stages[ 7 ].knob_5 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_5 );
+            dto->stages[ 7 ].knob_5_n1 = dto->stages[ 7 ].knob_5;
             dto->stages[ 7 ].knob_6 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_6 );
+            dto->stages[ 7 ].knob_6_n1 = dto->stages[ 7 ].knob_6;
             dto->stages[ 7 ].knob_7 = (float)sqlite3_column_double ( stmt, ZDJ_SOUNDCARD_DSP_COL_STAGE_7_KNOB_7 );
+            dto->stages[ 7 ].knob_7_n1 = dto->stages[ 7 ].knob_7;
         }
         sqlite3_finalize( stmt );
     }

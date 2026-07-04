@@ -198,7 +198,6 @@ static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool
 
 
 static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
-    printf( "xport _handle_control: %p %d\n", deck, event->id );
     // All external clock and transport signals flow through here.
     // They are then re-routed based on instantaneous system state
 
@@ -289,10 +288,28 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 //     // Sync //
 //     //////////  
 
-    case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
-        break;
-
     case ZDJ_DECK_XPORT_CONTROL_SYNC_MULT:
+        if( deck->can_sync ) { 
+            deck_state->sync_mult_ui_counter += event->i_val;
+            if( abs( deck_state->sync_mult_ui_counter ) > 4 ) {
+                deck_state->sync_mult_ui_counter = 0;
+                if( fabs( 1.0 - deck->sync_factor ) < zdj_eps ) {
+                    if( event->i_val > 0 ) {
+                        deck->request_sync_mult( deck, 2.0 ); 
+                    } else {
+                        deck->request_sync_mult( deck, 0.5 ); 
+                    }
+                } else if( fabs( 2.0 - deck->sync_factor ) < zdj_eps ) {
+                    if( event->i_val < 0 ) {
+                        deck->request_sync_mult( deck, 1.0 ); 
+                    }
+                } else if( fabs( 0.5 - deck->sync_factor ) < zdj_eps ) {
+                    if( event->i_val > 0 ) {
+                        deck->request_sync_mult( deck, 1.0 ); 
+                    }
+                }
+            }
+        }
         break;
 
     default:

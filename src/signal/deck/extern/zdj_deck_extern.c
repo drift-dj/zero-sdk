@@ -76,8 +76,13 @@ static void _update_state ( zdj_deck_t * deck ) {
             // Start serving deck samples to soundcard.
             zdj_soundcard_link_deck( zdj_soundcard, deck );
             // Mute the headphone cue channel
-            zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
-            node->dsp_dto->mute = true;
+            zdj_soundcard_node_t * cue_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+            cue_node->dsp_dto->mute = true;
+            cue_node->dsp_dto->gain = 1.0;
+            zdj_soundcard_node_t * prefade_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+            prefade_node->dsp_dto->gain = 1.0;
+            zdj_soundcard_node_t * input_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+            input_node->dsp_dto->gain = 1.0;
             // Accept control events when we're ready for playback
             deck->handle_control_event = &_handle_control;
             // Advance state to running
@@ -322,14 +327,6 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     //////////
     // Sync //
     //////////  
-
-    case ZDJ_DECK_CONTROL_SYNC_TOGGLE:
-        if( zdj_deck_manager( )->sync.preferred ) {
-            zdj_deck_manager_set_prefer_sync( false );
-        } else {
-            zdj_deck_manager_set_prefer_sync( true );
-        }
-        break;
 
     case ZDJ_DECK_EXT_CONTROL_SYNC_MULT:
         // if( deck->can_sync ) { request_sync_mult( event->i_val ); }

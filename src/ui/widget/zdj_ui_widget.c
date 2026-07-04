@@ -62,3 +62,14 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
 zdj_view_t * zdj_ui_get_notify_widget( void ) {
     return _zdj_widget_state->notify_widget;
 }
+
+// Trigger an update in the soundcard-dependent widgets
+void zdj_ui_widget_update_soundcard( void ) {
+    if( !_zdj_widget_state ) { return; }
+
+    zdj_volume_widget_state_t * vol_state = (zdj_volume_widget_state_t*)_zdj_widget_state->volume_widget->state;
+    if( vol_state ) { vol_state->needs_soundcard_update = true; }
+
+    zdj_recording_widget_state_t * record_state = (zdj_recording_widget_state_t*)_zdj_widget_state->recording_widget->state;
+    if( record_state ) { record_state->needs_soundcard_update = true; }
+}

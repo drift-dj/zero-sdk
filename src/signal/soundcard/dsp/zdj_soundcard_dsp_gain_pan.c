@@ -11,17 +11,16 @@
 void zdj_soundcard_dsp_gain_set_knob( void * _node, int input_val ) {
     zdj_soundcard_node_t * node = (zdj_soundcard_node_t*)_node;
     node->dsp_dto->gain = (float)input_val / 255.0;
-    // printf( "zdj_soundcard_dsp_gain_set_knob: %d / %f\n", input_val, node->dsp_dto->gain );
 }
 
 void zdj_soundcard_dsp_gain_adjust_knob( void * _node, int input_val ) {
     zdj_soundcard_node_t * node = (zdj_soundcard_node_t*)_node;
+    node->dsp_dto->gain_n1 = node->dsp_dto->gain;
     zdj_soundcard_dsp_process_knob_input( &node->dsp_dto->gain, node->dsp_dto->gain_model, input_val );
 }
 
 void zdj_soundcard_dsp_pan_adjust_knob( void * _node, int input_val ) {
     zdj_soundcard_node_t * node = (zdj_soundcard_node_t*)_node;
-    // printf( "adjust pan: %s\n", zdj_soundcard_node_name[ node->name ] );
     node->dsp_dto->pan += input_val * 0.021;
     if( node->dsp_dto->pan > 1.0 ) { node->dsp_dto->pan = 1.0; }
     else if( node->dsp_dto->pan < -1.0 ) { node->dsp_dto->pan = -1.0; }
@@ -36,5 +35,4 @@ void zdj_soundcard_dsp_set_xfade( void * _node, int input_val ) {
     zdj_soundcard_node_t * node = (zdj_soundcard_node_t*)_node;
     // Apply crossfade contour to input val
     node->dsp_dto->gain = (float)input_val / 255.0;
-    // printf( "zdj_soundcard_dsp_gain_set_knob: %d / %f\n", input_val, node->dsp_dto->gain );
 }

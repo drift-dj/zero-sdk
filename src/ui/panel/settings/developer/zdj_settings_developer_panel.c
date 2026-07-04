@@ -10,6 +10,7 @@
 #include <zerodj/system/display/zdj_display.h>
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/health/zdj_health_type.h>
 #include <zerodj/system/screencap/zdj_screencap.h>
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
@@ -54,6 +55,18 @@ static void _drop_logs_dialog_exit( zdj_view_t * view, void * data, bool selecti
 static void _screencaps_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _drop_screencaps_dialog_exit( zdj_view_t * view, void * data, bool selection );
 static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _install_soundcard_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _install_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+
+
+static void _install_lib_browser_exit( 
+    zdj_view_t * browser, 
+    zdj_file_browser_exit_context_t * context 
+);
+static void _install_soundcard_browser_exit( 
+    zdj_view_t * browser, 
+    zdj_file_browser_exit_context_t * context 
+);
 
 zdj_view_t * zdj_new_settings_developer_panel( void (*cb)(void*) ) {
     zdj_view_t * view = zdj_new_modal_view( zdj_modal_rect( ) );
@@ -118,58 +131,23 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_settings_panel_state_t * state = (zdj_settings_panel_state_t*)view->state;
 
     zdj_menu_view_remove_all_subviews( state->menu );
-
-    bool flag = zdj_setting_get_dev_zerod_flag( );
-    if( flag ) {
-        zdj_view_t * relaunch_btn = zdj_new_menu_item( "Enable App Relaunch", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-        relaunch_btn->handle_control_event = _relaunch_btn;
-        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)relaunch_btn->state;
-        item_state->data.ptr = state;
-        zdj_menu_view_add_item( state->menu, relaunch_btn );
-    } else {
-        zdj_view_t * relaunch_btn = zdj_new_menu_item( "Disable App Relaunch", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-        relaunch_btn->handle_control_event = _relaunch_btn;
-        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)relaunch_btn->state;
-        item_state->data.ptr = state;
-        zdj_menu_view_add_item( state->menu, relaunch_btn );
-    }
-
-    bool scratch_override = false;
-    zdj_setting_t * scratch_setting = zdj_setting_get( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
-    if( scratch_setting ) { scratch_override = scratch_setting->b_val; }
-    if( scratch_override ) {
-        zdj_view_t * override_btn = zdj_new_menu_item( "Disable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-        override_btn->handle_control_event = _override_btn;
-        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
-        override_state->data.ptr = state;
-        zdj_menu_view_add_item( state->menu, override_btn );
-    } else {
-        zdj_view_t * override_btn = zdj_new_menu_item( "Enable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-        override_btn->handle_control_event = _override_btn;
-        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
-        override_state->data.ptr = state;
-        zdj_menu_view_add_item( state->menu, override_btn );
-    }
-
-    zdj_view_t * usb_offline_btn = zdj_new_menu_item( "USB -> Offline", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-    usb_offline_btn->handle_control_event = _usb_offline_btn;
-    zdj_menu_view_add_item( state->menu, usb_offline_btn );
-
-    zdj_view_t * viewer_btn = zdj_new_menu_item( "Image Viewer", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-    viewer_btn->handle_control_event = _viewer_btn;
-    zdj_menu_item_view_state_t * viewer_state = (zdj_menu_item_view_state_t*)viewer_btn->state;
-    viewer_state->data.ptr = state;
-    zdj_menu_view_add_item( state->menu, viewer_btn );
-
-    zdj_view_t * flip_btn = zdj_new_menu_item( "GoodMolecule Flip", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-    flip_btn->handle_control_event = _flip_btn;
-    zdj_menu_view_add_item( state->menu, flip_btn );
-    
+   
+    // Database Stuff
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Database" ) );
     zdj_view_t * lib_btn = zdj_new_menu_item( "Drop Library Tables", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     lib_btn->handle_control_event = _lib_btn;
     zdj_menu_item_view_state_t * lib_state = (zdj_menu_item_view_state_t*)lib_btn->state;
     lib_state->data.ptr = state;
     zdj_menu_view_add_item( state->menu, lib_btn );
+
+    zdj_view_t * install_lib_btn = zdj_new_menu_item( "Install Library DB", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    install_lib_btn->handle_control_event = _install_lib_btn;
+    zdj_menu_view_add_item( state->menu, install_lib_btn );
+
+    zdj_view_t * install_soundcard_btn = zdj_new_menu_item( "Install Soundcard DB", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    install_soundcard_btn->handle_control_event = _install_soundcard_btn;
+    zdj_menu_view_add_item( state->menu, install_soundcard_btn );
 
     zdj_view_t * soundcard_btn = zdj_new_menu_item( "Drop Soundcard Tables", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     soundcard_btn->handle_control_event = _soundcard_btn;
@@ -200,6 +178,65 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * screencaps_state = (zdj_menu_item_view_state_t*)screencaps_btn->state;
     screencaps_state->data.ptr = state;
     zdj_menu_view_add_item( state->menu, screencaps_btn );
+
+    // QA Stuff
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "QA" ) );
+    // Install Library
+    
+
+    zdj_view_t * usb_offline_btn = zdj_new_menu_item( "USB -> Offline", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    usb_offline_btn->handle_control_event = _usb_offline_btn;
+    zdj_menu_view_add_item( state->menu, usb_offline_btn );
+
+    // Utils
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Utilities" ) );
+     zdj_view_t * viewer_btn = zdj_new_menu_item( "Image Viewer", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    viewer_btn->handle_control_event = _viewer_btn;
+    zdj_menu_item_view_state_t * viewer_state = (zdj_menu_item_view_state_t*)viewer_btn->state;
+    viewer_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, viewer_btn );
+
+    zdj_view_t * flip_btn = zdj_new_menu_item( "GoodMolecule Flip", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    flip_btn->handle_control_event = _flip_btn;
+    zdj_menu_view_add_item( state->menu, flip_btn );
+    
+    // System Stuff
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "System" ) );
+
+    bool scratch_override = false;
+    zdj_setting_t * scratch_setting = zdj_setting_get( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
+    if( scratch_setting ) { scratch_override = scratch_setting->b_val; }
+    if( scratch_override ) {
+        zdj_view_t * override_btn = zdj_new_menu_item( "Disable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+        override_btn->handle_control_event = _override_btn;
+        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
+        override_state->data.ptr = state;
+        zdj_menu_view_add_item( state->menu, override_btn );
+    } else {
+        zdj_view_t * override_btn = zdj_new_menu_item( "Enable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+        override_btn->handle_control_event = _override_btn;
+        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
+        override_state->data.ptr = state;
+        zdj_menu_view_add_item( state->menu, override_btn );
+    }
+
+    bool flag = zdj_setting_get_dev_zerod_flag( );
+    if( flag ) {
+        zdj_view_t * relaunch_btn = zdj_new_menu_item( "Enable App Relaunch", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+        relaunch_btn->handle_control_event = _relaunch_btn;
+        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)relaunch_btn->state;
+        item_state->data.ptr = state;
+        zdj_menu_view_add_item( state->menu, relaunch_btn );
+    } else {
+        zdj_view_t * relaunch_btn = zdj_new_menu_item( "Disable App Relaunch", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+        relaunch_btn->handle_control_event = _relaunch_btn;
+        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)relaunch_btn->state;
+        item_state->data.ptr = state;
+        zdj_menu_view_add_item( state->menu, relaunch_btn );
+    }
 
     zdj_view_t * reboot_btn = zdj_new_menu_item( "Reboot", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     reboot_btn->handle_control_event = _reboot_btn;
@@ -373,9 +410,10 @@ static void _soundcard_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 
 static void _drop_soundcard_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
     if( selection ) {
-        printf( "dropping soundcard\n" );
         zdj_drop_soundcard( );
-        printf( "init soundcard\n" );
+
+        // If soundcard is running, first shut down then reinit soundcard
+        if( zdj_soundcard ) { zdj_soundcard_deinit( zdj_soundcard ); }
         zdj_soundcard_init( "__temp__" );
     }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
@@ -462,4 +500,98 @@ static void _drop_screencaps_dialog_exit( zdj_view_t * view, void * data, bool s
 static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     sync( );
     reboot( RB_AUTOBOOT );
+}
+
+static void _install_soundcard_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    // Present browser
+    zdj_view_t * browser = zdj_new_file_browser_view( 
+        zdj_modal_rect( ), "/media/internal", 
+        true, 
+        true, 
+        ZDJ_FILE_BROWSER_TYPE_SELECT_FILE,
+        "Scan this dir",
+        false
+    );
+    if( !browser ) { printf( "Unable to open browser -- exiting\n" ); exit( 1 ); }
+    
+    // Add a select callback
+    zdj_file_browser_view_state_t * browser_state = (zdj_file_browser_view_state_t *)browser->state;
+    browser_state->handle_file_browser_exit = &_install_soundcard_browser_exit;
+
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_push_subview( panel_state->settings_panel, browser, true );
+}
+
+// Handle selected soundcard
+// Overwrite soundcard db
+static void _install_soundcard_browser_exit( 
+    zdj_view_t * browser, 
+    zdj_file_browser_exit_context_t * context 
+) {
+    if( context->status == ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT &&
+        (strlen( context->filepath ) > 0) && 
+        (access( context->filepath, F_OK ) == 0)
+    ) {
+        // Overwrite soundcard.db with selected path
+        zdj_fs_copy_file( context->filepath, ZDJ_SOUNDCARD_DB_PATH, true );
+    }
+
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_pop_subview_of( panel_state->settings_panel, true );
+}
+
+static void _install_lib_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    // Present browser
+    zdj_view_t * browser = zdj_new_file_browser_view( 
+        zdj_modal_rect( ), "/media/internal", 
+        true, 
+        true, 
+        ZDJ_FILE_BROWSER_TYPE_SELECT_FILE,
+        "Scan this dir",
+        false
+    );
+    if( !browser ) { printf( "Unable to open browser -- exiting\n" ); exit( 1 ); }
+    
+    // Add a select callback
+    zdj_file_browser_view_state_t * browser_state = (zdj_file_browser_view_state_t *)browser->state;
+    browser_state->handle_file_browser_exit = &_install_lib_browser_exit;
+
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_push_subview( panel_state->settings_panel, browser, true );
+}
+
+// Handle selected lib
+// Overwrite lib db
+// Copy files to expected dir
+static void _install_lib_browser_exit( 
+    zdj_view_t * browser, 
+    zdj_file_browser_exit_context_t * context 
+) {
+    char dir[ 1024 ];
+    if( context->status == ZDJ_FILE_BROWSER_EXIT_STATUS_SELECT &&
+        (strlen( context->filepath ) > 0) && 
+        (access( context->filepath, F_OK ) == 0) &&
+        (zdj_fs_put_parent_dir( context->filepath, dir ) == ZDJ_HEALTH_STATUS_OKAY)
+    ) {
+        // Overwrite zero.db with selected path
+        // Note that we don't copy any music files, so library expects
+        // to find files at whatever paths it already contains.
+        zdj_fs_copy_file( context->filepath, ZDJ_LIBRARY_DB_PATH, true );
+
+        // Copy all waveform files into lib
+        char waveform_dir[ 512 ];
+        sprintf( waveform_dir, "%s/playback_waveform", dir );
+        zdj_fs_copy_dir_contents( waveform_dir, ZDJ_LIBRARY_PLAYBACK_WAVEFORM_DIR, true );
+
+        sprintf( waveform_dir, "%s/thumb_waveform", dir );
+        zdj_fs_copy_dir_contents( waveform_dir, ZDJ_LIBRARY_THUMB_WAVEFORM_DIR, true );
+
+        // Sync and reboot after lib overwrite
+        sync( );
+        reboot( RB_AUTOBOOT );
+    }
+
+    // If we cancelled, just pop browser
+    zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    zdj_push_subview( panel_state->settings_panel, browser, true );
 }

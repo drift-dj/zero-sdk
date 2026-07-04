@@ -79,7 +79,7 @@ static void _zdj_audio_meter_add_frame( zdj_pipeline_node_t * meter_node, float 
         if( val_1 > audio_ol_1_thresh ) { state->has_ol_1_1 = true; }
         if( val_1 > audio_clip_thresh ) { state->has_clip_1 = true; }
     }
-
+    
     // Update OL/clip lamp timers/vals
     if( state->has_ol_0_0 && state->timer_ol_0_0++ < clip_duration ) {
         state->has_ol_0_0 = false; state->timer_ol_0_0 = 0;

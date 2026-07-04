@@ -15,6 +15,7 @@
 #include <zerodj/signal/soundcard/usb/zdj_soundcard_usb.h>
 #include <zerodj/system/sql/zdj_sql.h>
 #include <zerodj/system/usb/zdj_usb.h>
+#include <zerodj/ui/widget/zdj_ui_widget.h>
 
 zdj_soundcard_t * zdj_soundcard;
 
@@ -104,12 +105,14 @@ zdj_error_type_t zdj_soundcard_deinit( zdj_soundcard_t * soundcard ) {
 // THREAD-SAFE - May be called from UI thread
 // Re-init the soundcard with a saved record in the db.
 zdj_error_type_t zdj_soundcard_load_mixer( zdj_soundcard_t * soundcard, char * entity_id ) {
-    printf( "zdj_soundcard_load_mixer\n" );
     // Bug out early if entity_id doesn't exist
     if( !zdj_soundcard_check_dto_exists_in_db( entity_id ) ) { 
         printf( "entity not found: %s\n", entity_id );
         return ZDJ_ERROR_SOUNDCARD_DB_NO_RECORD; 
     }
+
+    // Save the entity_id for the reset cycle
+    strcpy( zdj_soundcard->load_entity_id, entity_id );
     
     // Set soundcard state to reset so UI doesn't try to draw meters.
     zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_TEARDOWN;
@@ -178,6 +181,7 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
 
     // Transform input samples from shared M7 buffer to io_node's input float buffers
     zdj_analog_io_pull_samples( zdj_soundcard->analog_io_node );
+    
     if( zdj_usb_state &&
         zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
         zdj_usb_state->host_state.attached.count > 0
@@ -219,14 +223,6 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
             zdj_io_usb_alsa_start( zdj_soundcard->usb_io_node );
         }
     }
-
-
-    // DON'T DO THIS HERE IF WE CAN AVOID IT - TRY IT ON A CORE 0 THREAD
-    // // Update linkages if any USB audio/midi devices have been attached or removed
-    // if( zdj_usb_state->host_state.has_soundcard_update ) {
-    //     // Unlink any nodes for devices which have been removed
-    //     // Link in new nodes for attached devices
-    // }
 }
 
 
@@ -260,15 +256,13 @@ void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
         }
     }
 
-    // printf( "reset make new nodes\n" );
     // Link up new nodes
     for( int i=ZDJ_SOUNDCARD_NODE_NAME_NONE; i<ZDJ_SOUNDCARD_NODE_NAME_COUNT; i++ ) {
-        // printf( "making node: %s\n", zdj_soundcard_node_name[ i ] );
         zdj_soundcard_node_t * node = zdj_soundcard_create_node( i );
         zdj_soundcard_install_node( zdj_soundcard, node );
+        zdj_soundcard_pull_node_links_from_dto( zdj_soundcard, node );
     }
 
-    // printf( "reset link ana io nodes\n" );
     // Link analog_io pipeline node to io soundcard nodes
     zdj_io_analog_node_state_t * io_node_state = (zdj_io_analog_node_state_t*)zdj_soundcard->analog_io_node->state;
     io_node_state->out_1_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0 )->data_pipe;
@@ -276,7 +270,6 @@ void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
     io_node_state->in_1_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0 )->data_pipe;
     io_node_state->in_2_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2 )->data_pipe;
 
-    // printf( "reset link usb nodes\n" );
     // Link usb_io pipeline node to io soundcard nodes
     zdj_io_usb_node_state_t * io_usb_node_state = (zdj_io_usb_node_state_t*)zdj_soundcard->usb_io_node->state;
     io_usb_node_state->soundcard_out_buffer = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_OUT_0 )->data_pipe;
@@ -290,7 +283,6 @@ void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
     zdj_soundcard_init_clock_deck( zdj_soundcard );
 
     // Re-link any existing Decks
-    // printf( "re-linking decks\n" );
     zdj_deck_t * deck_1 = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_1 );
     if( deck_1 ) { zdj_soundcard_link_deck( zdj_soundcard, deck_1 ); }
     zdj_deck_t * deck_2 = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_2 );
@@ -302,9 +294,44 @@ void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
         zdj_soundcard_link_deck( zdj_soundcard, deck_ext ); 
         deck_ext->needs_ui_reset = true;
     }
-    // printf( "re-linking decks done: %p\n", deck_ext );    
+
+    // Update any widgets
+    zdj_ui_widget_update_soundcard( );
+
+    // Get Fader/Crossfade Vals
+    int fader_val;
+    zdj_soundcard_node_t * deck_1_fade = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE );
+    fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_0_CH_1 );
+    deck_1_fade->dsp_dto->set_gain( deck_1_fade, 255 - fader_val );
+    zdj_soundcard_node_t * deck_2_fade = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
+    fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_1_CH_2 );
+    deck_2_fade->dsp_dto->set_gain( deck_2_fade, 255 - fader_val );
+
+    fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_2_XFADE );
+    zdj_soundcard_node_t * node_a = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
+    double a_curve_pow = node_a->dsp_dto->stages[ 0 ].knob_0 * 5.5;
+    double a_input_val = (255.0 - (double)fader_val) / 255.0;
+    double a_coeff = 1.0 - pow( a_input_val, a_curve_pow );
+
+    zdj_soundcard_node_t * node_b = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_B );
+    double b_curve_pow = node_b->dsp_dto->stages[ 0 ].knob_0 * 5.5;
+    double b_input_val = (double)fader_val / 255.0;
+    double b_coeff = 1.0 - pow( b_input_val, b_curve_pow );
+
+    // FIXME - This is backwards
+    node_a->dsp_dto->set_gain( node_a, round(b_coeff*255.0) );
+    node_b->dsp_dto->set_gain( node_b, round(a_coeff*255.0) );
+
+    // Push the xfade value back into the deck manager.
+    // Used for deck lock status.
+    zdj_deck_manager_update_xfade( (float)fader_val / 255.0 );
 
     zdj_soundcard->state = ZDJ_SOUNDCARD_STATE_RUNNING;
+
+    // Store the new DTO as the Current DTO
+    strcpy( zdj_soundcard->dto.entity_id, "__temp__" );
+    strcpy( zdj_soundcard->dto.name, "Current" );
+    zdj_soundcard_store_dto( &zdj_soundcard->dto );
 
     // Relink the CB
     zdj_soundcard->analog_io_node->update_cb = &_zdj_soundcard_io_fast_cycle_cb;

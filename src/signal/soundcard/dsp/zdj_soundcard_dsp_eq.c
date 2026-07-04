@@ -19,14 +19,14 @@ void zdj_soundcard_dsp_eq_adjust_knob( void * _stage, int knob, int input_val ) 
     float new_val;
     float cur_val;
     switch ( knob ) {
-        case 0: cur_val = stage->knob_0; break;
-        case 1: cur_val = stage->knob_1; break;
-        case 2: cur_val = stage->knob_2; break;
-        case 3: cur_val = stage->knob_3; break;
-        case 4: cur_val = stage->knob_4; break;
-        case 5: cur_val = stage->knob_5; break;
-        case 6: cur_val = stage->knob_6; break;
-        case 7: cur_val = stage->knob_7; break;
+        case 0: cur_val = stage->knob_0; stage->knob_0_n1 = stage->knob_0; break;
+        case 1: cur_val = stage->knob_1; stage->knob_1_n1 = stage->knob_1; break;
+        case 2: cur_val = stage->knob_2; stage->knob_2_n1 = stage->knob_2; break;
+        case 3: cur_val = stage->knob_3; stage->knob_3_n1 = stage->knob_3; break;
+        case 4: cur_val = stage->knob_4; stage->knob_4_n1 = stage->knob_4; break;
+        case 5: cur_val = stage->knob_5; stage->knob_5_n1 = stage->knob_5; break;
+        case 6: cur_val = stage->knob_6; stage->knob_6_n1 = stage->knob_6; break;
+        case 7: cur_val = stage->knob_7; stage->knob_7_n1 = stage->knob_7; break;
     }
     new_val = cur_val + ((float)input_val * 0.069) * (1+(cur_val * 0.41));
     if( new_val > (float)ZDJ_SOUNDCARD_12DB_GAIN ) { new_val = (float)ZDJ_SOUNDCARD_12DB_GAIN; }
@@ -107,6 +107,19 @@ void zdj_soundcard_dsp_eq_3_4p_update( void * _stage, float * buf, int channel_c
     double f_hi = stage->knob_3 * hi_span + 1000;
     data->hf = 2 * sin( LOCAL_M_PI * ( f_hi / 44100.0 ) );
 
+    // Prep iteration vals
+    double l_start_val = stage->knob_0_n1;
+    double l_inc = (stage->knob_0 - l_start_val) / ZDJ_SOUNDCARD_BUF_LEN;
+    double l_val = l_start_val;
+
+    double m_start_val = stage->knob_1_n1;
+    double m_inc = (stage->knob_1 - m_start_val) / ZDJ_SOUNDCARD_BUF_LEN;
+    double m_val = m_start_val;
+
+    double h_start_val = stage->knob_2_n1;
+    double h_inc = (stage->knob_2 - h_start_val) / ZDJ_SOUNDCARD_BUF_LEN;
+    double h_val = h_start_val;
+
     // Loop thru buffer
     for ( int i=0; i<ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
         sample_l = buf[ i*channel_count ];
@@ -128,9 +141,9 @@ void zdj_soundcard_dsp_eq_3_4p_update( void * _stage, float * buf, int channel_c
         m_l = data->sdm3_l - (h_l + l_l);
 
         // Refactor to read from knobs 
-        l_l *= stage->knob_0;
-        m_l *= stage->knob_1;
-        h_l *= stage->knob_2;
+        l_l *= l_val;
+        m_l *= m_val;
+        h_l *= h_val;
 
         // Shuffle history buffer
         data->sdm3_l = data->sdm2_l;
@@ -159,9 +172,9 @@ void zdj_soundcard_dsp_eq_3_4p_update( void * _stage, float * buf, int channel_c
             m_r = data->sdm3_r - (h_r + l_r);
 
             // Refactor to read from knobs 
-            l_r *= stage->knob_0;
-            m_r *= stage->knob_1;
-            h_r *= stage->knob_2;
+            l_r *= l_val;
+            m_r *= m_val;
+            h_r *= h_val;
 
             // Shuffle history buffer
             data->sdm3_r = data->sdm2_r;
@@ -170,5 +183,13 @@ void zdj_soundcard_dsp_eq_3_4p_update( void * _stage, float * buf, int channel_c
 
             buf[ (i*channel_count)+1 ] = l_r + m_r + h_r;
         }
+
+        l_val += l_inc;
+        m_val += m_inc;
+        h_val += h_inc;
     }
+
+    stage->knob_0_n1 = stage->knob_0;
+    stage->knob_1_n1 = stage->knob_1;
+    stage->knob_2_n1 = stage->knob_2;
 }

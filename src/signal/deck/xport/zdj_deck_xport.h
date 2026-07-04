@@ -46,11 +46,14 @@ typedef struct {
     int ppqn;
     bool meter_on;
     int meter_counter;
-    double set_bpm;
     double transport_d;
     double transport_bg;
     zdj_xport_deck_direction_t direction;
     zdj_xport_deck_sync_mode_t sync_mode;
+
+    // Sync
+    double set_bpm;
+    int sync_mult_ui_counter;
 } zdj_xport_deck_state_t;
 
 zdj_error_type_t zdj_new_xport_deck( zdj_deck_t * deck );

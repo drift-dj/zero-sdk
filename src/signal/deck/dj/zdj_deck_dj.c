@@ -7,6 +7,7 @@
 #include <sys/syscall.h>
 
 #include <zerodj/controls/zdj_controls.h>
+#include <zerodj/controls/hmi/zdj_hmi_input.h>
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/deck/dj/zdj_deck_dj.h>
@@ -80,9 +81,7 @@ static void _update_state ( zdj_deck_t * deck ) {
 
         // Stand up pipeline nodes.
         case ZDJ_DECK_STATUS_MAKE_PIPELINE:
-            // printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE (%p)\n", deck );
-            zdj_deck_dj_init_sync( deck );
-            
+            // printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE (%p)\n", deck );            
             int decode_buf_count = deck_state->decode_win_buf_count; // number of decode buffers which fit in window.
 
             // Set audio fade-out constants - tune these to sound good
@@ -185,11 +184,26 @@ static void _update_state ( zdj_deck_t * deck ) {
                 zdj_soundcard_link_deck( zdj_soundcard, deck );
                 // Mute the headphone cue channel
                 if( deck->station == ZDJ_DECK_STATION_1 ) { 
-                    zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_CUE );
-                    node->dsp_dto->mute = true;
+                    zdj_soundcard_node_t * cue_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_CUE );
+                    cue_node->dsp_dto->mute = true;
+                    cue_node->dsp_dto->gain = 1.0;
+                    zdj_soundcard_node_t * prefade_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_PREFADE );
+                    prefade_node->dsp_dto->gain = 1.0;
+                    // Capture fader val
+                    zdj_soundcard_node_t * postfade_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE );
+                    int fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_0_CH_1 );
+                    postfade_node->dsp_dto->set_gain( postfade_node, 255 - fader_val );
+                    
                 } else if( deck->station == ZDJ_DECK_STATION_2 ) {
-                    zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE );
-                    node->dsp_dto->mute = true;
+                    zdj_soundcard_node_t * cue_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE );
+                    cue_node->dsp_dto->mute = true;
+                    cue_node->dsp_dto->gain = 1.0;
+                    zdj_soundcard_node_t * prefade_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
+                    prefade_node->dsp_dto->gain = 1.0;
+                    // Capture fader val
+                    zdj_soundcard_node_t * postfade_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
+                    int fader_val = zdj_hmi_input_get_fader_val( ZDJ_HMI_POT_1_CH_2 );
+                    postfade_node->dsp_dto->set_gain( postfade_node, 255 - fader_val );
                 }
                 // Accept control events when we're ready for playback
                 zdj_deck_dj_init_controls( deck );
@@ -201,9 +215,8 @@ static void _update_state ( zdj_deck_t * deck ) {
                 zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
                 decode_state->get_win_start_addr( deck_state->decode_node, &win_start );
 
-                // Update deck manager tempo
-                deck->set_sync_bpm( deck, zdj_deck_manager( )->sync.set_bpm );
-
+                // // Update deck manager tempo
+                zdj_deck_dj_init_sync( deck );
 
                 // printf( "3\n" );
                 // Prep loop/skip state

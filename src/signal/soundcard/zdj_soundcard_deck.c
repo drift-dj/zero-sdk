@@ -90,31 +90,25 @@ zdj_error_type_t zdj_soundcard_unlink_deck(
     return ZDJ_ERROR_OKAY;
 }
 
-
-// case ZDJ_DECK_CONTROL_XFADE:
-//         printf( "dj deck xfad\n" );
-//         // Set dsp gain for XFade A/B nodes
-//         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
-//         node->dsp_dto->set_gain( node, event->i_val );
-//         node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_B );
-//         node->dsp_dto->set_gain( node, 255 - event->i_val );
-//         event->blocked = true;
-//         break;
-
-
 void zdj_soundcard_handle_deck_event(
     zdj_soundcard_t * soundcard, 
     zdj_control_event_t * event
 ) {
-    // printf( "zdj_soundcard_handle_deck_event %p %d\n", soundcard, event->id );
     if( !soundcard ) { return; }
     if( event->id == ZDJ_DECK_CONTROL_LR_VOL ) {
-        // printf( "soundcard lr vol event\n" );
         zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( 
             zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS 
         );
         node->dsp_dto->adjust_gain( node, event->i_val );
-        // printf( "LR Vol Adjust: %d\n", node->dsp_dto->gain );
+
+    } else if( event->id == ZDJ_DECK_1_CONTROL_FADE ) {
+        zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_POSTFADE );
+        node->dsp_dto->set_gain( node, 255 - event->i_val );
+    
+    } else if( event->id == ZDJ_DECK_2_CONTROL_FADE ) {
+        zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
+        node->dsp_dto->set_gain( node, 255 - event->i_val );
+
     } else if( event->id == ZDJ_DECK_CONTROL_XFADE ) {
         zdj_soundcard_node_t * node_a = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
         double a_curve_pow = node_a->dsp_dto->stages[ 0 ].knob_0 * 5.5;
@@ -134,16 +128,13 @@ void zdj_soundcard_handle_deck_event(
         // Used for deck lock status.
         zdj_deck_manager_update_xfade( (float)event->i_val / 255.0 );
 
-        // printf( "XFade Adjust A:%1.2f/%1.2f/%1.2f B:%1.2f/%1.2f/%1.2f\n", a_curve_pow, a_input_val, a_coeff, b_curve_pow, b_input_val, b_coeff );
     } else if( event->id == ZDJ_DECK_CONTROL_RECORD_VOL ) {
-        // printf( "soundcard record vol event\n" );
         zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( 
             zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS 
         );
         node->dsp_dto->adjust_gain( node, event->i_val );
-        // printf( "Record Vol Adjust: %d\n", node->dsp_dto->gain );
+
     } else if( event->id == ZDJ_DECK_CONTROL_TOGGLE_RECORD ) {
-        // printf( "toggling record\n" );
         // Get soundcard record node
         zdj_audio_record_node_state_t * recording_node_state = (zdj_audio_record_node_state_t*)zdj_soundcard->recording_node->state;
         
@@ -154,8 +145,15 @@ void zdj_soundcard_handle_deck_event(
             // Start a recording if not running
             zdj_new_audio_record_capture( zdj_soundcard->recording_node, true );
         }
+
+    } else if( event->id == ZDJ_DECK_CONTROL_SYNC_TOGGLE ) {
+        if( zdj_deck_manager( )->sync.preferred ) {
+            zdj_deck_manager_set_prefer_sync( false );
+        } else {
+            zdj_deck_manager_set_prefer_sync( true );
+        }
+
     } else if( event->id == ZDJ_DECK_1_2_BASS_SWAP ) {
-        // printf( "dj deck bass swap\n" );
         zdj_soundcard_node_t * soundcard_node;
         zdj_soundcard_dsp_dto_t * dsp_dto;
         zdj_soundcard_dsp_stage_dto_t * dsp_stage;
