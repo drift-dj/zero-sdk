@@ -23,7 +23,7 @@ static void _push_to_s16_buf( float * source, int16_t * dest, int samples, int c
 static void _push_to_s32_buf( float * source, int32_t * dest, int samples, int channels );
 
 static void _pull_from_s16_buf( int16_t * source, int source_channels, float * dest, int dest_channels, int samples );
-static void _pull_from_s32_buf( int16_t * source, int source_channels, float * dest, int dest_channels, int samples );
+static void _pull_from_s32_buf( int32_t * source, int source_channels, float * dest, int dest_channels, int samples );
 
 static void _start_log( zdj_pipeline_node_t * node ) {
     zdj_io_usb_node_state_t * node_state = (zdj_io_usb_node_state_t*)node->state;
@@ -523,7 +523,7 @@ static void _pull_from_s16_buf( int16_t * source, int source_channels, float * d
     }
 }
 
-static void _pull_from_s32_buf( int16_t * source, int source_channels, float * dest, int dest_channels, int samples ) {
+static void _pull_from_s32_buf( int32_t * source, int source_channels, float * dest, int dest_channels, int samples ) {
     for( int i=0; i<samples; i++ ) {
 
         if( source_channels == 1 ) {
