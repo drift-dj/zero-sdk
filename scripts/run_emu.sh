@@ -46,6 +46,15 @@ fi
 RES_SRC="$ROOT_DIR/res"
 STAGE="$ROOT_DIR/build-emu/emu-root"
 mkdir -p "$STAGE/res/fonts" "$ROOT_DIR/build-emu/media-internal/.system"
+
+# Stale-DB guard: the soundcard/settings schema (incl. the node-name enum the
+# mix graph's link bitmasks are keyed on) is baked into the binary. A DB written
+# by an older build can decode wrong under a newer layout -- e.g. a deck input
+# node ending up linked to itself, which sends the audio mix into infinite
+# recursion. Drop any *.db older than the freshly built binary; libzerodj
+# regenerates them from the presets on next launch.
+find "$ROOT_DIR/build-emu/media-internal/.system" -maxdepth 1 -name '*.db' ! -newer "$BIN" -delete
+
 cp -f "$RES_SRC/zero_atlas-32bit.bmp" "$STAGE/res/zero_atlas-32bit.bmp"
 real_fonts=0
 for f in pixelated.ttf pixelsix14.ttf lo-res09-nar.ttf; do
