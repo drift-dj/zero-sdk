@@ -46,10 +46,14 @@ typedef enum {
     ZDJ_EMU_POT_XFADE,
 } zdj_emu_pot_t;
 
-// Fader range published to the HMI analog state machine. The device ADC range
-// is hardware-defined; the SM only cares about relative motion, so any stable
-// range works -- we use a 12-bit span.
-#define ZDJ_EMU_POT_MAX 4095
+// Fader range published to the HMI analog state machine. This is NOT free to
+// choose: the crossfader and channel-fader gain math treats the published value
+// as an 8-bit absolute (gain = val / 255.0, and the xfade curve raises
+// (val/255) to a power). A wider span reads as far past full-scale -- e.g. a
+// 12-bit midpoint (2047) is ~8x over, which the xfade pow() curve blows up into
+// a huge gain that slams the mix to the rails (audible as a wall of crackle).
+// Match the device's 8-bit pot range.
+#define ZDJ_EMU_POT_MAX 255
 
 // Initialise the injection buffer (called by zdj_control_prepare_hmi_input_scan
 // under ZDJ_EMU). Safe to call more than once.
