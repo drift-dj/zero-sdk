@@ -250,13 +250,13 @@ int main( int argc, char ** argv ) {
 static void _handle_key( SDL_Keysym key, bool down ) {
     switch( key.sym ) {
         // Jog / nav wheel: scroll + select.
-        case SDLK_UP:    if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, -EMU_ENC_DETENT ); } break;
-        case SDLK_DOWN:  if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, +EMU_ENC_DETENT ); } break;
+        case SDLK_LEFT:  if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, -EMU_ENC_DETENT ); } break;
+        case SDLK_RIGHT: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_JOG, +EMU_ENC_DETENT ); } break;
         case SDLK_RETURN: zdj_emu_input_button( ZDJ_EMU_BTN_JOG, down ); break;
 
         // Output volume encoder (often drives panel scroll too).
-        case SDLK_LEFT:  if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, -EMU_ENC_DETENT ); } break;
-        case SDLK_RIGHT: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, +EMU_ENC_DETENT ); } break;
+        case SDLK_PAGEDOWN: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, -EMU_ENC_DETENT ); } break;
+        case SDLK_PAGEUP:   if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_OUT, +EMU_ENC_DETENT ); } break;
         case SDLK_o:     zdj_emu_input_button( ZDJ_EMU_BTN_OUT, down ); break;
 
         // Transport / nav / hotcue.
@@ -271,13 +271,13 @@ static void _handle_key( SDL_Keysym key, bool down ) {
         case SDLK_2: zdj_emu_input_button( ZDJ_EMU_BTN_FN_2, down ); break;
         case SDLK_3: zdj_emu_input_button( ZDJ_EMU_BTN_FN_3, down ); break;
 
-        // Tone encoders (q/a, w/s, e/d = turn down/up) and their push switches.
-        case SDLK_q: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, -EMU_ENC_DETENT ); } break;
-        case SDLK_a: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, +EMU_ENC_DETENT ); } break;
-        case SDLK_w: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, -EMU_ENC_DETENT ); } break;
-        case SDLK_s: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, +EMU_ENC_DETENT ); } break;
-        case SDLK_e: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, -EMU_ENC_DETENT ); } break;
-        case SDLK_d: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, +EMU_ENC_DETENT ); } break;
+        // Tone encoders (q/a, w/s, e/d = turn up/down) and their push switches.
+        case SDLK_q: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, +EMU_ENC_DETENT ); } break;
+        case SDLK_a: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_1, -EMU_ENC_DETENT ); } break;
+        case SDLK_w: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, +EMU_ENC_DETENT ); } break;
+        case SDLK_s: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_2, -EMU_ENC_DETENT ); } break;
+        case SDLK_e: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, +EMU_ENC_DETENT ); } break;
+        case SDLK_d: if( down ) { zdj_emu_input_encoder( ZDJ_EMU_ENC_TONE_3, -EMU_ENC_DETENT ); } break;
 
         default: break;
     }
@@ -286,12 +286,12 @@ static void _handle_key( SDL_Keysym key, bool down ) {
 static void _print_keymap( void ) {
     printf(
         "\nzero-emu keymap:\n"
-        "  Up/Down ....... jog wheel scroll        Enter ... jog press (select)\n"
-        "  Left/Right .... output encoder          o ....... output encoder press\n"
+        "  Left/Right .... jog wheel scroll        Enter ... jog press (select)\n"
+        "  PgDn/PgUp ..... output encoder          o ....... output encoder press\n"
         "  Esc ........... NAV (back)              Space ... PLAY        h ... HOTCUE\n"
         "  Tab ........... deploy/retract panel\n"
         "  1 / 2 / 3 ..... FN1 / FN2 / FN3\n"
-        "  q/a w/s e/d ... tone 1/2/3 encoder (turn down/up)\n"
+        "  q/a w/s e/d ... tone 1/2/3 encoder (turn up/down)\n"
         "  p ............. deck 1 play/pause (with ZERO_EMU_TRACK)\n"
         "  Shift+Esc ..... quit\n\n" );
 }
