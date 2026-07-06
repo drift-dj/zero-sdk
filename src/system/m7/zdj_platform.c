@@ -3,62 +3,67 @@
 #ifdef ZDJ_EMU
 
 // Emulator backend: there is no /dev/mem and no M7 co-processor. Hand out
-// process-local buffers, one per physical address, shared by every caller
+// process-local buffers, one per shared region, shared by every caller
 // (library modules and the zero-emu harness alike).
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 
-#define ZDJ_EMU_MAX_REGIONS 16
+#include <zerodj/controls/hmi/zdj_hmi_m7_state_model.h>
+#include <zerodj/system/m7/zdj_m7.h>
 
+// The A53<->M7 shared regions the device tree carves out of reserved memory
+// (see the zero kernel's 'drift-a106.dtsi'). Each is backed by one buffer of
+// the region's full size, allocated on first map; callers may map any prefix
+// of a region and all get the same buffer. An address outside this table, or
+// a length beyond the region, is a caller bug -- fail loudly rather than hand
+// back memory nobody else shares.
 static struct {
     unsigned long addr;
     size_t        len;
     void *        ptr;
-} _regions[ ZDJ_EMU_MAX_REGIONS ];
-static int _region_count = 0;
+} _regions[ ] = {
+    { ZDJ_SHARED_HMI_STATE_ADDR,   0x20000, NULL },  // HMI input state model
+    { ZDJ_SHARED_VIDEO_BUF_ADDR,   0x2000,  NULL },  // packed 128x64 display
+    { ZDJ_SHARED_AUDIO_STATE_ADDR, 0x1000,  NULL },  // audio cycle handshake
+    { ZDJ_SHARED_DAC_BUF,          0x8000,  NULL },  // DAC sample buffer
+    { ZDJ_SHARED_ADC_BUF,          0x8000,  NULL },  // ADC sample buffer
+    { ZDJ_SHARED_MSG_BUF_ADDR,     0x1000,  NULL },  // A53<->M7 message/req buffer
+};
+#define ZDJ_EMU_REGION_COUNT ( sizeof( _regions ) / sizeof( _regions[ 0 ] ) )
+
 static pthread_mutex_t _lock = PTHREAD_MUTEX_INITIALIZER;
 
 void * zdj_platform_map_shared( unsigned long phys_addr, size_t len ) {
     pthread_mutex_lock( &_lock );
 
     void * out = NULL;
-    for( int i = 0; i < _region_count; i++ ) {
-        if( _regions[ i ].addr == phys_addr ) {
-            // A region's size is fixed by its first mapping. Growing it would
-            // realloc (and possibly move) a buffer earlier callers already
-            // hold pointers into -- a silent use-after-free. On the device
-            // every region is a fixed physical window anyway, so a size
-            // mismatch here is a caller bug: fail loudly instead.
-            if( len > _regions[ i ].len ) {
-                fprintf( stderr,
-                    "zdj_platform_map_shared: region 0x%lx first mapped as %zu bytes, "
-                    "later caller wants %zu -- map the largest size first\n",
-                    phys_addr, _regions[ i ].len, len );
+    for( size_t i = 0; i < ZDJ_EMU_REGION_COUNT; i++ ) {
+        if( _regions[ i ].addr != phys_addr ) { continue; }
+        if( len > _regions[ i ].len ) {
+            fprintf( stderr,
+                "zdj_platform_map_shared: 0x%lx is a %zu-byte region, caller "
+                "wants %zu -- grow the region table\n",
+                phys_addr, _regions[ i ].len, len );
+            abort( );
+        }
+        if( !_regions[ i ].ptr ) {
+            _regions[ i ].ptr = calloc( 1, _regions[ i ].len );
+            if( !_regions[ i ].ptr ) {
+                fprintf( stderr, "zdj_platform_map_shared: calloc(%zu) failed for 0x%lx\n",
+                    _regions[ i ].len, phys_addr );
                 abort( );
             }
-            out = _regions[ i ].ptr;
-            break;
         }
+        out = _regions[ i ].ptr;
+        break;
     }
 
     if( !out ) {
-        if( _region_count == ZDJ_EMU_MAX_REGIONS ) {
-            fprintf( stderr, "zdj_platform_map_shared: out of region slots "
-                "(ZDJ_EMU_MAX_REGIONS=%d) mapping 0x%lx\n", ZDJ_EMU_MAX_REGIONS, phys_addr );
-            abort( );
-        }
-        out = calloc( 1, len );
-        if( !out ) {
-            fprintf( stderr, "zdj_platform_map_shared: calloc(%zu) failed for 0x%lx\n",
-                len, phys_addr );
-            abort( );
-        }
-        _regions[ _region_count ].addr = phys_addr;
-        _regions[ _region_count ].len  = len;
-        _regions[ _region_count ].ptr  = out;
-        _region_count++;
+        fprintf( stderr, "zdj_platform_map_shared: 0x%lx is not an emulated "
+            "shared region -- add it to the table in zdj_platform.c\n", phys_addr );
+        abort( );
     }
 
     pthread_mutex_unlock( &_lock );

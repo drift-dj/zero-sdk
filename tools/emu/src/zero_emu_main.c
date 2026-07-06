@@ -3,9 +3,10 @@
 // It plays the role drift-os plays on the device: it brings up the library,
 // then runs a frame loop. It also plays the role of the M7 co-processor -- it
 // shares the same emulated memory regions as the library (via the emulator
-// backend of zdj_platform_map_shared), reading the packed video buffer to draw
-// the 128x64 panel into a scaled SDL window, and translating PC keyboard input
-// into HMI state that the library's control thread consumes.
+// backend of zdj_platform_map_shared), presenting the packed video buffer in
+// a scaled SDL window (zero_emu_video), bridging the DAC to the host audio
+// device (zero_emu_audio), and translating PC keyboard input into HMI state
+// that the library's control thread consumes.
 //
 // Build: ./scripts/build_emu.sh   (CMake -DZDJ_EMU=ON, native host toolchain)
 
@@ -16,7 +17,6 @@
 #include <string.h>
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
@@ -26,19 +26,17 @@
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
-#include <zerodj/system/display/zdj_display.h>
 #include <zerodj/system/emu/zdj_emu_input.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/system/m7/zdj_m7.h>
-#include <zerodj/system/m7/zdj_platform.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/ui/view/label_view/zdj_label_view.h>
 
-#define EMU_W ZDJ_DISPLAY_WIDTH   // 128
-#define EMU_H ZDJ_DISPLAY_HEIGHT  // 64
+#include "zero_emu_audio.h"
+#include "zero_emu_video.h"
 
 // Counts injected per encoder keypress. On hardware one physical detent of a
 // quadrature encoder emits a burst of edges (the quad decode in the HMI scan
@@ -52,101 +50,6 @@
 static int   _env_int( const char * name, int fallback );
 static void  _print_keymap( void );
 static void  _handle_key( SDL_Keysym key, bool down );
-static void  _unpack_video( const uint32_t * vid, uint32_t * argb );
-
-// --- Track load + fake-M7 audio bridge --------------------------------------
-// libzerodj's audio fast-cycle thread fills the DAC buffer once each time
-// shared_audio_state->cycle_ready is asserted, advancing the deck transport by
-// exactly ZDJ_SOUNDCARD_BUF_LEN frames per assertion. So the assert rate IS the
-// playback clock and must match the audio device's consumption clock, or the
-// stream drifts and underruns.
-//
-// To keep the blocking handshake out of the SDL callback (any jitter there is
-// an instant glitch), a producer thread runs the M7 cycles into a ring buffer
-// and the callback just drains it. The producer is paced by the ring fill
-// level: it only produces while the ring is below a target depth. Because the
-// callback drains at the exact device rate, that backpressure pins the
-// producer's average rate -- and thus the deck's playback speed -- to 1x, while
-// the target depth gives ~tens of ms of slack to absorb a slow cycle.
-
-static volatile zdj_shared_audio_state_t * g_audio_state;
-static volatile int32_t *                  g_dac;
-static SDL_AudioDeviceID                    g_audio_dev;
-
-// The ring is single-producer/single-consumer: g_ring_w is written only by the
-// producer thread, g_ring_r only by the SDL audio callback. Atomic cursors
-// (SDL_AtomicSet is a full barrier, so samples are visible before the cursor
-// that publishes them) make it lock-free -- the audio callback never blocks.
-#define EMU_RING_FRAMES 16384
-#define EMU_RING_TARGET ( ZDJ_SOUNDCARD_BUF_LEN * 4 )  // ~36ms of slack
-static int32_t      g_ring[ EMU_RING_FRAMES * 2 ];
-static SDL_atomic_t g_ring_r, g_ring_w;  // frame read/write cursors
-static volatile int g_audio_run;
-
-static SDL_atomic_t g_underrun_fr;  // frames the callback had to zero-fill (diagnostic)
-
-static int _ring_fill( void ) {
-    return ( SDL_AtomicGet( &g_ring_w ) - SDL_AtomicGet( &g_ring_r ) + EMU_RING_FRAMES )
-        % EMU_RING_FRAMES;
-}
-
-// Run one M7 audio cycle: request a DAC fill (cycle_ready), wait for the io
-// thread's fill to complete (emu_dac_fill_count advances -- cycle_ready alone
-// only says the request was *taken*, and reading then races the DAC write),
-// then return the freshly-mixed main LR output via `out` (ZDJ_SOUNDCARD_BUF_LEN
-// stereo frames). The ~20ms cap means a stalled pipeline degrades to stale
-// samples instead of hanging the producer.
-static void _pull_one_cycle( int32_t * out ) {
-    uint32_t fill0 = g_audio_state->emu_dac_fill_count;
-    g_audio_state->cycle_ready = 1;
-    for( int spin = 0; g_audio_state->emu_dac_fill_count == fill0 && spin < 20000; spin++ ) {
-        struct timespec t = { 0, 1000 }; nanosleep( &t, NULL );  // 1us, ~20ms cap
-    }
-    for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-        out[ i*2+0 ] = g_dac[ i*4+0 ];   // analog out 0 L
-        out[ i*2+1 ] = g_dac[ i*4+1 ];   // analog out 0 R
-    }
-}
-
-static int _audio_producer( void * arg ) {
-    (void)arg;
-    int32_t cycle[ ZDJ_SOUNDCARD_BUF_LEN * 2 ];
-    while( g_audio_run ) {
-        if( _ring_fill( ) >= EMU_RING_TARGET ) {
-            struct timespec t = { 0, 1000000 }; nanosleep( &t, NULL );  // 1ms
-            continue;
-        }
-        _pull_one_cycle( cycle );
-        int w = SDL_AtomicGet( &g_ring_w );
-        int r = SDL_AtomicGet( &g_ring_r );
-        int room = ( r - w - 1 + EMU_RING_FRAMES ) % EMU_RING_FRAMES;
-        int n = ZDJ_SOUNDCARD_BUF_LEN < room ? ZDJ_SOUNDCARD_BUF_LEN : room;  // won't clip below target
-        for( int i = 0; i < n; i++ ) {
-            g_ring[ w*2+0 ] = cycle[ i*2+0 ];
-            g_ring[ w*2+1 ] = cycle[ i*2+1 ];
-            w = ( w + 1 ) % EMU_RING_FRAMES;
-        }
-        SDL_AtomicSet( &g_ring_w, w );  // publish only after the samples are written
-    }
-    return 0;
-}
-
-static void _audio_cb( void * ud, Uint8 * stream, int len ) {
-    (void)ud;
-    int32_t * dst = (int32_t *)stream;
-    int need = len / (int)( 2 * sizeof( int32_t ) );
-    int r = SDL_AtomicGet( &g_ring_r );
-    int w = SDL_AtomicGet( &g_ring_w );
-    while( need > 0 && r != w ) {
-        dst[ 0 ] = g_ring[ r*2+0 ];
-        dst[ 1 ] = g_ring[ r*2+1 ];
-        r = ( r + 1 ) % EMU_RING_FRAMES;
-        dst += 2; need--;
-    }
-    SDL_AtomicSet( &g_ring_r, r );
-    if( need > 0 ) { SDL_AtomicAdd( &g_underrun_fr, need ); }
-    for( int i = 0; i < need * 2; i++ ) { dst[ i ] = 0; }  // underrun -> silence
-}
 
 // Probe the file with ffmpeg to fill the metadata the decode node needs, build
 // a song graph, and load it onto DJ deck station 1.
@@ -244,51 +147,19 @@ int main( int argc, char ** argv ) {
     // control cycle thread, whose scan stub pulls from our injection buffer.
     zdj_controls_init( );
 
-    // --- Our window + the shared regions we share with the library -----------
-    SDL_Window * win = SDL_CreateWindow(
-        "Zero Emulator",
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        EMU_W * scale, EMU_H * scale, SDL_WINDOW_SHOWN );
-    if( !win ) {
-        printf( "zero-emu: SDL_CreateWindow failed: %s\n", SDL_GetError( ) );
+    // --- Our window + the M7 message handshake --------------------------------
+    if( !zero_emu_video_init( scale ) ) {
         return 1;
     }
-    SDL_Renderer * ren = SDL_CreateRenderer( win, -1, SDL_RENDERER_ACCELERATED );
-    if( !ren ) { ren = SDL_CreateRenderer( win, -1, 0 ); }
-    SDL_Texture * tex = SDL_CreateTexture(
-        ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, EMU_W, EMU_H );
-
-    // Same backing buffers the library writes to (emulator zdj_platform backend
-    // returns the same pointer for a given address to every caller).
-    const uint32_t * vid = (const uint32_t *)zdj_platform_map_shared( ZDJ_SHARED_VIDEO_BUF_ADDR, 0x2000 );
     volatile zdj_shared_msg_buffer_t * msg = zdj_m7_shared_msg_buffer( );
-
-    static uint32_t argb[ EMU_W * EMU_H ];
 
     // Optional: load a track onto a deck and bridge audio to the host.
     zdj_deck_t * deck = NULL;
     bool played = false;
     const char * track = getenv( "ZERO_EMU_TRACK" );
     if( full_ui && track && *track ) {
-        // Map the shared regions the soundcard's analog-io node fills BEFORE the
-        // device is unpaused (the callback touches them immediately).
-        g_audio_state = zdj_platform_map_shared( ZDJ_SHARED_AUDIO_STATE_ADDR, 0x1000 );
-        g_dac = zdj_platform_map_shared( ZDJ_SHARED_DAC_BUF, 0x8000 );
-
-        SDL_InitSubSystem( SDL_INIT_AUDIO );
-        SDL_AudioSpec want; SDL_zero( want );
-        want.freq = 44100; want.format = AUDIO_S32SYS; want.channels = 2;
-        want.samples = 1024; want.callback = _audio_cb;
-        g_audio_dev = SDL_OpenAudioDevice( NULL, 0, &want, NULL, 0 );
-        if( !g_audio_dev ) { printf( "zero-emu: SDL audio open failed: %s\n", SDL_GetError( ) ); }
-
+        zero_emu_audio_start( );
         deck = _load_track( track );
-
-        // Start the producer and prebuffer to the target depth before unpausing.
-        g_audio_run = 1;
-        SDL_CreateThread( _audio_producer, "zero-emu-audio", NULL );
-        for( int i = 0; i < 500 && _ring_fill( ) < EMU_RING_TARGET; i++ ) { SDL_Delay( 1 ); }
-        SDL_PauseAudioDevice( g_audio_dev, 0 );
     }
 
     _print_keymap( );
@@ -340,9 +211,9 @@ int main( int argc, char ** argv ) {
             played = true;
         }
         // Report audio-bridge underruns (~1/s) so we can see if the ring starves.
-        if( g_audio_dev && frame_n > 0 && ( frame_n % refresh_hz ) == 0 ) {
+        if( zero_emu_audio_active( ) && frame_n > 0 && ( frame_n % refresh_hz ) == 0 ) {
             static int last_ur = 0;
-            int ur = SDL_AtomicGet( &g_underrun_fr );
+            int ur = zero_emu_audio_underruns( );
             if( ur != last_ur ) { printf( "zero-emu: underrun frames +%d (total %d)\n", ur - last_ur, ur ); last_ur = ur; }
         }
 
@@ -352,19 +223,13 @@ int main( int argc, char ** argv ) {
         zdj_ui_update( );
 
         if( msg->update_display_req ) {
-            _unpack_video( vid, argb );
-            SDL_UpdateTexture( tex, NULL, argb, EMU_W * (int)sizeof( uint32_t ) );
-            SDL_RenderClear( ren );
-            SDL_RenderCopy( ren, tex, NULL, NULL );
-            SDL_RenderPresent( ren );
+            zero_emu_video_present( );
             msg->update_display_req = 0;  // ack, like the M7 would
             if( frame_n == 0 ) { printf( "zero-emu: first frame presented\n" ); }
             frame_n++;
 
             if( dump_path && *dump_path && !dumped && frame_n >= dump_frame ) {
-                SDL_Surface * s = SDL_CreateRGBSurfaceWithFormatFrom(
-                    argb, EMU_W, EMU_H, 32, EMU_W * 4, SDL_PIXELFORMAT_ARGB8888 );
-                if( s ) { IMG_SavePNG( s, dump_path ); SDL_FreeSurface( s ); }
+                zero_emu_video_dump( dump_path );
                 printf( "zero-emu: dumped frame %ld to %s\n", frame_n, dump_path );
                 dumped = true;
             }
@@ -375,29 +240,8 @@ int main( int argc, char ** argv ) {
     }
 
     zdj_ui_deinit( );
-    SDL_DestroyTexture( tex );
-    SDL_DestroyRenderer( ren );
-    SDL_DestroyWindow( win );
+    zero_emu_video_deinit( );
     return 0;
-}
-
-// Unpack the device's packed video buffer (4 pixels per uint32, each lane a
-// 4-bit grayscale level produced by zdj_display_m7_push) into ARGB8888.
-static void _unpack_video( const uint32_t * vid, uint32_t * argb ) {
-    const int words = ( EMU_W * EMU_H ) / 4;  // 2048
-    for( int i = 0; i < words; i++ ) {
-        uint32_t w = vid[ i ];
-        uint8_t g[ 4 ] = {
-            (uint8_t)( ( w >> 24 ) & 0xFF ),
-            (uint8_t)( ( w >> 16 ) & 0xFF ),
-            (uint8_t)( ( w >>  8 ) & 0xFF ),
-            (uint8_t)(   w         & 0xFF ),
-        };
-        for( int k = 0; k < 4; k++ ) {
-            uint8_t v = g[ k ];
-            argb[ i * 4 + k ] = 0xFF000000u | ( v << 16 ) | ( v << 8 ) | v;
-        }
-    }
 }
 
 // PC keyboard -> HMI. Each encoder keypress injects one detent's worth of

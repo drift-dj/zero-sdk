@@ -327,7 +327,11 @@ target_link_libraries(
 
 if(ZDJ_EMU)
     # Native desktop harness: the host-side "fake M7" + SDL window + keyboard.
-    add_executable(zero-emu tools/emu/src/zero_emu_main.c)
+    add_executable(zero-emu
+        tools/emu/src/zero_emu_main.c
+        tools/emu/src/zero_emu_audio.c
+        tools/emu/src/zero_emu_video.c
+    )
     # ffmpeg is an implicit dependency of the decode/record nodes (the device's
     # drift-os provides it). Link the ffmpeg 4.4 build (libav*.so.58/56) whose
     # ABI matches the v58 headers above -- NOT the host's ffmpeg 7. The -L puts
