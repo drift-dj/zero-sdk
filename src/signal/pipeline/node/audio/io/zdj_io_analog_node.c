@@ -137,6 +137,12 @@ zdj_error_type_t zdj_analog_io_push_samples( zdj_pipeline_node_t * node ) {
         xfrm = (double)out_2_state->buffer[ i*2+1 ] * INT32_MAX;
         state->shared_dac_buffer[ i*4+3 ] = (int32_t)xfrm;
     }
+#ifdef ZDJ_EMU
+    // Fill-complete signal for the emulator's audio bridge (no M7 to pace DAC
+    // consumption). Both stores go through volatile pointers, so this is
+    // ordered after the last DAC sample above. See zero_emu_main.c.
+    state->shared_audio_state->emu_dac_fill_count++;
+#endif
 }
 
 // Transform samples from shared M7 buffer to soundcard audio buffers

@@ -6,6 +6,7 @@
 // process-local buffers, one per physical address, shared by every caller
 // (library modules and the zero-emu harness alike).
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 
@@ -25,18 +26,35 @@ void * zdj_platform_map_shared( unsigned long phys_addr, size_t len ) {
     void * out = NULL;
     for( int i = 0; i < _region_count; i++ ) {
         if( _regions[ i ].addr == phys_addr ) {
-            // Grow the backing buffer if a later caller wants more of this region.
+            // A region's size is fixed by its first mapping. Growing it would
+            // realloc (and possibly move) a buffer earlier callers already
+            // hold pointers into -- a silent use-after-free. On the device
+            // every region is a fixed physical window anyway, so a size
+            // mismatch here is a caller bug: fail loudly instead.
             if( len > _regions[ i ].len ) {
-                _regions[ i ].ptr = realloc( _regions[ i ].ptr, len );
-                _regions[ i ].len = len;
+                fprintf( stderr,
+                    "zdj_platform_map_shared: region 0x%lx first mapped as %zu bytes, "
+                    "later caller wants %zu -- map the largest size first\n",
+                    phys_addr, _regions[ i ].len, len );
+                abort( );
             }
             out = _regions[ i ].ptr;
             break;
         }
     }
 
-    if( !out && _region_count < ZDJ_EMU_MAX_REGIONS ) {
+    if( !out ) {
+        if( _region_count == ZDJ_EMU_MAX_REGIONS ) {
+            fprintf( stderr, "zdj_platform_map_shared: out of region slots "
+                "(ZDJ_EMU_MAX_REGIONS=%d) mapping 0x%lx\n", ZDJ_EMU_MAX_REGIONS, phys_addr );
+            abort( );
+        }
         out = calloc( 1, len );
+        if( !out ) {
+            fprintf( stderr, "zdj_platform_map_shared: calloc(%zu) failed for 0x%lx\n",
+                len, phys_addr );
+            abort( );
+        }
         _regions[ _region_count ].addr = phys_addr;
         _regions[ _region_count ].len  = len;
         _regions[ _region_count ].ptr  = out;

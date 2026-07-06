@@ -73,29 +73,35 @@ static volatile zdj_shared_audio_state_t * g_audio_state;
 static volatile int32_t *                  g_dac;
 static SDL_AudioDeviceID                    g_audio_dev;
 
+// The ring is single-producer/single-consumer: g_ring_w is written only by the
+// producer thread, g_ring_r only by the SDL audio callback. Atomic cursors
+// (SDL_AtomicSet is a full barrier, so samples are visible before the cursor
+// that publishes them) make it lock-free -- the audio callback never blocks.
 #define EMU_RING_FRAMES 16384
 #define EMU_RING_TARGET ( ZDJ_SOUNDCARD_BUF_LEN * 4 )  // ~36ms of slack
 static int32_t      g_ring[ EMU_RING_FRAMES * 2 ];
-static volatile int g_ring_r, g_ring_w;  // frame read/write cursors
-static SDL_mutex *  g_ring_lock;
+static SDL_atomic_t g_ring_r, g_ring_w;  // frame read/write cursors
 static volatile int g_audio_run;
 
-static volatile long g_underrun_fr;  // frames the callback had to zero-fill (diagnostic)
+static SDL_atomic_t g_underrun_fr;  // frames the callback had to zero-fill (diagnostic)
 
 static int _ring_fill( void ) {
-    return ( g_ring_w - g_ring_r + EMU_RING_FRAMES ) % EMU_RING_FRAMES;
+    return ( SDL_AtomicGet( &g_ring_w ) - SDL_AtomicGet( &g_ring_r ) + EMU_RING_FRAMES )
+        % EMU_RING_FRAMES;
 }
 
-// Run one M7 audio cycle: request a DAC fill, wait for the io thread to take
-// the request (cycle_ready clears), then a short guard for the mix to finish,
+// Run one M7 audio cycle: request a DAC fill (cycle_ready), wait for the io
+// thread's fill to complete (emu_dac_fill_count advances -- cycle_ready alone
+// only says the request was *taken*, and reading then races the DAC write),
 // then return the freshly-mixed main LR output via `out` (ZDJ_SOUNDCARD_BUF_LEN
-// stereo frames). Harness-only handshake -- no library coupling.
+// stereo frames). The ~20ms cap means a stalled pipeline degrades to stale
+// samples instead of hanging the producer.
 static void _pull_one_cycle( int32_t * out ) {
+    uint32_t fill0 = g_audio_state->emu_dac_fill_count;
     g_audio_state->cycle_ready = 1;
-    for( int spin = 0; g_audio_state->cycle_ready && spin < 5000; spin++ ) {
-        struct timespec t = { 0, 1000 }; nanosleep( &t, NULL );  // 1us
+    for( int spin = 0; g_audio_state->emu_dac_fill_count == fill0 && spin < 20000; spin++ ) {
+        struct timespec t = { 0, 1000 }; nanosleep( &t, NULL );  // 1us, ~20ms cap
     }
-    struct timespec guard = { 0, 500000 }; nanosleep( &guard, NULL );  // 500us
     for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
         out[ i*2+0 ] = g_dac[ i*4+0 ];   // analog out 0 L
         out[ i*2+1 ] = g_dac[ i*4+1 ];   // analog out 0 R
@@ -111,15 +117,16 @@ static int _audio_producer( void * arg ) {
             continue;
         }
         _pull_one_cycle( cycle );
-        SDL_LockMutex( g_ring_lock );
-        for( int i = 0; i < ZDJ_SOUNDCARD_BUF_LEN; i++ ) {
-            int nw = ( g_ring_w + 1 ) % EMU_RING_FRAMES;
-            if( nw == g_ring_r ) { break; }  // full (shouldn't happen below target)
-            g_ring[ g_ring_w*2+0 ] = cycle[ i*2+0 ];
-            g_ring[ g_ring_w*2+1 ] = cycle[ i*2+1 ];
-            g_ring_w = nw;
+        int w = SDL_AtomicGet( &g_ring_w );
+        int r = SDL_AtomicGet( &g_ring_r );
+        int room = ( r - w - 1 + EMU_RING_FRAMES ) % EMU_RING_FRAMES;
+        int n = ZDJ_SOUNDCARD_BUF_LEN < room ? ZDJ_SOUNDCARD_BUF_LEN : room;  // won't clip below target
+        for( int i = 0; i < n; i++ ) {
+            g_ring[ w*2+0 ] = cycle[ i*2+0 ];
+            g_ring[ w*2+1 ] = cycle[ i*2+1 ];
+            w = ( w + 1 ) % EMU_RING_FRAMES;
         }
-        SDL_UnlockMutex( g_ring_lock );
+        SDL_AtomicSet( &g_ring_w, w );  // publish only after the samples are written
     }
     return 0;
 }
@@ -128,15 +135,16 @@ static void _audio_cb( void * ud, Uint8 * stream, int len ) {
     (void)ud;
     int32_t * dst = (int32_t *)stream;
     int need = len / (int)( 2 * sizeof( int32_t ) );
-    SDL_LockMutex( g_ring_lock );
-    while( need > 0 && g_ring_r != g_ring_w ) {
-        dst[ 0 ] = g_ring[ g_ring_r*2+0 ];
-        dst[ 1 ] = g_ring[ g_ring_r*2+1 ];
-        g_ring_r = ( g_ring_r + 1 ) % EMU_RING_FRAMES;
+    int r = SDL_AtomicGet( &g_ring_r );
+    int w = SDL_AtomicGet( &g_ring_w );
+    while( need > 0 && r != w ) {
+        dst[ 0 ] = g_ring[ r*2+0 ];
+        dst[ 1 ] = g_ring[ r*2+1 ];
+        r = ( r + 1 ) % EMU_RING_FRAMES;
         dst += 2; need--;
     }
-    SDL_UnlockMutex( g_ring_lock );
-    if( need > 0 ) { g_underrun_fr += need; }
+    SDL_AtomicSet( &g_ring_r, r );
+    if( need > 0 ) { SDL_AtomicAdd( &g_underrun_fr, need ); }
     for( int i = 0; i < need * 2; i++ ) { dst[ i ] = 0; }  // underrun -> silence
 }
 
@@ -267,8 +275,6 @@ int main( int argc, char ** argv ) {
         g_audio_state = zdj_platform_map_shared( ZDJ_SHARED_AUDIO_STATE_ADDR, 0x1000 );
         g_dac = zdj_platform_map_shared( ZDJ_SHARED_DAC_BUF, 0x8000 );
 
-        g_ring_lock = SDL_CreateMutex( );
-
         SDL_InitSubSystem( SDL_INIT_AUDIO );
         SDL_AudioSpec want; SDL_zero( want );
         want.freq = 44100; want.format = AUDIO_S32SYS; want.channels = 2;
@@ -335,9 +341,9 @@ int main( int argc, char ** argv ) {
         }
         // Report audio-bridge underruns (~1/s) so we can see if the ring starves.
         if( g_audio_dev && frame_n > 0 && ( frame_n % refresh_hz ) == 0 ) {
-            static long last_ur = 0;
-            long ur = g_underrun_fr;
-            if( ur != last_ur ) { printf( "zero-emu: underrun frames +%ld (total %ld)\n", ur - last_ur, ur ); last_ur = ur; }
+            static int last_ur = 0;
+            int ur = SDL_AtomicGet( &g_underrun_fr );
+            if( ur != last_ur ) { printf( "zero-emu: underrun frames +%d (total %d)\n", ur - last_ur, ur ); last_ur = ur; }
         }
 
         // Drive the library: renders the view stack to its surface, packs the

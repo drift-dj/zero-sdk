@@ -75,6 +75,15 @@ typedef struct {
     uint8_t adc_cfg_gain_3; // PGA value for adc 0
     uint8_t adc_cfg_standby; // Power down ADC
     uint16_t audio_watchdog; // Sentinel for shutting off audio output in event of a front-end crash
+#ifdef ZDJ_EMU
+    // Emulator-only (compiled out of the device layout): incremented by
+    // zdj_analog_io_push_samples after the last DAC sample of a cycle is
+    // written. There is no M7 pacing DAC consumption in the emulator, so this
+    // is how the zero-emu audio bridge knows the fill is complete and it can
+    // read the DAC without racing the write (cycle_ready clears when the fill
+    // is *taken*, not when it is done).
+    uint32_t emu_dac_fill_count;
+#endif
 } zdj_shared_audio_state_t;
 // volatile zdj_shared_audio_state_t * zdj_m7_shared_audio_state( void );
 
