@@ -1,6 +1,6 @@
-// zero-emu: the fake-M7 display. See zero_emu_video.h.
+// zero-emu: the fake-M7 display. See video.h.
 
-#include "zero_emu_video.h"
+#include "video.h"
 
 #include <stdint.h>
 #include <stdio.h>

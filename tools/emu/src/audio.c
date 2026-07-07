@@ -1,6 +1,6 @@
-// zero-emu: the fake-M7 audio bridge. Design notes in zero_emu_audio.h.
+// zero-emu: the fake-M7 audio bridge. Design notes in audio.h.
 
-#include "zero_emu_audio.h"
+#include "audio.h"
 
 #include <stdint.h>
 #include <stdio.h>

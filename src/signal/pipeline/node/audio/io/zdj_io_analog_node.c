@@ -140,7 +140,7 @@ zdj_error_type_t zdj_analog_io_push_samples( zdj_pipeline_node_t * node ) {
 #ifdef ZDJ_EMU
     // Fill-complete signal for the emulator's audio bridge (no M7 to pace DAC
     // consumption). Both stores go through volatile pointers, so this is
-    // ordered after the last DAC sample above. See zero_emu_main.c.
+    // ordered after the last DAC sample above. See tools/emu/src/main.c.
     state->shared_audio_state->emu_dac_fill_count++;
 #endif
 }

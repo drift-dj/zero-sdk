@@ -35,8 +35,8 @@
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/ui/view/label_view/zdj_label_view.h>
 
-#include "zero_emu_audio.h"
-#include "zero_emu_video.h"
+#include "audio.h"
+#include "video.h"
 
 // Counts injected per encoder keypress. On hardware one physical detent of a
 // quadrature encoder emits a burst of edges (the quad decode in the HMI scan
