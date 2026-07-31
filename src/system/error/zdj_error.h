@@ -101,6 +101,8 @@ typedef struct {
     zdj_error_marker_t marker;
 } zdj_error_state_t;
 
+extern zdj_error_state_t * _zdj_error_state;
+
 void zdj_error_init( char * binary_path );
 zdj_error_state_t * zdj_error_state( void );
 void zdj_print_error( zdj_error_type_t error );

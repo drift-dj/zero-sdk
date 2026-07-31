@@ -443,6 +443,7 @@ zdj_health_status_t zdj_library_close_import_db( void );
 void zdj_library_reset_db( void );
 zdj_health_status_t zdj_library_open_db( void );
 zdj_health_status_t zdj_library_close_db( void );
+void zdj_library_create_db_tables( sqlite3 * db );
 
 
 // Config
@@ -451,6 +452,7 @@ zdj_library_config_t * zdj_library_get_config( void );
 char * zdj_library_config_get_current_library_id( void );
 void zdj_library_config_put_current_library_id( char * dest );
 zdj_health_status_t zdj_library_config_set_current_library_id( char * entity_id );
+zdj_error_type_t zdj_library_generate_stress_test_library( int song_count );
 
 // Library
 int zdj_library_count_libraries( void );

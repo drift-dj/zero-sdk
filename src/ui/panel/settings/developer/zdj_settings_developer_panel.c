@@ -57,6 +57,8 @@ static void _drop_screencaps_dialog_exit( zdj_view_t * view, void * data, bool s
 static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _install_soundcard_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _install_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _test_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _segv_btn( zdj_view_t * view, zdj_control_event_t * event );
 
 
 static void _install_lib_browser_exit( 
@@ -179,6 +181,12 @@ static void _refresh_menu( zdj_view_t * view ) {
     screencaps_state->data.ptr = state;
     zdj_menu_view_add_item( state->menu, screencaps_btn );
 
+    zdj_view_t * test_lib_btn = zdj_new_menu_item( "Make Test Library", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    test_lib_btn->handle_control_event = _test_lib_btn;
+    zdj_menu_item_view_state_t * test_lib_state = (zdj_menu_item_view_state_t*)test_lib_btn->state;
+    test_lib_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, test_lib_btn );
+
     // QA Stuff
     zdj_menu_view_add_padding( state->menu, 3 );
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "QA" ) );
@@ -238,6 +246,12 @@ static void _refresh_menu( zdj_view_t * view ) {
         zdj_menu_view_add_item( state->menu, relaunch_btn );
     }
 
+    zdj_view_t * segv_btn = zdj_new_menu_item( "SIGSEGV", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    segv_btn->handle_control_event = _segv_btn;
+    zdj_menu_item_view_state_t * segv_state = (zdj_menu_item_view_state_t*)segv_btn->state;
+    segv_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, segv_btn );
+    
     zdj_view_t * reboot_btn = zdj_new_menu_item( "Reboot", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     reboot_btn->handle_control_event = _reboot_btn;
     zdj_menu_item_view_state_t * reboot_state = (zdj_menu_item_view_state_t*)reboot_btn->state;
@@ -594,4 +608,15 @@ static void _install_lib_browser_exit(
     // If we cancelled, just pop browser
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_push_subview( panel_state->settings_panel, browser, true );
+}
+
+static void _test_lib_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_library_generate_stress_test_library( 3000 );
+}
+
+static void _segv_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    char str[ 64 ];
+    zdj_library_song_t * song;
+    song->audio = NULL;
+    strcpy( str, song->audio->filepath );
 }

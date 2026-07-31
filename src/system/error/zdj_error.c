@@ -5,7 +5,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <execinfo.h>
-// #include <backtrace.h>
 
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/fs/zdj_fs.h>
@@ -31,10 +30,7 @@ int __isoc23_sscanf(const char *str, const char *format, ...) {
     return ret;
 }
 
-
-
-
-static zdj_error_state_t * _zdj_error_state = NULL;
+zdj_error_state_t * _zdj_error_state = NULL;
 
 static char * _zdj_error_string[ ZDJ_ERROR_COUNT ] = {
     "Unknown", //ZDJ_ERROR_UNKNOWN,
@@ -86,32 +82,9 @@ static char * _zdj_error_marker_string[ ZDJ_ERROR_MARKER_COUNT ] = {
     "debug" // ZDJ_ERROR_MARKER_DEBUG,
 };
 
-// int bt_callback(void *, uintptr_t, const char *filename, int lineno, const char *function) {
-//   /// demangle function name
-//   const char *func_name = function;
-// //   int status;
-// //   char *demangled = abi::__cxa_demangle(function, nullptr, nullptr, &status);
-// //   if (status == 0) {
-// //     func_name = demangled;
-// //   }
-
-//   /// print
-//   printf("%s:%d in function %s\n", filename, lineno, func_name);
-//   return 0;
-// }
-
-// void bt_error_callback(void *, const char *msg, int errnum) {
-//   printf("Error %d occurred when getting the stacktrace: %s", errnum, msg);
-// }
-
-// void bt_error_callback_create(void *, const char *msg, int errnum) {
-//   printf("Error %d occurred when initializing the stacktrace: %s", errnum, msg);
-// }
-
-// void *__bt_state = NULL;
-
 // Print (hopefully) helpful info and exit.
 void _zdj_error_sig( int code ) {
+    printf( "SIG! %d\n", code );
     if( code == SIGSEGV ) {
         printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
         
