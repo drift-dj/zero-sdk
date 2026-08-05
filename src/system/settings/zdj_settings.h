@@ -30,20 +30,33 @@
 
 #define ZDJ_SETTINGS_DB_PATH  "/media/internal/.system/settings.db"
 #define ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH "/media/internal/.system/zerod_dev"
+#define ZDJ_SETTINGS_DEBUG_CRASH_FLAG_PATH "/media/internal/.system/debug_crash"
 
 typedef enum {
 	ZDJ_SETTING_UNKNOWN,
-    ZDJ_SETTING_SCREENSHOT_COUNTER,
-    ZDJ_SETTING_RECORDING_COUNTER,
-    ZDJ_SETTING_DISPLAY_FLIP,
+    ZDJ_SETTING_SCREENSHOT_COUNTER = 100,
+    
+    ZDJ_SETTING_RECORDING_COUNTER = 200,
+    ZDJ_SETTING_RECORD_SHOW_METER,
+    
+    ZDJ_SETTING_DISPLAY_FLIP = 300,
     ZDJ_SETTING_DISPLAY_BRIGHTNESS,
     ZDJ_SETTING_REFRESH_RATE,
-    ZDJ_SETTING_DECK_SCRATCH_OVERRIDE,
-    ZDJ_SETTING_LIB_MENU_SHOW_BPM,
+    
+    ZDJ_SETTING_DECK_SCRATCH_OVERRIDE = 400,
+    ZDJ_SETTING_DECK_STRETCH_OVERRIDE,
+    
+    ZDJ_SETTING_LIB_MENU_SHOW_BPM = 500,
     ZDJ_SETTING_LIB_MENU_SHOW_KEY,
     ZDJ_SETTING_LIB_MENU_SHOW_CAMELOT,
     ZDJ_SETTING_LIB_MENU_HIDE_ERROR_SONGS,
-    ZDJ_SETTING_EXT_WAVEFORM_SOURCE
+    ZDJ_SETTING_EXT_WAVEFORM_SOURCE,
+    
+    ZDJ_SETTING_DEBUG_SHOW_CRASH = 600,
+    ZDJ_SETTING_LOG_CRASH,
+    ZDJ_SETTING_LOG_USB,
+    ZDJ_SETTING_LOG_LIBRARY,
+    ZDJ_SETTING_LOG_DEBUG
 } zdj_setting_reserved_id_t;
 
 typedef enum {
@@ -87,5 +100,8 @@ bool zdj_setting_flip_bool( int id );
 
 bool zdj_setting_get_dev_zerod_flag( void );
 void zdj_setting_set_dev_zerod_flag( bool flag );
+
+bool zdj_setting_get_crash_flag( void );
+void zdj_setting_set_crash_flag( bool flag );
 
 #endif

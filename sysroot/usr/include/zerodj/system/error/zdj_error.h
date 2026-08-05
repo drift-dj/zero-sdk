@@ -22,6 +22,14 @@
 #define ZDJ_ERROR_H
 
 #define ZDJ_LOG_DIR "/media/internal/logs"
+#define ZDJ_CRASH_LOG_DIR "/media/internal/logs/crash"
+#define ZDJ_CRASH_LOG_COUNT "/media/internal/logs/crash/.count"
+#define ZDJ_USB_LOG_DIR "/media/internal/logs/usb"
+#define ZDJ_USB_LOG_COUNT "/media/internal/logs/usb/.count"
+#define ZDJ_ACTIVITY_LOG_DIR "/media/internal/logs/activity"
+#define ZDJ_ACTIVITY_LOG_COUNT "/media/internal/logs/activity/.count"
+#define ZDJ_DEBUG_LOG_DIR "/media/internal/logs/debug"
+#define ZDJ_DEBUG_LOG_COUNT "/media/internal/logs/debug/.count"
 
 typedef enum {
     ZDJ_ERROR_UNKNOWN,
@@ -97,6 +105,14 @@ typedef enum {
     ZDJ_ERROR_MARKER_COUNT
 } zdj_error_marker_t;
 
+typedef enum {
+    ZDJ_LOG_TYPE_NONE,
+    ZDJ_LOG_TYPE_CRASH,
+    ZDJ_LOG_TYPE_USB,
+    ZDJ_LOG_TYPE_LIBRARY,
+    ZDJ_LOG_TYPE_DEBUG
+} zdj_log_type_t;
+
 typedef struct {
     zdj_error_marker_t marker;
 } zdj_error_state_t;
@@ -106,7 +122,10 @@ extern zdj_error_state_t * _zdj_error_state;
 void zdj_error_init( char * binary_path );
 zdj_error_state_t * zdj_error_state( void );
 void zdj_print_error( zdj_error_type_t error );
-int zdj_new_error_log_num( void );
-void zdj_error_reset_logs( void );
+
+int zdj_new_log_num( zdj_log_type_t type );
+int zdj_cur_log_num( zdj_log_type_t type );
+void zdj_reset_logs( void );
+void zdj_put_cur_log( zdj_log_type_t type, char * str_1, char * str_2, char * str_3 );
 
 #endif

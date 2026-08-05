@@ -227,6 +227,7 @@ add_library(zerodj
     src/ui/view/waveform_view/zdj_thumb_waveform_view.c
     src/ui/view/zoom_status_view/zdj_zoom_status_view.c
     src/ui/widget/zdj_ui_widget.c
+    src/ui/widget/crash/zdj_crash_widget.c
     src/ui/widget/debug/zdj_debug_widget.c
     src/ui/widget/notify/zdj_notify_widget.c
     src/ui/widget/perf/zdj_perf_widget.c
