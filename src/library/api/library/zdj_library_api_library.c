@@ -3,11 +3,13 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h> 
 
 #include <sqlite3.h>
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/sql/zdj_sql.h>
 
 static char _sql[ 1024 ];
@@ -228,4 +230,146 @@ zdj_error_type_t zdj_library_populate_playlists_for_library(
 
 void zdj_library_deinit_library( zdj_library_t * library ) {
 
+}
+
+// Make a test library with n songs
+zdj_error_type_t zdj_library_generate_stress_test_library( int song_count ) {
+    // Clear/create dir structure
+    zdj_fs_remove_dir( "/media/internal/library/test" );
+    zdj_fs_mkdir_p( "/media/internal/library/test" );
+
+    // Get song graph for EID
+    zdj_library_song_t * source_song = zdj_library_fetch_song_dto_for_entity_id( 
+        "7110bef7094a4bd1a5d7d6184b38878b", zdj_library_db 
+    );
+    zdj_library_fetch_playback_song_graph( source_song, zdj_library_db );
+
+    // // Copy file/waveforms
+    // zdj_fs_mkdir_p( "/media/internal/library/test/playback_waveform" );
+    // char source_playback_waveform[ 512 ];
+    // sprintf( source_playback_waveform, "/media/internal/library/v1/playback_waveform/%s", source_song->entity_id );
+    // zdj_fs_copy_file( source_playback_waveform, "/media/internal/library/test/playback_waveform/", true );
+
+    // zdj_fs_mkdir_p( "/media/internal/library/test/thumb_waveform" );
+    // char source_thumb_waveform[ 512 ];
+    // sprintf( source_thumb_waveform, "/media/internal/library/v1/thumb_waveform/%s", source_song->entity_id );
+    // zdj_fs_copy_file( source_thumb_waveform, "/media/internal/library/test/thumb_waveform/", true );
+
+    // zdj_fs_mkdir_p( "/media/internal/library/test/music" );
+    // char target_filepath[ 512 ];
+    // sprintf( target_filepath, "/media/internal/library/test/music/%s", source_song->audio->filepath );
+    // zdj_fs_copy_file( source_song->audio->filepath, "/media/internal/library/test/music/", true );
+    
+
+    // // Make/open new db
+    // if( access( "/media/internal/library/test/zero.db", F_OK ) == 0 ) {
+    //     remove( "/media/internal/library/test/zero.db" );
+    // }
+    // sqlite3 * test_db = zdj_sql_open( ZDJ_LIBRARY_IMPORT_DB_PATH );
+    // if( !test_db ) { 
+    //     printf( "failed to create test db\n" );
+    //     return ZDJ_ERROR_LIBRARY_DB_ERROR;
+    // }
+
+    // zdj_library_create_db_tables( test_db );
+
+    // Make n song_graphs pointing to <song>'s file/thumbnail paths
+    // Randomize:
+        // artist
+        // title
+        // album
+        // BPM
+        // genre
+        // Key
+        // cuepoints
+    // Cluster artists and albums to make it more real
+
+    char artist[ 64 ];
+    int artist_count;
+    char album[ 64 ];
+    char genre[ 64 ];
+    char title[ 64 ];
+    float bpm;
+    zdj_library_key_t key;
+    const char genres[ 8 ][ 64 ] = {
+        "House",
+        "Tech House",
+        "Drum n' Bass",
+        "Techno",
+        "Hip Hop",
+        "Electronic",
+        "RnB",
+        "Rap"
+    };
+
+    srand( time( NULL ) );
+
+    zdj_library_put_uuid( artist );
+
+    for( int i=0; i<song_count; i++ ) {
+
+        printf( "making song: %d\n", i );
+        // Use current artist or make new
+        int artist_rand = rand( ) % 10;
+        printf( "artist rand: %d\n", artist_rand );
+        if( artist_count > 0 ) {
+            if( (rand( ) % 10) > 4 ) { 
+                zdj_library_put_uuid( artist );
+                artist_count = 0;
+            }
+        }
+        artist_count++;
+        // Use current album or make new
+        if( artist_count == 1 ) { 
+            // always make new album for new artist
+            zdj_library_put_uuid( album );
+        } else {
+            // maybe make new album for repeated artist
+            if( (rand( ) % 10) > 3 ) { 
+                zdj_library_put_uuid( album );
+            }
+        }
+        // Make genre
+        strcpy( genre, genres[ (rand( ) % 7) ] );
+        // Make title
+        zdj_library_put_uuid( title );
+        // Make bpm
+        float sub = (float)(rand( ) % 1000) / 7.0;
+        bpm = 34.0 + sub;
+        // Make key
+        key = rand( ) % (ZDJ_LIBRARY_KEY_COUNT - 1);
+
+        // Make new song graph
+        zdj_library_song_t * song = zdj_library_create_file_import_song_graph( 
+            source_song->audio->filepath, zdj_library_db 
+        );
+        // Fill in song data
+        strncpy( song->catalog->artist, artist, 8 );
+        strncpy( song->catalog->album, album, 12 );
+        strncpy( song->catalog->title, title, 10 );
+        strcpy( song->catalog->genre, genre );
+
+        if( (rand( ) % 10) < 9 ) {
+            song->performance->bpm = bpm;
+            song->performance->has_beat_grid = true;
+            song->performance->beat_grid_start_sample = rand( ) % 10000;
+        }
+        song->performance->key = key;
+        // Create cuepoints
+
+        printf( "song: %s/%s/%s %s %f %d\n", 
+            artist,
+            album,
+            title,
+            genre,
+            bpm,
+            key
+        );
+        zdj_library_store_song_graph( song, zdj_library_db );  
+        zdj_library_add_song_link( 
+            zdj_library_config_get_current_library_id( ), 
+            song, 
+            zdj_library_db 
+        );      
+    }
 }

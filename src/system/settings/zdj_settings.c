@@ -86,11 +86,17 @@ static void _reset_default( void ) {
     zdj_setting_set_int( ZDJ_SETTING_RECORDING_COUNTER, 0 );
     zdj_setting_set_int( ZDJ_SETTING_DISPLAY_FLIP, 0 );
     zdj_setting_set_int( ZDJ_SETTING_REFRESH_RATE, 0 );
-    zdj_setting_set_int( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE, 0 );
+    zdj_setting_set_bool( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE, false );
+    zdj_setting_set_bool( ZDJ_SETTING_DECK_STRETCH_OVERRIDE, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_BPM, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_KEY, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_CAMELOT, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_HIDE_ERROR_SONGS, true );
+    zdj_setting_set_bool( ZDJ_SETTING_DEBUG_SHOW_CRASH, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_CRASH, true );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_USB, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_LIBRARY, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_DEBUG, false );
 }
 
 zdj_setting_t * zdj_setting_get( int id ) {
@@ -311,5 +317,23 @@ void zdj_setting_set_dev_zerod_flag( bool flag ) {
         fclose( dev_flag_fd );
     } else {
         remove( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH );
+    }
+}
+
+bool zdj_setting_get_crash_flag( void ) {
+    if( access( ZDJ_SETTINGS_DEBUG_CRASH_FLAG_PATH, F_OK ) == 0 ) { 
+        return true; 
+    } else {
+        return false;
+    }
+}
+
+void zdj_setting_set_crash_flag( bool flag ) {
+    if( flag ) {
+        FILE * flag_fd = fopen( ZDJ_SETTINGS_DEBUG_CRASH_FLAG_PATH, "w" );
+        fwrite( "true", sizeof( char ), 5, flag_fd );
+        fclose( flag_fd );
+    } else {
+        remove( ZDJ_SETTINGS_DEBUG_CRASH_FLAG_PATH );
     }
 }

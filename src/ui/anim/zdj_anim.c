@@ -172,6 +172,14 @@ void zdj_set_anim( zdj_anim_t * anim, zdj_anim_type_t type ) {
             anim->init_fn = &zdj_anim_init_notify_widget_hide;
             anim->update_fn = &zdj_anim_update_notify_widget;
             break;
+        case ZDJ_ANIM_CRASH_WIDGET_SHOW:
+            anim->init_fn = &zdj_anim_init_crash_widget_show;
+            anim->update_fn = &zdj_anim_update_crash_widget;
+            break;
+        case ZDJ_ANIM_CRASH_WIDGET_HIDE:
+            anim->init_fn = &zdj_anim_init_crash_widget_hide;
+            anim->update_fn = &zdj_anim_update_crash_widget;
+            break;
         case ZDJ_ANIM_PANEL_IN_NEXT:
             anim->init_fn = &zdj_anim_init_panel_in_next;
             anim->update_fn = &zdj_anim_update_panel;

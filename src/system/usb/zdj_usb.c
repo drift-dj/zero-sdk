@@ -298,7 +298,7 @@ void zdj_usb_reset_status( void ) {
 void zdj_usb_log_begin( void ) {
      // If enabled, bringup log
     char log_path[ 256 ];
-    sprintf( log_path, "%s/usb_log_%03d.txt", ZDJ_LOG_DIR, zdj_new_error_log_num( ) );
+    sprintf( log_path, "%s/usb_log_%03d.txt", ZDJ_USB_LOG_DIR, zdj_new_log_num( ZDJ_LOG_TYPE_USB ) );
     zdj_usb_state->log_fp = fopen( log_path, "w" );
     if( !zdj_usb_state->log_fp ) { printf( "USB Log failed to open\n" ); }
 }

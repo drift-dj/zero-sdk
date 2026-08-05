@@ -5,12 +5,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <execinfo.h>
-// #include <backtrace.h>
 
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/settings/zdj_settings.h>
 
-static int _get_current_error_log_num( void );
+static int _inc_current_log_num( zdj_log_type_t type );
 
 ///////////////////////////////////////////////////////
 // Do some hacking to fix wonky library dependencies //
@@ -31,10 +31,7 @@ int __isoc23_sscanf(const char *str, const char *format, ...) {
     return ret;
 }
 
-
-
-
-static zdj_error_state_t * _zdj_error_state = NULL;
+zdj_error_state_t * _zdj_error_state = NULL;
 
 static char * _zdj_error_string[ ZDJ_ERROR_COUNT ] = {
     "Unknown", //ZDJ_ERROR_UNKNOWN,
@@ -86,40 +83,19 @@ static char * _zdj_error_marker_string[ ZDJ_ERROR_MARKER_COUNT ] = {
     "debug" // ZDJ_ERROR_MARKER_DEBUG,
 };
 
-// int bt_callback(void *, uintptr_t, const char *filename, int lineno, const char *function) {
-//   /// demangle function name
-//   const char *func_name = function;
-// //   int status;
-// //   char *demangled = abi::__cxa_demangle(function, nullptr, nullptr, &status);
-// //   if (status == 0) {
-// //     func_name = demangled;
-// //   }
-
-//   /// print
-//   printf("%s:%d in function %s\n", filename, lineno, func_name);
-//   return 0;
-// }
-
-// void bt_error_callback(void *, const char *msg, int errnum) {
-//   printf("Error %d occurred when getting the stacktrace: %s", errnum, msg);
-// }
-
-// void bt_error_callback_create(void *, const char *msg, int errnum) {
-//   printf("Error %d occurred when initializing the stacktrace: %s", errnum, msg);
-// }
-
-// void *__bt_state = NULL;
-
-// Print (hopefully) helpful info and exit.
+// Print (hopefully) helpful info, write a crash log if enabled and exit.
 void _zdj_error_sig( int code ) {
+    printf( "SIG! %d\n", code );
     if( code == SIGSEGV ) {
         printf( "SIGSEGV during %s process.\n", _zdj_error_marker_string[ zdj_error_state( )->marker ] );
         
         // Open error log
         char path[ 512 ];
-        sprintf( path, "%s/crash_log_%03d.txt", ZDJ_LOG_DIR, zdj_new_error_log_num( ) );
+        sprintf( path, "%s/crash_log_%03d.txt", ZDJ_CRASH_LOG_DIR, zdj_new_log_num( ZDJ_LOG_TYPE_CRASH ) );
         FILE * log_fp = fopen( path, "w" );
+        if( !log_fp ) { printf( "FAILED TO WRITE CRASH LOG!!!\n" ); exit( code ); }
         printf( "writing crash log: %p %s\n", log_fp, path );
+        fprintf( log_fp, "### RAW CRASH LOG ###\n" );
 
         int max_frames = 100;
         void *callstack[ max_frames ];
@@ -130,27 +106,47 @@ void _zdj_error_sig( int code ) {
         strings = backtrace_symbols( callstack, frames );
 
         for (int i = 0; i < frames; ++i) {
-            printf("%s\n", strings[i]);
+            printf( "%s\n", strings[ i ] );
             // Write to current error log file
-            if( log_fp ) { 
-                fprintf( log_fp, "%s\n", strings[ i ] );
-            }
+            fprintf( log_fp, "%s\n", strings[ i ] );
         }
 
         // Finish up the crash log file
         if( log_fp ) { fclose( log_fp ); }
+
+        // Tag the crash so re-launch can trigger a debug modal
         exit( code );
     }
 }
 
-static int _get_current_error_log_num( void ) {
-    // Create the logs dir if it's missing
-    if( access( ZDJ_LOG_DIR, F_OK ) != 0 ) {
-        zdj_fs_mkdir_p( ZDJ_LOG_DIR );
+int zdj_cur_log_num( zdj_log_type_t type ) {
+    char log_dir[ 512 ];
+    char count_path[ 512 ];
+    switch ( type ) {
+        case ZDJ_LOG_TYPE_CRASH:
+            strcpy( log_dir, ZDJ_CRASH_LOG_DIR );
+            strcpy( count_path, ZDJ_CRASH_LOG_COUNT );
+            break;
+        case ZDJ_LOG_TYPE_USB:
+            strcpy( log_dir, ZDJ_USB_LOG_DIR );
+            strcpy( count_path, ZDJ_USB_LOG_COUNT );
+            break;
+        case ZDJ_LOG_TYPE_LIBRARY:
+            strcpy( log_dir, ZDJ_ACTIVITY_LOG_DIR );
+            strcpy( count_path, ZDJ_ACTIVITY_LOG_COUNT );
+            break;
+        case ZDJ_LOG_TYPE_DEBUG:
+            strcpy( log_dir, ZDJ_DEBUG_LOG_DIR );
+            strcpy( count_path, ZDJ_DEBUG_LOG_COUNT );
+            break;
+        default: return 0;
     }
+
+    // Create the logs dir if it's missing
+    if( access( log_dir, F_OK ) != 0 ) { zdj_fs_mkdir_p( log_dir ); }
     // Open the log counter, create if missing
     int num = 0;
-    FILE * count_fp = fopen( "/media/internal/logs/count", "r" );
+    FILE * count_fp = fopen( count_path, "r" );
     if( count_fp ) {
         fread( &num, sizeof( int ), 1, count_fp );
         fclose( count_fp );
@@ -158,14 +154,91 @@ static int _get_current_error_log_num( void ) {
     return num;
 }
 
-int zdj_new_error_log_num( void ) {
-    int cur = _get_current_error_log_num( ) + 1;
-    FILE * count_fp = fopen( "/media/internal/logs/count", "w" );
-    if( count_fp ) {
-        fwrite( &cur, sizeof( int ), 1, count_fp );
-        fclose( count_fp );
+static int _inc_current_log_num( zdj_log_type_t type ) {
+    char log_dir[ 512 ];
+    char count_path[ 512 ];
+    switch ( type ) {
+        case ZDJ_LOG_TYPE_CRASH:
+            strcpy( log_dir, ZDJ_CRASH_LOG_DIR );
+            strcpy( count_path, ZDJ_CRASH_LOG_COUNT );
+            break;
+        case ZDJ_LOG_TYPE_USB:
+            strcpy( log_dir, ZDJ_USB_LOG_DIR );
+            strcpy( count_path, ZDJ_USB_LOG_COUNT );
+            break;
+        case ZDJ_LOG_TYPE_LIBRARY:
+            strcpy( log_dir, ZDJ_ACTIVITY_LOG_DIR );
+            strcpy( count_path, ZDJ_ACTIVITY_LOG_COUNT );
+            break;
+        case ZDJ_LOG_TYPE_DEBUG:
+            strcpy( log_dir, ZDJ_DEBUG_LOG_DIR );
+            strcpy( count_path, ZDJ_DEBUG_LOG_COUNT );
+            break;
+        default: return 0;
     }
-    return cur;
+
+    // Create the logs dir if it's missing, fail to 0 
+    if( access( log_dir, F_OK ) != 0 ) { zdj_fs_mkdir_p( log_dir ); }
+    if( access( log_dir, F_OK ) != 0 ) { printf( "FAILED TO CREATE LOG DIR: %s\n", log_dir ); return 0; }
+    // Open the log counter, create if missing
+    int num = 0;
+    FILE * count_fp = fopen( count_path, "r" );
+    if( count_fp ) {
+        fread( &num, sizeof( int ), 1, count_fp );
+        fclose( count_fp );
+        
+        // Increment and write the new num to counter
+        num++;
+        count_fp = fopen( count_path, "w" );
+        if( count_fp ) {
+            fwrite( &num, sizeof( int ), 1, count_fp );
+            fclose( count_fp );
+        }
+    }
+    return num;
+}
+
+int zdj_new_log_num( zdj_log_type_t type ) {
+    return _inc_current_log_num( type );
+}
+
+void zdj_put_cur_log( zdj_log_type_t type, char * str_1, char * str_2, char * str_3 ) {
+    int cur_log_num = zdj_cur_log_num( type );
+
+    char log_path[ 512 ];
+    switch ( type ) {
+        case ZDJ_LOG_TYPE_CRASH:
+            sprintf( log_path, "%s/crash_log_%03d.txt", ZDJ_CRASH_LOG_DIR, cur_log_num );
+            break;
+        case ZDJ_LOG_TYPE_USB:
+            sprintf( log_path, "%s/usb_log_%03d.txt", ZDJ_USB_LOG_DIR, cur_log_num );
+            break;
+        case ZDJ_LOG_TYPE_LIBRARY:
+            sprintf( log_path, "%s/lib_log_%03d.txt", ZDJ_CRASH_LOG_DIR, cur_log_num );
+            break;
+        case ZDJ_LOG_TYPE_DEBUG:
+            sprintf( log_path, "%s/debug_log_%03d.txt", ZDJ_CRASH_LOG_DIR, cur_log_num );
+            break;
+        default: return;
+    }
+
+    if( access( log_path, F_OK ) != 0 ) { return; }
+    FILE * log = fopen( log_path, "r" );
+    if( !log ) { return; }
+    
+    printf( "reading log: %s\n", log_path );
+    char line[ 512 ];
+    if( str_1 && fgets( line, 512, log ) ) {
+        strcpy( str_1, line );
+    }
+    if( str_2 && fgets( line, 512, log ) ) {
+        strcpy( str_2, line );
+    }
+    if( str_3 && fgets( line, 512, log ) ) {
+        strcpy( str_3, line );
+    }
+
+    fclose( log );
 }
 
 zdj_error_state_t * zdj_error_state( void ) {
@@ -186,8 +259,12 @@ void zdj_print_error( zdj_error_type_t error ) {
 
 }
 
-void zdj_error_reset_logs( void ) {
+void zdj_reset_logs( void ) {
     zdj_fs_remove_dir( ZDJ_LOG_DIR );
     zdj_fs_mkdir_p( ZDJ_LOG_DIR );
+    zdj_fs_mkdir_p( ZDJ_CRASH_LOG_DIR );
+    zdj_fs_mkdir_p( ZDJ_USB_LOG_DIR );
+    zdj_fs_mkdir_p( ZDJ_ACTIVITY_LOG_DIR );
+    zdj_fs_mkdir_p( ZDJ_DEBUG_LOG_DIR );
     sync( );
 }

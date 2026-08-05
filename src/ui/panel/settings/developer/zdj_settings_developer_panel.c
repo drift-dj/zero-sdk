@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/reboot.h>
+#include <signal.h>
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
@@ -57,6 +58,13 @@ static void _drop_screencaps_dialog_exit( zdj_view_t * view, void * data, bool s
 static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _install_soundcard_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _install_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _test_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _segv_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _show_crash_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_crash_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_usb_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_debug_btn( zdj_view_t * view, zdj_control_event_t * event );
 
 
 static void _install_lib_browser_exit( 
@@ -179,6 +187,56 @@ static void _refresh_menu( zdj_view_t * view ) {
     screencaps_state->data.ptr = state;
     zdj_menu_view_add_item( state->menu, screencaps_btn );
 
+    zdj_view_t * test_lib_btn = zdj_new_menu_item( "Make Test Library", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    test_lib_btn->handle_control_event = _test_lib_btn;
+    zdj_menu_item_view_state_t * test_lib_state = (zdj_menu_item_view_state_t*)test_lib_btn->state;
+    test_lib_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, test_lib_btn );
+
+    // Logging Stuff
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Logging" ) );
+
+    zdj_view_t * show_crash_btn = zdj_new_menu_item( "Show Crash Dialog", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    show_crash_btn->handle_control_event = &_show_crash_btn;
+    zdj_menu_item_view_state_t * show_crash_state = (zdj_menu_item_view_state_t*)show_crash_btn->state;
+    show_crash_state->data.ptr = view;
+    zdj_setting_t * show_crash_setting = zdj_setting_get( ZDJ_SETTING_DEBUG_SHOW_CRASH );
+    if( show_crash_setting ) { show_crash_state->data.b_val = show_crash_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, show_crash_btn );
+
+    zdj_view_t * log_crash_btn = zdj_new_menu_item( "Log Crashes", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    log_crash_btn->handle_control_event = &_log_crash_btn;
+    zdj_menu_item_view_state_t * log_crash_state = (zdj_menu_item_view_state_t*)log_crash_btn->state;
+    log_crash_state->data.ptr = view;
+    zdj_setting_t * log_crash_setting = zdj_setting_get( ZDJ_SETTING_LOG_CRASH );
+    if( log_crash_setting ) { log_crash_state->data.b_val = log_crash_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, log_crash_btn );
+
+    zdj_view_t * log_usb_btn = zdj_new_menu_item( "Log USB Activity", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    log_usb_btn->handle_control_event = &_log_usb_btn;
+    zdj_menu_item_view_state_t * log_usb_state = (zdj_menu_item_view_state_t*)log_usb_btn->state;
+    log_usb_state->data.ptr = view;
+    zdj_setting_t * log_usb_setting = zdj_setting_get( ZDJ_SETTING_LOG_USB );
+    if( log_usb_setting ) { log_usb_state->data.b_val = log_usb_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, log_usb_btn );
+
+    zdj_view_t * log_lib_btn = zdj_new_menu_item( "Log Library Info", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    log_lib_btn->handle_control_event = &_log_lib_btn;
+    zdj_menu_item_view_state_t * log_lib_state = (zdj_menu_item_view_state_t*)log_lib_btn->state;
+    log_lib_state->data.ptr = view;
+    zdj_setting_t * log_lib_setting = zdj_setting_get( ZDJ_SETTING_LOG_LIBRARY );
+    if( log_lib_setting ) { log_lib_state->data.b_val = log_lib_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, log_lib_btn );
+
+    zdj_view_t * log_debug_btn = zdj_new_menu_item( "Log Debug Info", ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    log_debug_btn->handle_control_event = &_log_debug_btn;
+    zdj_menu_item_view_state_t * log_debug_state = (zdj_menu_item_view_state_t*)log_debug_btn->state;
+    log_debug_state->data.ptr = view;
+    zdj_setting_t * log_debug_setting = zdj_setting_get( ZDJ_SETTING_LOG_DEBUG );
+    if( log_debug_setting ) { log_debug_state->data.b_val = log_debug_setting->b_val; }
+    zdj_menu_view_add_item( state->menu, log_debug_btn );
+
     // QA Stuff
     zdj_menu_view_add_padding( state->menu, 3 );
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "QA" ) );
@@ -238,6 +296,12 @@ static void _refresh_menu( zdj_view_t * view ) {
         zdj_menu_view_add_item( state->menu, relaunch_btn );
     }
 
+    zdj_view_t * segv_btn = zdj_new_menu_item( "SIGSEGV", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    segv_btn->handle_control_event = _segv_btn;
+    zdj_menu_item_view_state_t * segv_state = (zdj_menu_item_view_state_t*)segv_btn->state;
+    segv_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, segv_btn );
+    
     zdj_view_t * reboot_btn = zdj_new_menu_item( "Reboot", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     reboot_btn->handle_control_event = _reboot_btn;
     zdj_menu_item_view_state_t * reboot_state = (zdj_menu_item_view_state_t*)reboot_btn->state;
@@ -467,7 +531,7 @@ static void _logs_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 static void _drop_logs_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
     if( selection ) {
         printf( "clearing logs folder\n" );
-        zdj_error_reset_logs( );
+        zdj_reset_logs( );
     }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
@@ -594,4 +658,61 @@ static void _install_lib_browser_exit(
     // If we cancelled, just pop browser
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_push_subview( panel_state->settings_panel, browser, true );
+}
+
+static void _test_lib_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_library_generate_stress_test_library( 3000 );
+}
+
+static void _segv_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    printf( "segv btn\n" );
+    raise(SIGSEGV);
+    // char str[ 64 ];
+    // zdj_library_song_t * song;
+    // printf( "song: %p\n", song );
+    // printf( "song->audio: %p\n", song->audio );
+    // song->audio = NULL;
+    // printf( "path:\n" );
+    // printf( "%s\n", song->audio->filepath );
+    // strcpy( str, song->audio->filepath );
+}
+
+static void _show_crash_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_DEBUG_SHOW_CRASH );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_crash_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_CRASH );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_usb_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_USB );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_lib_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_LIBRARY );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_debug_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_DEBUG );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
 }

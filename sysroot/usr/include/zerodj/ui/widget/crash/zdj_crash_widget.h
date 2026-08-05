@@ -18,26 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_UI_WIDGET_H
-#define ZDJ_UI_WIDGET_H
+#ifndef ZDJ_CRASH_WIDGET_H
+#define ZDJ_CRASH_WIDGET_H
 
-#include <zerodj/system/error/zdj_error.h>
-#include <zerodj/ui/zdj_ui.h>
+#include <zerodj/ui/anim/zdj_anim.h>
 
-typedef struct { 
-    zdj_view_t * crash_widget;
-    zdj_view_t * debug_widget;
-    zdj_view_t * perf_widget;
-    zdj_view_t * recording_widget;
-    zdj_view_t * screencap_widget;
-    zdj_view_t * volume_widget;
-    zdj_view_t * notify_widget;
-} zdj_widget_state_t;
+typedef struct {
+    bool deployed;
+    int update_counter;
+    zdj_view_t * container;
+    zdj_view_t * mem_label;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
+    void ( *toggle )( zdj_view_t* );
+} zdj_crash_widget_state_t;
 
-zdj_error_type_t zdj_ui_widget_init( void );
-zdj_view_t * zdj_ui_get_notify_widget( void );
-void zdj_ui_widget_update_soundcard( void );
-
-void zdj_ui_widget_show_crash_log( void );
+zdj_view_t * zdj_new_crash_widget( void );
 
 #endif

@@ -5,14 +5,9 @@
 
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/ui/zdj_ui.h>
-// #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
-// #include <zerodj/ui/view/file_browser_view/zdj_file_browser_view.h>
-// #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
-// #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
-// #include <zerodj/ui/view/menu_item_view/zdj_menu_item_view.h>
-// #include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 #include <zerodj/ui/widget/zdj_ui_widget.h>
+#include <zerodj/ui/widget/crash/zdj_crash_widget.h>
 #include <zerodj/ui/widget/debug/zdj_debug_widget.h>
 #include <zerodj/ui/widget/notify/zdj_notify_widget.h>
 #include <zerodj/ui/widget/perf/zdj_perf_widget.h>
@@ -28,6 +23,9 @@ zdj_error_type_t zdj_ui_widget_init( void ) {
     zdj_widget_view( )->state = _zdj_widget_state;
     zdj_widget_view( )->handle_control_event = &_handle_control;
 
+    _zdj_widget_state->crash_widget = zdj_new_crash_widget( );
+    zdj_add_subview( zdj_widget_view( ), _zdj_widget_state->crash_widget );
+    
     _zdj_widget_state->debug_widget = zdj_new_debug_widget( );
     zdj_add_subview( zdj_widget_view( ), _zdj_widget_state->debug_widget );
 
@@ -47,9 +45,16 @@ zdj_error_type_t zdj_ui_widget_init( void ) {
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
-    // printf( "widget view _handle_control\n" );
-    // zdj_widget_state_t * state = (zdj_widget_state_t*)view->state;
     // If a panel is deployed, send the event down into the panel
+    zdj_crash_widget_state_t * crash_state = (zdj_crash_widget_state_t*)_zdj_widget_state->crash_widget->state;
+    if( crash_state->deployed ) {
+        _event->blocked = true;
+        if( _event->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 ||
+            _event->id == ZDJ_UI_CONTROL_NAV_RELEASE_0
+        ) {
+            crash_state->toggle( _zdj_widget_state->crash_widget );
+        }
+    }
     if( _event->id == ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET ) { 
         zdj_debug_widget_state_t * debug_state = (zdj_debug_widget_state_t*)_zdj_widget_state->debug_widget->state;
         debug_state->toggle( _zdj_widget_state->debug_widget );
@@ -72,4 +77,11 @@ void zdj_ui_widget_update_soundcard( void ) {
 
     zdj_recording_widget_state_t * record_state = (zdj_recording_widget_state_t*)_zdj_widget_state->recording_widget->state;
     if( record_state ) { record_state->needs_soundcard_update = true; }
+}
+
+// Deploy the crash log widget
+void zdj_ui_widget_show_crash_log( void ) {
+    if( !_zdj_widget_state ) { return; }
+    zdj_crash_widget_state_t * crash_state = (zdj_crash_widget_state_t*)_zdj_widget_state->crash_widget->state;
+    if( crash_state ) { crash_state->toggle( _zdj_widget_state->crash_widget ); }
 }

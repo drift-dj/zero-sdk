@@ -68,6 +68,15 @@ void zdj_ui_init( void ) {
     zdj_view_stack_init( );
     zdj_ui_panel_init( );
     zdj_ui_widget_init( );
+
+    // If there was a crash during a previous run,
+    // deploy the crash widget to display the log.
+    if( zdj_setting_get_crash_flag( ) ) {
+        zdj_setting_t * log_setting = zdj_setting_get( ZDJ_SETTING_DEBUG_SHOW_CRASH );
+        if( log_setting && log_setting->b_val == true ) {
+            zdj_ui_widget_show_crash_log( );
+        }
+    }
 }
 
 void zdj_ui_min_init( void ) {

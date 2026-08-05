@@ -25,6 +25,7 @@
 #include <zerodj/ui/zdj_ui.h>
 
 typedef struct { 
+    zdj_view_t * crash_widget;
     zdj_view_t * debug_widget;
     zdj_view_t * perf_widget;
     zdj_view_t * recording_widget;
@@ -36,5 +37,7 @@ typedef struct {
 zdj_error_type_t zdj_ui_widget_init( void );
 zdj_view_t * zdj_ui_get_notify_widget( void );
 void zdj_ui_widget_update_soundcard( void );
+
+void zdj_ui_widget_show_crash_log( void );
 
 #endif
