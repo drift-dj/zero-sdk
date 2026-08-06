@@ -13,6 +13,7 @@
 #include <zerodj/ui/widget/crash/zdj_crash_widget.h>
 #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
 #include <zerodj/ui/view/label_view/zdj_label_view.h>
+#include <zerodj/ui/view/ticker_view/zdj_ticker_view.h>
 #include <zerodj/ui/view/zdj_view_stack.h>
 
 static void _toggle( zdj_view_t * view );
@@ -73,17 +74,23 @@ zdj_view_t * zdj_new_crash_widget( void ) {
     char line_2[ 512 ];
     char line_3[ 512 ];
     zdj_put_cur_log( ZDJ_LOG_TYPE_CRASH, line_1, line_2, line_3 );
-    zdj_view_t * line_1_label = zdj_new_label_view( line_1, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * line_1_label = zdj_new_ticker_view( line_1, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     line_1_label->frame.x = 2;
     line_1_label->frame.y = 17;
+    line_1_label->frame.w = container_view->frame.w - 2;
+    line_1_label->frame.h = 8;
     zdj_add_subview( container_view, line_1_label );
-    zdj_view_t * line_2_label = zdj_new_label_view( line_2, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * line_2_label = zdj_new_ticker_view( line_2, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     line_2_label->frame.x = 2;
     line_2_label->frame.y = 24;
+    line_2_label->frame.w = container_view->frame.w - 2;
+    line_2_label->frame.h = 8;
     zdj_add_subview( container_view, line_2_label );
-    zdj_view_t * line_3_label = zdj_new_label_view( line_3, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * line_3_label = zdj_new_ticker_view( line_3, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     line_3_label->frame.x = 2;
     line_3_label->frame.y = 31;
+    line_3_label->frame.w = container_view->frame.w - 2;
+    line_3_label->frame.h = 8;
     zdj_add_subview( container_view, line_3_label );
 
     return view;
@@ -96,7 +103,7 @@ static void _draw_container( zdj_view_t * view, zdj_view_clip_t * clip ) {
 }
 
 static void _toggle( zdj_view_t * view ) {
-    printf( "Crash Widget Toggle\n" );
+    // printf( "Crash Widget Toggle\n" );
     zdj_crash_widget_state_t * state = (zdj_crash_widget_state_t*)view->state;
     if( state->deployed ) {
         _retract( view );
@@ -107,7 +114,7 @@ static void _toggle( zdj_view_t * view ) {
 }
 
 static void _deploy( zdj_view_t * view ) {
-    printf( "Crash Widget Deploy\n" );
+    // printf( "Crash Widget Deploy\n" );
     zdj_crash_widget_state_t * state = (zdj_crash_widget_state_t*)view->state;
     state->deployed = true;
     // printf( "debug deploy: %p\n", state->container );

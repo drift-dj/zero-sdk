@@ -377,6 +377,16 @@ typedef struct zdj_library_song_t {
 	struct zdj_library_song_t * prev;
 } zdj_library_song_t;
 
+typedef struct {
+	char song_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
+	char artist[ 1024 ];
+	char title[ 1024 ];
+	char filepath[ 512 ];
+	float bpm;
+	int key;
+	bool has_error;
+} zdj_library_menu_row_t;
+
 typedef enum {
     ZDJ_LIBRARY_IMPORT_TYPE_UNKNOWN,
 	ZDJ_LIBRARY_IMPORT_TYPE_AUDIO_FILE,
@@ -592,76 +602,41 @@ void zdj_library_remove_all_recordings( void );
 
 
 // Query
-int zdj_library_query_count_all_artists( 
-	char * library_entity_id, 
-	sqlite3 * db 
-);
-zdj_error_type_t zdj_library_query_all_artists( 
-	char * library_entity_id, 
-	char ** artists, 
+void zdj_library_refresh_menu_query_table( sqlite3 * db );
+
+int zdj_library_query_count_all_songs( sqlite3 * db );
+
+zdj_error_type_t zdj_library_query_artist_menu( 
+	zdj_library_menu_row_t * rows, 
 	int count,
 	sqlite3 * db 
 );
 
-int zdj_library_query_count_songs_by_artist( 
-	char * library_entity_id, 
-	char * artist,
-	sqlite3 * db 
-);
-zdj_error_type_t zdj_library_query_songs_by_artist( 
-	char * library_entity_id, 
-	char * artist,
-	zdj_library_song_t ** songs, 
-	int count, 
-	sqlite3 * db 
-);
-
-int zdj_library_query_count_songs_in_bpm_range( 
-	char * library_entity_id, 
-	zdj_library_bpm_range_t range, 
-	sqlite3 * db 
-);
-zdj_error_type_t zdj_library_query_songs_in_bpm_range( 
-	char * library_entity_id, 
-	zdj_library_bpm_range_t range,
-	zdj_library_song_t ** songs, 
-	int count, 
-	sqlite3 * db 
-);
-
-int zdj_library_query_count_all_genres( 
-	char * library_entity_id, 
-	sqlite3 * db 
-);
-zdj_error_type_t zdj_library_query_all_genres( 
-	char * library_entity_id, 
-	char ** genres, 
+zdj_error_type_t zdj_library_query_bpm_menu( 
+	zdj_library_menu_row_t * rows, 
 	int count,
 	sqlite3 * db 
 );
-int zdj_library_query_count_songs_in_genre( 
-	char * library_entity_id, 
+
+int zdj_library_query_count_all_genres( sqlite3 * db );
+zdj_error_type_t zdj_library_query_genres_menu( 
+	char ** rows,
+	int count,
+	sqlite3 * db 
+);
+int zdj_library_query_count_songs_in_genre( sqlite3 * db, char * genre );
+zdj_error_type_t zdj_library_query_genre_menu( 
+	zdj_library_menu_row_t * rows, 
 	char * genre,
-	sqlite3 * db 
-);
-zdj_error_type_t zdj_library_query_songs_in_genre( 
-	char * library_entity_id, 
-	char * genre, 
-	zdj_library_song_t ** songs, 
-	int count, 
+	int count,
 	sqlite3 * db 
 );
 
-int zdj_library_query_count_songs_in_key( 
-	char * library_entity_id, 
-	zdj_library_key_t key, 
-	sqlite3 * db 
-);
-zdj_error_type_t zdj_library_query_songs_in_key( 
-	char * library_entity_id, 
-	zdj_library_key_t key,
-	zdj_library_song_t ** songs, 
-	int count, 
+int zdj_library_query_count_songs_in_key( sqlite3 * db, int key );
+zdj_error_type_t zdj_library_query_key_menu( 
+	zdj_library_menu_row_t * rows, 
+	int key,
+	int count,
 	sqlite3 * db 
 );
 
@@ -698,18 +673,7 @@ zdj_error_type_t zdj_library_query_all_playlists(
 	int count,
 	sqlite3 * db 
 );
-// int zdj_library_query_count_songs_in_playlist( 
-// 	char * library_entity_id, 
-// 	zdj_library_playlist_t * playlist,
-// 	sqlite3 * db 
-// );
-// zdj_error_type_t zdj_library_query_songs_in_playlist( 
-// 	char * library_entity_id, 
-// 	zdj_library_playlist_t * playlist,
-// 	zdj_library_song_t ** songs, 
-// 	int count, 
-// 	sqlite3 * db 
-// );
+
 int zdj_library_query_count_cuepoints_for_song( 
 	zdj_library_song_t * song, 
 	sqlite3 * db 

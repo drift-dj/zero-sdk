@@ -13,11 +13,8 @@ add_library(zerodj
     src/library/api/library/zdj_library_api_key.c
     src/library/api/library/zdj_library_api_library_config.c
     src/library/api/library/zdj_library_api_library.c
-    src/library/api/library/query/zdj_library_api_query_artist.c
-    src/library/api/library/query/zdj_library_api_query_bpm.c
+    src/library/api/library/zdj_library_api_query.c
     src/library/api/library/query/zdj_library_api_query_cuepoint.c
-    src/library/api/library/query/zdj_library_api_query_genre.c
-    src/library/api/library/query/zdj_library_api_query_key.c
     src/library/api/library/query/zdj_library_api_query_playlist.c
     src/library/api/library/query/zdj_library_api_query_year.c
     src/library/api/curation/zdj_library_api_curation.c

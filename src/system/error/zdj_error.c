@@ -11,6 +11,7 @@
 #include <zerodj/system/settings/zdj_settings.h>
 
 static int _inc_current_log_num( zdj_log_type_t type );
+static bool _put_remap_line_for_addr( char * addr, char * remap_line, FILE * remap_file );
 
 ///////////////////////////////////////////////////////
 // Do some hacking to fix wonky library dependencies //
@@ -94,7 +95,7 @@ void _zdj_error_sig( int code ) {
         sprintf( path, "%s/crash_log_%03d.txt", ZDJ_CRASH_LOG_DIR, zdj_new_log_num( ZDJ_LOG_TYPE_CRASH ) );
         FILE * log_fp = fopen( path, "w" );
         if( !log_fp ) { printf( "FAILED TO WRITE CRASH LOG!!!\n" ); exit( code ); }
-        printf( "writing crash log: %p %s\n", log_fp, path );
+        // printf( "writing crash log: %p %s\n", log_fp, path );
         fprintf( log_fp, "### RAW CRASH LOG ###\n" );
 
         int max_frames = 100;
@@ -106,13 +107,17 @@ void _zdj_error_sig( int code ) {
         strings = backtrace_symbols( callstack, frames );
 
         for (int i = 0; i < frames; ++i) {
-            printf( "%s\n", strings[ i ] );
+            // printf( "%s\n", strings[ i ] );
             // Write to current error log file
             fprintf( log_fp, "%s\n", strings[ i ] );
         }
 
         // Finish up the crash log file
         if( log_fp ) { fclose( log_fp ); }
+
+        // Remap the addrs in log to function names/source files
+        zdj_process_latest_crash_log_file( );
+        zdj_setting_set_crash_flag( true );
 
         // Tag the crash so re-launch can trigger a debug modal
         exit( code );
@@ -267,4 +272,115 @@ void zdj_reset_logs( void ) {
     zdj_fs_mkdir_p( ZDJ_ACTIVITY_LOG_DIR );
     zdj_fs_mkdir_p( ZDJ_DEBUG_LOG_DIR );
     sync( );
+}
+
+// Get the most recent crash log and reformat to human-readable
+void zdj_process_latest_crash_log_file( void ) {
+    
+    // Find crash log
+    int log_num = zdj_cur_log_num( ZDJ_LOG_TYPE_CRASH );
+    char log_filepath[ 512 ];
+    sprintf( log_filepath, "%s/crash_log_%03d.txt", ZDJ_CRASH_LOG_DIR, log_num );
+
+    printf( "_process_latest_crash_log_file: %s\n", log_filepath );
+
+    FILE * log_file = fopen( log_filepath, "r" );
+    if ( !log_file ) { printf( "FAILED TO OPEN CRASH LOG!!!\n" ); return; }
+
+    FILE * remap_file = fopen( "/usr/bin/zero-dj/zero-dj.remap", "r" );
+    if ( !remap_file ) { printf( "FAILED TO OPEN REMAP!!!\n" ); return; }
+
+    // If crash log isn't raw, it's already been processed, bug out
+    // char first_line[ 256 ];
+    // if( fgets( first_line, sizeof( first_line ), log_file ) ) {
+    //     if( strncmp( first_line, "###", 3 ) == 0 ) { printf( "Processing a non-raw file!!!\n" ); return; }
+    // };
+    rewind( log_file );
+
+    // Create an array of lines from the log file
+    // Max out at 10 lines
+    #define MAX_LINES 10
+    char lines[ MAX_LINES ][ 256 ];
+    char remap_lines[ MAX_LINES ][ 256 ];
+    int line_counter = 0;
+    
+    while ( fgets( lines[ line_counter ], sizeof( lines[ line_counter ] ), log_file ) ) { 
+        line_counter++; 
+        if( line_counter >= MAX_LINES ){ break; }
+    }
+
+    // Rewrite each line using data from the remap file
+    int output_line = 0;
+    char addr_str[ 64 ];
+    for( int i=0; i<line_counter; i++ ) {
+        // Get address from log line
+        if ( sscanf( lines[ i ], "%*[^(](%*[+]%31[^)])", addr_str ) == 1 ) {
+            // Rewrite log line with function name and source file
+            if( _put_remap_line_for_addr( addr_str, remap_lines[ output_line ], remap_file ) ) {
+                output_line++;
+            }
+        }
+    }
+
+    // Close log file and re-open to overwrite
+    fclose( log_file );
+    log_file = fopen( log_filepath, "w" );
+    if ( !log_file ) { printf( "FAILED TO OPEN CRASH LOG!!!\n" ); return; }
+
+    // Write re-formatted lines to log
+    for( int o=0; o<output_line; o++ ){  
+        // printf( "%s\n", remap_lines[ o ] );
+        fprintf( log_file, "%s\n", remap_lines[ o ] );
+    }
+}
+
+static bool _put_remap_line_for_addr( char * addr, char * remap_line, FILE * remap_file ) {
+    bool found_remap_line = false;
+    // Make int from addr
+    long result = strtol( addr, NULL, 16 );
+    // Scan remap file until address is captured
+    char line[ 512 ];
+    char source_file[ 128 ];
+    char function_name[ 128 ];
+    long vma = 0;
+    char prev_source_file[ 128 ];
+    char prev_function_name[ 128 ];
+    long prev_vma = 0;
+    // Find first address/func in remap file
+    rewind( remap_file );
+    fgets( line, sizeof( line ), remap_file );
+    int res = sscanf( line, "%lx %s %s", &vma, &source_file, &function_name );
+    if( res == 3 ) {
+        strcpy( prev_function_name, function_name );
+        strcpy( prev_source_file, source_file );
+        prev_vma = vma;
+    }
+
+    // Start full scan of remap file
+    rewind( remap_file );
+    while ( fgets( line, sizeof( line ), remap_file ) ) {
+        int res = sscanf( line, "%lx %s %s", &vma, &source_file, &function_name );
+        if( res == 3 ) {
+            if( result > prev_vma && result < vma &&
+                strncmp( prev_function_name, "_zdj_error_sig", 12 ) != 0
+            ) { 
+                // printf( "found line: %llx %llx %s %s\n", result, vma, source_file, function_name );
+                snprintf( remap_line, 256, "%s( )    [%s/0x%lx (0x%lx + 0x%lx)]",
+                    prev_function_name,
+                    prev_source_file,
+                    result,
+                    prev_vma,
+                    result - prev_vma
+                );
+                printf( "%s\n", remap_line );
+                found_remap_line = true;
+                // Exit the loop early when we find the line
+                break;
+            }
+            strcpy( prev_function_name, function_name );
+            strcpy( prev_source_file, source_file );
+            prev_vma = vma;
+        }
+    }
+    return found_remap_line;
 }

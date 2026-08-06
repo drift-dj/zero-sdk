@@ -4,6 +4,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
@@ -119,19 +120,20 @@ zdj_view_t * zdj_new_browser_device_menu_item(
 }
 
 zdj_view_t * zdj_new_song_menu_item( 
-    zdj_library_song_t * song,
+    // zdj_library_song_t * song,
+    zdj_library_menu_row_t * menu_row,
     bool show_title_and_artist,
     bool show_key,
     bool show_camelot,
     bool show_bpm,
     zdj_menu_item_view_layout_t layout
  ) {
-    if( !song ) { return NULL; }
+    if( !menu_row ) { return NULL; }
     char label[ 256 ];
     if( show_title_and_artist ) {
-        snprintf( label, sizeof( label ), "%s - %s", song->catalog->artist, song->catalog->title );
+        snprintf( label, sizeof( label ), "%s - %s", menu_row->artist, menu_row->title );
     } else {
-        strcpy( label, song->catalog->title );
+        strcpy( label, menu_row->title );
     }
     zdj_view_t * menu_item = zdj_new_menu_item( label, layout );
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
@@ -139,24 +141,24 @@ zdj_view_t * zdj_new_song_menu_item(
     // Use i_val as bitfield
     // Pack show/hide bpm/key/cam states, BPM val, and key val into i_val bitfield
     item_state->data.i_val = 0;
-    if( show_camelot && song->performance ) {
+    if( show_camelot ) {
         // Store song key in i_val as bitfield
         item_state->data.i_val += ( (show_camelot & 0x1) << 1 );
     }
-    if( show_key && song->performance ) {
+    if( show_key ) {
         // Store song key in i_val as bitfield
         item_state->data.i_val += ( show_key & 0x1 );
     }
-    if( (show_key || show_camelot) && song->performance ) {
-        item_state->data.i_val += ( (song->performance->key & 0xFF) << 8 );
+    if( show_key || show_camelot ) {
+        item_state->data.i_val += ( (menu_row->key & 0xFF) << 8 );
         // printf( "song key:%d i_val: %d\n", song->performance->key, item_state->data.i_val );
     }
-    if( show_bpm && song->performance && song->performance->has_beat_grid ) {
+    if( show_bpm && menu_row->bpm > zdj_eps ) {
         item_state->data.i_val += ( (show_bpm & 0x1) << 2 );
-        int bpm = round( song->performance->bpm );
+        int bpm = round( menu_row->bpm );
         item_state->data.i_val += ( (bpm & 0xFF) << 16 );
     }
-    if( song->has_error ) {
+    if( menu_row->has_error ) {
         item_state->data.i_val += ( 0x1 << 3 );
     }
     return menu_item;

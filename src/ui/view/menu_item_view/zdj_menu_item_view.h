@@ -196,7 +196,8 @@ zdj_view_t * zdj_new_browser_device_menu_item(
     zdj_menu_item_view_browser_device_type_t type 
 );
 zdj_view_t * zdj_new_song_menu_item( 
-    zdj_library_song_t * song, 
+    // zdj_library_song_t * song, 
+    zdj_library_menu_row_t * menu_row, 
     bool show_title_and_artist,
     bool show_key, 
     bool show_camelot,

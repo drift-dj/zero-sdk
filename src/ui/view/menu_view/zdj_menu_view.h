@@ -68,10 +68,16 @@ typedef struct {
     int section_count;
     int item_count;
     zdj_menu_view_scroll_filter_t * scroll_filter;
+    char lib_db_table[ 256 ]; // <- for lib db menus
     bool needs_layout_update; // <- for front-end use
 } zdj_menu_view_state_t;
 
 zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame );
+zdj_view_t * zdj_new_lib_menu_view( 
+    zdj_ui_orient_t scroll_dir, 
+    char * table_name, 
+    zdj_rect_t * frame 
+);
 void zdj_menu_view_set_scrollview_frame( zdj_view_t * menu_view, zdj_rect_t * frame );
 void zdj_menu_view_add_header( zdj_view_t * menu_view, zdj_view_t * header );
 void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section );

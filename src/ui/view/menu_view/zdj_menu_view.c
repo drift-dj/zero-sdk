@@ -61,6 +61,16 @@ zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame )
     return menu_view;
 }
 
+zdj_view_t * zdj_new_lib_menu_view( 
+    zdj_ui_orient_t scroll_dir, 
+    char * table_name, 
+    zdj_rect_t * frame 
+) {
+    zdj_view_t * menu = zdj_new_menu_view( scroll_dir, frame );
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)menu->state;
+    strcpy( menu_state->lib_db_table, table_name );
+}
+
 void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Let's try dumping the menu BG pixels here
     SDL_Rect s = { 
@@ -514,7 +524,6 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
             should_scroll = _put_next_section_index( view, menu_state->scroll_index, &target_index );
         } else if( e->i_val < 0 ) { 
             should_scroll = _put_prev_section_index( view, menu_state->scroll_index, &target_index );
-            printf( "should scroll %d: %d\n", menu_state->scroll_index, should_scroll );
         }
         if( should_scroll ) { 
             zdj_menu_view_set_scroll_index( view, target_index );
