@@ -244,46 +244,6 @@ zdj_error_type_t zdj_library_generate_stress_test_library( int song_count ) {
     );
     zdj_library_fetch_playback_song_graph( source_song, zdj_library_db );
 
-    // // Copy file/waveforms
-    // zdj_fs_mkdir_p( "/media/internal/library/test/playback_waveform" );
-    // char source_playback_waveform[ 512 ];
-    // sprintf( source_playback_waveform, "/media/internal/library/v1/playback_waveform/%s", source_song->entity_id );
-    // zdj_fs_copy_file( source_playback_waveform, "/media/internal/library/test/playback_waveform/", true );
-
-    // zdj_fs_mkdir_p( "/media/internal/library/test/thumb_waveform" );
-    // char source_thumb_waveform[ 512 ];
-    // sprintf( source_thumb_waveform, "/media/internal/library/v1/thumb_waveform/%s", source_song->entity_id );
-    // zdj_fs_copy_file( source_thumb_waveform, "/media/internal/library/test/thumb_waveform/", true );
-
-    // zdj_fs_mkdir_p( "/media/internal/library/test/music" );
-    // char target_filepath[ 512 ];
-    // sprintf( target_filepath, "/media/internal/library/test/music/%s", source_song->audio->filepath );
-    // zdj_fs_copy_file( source_song->audio->filepath, "/media/internal/library/test/music/", true );
-    
-
-    // // Make/open new db
-    // if( access( "/media/internal/library/test/zero.db", F_OK ) == 0 ) {
-    //     remove( "/media/internal/library/test/zero.db" );
-    // }
-    // sqlite3 * test_db = zdj_sql_open( ZDJ_LIBRARY_IMPORT_DB_PATH );
-    // if( !test_db ) { 
-    //     printf( "failed to create test db\n" );
-    //     return ZDJ_ERROR_LIBRARY_DB_ERROR;
-    // }
-
-    // zdj_library_create_db_tables( test_db );
-
-    // Make n song_graphs pointing to <song>'s file/thumbnail paths
-    // Randomize:
-        // artist
-        // title
-        // album
-        // BPM
-        // genre
-        // Key
-        // cuepoints
-    // Cluster artists and albums to make it more real
-
     char artist[ 64 ];
     int artist_count;
     char album[ 64 ];
@@ -291,7 +251,7 @@ zdj_error_type_t zdj_library_generate_stress_test_library( int song_count ) {
     char title[ 64 ];
     float bpm;
     zdj_library_key_t key;
-    const char genres[ 8 ][ 64 ] = {
+    const char genres[ 9 ][ 64 ] = {
         "House",
         "Tech House",
         "Drum n' Bass",
@@ -299,6 +259,7 @@ zdj_error_type_t zdj_library_generate_stress_test_library( int song_count ) {
         "Hip Hop",
         "Electronic",
         "RnB",
+        "Tech Trance",
         "Rap"
     };
 
@@ -330,7 +291,7 @@ zdj_error_type_t zdj_library_generate_stress_test_library( int song_count ) {
             }
         }
         // Make genre
-        strcpy( genre, genres[ (rand( ) % 7) ] );
+        strcpy( genre, genres[ (rand( ) % 8) ] );
         // Make title
         zdj_library_put_uuid( title );
         // Make bpm
