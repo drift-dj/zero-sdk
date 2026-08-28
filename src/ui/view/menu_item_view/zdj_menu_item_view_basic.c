@@ -35,18 +35,10 @@ void zdj_menu_item_basic_l_init_layout( zdj_view_t * view ) {
     view->frame.h = 8;
     
     // Setup normal view
-    // zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    // zdj_add_subview( state->normal_view, title_ticker_norm );
-    // title_ticker_norm->frame.x = ZDJ_MENU_ITEM_MARGIN_L;
-    // title_ticker_norm->frame.y = -1;
-    // title_ticker_norm->frame.w = view->frame.w - ZDJ_MENU_ITEM_MARGIN_L - ZDJ_MENU_ITEM_MARGIN_R;
-    // title_ticker_norm->frame.h = view->frame.h;
     zdj_view_t * title_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_norm );
     title_norm->frame.x = 1;
     title_norm->frame.y = -1;
-    // title_norm->frame.w = view->frame.w;
-    // title_norm->frame.h = view->frame.h;
     
     // Setup hilite view
     zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_HILITE_7_L ], NULL );
@@ -69,7 +61,6 @@ void zdj_menu_item_basic_l_init_layout( zdj_view_t * view ) {
     title_ticker_hilite->frame.h = view->frame.h;
 
     // Adjust hilite frame based on ticker's frame
-    // hilite_bg->frame.w = (int)fmin( view->frame.w, zdj_ticker_view_get_text_w( title_ticker_hilite ));
     hilite_bg->frame.x = 0;
     hilite_bg_r->frame.x = hilite_bg->frame.w;
 

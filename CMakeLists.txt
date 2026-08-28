@@ -101,6 +101,7 @@ add_library(zerodj
     src/system/settings/zdj_settings.c
     src/system/thread/zdj_thread.c
     src/system/sql/zdj_sql.c
+    src/system/system_cmd/zdj_system_cmd.c
     src/system/usb/zdj_usb.c
     src/system/usb/zdj_usb_device_audio.c
     src/system/usb/zdj_usb_device_db.c
@@ -163,6 +164,7 @@ add_library(zerodj
     src/ui/panel/settings/software/zdj_settings_installer_panel.c
     src/ui/panel/settings/software/zdj_settings_os_install_view.c
     src/ui/panel/settings/software/zdj_settings_os_panel.c
+    src/ui/panel/settings/software/zdj_settings_reset_panel.c
     src/ui/panel/settings/software/zdj_settings_software_panel.c
     src/ui/panel/usb/zdj_usb_panel.c
     src/ui/panel/settings/ui/zdj_settings_ui_panel.c

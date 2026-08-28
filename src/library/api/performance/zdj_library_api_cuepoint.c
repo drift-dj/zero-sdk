@@ -22,7 +22,7 @@ zdj_library_cuepoint_t * zdj_library_fetch_cuepoint_dto_for_entity_id( char * en
     // printf( "zdj_library_fetch_cuepoint_dto_for_entity_id: %s\n", entity_id );
     int res;
     char sql[ 2048 ];
-    snprintf( sql, sizeof( sql ), "select * from %s where entity_id like \'%s\'", 
+    snprintf( sql, sizeof( sql ), "select * from %s where entity_id like \'%s\' order by num", 
         ZDJ_LIBRARY_TABLE_CUEPOINT,
         entity_id
     );
@@ -31,6 +31,7 @@ zdj_library_cuepoint_t * zdj_library_fetch_cuepoint_dto_for_entity_id( char * en
     int _eid_col = col_count;
     int _peid_col = ++col_count;
     int _n_col = ++col_count;
+    int _nm_col = ++col_count;
     int _s_col = ++col_count;
     int _il_col = ++col_count;
     int _ll_col = ++col_count;
@@ -49,6 +50,9 @@ zdj_library_cuepoint_t * zdj_library_fetch_cuepoint_dto_for_entity_id( char * en
 
             char * name = (char*)sqlite3_column_text ( stmt, _n_col );
             if( name ) { strcpy( cuepoint->name, name ); }
+
+            cuepoint->num = sqlite3_column_int ( stmt, _nm_col );
+            if( strlen( name ) < 1 ) { sprintf( cuepoint->name, "%d", cuepoint->num+1 ); }
 
             cuepoint->sample = sqlite3_column_int ( stmt, _s_col );
             cuepoint->is_loop = sqlite3_column_int ( stmt, _il_col );
@@ -69,35 +73,20 @@ zdj_error_type_t zdj_library_store_cuepoint( zdj_library_cuepoint_t * cuepoint, 
     int res;
     char sql[ 4096 ];
 
-    printf( "zdj_library_store_cuepoint: %p - %s, %s, %s \n", 
-        cuepoint,
-        cuepoint->entity_id,
-        cuepoint->performance_entity_id,
-        cuepoint->name
-    );
-
-// 	char entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
-// 	char performance_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
-// 	char data_source_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
-// 	int64_t sample;
-// 	bool is_loop;
-// 	int64_t loop_len;
-
-// strcpy( sql, "CREATE TABLE 'Cuepoint_Entity' (
-// 'entity_id' TEXT NOT NULL, 
-// 'performance_entity_id' TEXT, 
-// 'name' TEXT, 
-// 'sample' INT, 
-// 'is_loop' INT, 
-// 'loop_len' INT, 
-// PRIMARY KEY('entity_id'))" );
+    // printf( "zdj_library_store_cuepoint: %p - %s, %s, %s, %d \n", 
+    //     cuepoint,
+    //     cuepoint->entity_id,
+    //     cuepoint->performance_entity_id,
+    //     cuepoint->name,
+    //     cuepoint->num
+    // );
 
     snprintf( sql, sizeof( sql ), 
         // Insert new record
-        "INSERT INTO %s(entity_id,performance_entity_id,name,sample,is_loop,loop_len) VALUES(\'%s\',\'%s\',\'%s\',%ld,%d,%ld)\n"
+        "INSERT INTO %s(entity_id,performance_entity_id,name,num,sample,is_loop,loop_len) VALUES(\'%s\',\'%s\',\'%s\',%d,%ld,%d,%ld)\n"
 
         // Or update existing record
-        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',performance_entity_id=\'%s\',name=\'%s\',sample=%ld,is_loop=%d,loop_len=%ld",
+        "ON CONFLICT(entity_id) DO UPDATE SET entity_id=\'%s\',performance_entity_id=\'%s\',name=\'%s\',num=%d,sample=%ld,is_loop=%d,loop_len=%ld",
 
         // Table name
         ZDJ_LIBRARY_TABLE_CUEPOINT,
@@ -106,6 +95,7 @@ zdj_error_type_t zdj_library_store_cuepoint( zdj_library_cuepoint_t * cuepoint, 
         cuepoint->entity_id,
         cuepoint->performance_entity_id,
         cuepoint->name,
+        cuepoint->num,
         cuepoint->sample,
         cuepoint->is_loop,
         cuepoint->loop_len,
@@ -114,13 +104,30 @@ zdj_error_type_t zdj_library_store_cuepoint( zdj_library_cuepoint_t * cuepoint, 
         cuepoint->entity_id,
         cuepoint->performance_entity_id,
         cuepoint->name,
+        cuepoint->num,
         cuepoint->sample,
         cuepoint->is_loop,
         cuepoint->loop_len
     );
     zdj_sql_exec( sql, db );
     
-    printf( "zdj_library_store_cuepoint done\n" );
+    // printf( "zdj_library_store_cuepoint done\n" );
 
     return ZDJ_ERROR_OKAY;
+}
+
+void zdj_library_remove_cuepoints_for_performance_eid( char * perf_eid, sqlite3 * db ) {
+    snprintf( _sql, sizeof( _sql ), 
+        "DELETE FROM Cuepoint_Entity WHERE performance_entity_id=\'%s\';",
+        perf_eid
+    );
+    zdj_sql_exec( _sql, zdj_library_db );
+}
+
+void zdj_library_remove_cuepoint( zdj_library_cuepoint_t * cuepoint ) {
+    snprintf( _sql, sizeof( _sql ), 
+        "DELETE FROM Cuepoint_Entity WHERE entity_id=\'%s\';",
+        cuepoint->entity_id
+    );
+    zdj_sql_exec( _sql, zdj_library_db );
 }

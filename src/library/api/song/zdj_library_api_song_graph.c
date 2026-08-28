@@ -41,6 +41,8 @@ zdj_health_status_t zdj_library_store_song_graph(
     // printf( "zdj_library_store_song_graph: %p/%s - %s %s %s %s\n", song, song->entity_id, song->audio->entity_id, song->catalog->entity_id, song->curation->entity_id, song->performance->entity_id );
     if( !song ) { return ZDJ_HEALTH_STATUS_MISSING_SONG; }
     
+    // printf( "storing: %s bpm:%1.1f st:%d\n", song->catalog->title, song->performance->bpm, song->performance->beat_grid_start_sample );
+    
     // Insert record into db.
     if( song->audio ) {
         zdj_health_status_t res = zdj_library_store_audio( song->audio, db );
@@ -117,6 +119,8 @@ zdj_health_status_t zdj_library_delete_song_graph(
     } else {
         zdj_library_delete_song( song, db );
     }
+
+    // Remove song eid from all playlists
     
     return ZDJ_HEALTH_STATUS_OKAY;
 }
@@ -137,6 +141,7 @@ zdj_library_song_t * zdj_library_create_file_import_song_graph(
 
     // Capture missing file error
     if( access( filepath, F_OK ) != 0 ) { 
+        printf( "zdj_library_create_file_import_song_graph: ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_MISSING\n" );
         song->has_error = true;
         song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_MISSING;
     }
@@ -200,6 +205,41 @@ zdj_library_song_t * zdj_library_fetch_file_import_song_graph(
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
     // Standup Graph
+    return song;
+}
+
+zdj_library_song_t * zdj_library_create_rb_xml_import_song_graph( 
+    char * track_id,
+    sqlite3 * db 
+) {
+    // Make song - using the Rekordbox TrackID field as entity_id
+    zdj_library_song_t * song = zdj_library_create_song_dto( );
+    strcpy( song->entity_id, track_id );
+    
+    // Make audio data
+    zdj_library_audio_t * audio = zdj_library_create_audio_dto( );
+    strcpy( song->current_audio_entity_id, audio->entity_id );
+    strcpy( audio->song_entity_id, song->entity_id );
+    song->audio = audio;
+
+    // Make catalog data
+    zdj_library_catalog_t * catalog = zdj_library_create_catalog_dto( );
+    strcpy( song->current_catalog_entity_id, catalog->entity_id );
+    strcpy( catalog->song_entity_id, song->entity_id );
+    song->catalog = catalog;
+    
+    // Make curation data
+    zdj_library_curation_t * curation = zdj_library_create_curation_dto( );
+    strcpy( song->current_curation_entity_id, curation->entity_id );
+    strcpy( curation->parent_entity_id, song->entity_id );
+    song->curation = curation;
+    
+    // Make performance data
+    zdj_library_performance_t * performance = zdj_library_create_performance_dto( );
+    strcpy( song->current_performance_entity_id, performance->entity_id );
+    strcpy( performance->song_entity_id, song->entity_id );
+    song->performance = performance;
+    
     return song;
 }
 
@@ -270,7 +310,7 @@ zdj_library_song_t * zdj_library_fetch_playback_song_graph(
         printf( "performance failed to load for %p\n", song );
     }
 
-    // Fetch and populate playlists
+    // Fetch and populate cuepoints
     song->performance->cuepoint_count = zdj_library_query_count_cuepoints_for_song( song, db );
     if( song->performance->cuepoint_count > 0 ) {
         char * cuepoint_ids[ song->performance->cuepoint_count ];

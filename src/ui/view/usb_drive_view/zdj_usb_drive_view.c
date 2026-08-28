@@ -130,23 +130,26 @@ static void _deinit_state( zdj_view_t * drive_view ) {
 
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    printf( "drive panel draw\n" );
     zdj_usb_drive_view_state_t * state = (zdj_usb_drive_view_state_t *)view->state;
 
     switch ( state->mode ) {
     case ZDJ_USB_DRIVE_VIEW_MODE_ENABLE:
-        if( state->needs_layout_update ) {
-            _enable_update_layout( view );
-        }
-        if( zdj_usb_state->switch_data.state == ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
-            // zdj_usb_start_port_partner_poll( );
-            state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE;
-            state->needs_layout_update = true;
-        } else if( zdj_usb_state->switch_data.state > ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
-            state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ERROR;
-            state->needs_layout_update = true;
-        }
+        printf( "enable\n" );
+        // if( state->needs_layout_update ) {
+        //     _enable_update_layout( view );
+        // }
+        // if( zdj_usb_state->switch_data.state == ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
+        //     // zdj_usb_start_port_partner_poll( );
+        //     state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE;
+        //     state->needs_layout_update = true;
+        // } else if( zdj_usb_state->switch_data.state > ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
+        //     state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ERROR;
+        //     state->needs_layout_update = true;
+        // }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_DISABLE:
+        printf( "disable\n" );
         if( zdj_usb_state->switch_data.state == ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
             state->mode = ZDJ_USB_DRIVE_VIEW_MODE_EXIT;
         } else if( zdj_usb_state->switch_data.state > ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
@@ -158,7 +161,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE:
-        
+        printf( "active" );
         // if( zdj_usb_msd_has_disconnected( ) ) {
         if( zdj_usb_state->gadget_state.msd_has_been_unmounted_by_host ) {
             // Catch a forced-eject from host 
@@ -176,9 +179,11 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_ERROR:
+        printf( "error\n" );
         _error_update_layout( view );
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_EXIT:
+        printf( "exit\n" );
         state->mode = ZDJ_USB_DRIVE_VIEW_MODE_DONE;
         zdj_pop_subview_of( state->parent_view, true );
         if( _zdj_usb_drive_view_state->exit_cb ) { _zdj_usb_drive_view_state->exit_cb( ); }
@@ -186,6 +191,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     default:
         break;
     }
+    printf( "drive panel draw done\n" );
 }
 
 static void _enable_update_layout( zdj_view_t * view ) {
@@ -211,6 +217,8 @@ static void _enable_update_layout( zdj_view_t * view ) {
     zdj_menu_view_add_item( menu_view, processing_2 );
 
     state->needs_layout_update = false;
+
+    printf( "_enable_update_layout done\n" );
 }
 
 static void _disable_update_layout( zdj_view_t * view ) {

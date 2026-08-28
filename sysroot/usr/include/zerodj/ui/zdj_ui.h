@@ -40,6 +40,8 @@
 #define ZDJ_BLINK_PERIOD 7
 #define ZDJ_BLINK_DUTY 3
 
+#define ZDJ_UI_DATA_STRLEN 32
+
 #define ZDJ_SCREEN_W 128
 #define ZDJ_SCREEN_H 64
 
@@ -86,7 +88,7 @@ typedef struct {
 
 typedef struct {
     // char tag[ 8 ];
-    char c_val[ 32 ];
+    char c_val[ ZDJ_UI_DATA_STRLEN ];
     int i_val;
     float f_val;
     bool b_val;
@@ -260,6 +262,7 @@ typedef struct zdj_view_t {
     struct zdj_view_t * next;
     struct zdj_view_t * prev;
     struct zdj_view_t * subviews;
+    struct zdj_view_t * top_subview;
     int subview_count;
     zdj_view_clip_t subview_clip;
     zdj_rect_t frame;

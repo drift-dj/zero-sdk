@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Drift DJ Industries
+// Copyright (c) 2026 Drift DJ Industries
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,25 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_SETTINGS_SOFTWARE_PANEL_H
-#define ZDJ_SETTINGS_SOFTWARE_PANEL_H
+#ifndef ZDJ_SYSTEM_CMD_H
+#define ZDJ_SYSTEM_CMD_H
+
+#include <pthread.h>
+
+typedef enum { 
+    ZDJ_SYSTEM_CMD_STATUS_IDLE,
+    ZDJ_SYSTEM_CMD_STATUS_SUCCESS,
+    ZDJ_SYSTEM_CMD_STATUS_ERROR
+} zdj_system_cmd_status_t;
 
 typedef struct {
-    // PANEL_VIEW_BASE EXTENSION - do not edit
-    zdj_view_t * menu;
-    zdj_view_t * overlay;
-    int overlay_counter;
-    bool needs_layout_update;
-    zdj_view_t * event_target;
-    void (*exit_cb) ( void* );
-    // PANEL_VIEW_BASE EXTENSION - do not edit
-} zdj_settings_software_panel_state_t;
+    char cmd[ 1024 ];
+    bool async;
+    pthread_t thread;
+    void ( *cb ) ( void* );
+    zdj_system_cmd_status_t status;
+    int result;
+    void * data;
+} zdj_system_cmd_context_t;
 
-zdj_view_t * zdj_new_settings_software_panel( void (*cb)(void*) );
-zdj_view_t * zdj_new_settings_app_panel( void (*cb)(void*), zdj_install_t * install );
-zdj_view_t * zdj_new_settings_installer_panel( void (*cb)(void*), zdj_installer_t * installer );
-zdj_view_t * zdj_new_settings_os_panel( void (*cb)(void*) );
-zdj_view_t * zdj_new_settings_os_install_view( char * mount_path, zdj_os_sysreg_t * sysreg );
-zdj_view_t * zdj_new_settings_reset_panel( void );
+void zdj_system_cmd( zdj_system_cmd_context_t * context );
+void zdj_system_cmd_str( char * cmd_str );
+void zdj_system_cmd_str_async( char * cmd_str, void(*cb)(void*) );
 
 #endif

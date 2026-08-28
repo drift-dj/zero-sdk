@@ -856,3 +856,14 @@ zdj_library_key_t zdj_library_get_key_for_id3( char * key_str ) {
 	
 	else { return ZDJ_LIBRARY_KEY_NONE; }
 }
+
+int zdj_library_get_key_for_str( char * str ) {
+	for( int r=0; r<ZDJ_LIBRARY_KEY_NUM_COUNT; r++ ) {
+		for( int c=0; c<3; c++ ) {
+			
+		}
+	}
+	
+	return ZDJ_LIBRARY_KEY_NONE;
+
+}

@@ -144,6 +144,8 @@ zdj_view_t * zdj_new_view( zdj_rect_t * frame ) {
     view->id = zdj_view_stack_id++;
     view->deinit = &_zdj_view_deinit;
     view->update_subviews = &zdj_update_subviews;
+    view->subviews = NULL;
+    view->top_subview = NULL;
     view->type = ZDJ_VIEW_BASE;
 
     // Control map inits to 'none.'
@@ -183,17 +185,28 @@ void zdj_update_subviews( zdj_view_t * view ) {
 }
 
 void zdj_add_subview( zdj_view_t * view, zdj_view_t * subview ) {
-    if( view->subviews ) {
-        zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
-        top_subview->next = subview;
-        subview->prev = top_subview;
+    // if( view->subviews ) {
+    if( view->top_subview ) {
+        // printf( "add %p to end of: %p\n", subview, view );
+        // zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+        // top_subview->next = subview;
+        // subview->prev = top_subview;
+        view->top_subview->next = subview;
+        subview->prev = view->top_subview;
+        subview->next = NULL;
+        view->top_subview = subview;
     } else {
+        // printf( "add %p to start of: %p\n", subview, view );
         view->subviews = subview;
+        view->top_subview = subview;
+        subview->next = NULL;
+        subview->prev = NULL;
     }
     view->subview_count++;
 }
 
 void zdj_add_subview_behind( zdj_view_t * view, zdj_view_t * target_subview, zdj_view_t * new_subview ) {
+    // printf( "zdj_add_subview_behind\n" );
     if( target_subview->prev ) {
         zdj_view_t * old_prev = target_subview->prev;
         old_prev->next = new_subview;
@@ -209,37 +222,45 @@ void zdj_add_subview_behind( zdj_view_t * view, zdj_view_t * target_subview, zdj
 }
 
 void zdj_add_bottom_subview_to( zdj_view_t * view, zdj_view_t * new_subview ) {
+    // printf( "zdj_add_bottom_subview_to\n" );
     if( view->subviews ) {
         view->subviews->prev = new_subview;
         new_subview->next = view->subviews;
+    } else {
+        view->top_subview = new_subview;
+        new_subview->prev = NULL;
+        new_subview->next = NULL;
     }
     view->subviews = new_subview;
     view->subview_count++;
 }
 
 void zdj_remove_subview_of( zdj_view_t * view, zdj_view_t * subview ) {
-    // printf( "zdj_remove_subview_of: %p/%p\n", view, subview );
     if( !subview ){ return; }
     
-    if( subview->next && subview->prev ) {
-        // printf( "middle case\n" );
-        // If we're in the middle of a linked list, splice the subview out
-        subview->next->prev = subview->prev;
-        subview->prev->next = subview->next;
-    } else if( subview->next ) {
-        // printf( "beginning case\n" );
-        // If we're at the beginning of the linked list,
-        // subview.next becomes head of superview's subviews list.
+    if( subview == view->subviews && subview == view->top_subview ) {
+        // Single case
+        // printf( "single case: %p<->%p\n", subview->prev, subview->next );
+        view->subviews = NULL;
+        view->top_subview = NULL;
+    } else if( subview == view->subviews ) {
+        // Bottom case
+        // printf( "bottom case: %p<->%p\n", subview->prev, subview->next );
         subview->next->prev = NULL;
         view->subviews = subview->next;
-    } else if( subview->prev ) {
-        // printf( "end case\n" );
-        // If we're at the end of the linked list, null out the new end.
+    } else if( subview == view->top_subview ) {
+        // Top case
+        // printf( "top case: %p<->%p\n", subview->prev, subview->next );
         subview->prev->next = NULL;
+        view->top_subview = subview->prev;
     } else {
-        // printf( "single case\n" );
-        // If this is the base subview, null subviews out
-        view->subviews = NULL;
+        // Middle case
+        // printf( "middle case: %p<-%p->%p t:%p b:%p\n", 
+        //     subview->prev, subview, subview->next,
+        //     view->top_subview, view->subviews 
+        // );
+        subview->next->prev = subview->prev;
+        subview->prev->next = subview->next;
     }
     view->subview_count--;
     zdj_delete_view( subview );
@@ -255,6 +276,7 @@ void zdj_remove_all_subviews_of( zdj_view_t * view ) {
         zdj_delete_view( old_subview );
     }
     view->subviews = NULL;
+    view->top_subview = NULL;
     view->subview_count = 0;
 }
 
@@ -273,7 +295,8 @@ bool zdj_subview_exists_in( zdj_view_t * view, zdj_view_t * target_subview ) {
 
 void zdj_push_subview( zdj_view_t * view, zdj_view_t * subview, bool animated ) {
     // Grab a ref to the top subview so we can make it disappear
-    zdj_view_t * old_subview = zdj_view_stack_top_subview_of( view );
+    // zdj_view_t * old_subview = zdj_view_stack_top_subview_of( view );
+    zdj_view_t * old_subview = view->top_subview;
     // Add the new subview to the top
     zdj_add_subview( view, subview );
 
@@ -318,7 +341,8 @@ void zdj_push_subview_behind( zdj_view_t * view, zdj_view_t * target_subview, zd
 // Remove the top subview of a view
 void zdj_pop_subview_of( zdj_view_t * view, bool animated ) {
     // Get top subview to hide
-    zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+    // zdj_view_t * top_subview = zdj_view_stack_top_subview_of( view );
+    zdj_view_t * top_subview = view->top_subview;
     // Get next highest subview to show
     zdj_view_t * prev_subview = top_subview->prev;
 
@@ -350,7 +374,8 @@ void zdj_pop_to_subview_of( zdj_view_t * view, zdj_view_t * target_subview, bool
     int pop_count = 0;
     bool target_found = false;
     // Count number of subviews to pop to reveal target subview
-    zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
+    // zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
+    zdj_view_t * subview = view->top_subview;
     while( subview ) {
         // printf( "subview: %p, targ: %p\n", subview, target_subview );
         if( subview == target_subview ) { 
@@ -374,7 +399,8 @@ void zdj_pop_n_subviews_of( zdj_view_t * view, int count, bool animated ) {
     if( view->subview_count < count ) { return; }
     
     // Animate out anything from top view down to n
-    zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
+    // zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
+    zdj_view_t * subview = view->top_subview;
     for( int n=0; n<count; n++ ) {
         if( subview ) {
             // printf( "starting out anim: %p\n", subview );

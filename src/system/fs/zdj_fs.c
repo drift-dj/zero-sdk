@@ -223,6 +223,15 @@ char * zdj_fs_get_file_extension( char * filepath ) {
     return dot + 1;
 }
 
+bool zdj_fs_put_file_extension( char * dest, char * filepath ) {
+    if( !filepath || !dest ) { return false; }
+    char * filename = basename( filepath );
+    char * dot = strrchr( filename, '.' );
+    if( !dot || dot == filename ){ return false; }
+    strcpy( dest, dot );
+    return true;
+}
+
 bool zdj_fs_path_is_dir( char * path ) {
     DIR * dir = opendir( path );
     if( !dir ) {

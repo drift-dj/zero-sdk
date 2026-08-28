@@ -420,8 +420,14 @@ static void _lib_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _drop_library_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
-    // printf( "_drop_library_dialog_exit %d\n", selection );
-    zdj_library_reset_db( );
+    if( selection ) {
+        // printf( "_drop_library_dialog_exit %d\n", selection );
+        zdj_library_reset_db( );
+        // zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+        // zdj_pop_subview_of( panel_state->settings_panel, true );
+        sync( );
+        exit( 1 );
+    }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }
@@ -450,8 +456,11 @@ static void _settings_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _drop_settings_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
-    // printf( "_drop_settings_dialog_exit %d\n", selection );
-    zdj_drop_settings( );
+    if( selection ) {
+        // printf( "_drop_settings_dialog_exit %d\n", selection );
+        zdj_drop_settings( );
+
+    }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }

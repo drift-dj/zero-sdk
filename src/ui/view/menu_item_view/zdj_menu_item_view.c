@@ -32,6 +32,7 @@ zdj_view_t * zdj_new_menu_item( char * title, zdj_menu_item_view_layout_t layout
     if( title ) { strcpy( state->title, title ); } else { strcpy( state->title, "Undefined" ); }
     state->layout = layout;
     state->data.ptr = NULL;
+    state->owned_ptr = NULL;
     state->needs_layout_init = true;
     state->init_layout = NULL;
     state->needs_layout_update = false;
@@ -138,6 +139,7 @@ zdj_view_t * zdj_new_song_menu_item(
     zdj_view_t * menu_item = zdj_new_menu_item( label, layout );
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
     
+    item_state->owned_ptr = menu_row;
     // Use i_val as bitfield
     // Pack show/hide bpm/key/cam states, BPM val, and key val into i_val bitfield
     item_state->data.i_val = 0;
@@ -273,6 +275,7 @@ void _zdj_menu_item_set_hilite( zdj_menu_item_view_state_t * state, zdj_view_cli
 
 void _zdj_menu_item_deinit_state( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    if( state->owned_ptr ){ free( state->owned_ptr ); }
     free( state );
     view->state = NULL;
 }

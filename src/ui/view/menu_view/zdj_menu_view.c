@@ -89,7 +89,9 @@ void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Update the scroll filter physics simulation.
     // Use the output value to set menu scroll index.
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)view->state;
+    // printf( "%d / %d | ", menu_state->scroll_index, menu_state->item_count );
     zdj_menu_view_update_scroll_filter( view );
+
     if( menu_state->scroll_filter->out_index != menu_state->scroll_index ) {
         _update_scroll( view, menu_state->scroll_filter->out_index );
     }
@@ -289,6 +291,19 @@ void zdj_menu_view_remove_all_items( zdj_view_t * menu_view ) {
     menu_state->scroll_index = 0;
     menu_state->section_count = 0;
     menu_state->item_count = 0;
+}
+
+void zdj_menu_view_remove_subview( zdj_view_t * menu_view, zdj_view_t * subview ) {
+    if( menu_view->type != ZDJ_VIEW_MENU ) { 
+        printf( "Remove Subviews called on non-menu\n" );
+        return;
+    }
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t *)menu_view->state;
+    if( !menu_state) {
+        printf( "Remove Subviews called with menu->state = NULL\n" );
+        return;
+    }
+    zdj_remove_subview_of( menu_state->scroll_view, subview );
 }
 
 void zdj_menu_view_remove_all_subviews( zdj_view_t * menu_view ) {
@@ -716,9 +731,10 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
                     menu_state->scroll_index 
                 );
             }
-            if( !prev_menu_item ) { return; }
-            prev_menu_item_state = prev_menu_item->state;
-            prev_menu_item_state->is_hilite = false;
+            if( prev_menu_item ) {
+                prev_menu_item_state = prev_menu_item->state;
+                prev_menu_item_state->is_hilite = false;
+            }
         }
 
         // Grab a scroll direction and update the scroll index

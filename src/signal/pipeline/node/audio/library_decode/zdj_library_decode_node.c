@@ -40,7 +40,7 @@ zdj_pipeline_node_t * zdj_new_library_decode_node( zdj_library_song_t * song ) {
 
     state->out_buffer = calloc( 10000, sizeof( float ) );
 
-    // av_log_set_level( AV_LOG_QUIET );
+    av_log_set_level( AV_LOG_QUIET );
 
     // Use the open command to build the Format Context
     state->fmt_ctx = avformat_alloc_context( );
@@ -93,6 +93,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         state->song->has_error = true;
         state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
         state->song->analysis_state = ZDJ_LIBRARY_ANALYSIS_STATE_DONE; 
+        printf( "zdj_library_create_file_import_song_graph: ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED\n" );
     }
 
     
@@ -187,6 +188,7 @@ static int _decode(
             state->song->audio->libav_error = res;
             state->song->has_error = true;
             state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
+            printf( "zdj_library_create_file_import_song_graph: ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED\n" );
             return 0; 
         }
         // Attempt to read another frame to see if things improve

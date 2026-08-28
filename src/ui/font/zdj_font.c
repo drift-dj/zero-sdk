@@ -21,8 +21,8 @@ int zdj_font_init( void ) {
     zdj_font_6 = TTF_OpenFont( "/root/res/fonts/pixelated.ttf", 8 );
     zdj_font_6_caps = TTF_OpenFont( "/root/res/fonts/pixelsix14.ttf", 8 );
     zdj_font_9 = TTF_OpenFont( "/root/res/fonts/lo-res09-nar.ttf", 9 );
-    zdj_font_12 = TTF_OpenFont( "/root/res/fonts/pixelated.ttf", 16 );
-    zdj_font_12_caps = TTF_OpenFont( "/root/res/fonts/pixelsix14.ttf", 16 );
+    zdj_font_12 = TTF_OpenFont( "/root/res/fonts/pixelated.ttf", 15 );
+    zdj_font_12_caps = TTF_OpenFont( "/root/res/fonts/pixelsix14.ttf", 15 );
     zdj_font_18 = TTF_OpenFont( "/root/res/fonts/pixelated.ttf", 24 );
     zdj_font_18_caps = TTF_OpenFont( "/root/res/fonts/pixelsix14.ttf", 24 );
     // Font 6 is the only crititcal system font.

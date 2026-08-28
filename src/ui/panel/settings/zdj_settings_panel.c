@@ -68,7 +68,7 @@ zdj_view_t * zdj_new_settings_panel( void ) {
     ui_state->data.ptr = view;
     zdj_menu_view_add_item( menu, ui_btn );
 
-    zdj_view_t * software_btn = zdj_new_menu_item( "Software", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    zdj_view_t * software_btn = zdj_new_menu_item( "System", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     software_btn->handle_control_event = _software_btn;
     zdj_menu_item_view_state_t * software_state = (zdj_menu_item_view_state_t*)software_btn->state;
     software_state->data.ptr = view;

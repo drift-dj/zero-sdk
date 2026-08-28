@@ -31,6 +31,14 @@
 #define ZDJ_LIBRARY_ENTITY_ID_LEN 37
 #define ZDJ_LIBRARY_TABLE_LINK_LEN 256
 
+#define ZDJ_LIBRARY_ARTIST_LEN 256
+#define ZDJ_LIBRARY_TITLE_LEN 256
+#define ZDJ_LIBRARY_ALBUM_LEN 256
+#define ZDJ_LIBRARY_GENRE_LEN 256
+#define ZDJ_LIBRARY_LABEL_LEN 256
+#define ZDJ_LIBRARY_CUEPOINT_NAME_LEN 128
+#define ZDJ_LIBRARY_FILEPATH_LEN 1024
+
 #define ZDJ_LIBRARY_VERSION 1
 #define ZDJ_LIBRARY_DIR "/media/internal/library/v1"
 #define ZDJ_LIBRARY_DB_PATH "/media/internal/library/v1/zero.db"
@@ -102,6 +110,35 @@ typedef enum {
     ZDJ_LIBRARY_KEY_NUM_ANY,
 	ZDJ_LIBRARY_KEY_NUM_COUNT
 } zdj_library_key_numeric_t;
+
+static char * zdj_library_key_match[ ZDJ_LIBRARY_KEY_NUM_COUNT ][ 3 ] = {
+	{ "none", "none", "none" }, // ZDJ_LIBRARY_KEY_NONE,
+	{ "a", "amaj", "11B" }, // ZDJ_LIBRARY_KEY_A, 
+    { "am", "amin", "8A" }, // ZDJ_LIBRARY_KEY_AM, 
+    { "ab", "abmaj", "4B" }, // ZDJ_LIBRARY_KEY_AB, 
+    { "amb", "abmin",  "1A" }, // ZDJ_LIBRARY_KEY_ABM,
+    { "b", "bmaj", "1B" }, // ZDJ_LIBRARY_KEY_B, 
+    { "bm", "bmin", "10A" }, // ZDJ_LIBRARY_KEY_BM, 
+    { "bb", "bbmaj", "6B" }, // ZDJ_LIBRARY_KEY_BB, 
+    { "bbm", "bbmin", "3A" }, // ZDJ_LIBRARY_KEY_BBM,
+    { "c", "cmaj", "8B" }, // ZDJ_LIBRARY_KEY_C, 
+    { "cm", "cmin", "5A" }, // ZDJ_LIBRARY_KEY_CM,
+    { "d", "dmaj", "10B" }, // ZDJ_LIBRARY_KEY_D, 
+    { "dm", "dmin", "7A" }, // ZDJ_LIBRARY_KEY_DM, 
+    { "db", "dbmaj", "3B" }, // ZDJ_LIBRARY_KEY_DB, 
+    { "dbm", "dbmin", "12A" }, // ZDJ_LIBRARY_KEY_DBM,
+    { "e", "emaj", "12B" }, // ZDJ_LIBRARY_KEY_E, 
+    { "em", "emin", "9A" }, // ZDJ_LIBRARY_KEY_EM, 
+    { "eb", "ebmaj", "5B" }, // ZDJ_LIBRARY_KEY_EB, 
+    { "ebm", "ebmin", "2A" }, // ZDJ_LIBRARY_KEY_EBM,
+    { "f", "fmaj", "7B" }, // ZDJ_LIBRARY_KEY_F, 
+    { "fm", "fmin", "4A" }, // ZDJ_LIBRARY_KEY_FM, 
+    { "f#", "f#maj", "2B" }, // ZDJ_LIBRARY_KEY_FS, 
+    { "f#m", "f#min", "11A" }, // ZDJ_LIBRARY_KEY_FSM,
+    { "g", "gmaj", "9B" }, // ZDJ_LIBRARY_KEY_G, 
+    { "gm", "gmin", "6A" }, // ZDJ_LIBRARY_KEY_GM,
+    { "any", "any", "any" } // ZDJ_LIBRARY_KEY_ANY,
+};
 
 typedef enum {
 	ZDJ_LIBRARY_KEY_NONE,
@@ -202,6 +239,7 @@ typedef enum {
 	ZDJ_LIBRARY_ANALYSIS_STATE_SCAN,
 	ZDJ_LIBRARY_ANALYSIS_STATE_RUNNING,
 	ZDJ_LIBRARY_ANALYSIS_STATE_DONE,
+	ZDJ_LIBRARY_ANALYSIS_STATE_SKIP,
 	ZDJ_LIBRARY_ANALYSIS_STATE_IDLE
 } zdj_library_analysis_state_t;
 
@@ -235,7 +273,7 @@ typedef struct {
 
 typedef struct {
 	char entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
-	char filepath[ 256 ];
+	char filepath[ ZDJ_LIBRARY_FILEPATH_LEN ];
 	char file_checksum[ 64 ];
 	char song_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	char data_source_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
@@ -272,11 +310,11 @@ typedef struct {
 	char entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	char song_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	char data_source_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
-	char title[ 256 ];
-	char artist[ 256 ];
-	char album[ 256 ];
-	char label[ 256 ];
-	char genre[ 256 ];
+	char title[ ZDJ_LIBRARY_TITLE_LEN ];
+	char artist[ ZDJ_LIBRARY_ARTIST_LEN ];
+	char album[ ZDJ_LIBRARY_ALBUM_LEN ];
+	char label[ ZDJ_LIBRARY_LABEL_LEN ];
+	char genre[ ZDJ_LIBRARY_GENRE_LEN ];
 	int year;
 	sqlite3_stmt * store_stmt;
 	sqlite3_stmt * fetch_stmt;
@@ -303,7 +341,8 @@ typedef struct zdj_library_cuepoint_t {
 	char entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	char performance_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	char data_source_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
-	char name[ 128 ];
+	char name[ ZDJ_LIBRARY_CUEPOINT_NAME_LEN ];
+	int num;
 	int64_t sample;
 	bool is_loop;
 	int64_t loop_len;
@@ -334,9 +373,9 @@ typedef struct zdj_library_playlist_t {
 	char table_name[ ZDJ_LIBRARY_TABLE_LINK_LEN ]; // Playlists are stored as an entire table
 	char data_source_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	char title[ 256 ];
-	char ordered_song_links_table[ ZDJ_LIBRARY_TABLE_LINK_LEN ];
-	int song_count;
-	struct zdj_library_song_t * songs;
+	int row_count;
+	void * row_head;
+	void * row_tail;
 	struct zdj_library_playlist_t * next;
 	struct zdj_library_playlist_t * prev;
 } zdj_library_playlist_t;
@@ -349,6 +388,13 @@ typedef enum {
 	ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_NOACCESS,
 	ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED,
 } zdj_library_song_error_t;
+
+typedef struct {
+	bool can_merge;
+	bool should_merge;
+	int merge_option;
+	char merge_source[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
+} zdj_library_song_import_context_t;
 
 typedef struct zdj_library_song_t {
 	char entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
@@ -370,6 +416,7 @@ typedef struct zdj_library_song_t {
 	zdj_library_links_t * audio_links;
 	zdj_library_analysis_state_t analysis_state;  // optional - only used during lib import workflows
 	float analysis_progress;
+	zdj_library_song_import_context_t import_context;
 	bool has_error;
 	int error_flags;
 	bool has_db_error; // runtime-only flag for DB-related problems
@@ -377,14 +424,21 @@ typedef struct zdj_library_song_t {
 	struct zdj_library_song_t * prev;
 } zdj_library_song_t;
 
-typedef struct {
+typedef struct zdj_library_menu_row_t {
 	char song_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
-	char artist[ 1024 ];
-	char title[ 1024 ];
-	char filepath[ 512 ];
+	char artist[ ZDJ_LIBRARY_ARTIST_LEN ];
+	char title[ ZDJ_LIBRARY_TITLE_LEN ];
+	char genre[ ZDJ_LIBRARY_GENRE_LEN ];
+	int year;
+	char filepath[ ZDJ_LIBRARY_FILEPATH_LEN ];
 	float bpm;
 	int key;
 	bool has_error;
+	int error_flags;
+	int num;
+	bool is_section;
+	struct zdj_library_menu_row_t * next;
+	struct zdj_library_menu_row_t * prev;
 } zdj_library_menu_row_t;
 
 typedef enum {
@@ -508,6 +562,7 @@ zdj_health_status_t zdj_library_store_links_table( char * links_table_name, sqli
 // Song Graph
 zdj_library_song_t * zdj_library_create_file_import_song_graph( char * filepath, sqlite3 * db );
 zdj_library_song_t * zdj_library_fetch_file_import_song_graph( char * song_entity_id, sqlite3 * db );
+zdj_library_song_t * zdj_library_create_rb_xml_import_song_graph( char * track_id, sqlite3 * db );
 zdj_library_song_t * zdj_library_fetch_rb_xml_import_song_graph( zdj_library_song_t * song, sqlite3 * db );
 zdj_library_song_t * zdj_library_fetch_menu_song_graph( zdj_library_song_t * song, sqlite3 * db );
 zdj_library_song_t * zdj_library_fetch_playback_song_graph( zdj_library_song_t * song, sqlite3 * db );
@@ -542,6 +597,10 @@ zdj_health_status_t zdj_library_free_performance_dto( zdj_library_performance_t 
 zdj_health_status_t zdj_library_store_performance( zdj_library_performance_t * performance, sqlite3 * db );
 zdj_health_status_t zdj_library_delete_performance( zdj_library_performance_t * performance, sqlite3 * db );
 
+void zdj_library_merge_song_with_entity_id( zdj_library_song_t * song, char * eid, sqlite3 * db );			
+void zdj_library_replace_entity_id_with_song( zdj_library_song_t * song, char * eid, sqlite3 * db );
+
+// Audio
 zdj_library_audio_t * zdj_library_create_audio_dto( void );
 zdj_library_audio_t * zdj_library_fetch_current_audio_dto_for_song( zdj_library_song_t * song, sqlite3 * db );
 zdj_health_status_t zdj_library_free_audio_dto( zdj_library_audio_t * audio );
@@ -565,26 +624,35 @@ zdj_health_status_t zdj_library_store_curation( zdj_library_curation_t * curatio
 zdj_health_status_t zdj_library_delete_curation( zdj_library_curation_t * curation, sqlite3 * db );
 
 zdj_library_playlist_t * zdj_library_create_playlist_dto( void );
+bool zdj_library_playlist_title_exists_in_db( char * title, char * table_name, sqlite3 * db );
+void zdj_library_merge_playlist( zdj_library_playlist_t * playlist, char * merge_source, sqlite3 * db );
+void zdj_library_replace_playlist( zdj_library_playlist_t * playlist, char * target_table_name, sqlite3 * db );
 zdj_error_type_t zdj_library_store_playlist( 
     char * library_entity_id, 
     zdj_library_playlist_t * playlist, 
     sqlite3 * db 
 );
 zdj_error_type_t zdj_library_delete_playlist( char * library_entity_id, zdj_library_playlist_t * playlist, sqlite3 * db );
+zdj_error_type_t zdj_library_delete_playlist_named( 
+	char * playlist_table_name, sqlite3 * db 
+);
 
 zdj_library_playlist_t * zdj_library_make_playlist_dto_for_table_name( char * library_entity_id, char * playlist_table_name, sqlite3 * db );
-void zdj_library_playlist_add_song( 
+void zdj_library_playlist_append_row( 
     zdj_library_playlist_t * playlist, 
-    zdj_library_song_t * song, 
-    sqlite3 * db 
+    zdj_library_menu_row_t * row
 );
 void zdj_library_put_playlist_name_for_playlist( zdj_library_playlist_t * playlist, sqlite3 * db );
-void zdj_library_playlist_remove_song( 
+void zdj_library_playlist_remove_row( 
     zdj_library_playlist_t * playlist, 
-    zdj_library_song_t * song, 
-    sqlite3 * db 
+    zdj_library_menu_row_t * row
 );
-void zdj_library_free_playlist_dto( zdj_library_playlist_t * playlist );
+void zdj_library_playlist_move_row( 
+    zdj_library_playlist_t * playlist, 
+    zdj_library_menu_row_t * row, 
+    int index
+);
+void zdj_library_free_playlist_dto( zdj_library_playlist_t * playlist, bool free_rows );
 
 zdj_error_state_t zdj_library_populate_playlist_eids_for_song(
     zdj_library_song_t * song,
@@ -595,7 +663,10 @@ zdj_error_state_t zdj_library_populate_playlist_eids_for_song(
 zdj_library_cuepoint_t * zdj_library_create_cuepoint_dto( void );
 zdj_library_cuepoint_t * zdj_library_fetch_cuepoint_dto_for_entity_id( char * entity_id, sqlite3 * db );
 void zdj_library_free_cuepoint_dto( zdj_library_cuepoint_t * cuepoint );
+void zdj_library_remove_cuepoints_for_performance_eid( char * perf_eid, sqlite3 * db );
+void zdj_library_remove_cuepoint( zdj_library_cuepoint_t * cuepoint );
 zdj_error_type_t zdj_library_store_cuepoint( zdj_library_cuepoint_t * cuepoint, sqlite3 * db );
+int zdj_library_get_key_for_str( char * str );
 
 // Recordings
 void zdj_library_remove_all_recordings( void );
@@ -605,15 +676,16 @@ void zdj_library_remove_all_recordings( void );
 void zdj_library_refresh_menu_query_table( sqlite3 * db );
 
 int zdj_library_query_count_all_songs( sqlite3 * db );
+bool zdj_library_query_song_eid_exists( char * song_eid, sqlite3 * db );
+bool zdj_library_query_import_song_match( zdj_library_song_t * song, char * match_eid, sqlite3 * db );
 
 zdj_error_type_t zdj_library_query_artist_menu( 
-	zdj_library_menu_row_t * rows, 
-	int count,
+	zdj_library_menu_row_t ** rows, 
 	sqlite3 * db 
 );
 
 zdj_error_type_t zdj_library_query_bpm_menu( 
-	zdj_library_menu_row_t * rows, 
+	zdj_library_menu_row_t ** rows, 
 	int count,
 	sqlite3 * db 
 );
@@ -626,7 +698,7 @@ zdj_error_type_t zdj_library_query_genres_menu(
 );
 int zdj_library_query_count_songs_in_genre( sqlite3 * db, char * genre );
 zdj_error_type_t zdj_library_query_genre_menu( 
-	zdj_library_menu_row_t * rows, 
+	zdj_library_menu_row_t ** rows, 
 	char * genre,
 	int count,
 	sqlite3 * db 
@@ -634,7 +706,7 @@ zdj_error_type_t zdj_library_query_genre_menu(
 
 int zdj_library_query_count_songs_in_key( sqlite3 * db, int key );
 zdj_error_type_t zdj_library_query_key_menu( 
-	zdj_library_menu_row_t * rows, 
+	zdj_library_menu_row_t ** rows, 
 	int key,
 	int count,
 	sqlite3 * db 

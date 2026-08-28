@@ -64,6 +64,7 @@ static void * _zdj_usb_thread_main( void * arg ) {
     }
 
     while( state->run_state_thread ) {
+        // printf( "usb_thread\n" );
         ///////////////////////////
         // Mode Switch Requested //
         ///////////////////////////
@@ -92,6 +93,7 @@ static void * _zdj_usb_thread_main( void * arg ) {
             _update_msd_gadget_state( state );
         }
 
+        // printf( "usb_thread done\n" );
         // sleep for a bit between checks
         sleep( 1 );
     }
@@ -99,7 +101,7 @@ static void * _zdj_usb_thread_main( void * arg ) {
 
 
 static void _update_port_partner( zdj_usb_state_t * state ) {
-
+    // printf( "_update_port_partner\n" );
     char port_partner[ 128 ];
     char msd_file[ 64 ];
             
@@ -125,9 +127,11 @@ static void _update_port_partner( zdj_usb_state_t * state ) {
         // printf( "port doesn't have partner\n" );
         state->has_port_partner = false;
     }
+    // printf( "_update_port_partner done\n" );
 }
 
 static void _update_msd_gadget_state( zdj_usb_state_t * state ) {
+    // printf( "_update_msd_gadget_state\n" );
     char msd_file[ 256 ];
     if( !state->gadget_state.msd_has_been_mounted ) {
         if( access( "/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", F_OK ) == 0 ) {
@@ -153,6 +157,7 @@ static void _update_msd_gadget_state( zdj_usb_state_t * state ) {
             }
         }
     }
+    // printf( "_update_msd_gadget_state done\n" );
 }
 
 static void _update_hosted_devices( zdj_usb_state_t * state ) {
@@ -201,6 +206,7 @@ static void _update_hosted_devices( zdj_usb_state_t * state ) {
 // Perform a blocking switch sequence to the requested state.
 // This is intended to be called from the USB state thread.
 static void _switch_state( zdj_usb_state_t * state ) {
+    // printf( "_switch_state\n" );
     zdj_usb_log_begin( );
     sprintf( zdj_usb_state->log_str, "USB Switch State\n" );
     zdj_usb_log( zdj_usb_state->log_str );
@@ -228,10 +234,11 @@ static void _switch_state( zdj_usb_state_t * state ) {
 
     struct timespec settle_sleep = { 0, 100000000 };
 
-    char cmd[ 256 ];
+    char cmd[ 1024 ];
     strcpy( state->switch_data.switch_str_1, " " );
     strcpy( state->switch_data.switch_str_2, " " );
     zdj_usb_state->switch_data.should_show_lib_rescan = false;
+
 
     // Check if we need to teardown any gadgets
     if( zdj_usb_has_active_gadget( zdj_usb_state ) ) {
@@ -248,10 +255,12 @@ static void _switch_state( zdj_usb_state_t * state ) {
         state->switch_data.has_update = true;
         strcpy( cmd, "/root/boot/teardown_gadget.sh" );
         system( cmd );
+        printf( "cmd done\n" );
         nanosleep( &settle_sleep, NULL );
-        // settle_sleep.tv_sec = 1;
         settle_sleep.tv_nsec = 100000000;
     }
+
+    printf( "USB 1\n" );
 
 
     // Check if we need to teardown the entire USB stack before enabling new mode
@@ -322,7 +331,7 @@ static void _switch_state( zdj_usb_state_t * state ) {
         settle_sleep.tv_nsec = 100000000;
         
     }
-    
+
     printf( "Bringing up USB stack:\n" );
     sprintf( zdj_usb_state->log_str, "Bringing up USB stack script seq:\n" );
     zdj_usb_log( zdj_usb_state->log_str );
@@ -380,7 +389,7 @@ static void _switch_state( zdj_usb_state_t * state ) {
             break;
     }
 
-    printf( "USB switch done\n" );
+    // printf( "USB switch done\n" );
     sprintf( zdj_usb_state->log_str, "USB Switch State Done\n" );
     zdj_usb_log( zdj_usb_state->log_str );
     state->switch_data.state = ZDJ_USB_SUBMODE_SWITCH_SUCCESS;

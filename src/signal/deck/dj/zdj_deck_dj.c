@@ -424,10 +424,10 @@ static void * _pipeline_thread_main( void * arg ) {
             // it should be to refill the node.
             if( decode_state->refresh_mode == ZDJ_DECODE_REFRESH_NOOP_HYPERSCRUB ) {
                 if( deck->controls.loop_state.is_enabled ) {
-                    printf( "exiting hyperscrub to loop\n" );
+                    // printf( "exiting hyperscrub to loop\n" );
                     decode_state->refresh_mode = ZDJ_DECODE_REFRESH_DISCON_LOOP;
                 } else {
-                    printf( "exiting hyperscrub to contig.\n" );
+                    // printf( "exiting hyperscrub to contig.\n" );
                     decode_state->refresh_mode = ZDJ_DECODE_REFRESH_CONTIGUOUS;
                 }
             }

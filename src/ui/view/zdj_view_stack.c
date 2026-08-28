@@ -181,6 +181,7 @@ void zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view
 // This is a recursive draw, first getting a clip frame from the view's draw func,
 // then recursing into the view's subviews, finally moving to the next sibling view.
 void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    if( !view ) { return; }
     // Build view count by counting every draw invocation.
     zdj_new_view_count++;
     // printf( "zdj_view_stack_draw %p\n", view );
@@ -227,6 +228,7 @@ void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 //  - a rect clipped within superview's clipped rect
 //  - a rect of screen-space coords to draw view's pixels
 void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t * superview_clip ) {
+    if( !subview ) { return; }
     zdj_view_clip_t * subview_clip = &subview->subview_clip;
 
     // Prep is_visible for view out-of-bounds state
@@ -324,15 +326,16 @@ void zdj_view_stack_update_subview_clip( zdj_view_t * subview, zdj_view_clip_t *
 // Walk to end of linked subviews list and return the last view.
 // Return NULL if there are no subviews.
 zdj_view_t * zdj_view_stack_top_subview_of( zdj_view_t * view ) {
-    zdj_view_t * _view = view->subviews;
-    while( _view ) {
-        if( _view->next ) {
-            _view = _view->next;
-        } else {
-            return _view;
-        }
-    }
-    return NULL;
+    // zdj_view_t * _view = view->subviews;
+    // while( _view ) {
+    //     if( _view->next ) {
+    //         _view = _view->next;
+    //     } else {
+    //         return _view;
+    //     }
+    // }
+    // return NULL;
+    return view->top_subview;
 }
 
 // Return first subview in linked list.

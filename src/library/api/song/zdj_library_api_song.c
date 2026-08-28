@@ -167,6 +167,178 @@ zdj_health_status_t zdj_library_fetch_song_entity_ids(
     }
 }
 
+void zdj_library_merge_song_with_entity_id( 
+    zdj_library_song_t * song, 
+    char * eid,
+    sqlite3 * db 
+) {
+    int res;
+    char sql[ 2048 ];
+    snprintf( sql, sizeof( sql ), "SELECT \
+        s.entity_id, \
+        s.current_audio_entity_id, \
+        s.current_catalog_entity_id, \
+        s.current_performance_entity_id, \
+        s.current_curation_entity_id, \
+        cat.artist, \
+        cat.title, \
+        cat.genre, \
+        cat.year, \
+        perf.bpm, \
+        perf.key, \
+        perf.has_beat_grid, \
+        perf.beat_grid_start_sample, \
+        FROM Song_Entity s \
+        LEFT JOIN Audio_Data_Entity a ON s.entity_id = a.song_entity_id \
+        LEFT JOIN Catalog_Data_Entity cat ON s.entity_id = cat.song_entity_id \
+        LEFT JOIN Performance_Data_Entity perf ON s.entity_id = perf.song_entity_id \
+        WHERE s.entity_id = \'%s\';",
+        eid
+    );
+
+    int song_eid_col = 0;
+    int audio_eid_col = 1;
+    int cat_eid_col = 2;
+    int perf_eid_col = 3;
+    int cur_eid_col = 4;
+    int cat_artist_col = 5;
+    int cat_title_col = 6;
+    int cat_genre_col = 7;
+    int cat_year_col = 8;
+    int perf_bpm_col = 9;
+    int perf_key_col = 10;
+    int perf_bg_col = 11;
+    int perf_bg_start_col = 12;
+
+    sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
+    if( stmt ) {
+        while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
+            char * song_eid = (char*)sqlite3_column_text ( stmt, song_eid_col );
+            if( song_eid ) { 
+                strcpy( song->entity_id, song_eid );
+                strcpy( song->audio->song_entity_id, song_eid );
+                strcpy( song->catalog->song_entity_id, song_eid );
+                strcpy( song->performance->song_entity_id, song_eid );
+                strcpy( song->curation->parent_entity_id, song_eid );
+            }
+            char * audio_eid = (char*)sqlite3_column_text ( stmt, audio_eid_col );
+            if( audio_eid ) { 
+                strcpy( song->audio->entity_id, audio_eid );
+                strcpy( song->current_audio_entity_id, audio_eid );
+            }
+
+            char * cat_eid = (char*)sqlite3_column_text ( stmt, cat_eid_col );
+            if( cat_eid ) { 
+                strcpy( song->catalog->entity_id, cat_eid );
+                strcpy( song->current_catalog_entity_id, cat_eid );
+            }
+            char * artist = (char*)sqlite3_column_text ( stmt, cat_artist_col );
+            if( artist ) { strcpy( song->catalog->artist, artist ); }
+            char * title = (char*)sqlite3_column_text ( stmt, cat_title_col );
+            if( title ) { strcpy( song->catalog->title, title ); }
+            char * genre = (char*)sqlite3_column_text ( stmt, cat_genre_col );
+            if( genre ) { strcpy( song->catalog->genre, genre ); }
+            song->catalog->year = sqlite3_column_int ( stmt, cat_year_col );
+
+            char * perf_eid = (char*)sqlite3_column_text ( stmt, perf_eid_col );
+            if( perf_eid ) { 
+                strcpy( song->performance->entity_id, perf_eid );
+                strcpy( song->current_performance_entity_id, perf_eid );
+            }
+            song->performance->bpm = sqlite3_column_double ( stmt, perf_bpm_col );
+            song->performance->key = sqlite3_column_int ( stmt, perf_key_col );
+            song->performance->has_beat_grid = sqlite3_column_int ( stmt, perf_bg_col );
+            song->performance->beat_grid_start_sample = sqlite3_column_int ( stmt, perf_bg_start_col );
+
+            char * cur_eid = (char*)sqlite3_column_text ( stmt, cur_eid_col );
+            if( cur_eid ) { 
+                strcpy( song->curation->entity_id, cur_eid );
+                strcpy( song->current_curation_entity_id, cur_eid );
+            }
+        }
+        sqlite3_finalize( stmt );
+    }
+}
+
+void zdj_library_replace_entity_id_with_song( 
+    zdj_library_song_t * song, 
+    char * eid, 
+    sqlite3 * db 
+) {
+    int res;
+    char sql[ 2048 ];
+    snprintf( sql, sizeof( sql ), "SELECT \
+        s.entity_id, \
+        s.current_audio_entity_id, \
+        s.current_catalog_entity_id, \
+        s.current_performance_entity_id, \
+        s.current_curation_entity_id, \
+        cat.artist, \
+        cat.title, \
+        cat.genre, \
+        cat.year, \
+        perf.bpm, \
+        perf.key, \
+        perf.has_beat_grid, \
+        perf.beat_grid_start_sample, \
+        FROM Song_Entity s \
+        LEFT JOIN Audio_Data_Entity a ON s.entity_id = a.song_entity_id \
+        LEFT JOIN Catalog_Data_Entity cat ON s.entity_id = cat.song_entity_id \
+        LEFT JOIN Performance_Data_Entity perf ON s.entity_id = perf.song_entity_id \
+        WHERE s.entity_id = \'%s\';",
+        eid
+    );
+
+    int song_eid_col = 0;
+    int audio_eid_col = 1;
+    int cat_eid_col = 2;
+    int perf_eid_col = 3;
+    int cur_eid_col = 4;
+    int cat_artist_col = 5;
+    int cat_title_col = 6;
+    int cat_genre_col = 7;
+    int cat_year_col = 8;
+    int perf_bpm_col = 9;
+    int perf_key_col = 10;
+    int perf_bg_col = 11;
+    int perf_bg_start_col = 12;
+
+    sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
+    if( stmt ) {
+        while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
+            char * song_eid = (char*)sqlite3_column_text ( stmt, song_eid_col );
+            if( song_eid ) { 
+                strcpy( song->entity_id, song_eid );
+                strcpy( song->audio->song_entity_id, song_eid );
+                strcpy( song->catalog->song_entity_id, song_eid );
+                strcpy( song->performance->song_entity_id, song_eid );
+                strcpy( song->curation->parent_entity_id, song_eid );
+            }
+            char * audio_eid = (char*)sqlite3_column_text ( stmt, audio_eid_col );
+            if( audio_eid ) { 
+                strcpy( song->audio->entity_id, audio_eid );
+                strcpy( song->current_audio_entity_id, audio_eid );
+            }
+            char * cat_eid = (char*)sqlite3_column_text ( stmt, cat_eid_col );
+            if( cat_eid ) { 
+                strcpy( song->catalog->entity_id, cat_eid );
+                strcpy( song->current_catalog_entity_id, cat_eid );
+            }
+            char * perf_eid = (char*)sqlite3_column_text ( stmt, perf_eid_col );
+            if( perf_eid ) { 
+                strcpy( song->performance->entity_id, perf_eid );
+                strcpy( song->current_performance_entity_id, perf_eid );
+            }
+            char * cur_eid = (char*)sqlite3_column_text ( stmt, cur_eid_col );
+            if( cur_eid ) { 
+                strcpy( song->curation->entity_id, cur_eid );
+                strcpy( song->current_curation_entity_id, cur_eid );
+            }
+        }
+        sqlite3_finalize( stmt );
+    }
+}
+
 zdj_health_status_t zdj_library_delete_song( 
     zdj_library_song_t * song, 
     sqlite3 * db 

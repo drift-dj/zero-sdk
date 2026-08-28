@@ -84,6 +84,7 @@ zdj_view_t * zdj_new_usb_panel( void ) {
 }
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // printf( "usb panel draw\n" );
     zdj_usb_panel_state_t * state = (zdj_usb_panel_state_t*)view->state;
 
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, 0xFF000000 );
@@ -118,6 +119,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     }
 
     if( state->needs_layout_update ) { _refresh_menu( view ); }
+    // printf( "usb panel draw done\n" );
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
@@ -461,10 +463,13 @@ static void _drive_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 
     // Deploy Drive mode dialog
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+    _zdj_usb_panel_state->usb_drive_mode_dialog = NULL;
     _zdj_usb_panel_state->usb_drive_mode_dialog = zdj_new_usb_drive_view( 
         panel_state->usb_panel, _drive_dialog_cb 
     );
-    zdj_push_subview( panel_state->usb_panel, _zdj_usb_panel_state->usb_drive_mode_dialog, true );
+    if( _zdj_usb_panel_state->usb_drive_mode_dialog ) {
+        zdj_push_subview( panel_state->usb_panel, _zdj_usb_panel_state->usb_drive_mode_dialog, true );
+    }
 }
 
 static void _drive_dialog_cb( void ) {

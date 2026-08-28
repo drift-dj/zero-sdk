@@ -37,5 +37,6 @@ zdj_view_t * zdj_new_settings_app_panel( void (*cb)(void*), zdj_install_t * inst
 zdj_view_t * zdj_new_settings_installer_panel( void (*cb)(void*), zdj_installer_t * installer );
 zdj_view_t * zdj_new_settings_os_panel( void (*cb)(void*) );
 zdj_view_t * zdj_new_settings_os_install_view( char * mount_path, zdj_os_sysreg_t * sysreg );
+zdj_view_t * zdj_new_settings_reset_panel( void );
 
 #endif

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/reboot.h>
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
@@ -28,6 +29,8 @@ static void _browser_exit( zdj_view_t * browser, zdj_file_browser_exit_context_t
 
 static void _subview_exit( void * data );
 
+static void _reset_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _app_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _os_btn( zdj_view_t * view, zdj_control_event_t * event );
 
@@ -113,28 +116,43 @@ static void _refresh_menu( zdj_view_t * view ) {
 
     zdj_menu_view_remove_all_subviews( state->menu );
 
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "System" ) );
+    // Reboot
+    zdj_view_t * reboot_btn = zdj_new_menu_item( "Reboot", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    reboot_btn->handle_control_event = &_reboot_btn;
+    zdj_menu_view_add_item( state->menu, reboot_btn );
+    // System Reset
+    zdj_view_t * reset_btn = zdj_new_menu_item( "Factory Reset", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    reset_btn->handle_control_event = &_reset_btn;
+    zdj_menu_item_view_state_t * reset_state = (zdj_menu_item_view_state_t*)reset_btn->state;
+    reset_state->data.ptr = view;
+    zdj_menu_view_add_item( state->menu, reset_btn );
 
+
+    // Software Section
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Software" ) );
 
     zdj_view_t * install_btn = zdj_new_menu_item( "+ Install Apps", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     install_btn->handle_control_event = _install_btn;
     zdj_menu_view_add_item( state->menu, install_btn );
 
-    // Loop thru registry, adding menu items for each installed app
-    zdj_install_t * install = zdj_registry_installs( );
-    while( install ) {
-        if( !strcmp( install->category, "music" ) || !strcmp( install->category, "util" ) ) {
-            char * app_name = strdup( install->display_name );
-            zdj_view_t * item = zdj_new_menu_item( app_name, ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-            item->handle_control_event = &_app_btn;
-            zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
-            strcpy( item_state->link, app_name );
-            item_state->data.ptr = view;
-            strcpy( item_state->data.c_val, install->registry_name );
-            zdj_menu_view_add_item( state->menu, item );
-        }
+    // // Loop thru registry, adding menu items for each installed app
+    // zdj_install_t * install = zdj_registry_installs( );
+    // while( install ) {
+    //     if( !strcmp( install->category, "music" ) || !strcmp( install->category, "util" ) ) {
+    //         char * app_name = strdup( install->display_name );
+    //         zdj_view_t * item = zdj_new_menu_item( app_name, ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    //         item->handle_control_event = &_app_btn;
+    //         zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
+    //         strcpy( item_state->link, app_name );
+    //         item_state->data.ptr = view;
+    //         strcpy( item_state->data.c_val, install->registry_name );
+    //         zdj_menu_view_add_item( state->menu, item );
+    //     }
         
-        install = install->next;
-    }
+    //     install = install->next;
+    // }
 
     zdj_view_t * os_btn = zdj_new_menu_item( "DriftOS", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     zdj_menu_item_view_state_t * os_state = (zdj_menu_item_view_state_t*)os_btn->state;
@@ -199,16 +217,29 @@ static void _browser_exit( zdj_view_t * browser, zdj_file_browser_exit_context_t
     }
 }
 
-static void _app_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+static void _reset_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_install_t * install = zdj_registry_install_for_name( btn_state->data.c_val );
-
     zdj_view_t * software_panel = (zdj_view_t *)btn_state->data.ptr;
-    zdj_settings_software_panel_state_t * software_panel_state = (zdj_settings_software_panel_state_t*)software_panel->state;
-    zdj_view_t * app_panel = zdj_new_settings_app_panel( &_subview_exit, install );
-    software_panel_state->event_target = app_panel;
-    zdj_push_subview( software_panel, app_panel, true );
+
+    zdj_view_t * reset_panel = zdj_new_settings_reset_panel( );
+    zdj_push_subview( software_panel, reset_panel, true );
 }
+
+static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    sync( );
+    reboot( RB_AUTOBOOT );
+}
+
+// static void _app_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+//     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
+//     zdj_install_t * install = zdj_registry_install_for_name( btn_state->data.c_val );
+
+//     zdj_view_t * software_panel = (zdj_view_t *)btn_state->data.ptr;
+//     zdj_settings_software_panel_state_t * software_panel_state = (zdj_settings_software_panel_state_t*)software_panel->state;
+//     zdj_view_t * app_panel = zdj_new_settings_app_panel( &_subview_exit, install );
+//     software_panel_state->event_target = app_panel;
+//     zdj_push_subview( software_panel, app_panel, true );
+// }
 
 static void _os_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     printf( "_os_btn\n" );

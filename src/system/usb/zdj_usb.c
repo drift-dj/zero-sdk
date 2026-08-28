@@ -104,17 +104,19 @@ zdj_error_type_t zdj_usb_enable_mode( zdj_usb_mode_state_t * request ) {
 
     FILE * fd = fopen( ZDJ_USB_STATUS_PATH, "w" );
     if( fd ) { 
-        printf( "PERSISTING USB MODE: %s\n", zdj_usb_mode_name[ request->mode ] );
+        // printf( "PERSISTING USB MODE: %s\n", zdj_usb_mode_name[ request->mode ] );
         sprintf( zdj_usb_state->log_str, "Persisting requested USB mode: %s\n", zdj_usb_mode_name[ request->mode ] );
         zdj_usb_log( zdj_usb_state->log_str );
 
         fseek( fd, 0, SEEK_SET );
         fwrite( request, sizeof( zdj_usb_mode_state_t ), 1, fd );
         fclose( fd );
+    } else {
+        printf( "couldn't open %s\n", ZDJ_USB_STATUS_PATH );
     }
 
     if( !zdj_usb_state->switch_data.switch_req ) {    
-        printf( "enabling mode: %s\n", zdj_usb_mode_name[ request->mode ] );
+        // printf( "enabling mode: %s\n", zdj_usb_mode_name[ request->mode ] );
         sprintf( zdj_usb_state->log_str, "Enabling USB mode: %s\n", zdj_usb_mode_name[ request->mode ] );
         zdj_usb_log( zdj_usb_state->log_str );
 
@@ -123,10 +125,13 @@ zdj_error_type_t zdj_usb_enable_mode( zdj_usb_mode_state_t * request ) {
         zdj_usb_state->switch_data.switch_req = true;
     }
     
+    // printf( "enabling mode done\n" );
+
     return ZDJ_ERROR_OKAY;
 }
 
 zdj_error_type_t zdj_usb_update_mode_from_sysfs( zdj_usb_state_t * state ) {
+    // printf( "zdj_usb_update_mode_from_sysfs: %p\n", state );
     sprintf( zdj_usb_state->log_str, "## zdj_usb_update_mode_from_sysfs ##\n" );
     zdj_usb_log( zdj_usb_state->log_str );
     // If USB has not been initialized, go with offline
@@ -164,6 +169,7 @@ zdj_error_type_t zdj_usb_update_mode_from_sysfs( zdj_usb_state_t * state ) {
         state->mode_state.mode = ZDJ_USB_MODE_ERROR;
     }
 
+    // printf( "zdj_usb_update_mode_from_sysfs done\n" );
     return ZDJ_ERROR_OKAY;
 }
 
@@ -262,6 +268,7 @@ zdj_usb_submode_t zdj_usb_submode_for_gadget_config( zdj_usb_gadget_config_t * c
 }
 
 zdj_error_type_t zdj_usb_update_gadget_config_from_functionfs( zdj_usb_gadget_config_t * config ) {
+    printf( "zdj_usb_update_gadget_config_from_functionfs\n" );
     config->uac2 = access( "/sys/kernel/config/usb_gadget/g1/functions/uac2.usb0", F_OK ) == 0;
     config->midi = access( "/sys/kernel/config/usb_gadget/g1/functions/midi.usb0", F_OK ) == 0;
     config->mass_storage = access( "/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0", F_OK ) == 0;
@@ -304,9 +311,9 @@ void zdj_usb_log_begin( void ) {
 }
 void zdj_usb_log( char * str ) { 
     if( zdj_usb_state->log_fp ) { 
-        printf( "USB LOG: %s", str );
+        // printf( "USB LOG: %s", str );
         fprintf( zdj_usb_state->log_fp, "%s", str ); 
-    } 
+    }
 }
 void zdj_usb_log_end( void ) { 
     fclose( zdj_usb_state->log_fp );
