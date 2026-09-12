@@ -85,16 +85,20 @@ zdj_health_status_t zdj_library_new( void ) {
     int lib_count = zdj_sql_rows_in_table ( "Library_Entity", NULL, zdj_library_db );
     char new_lib_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
     zdj_library_put_uuid( new_lib_entity_id );
-    snprintf( _sql, sizeof( _sql ), "INSERT INTO Library_Entity VALUES(\"%s\", \"Library %d\", \"Song_Links_%s\", \"Playlist_Links_%s\", \"Curation_Data_Links_%s\", \"Setting_Links_%s\");\n",
+    snprintf( _sql, sizeof( _sql ), "INSERT INTO Library_Entity VALUES(\"%s\", \"Library %d\", \"Song_Links_%s\", \"Playlist_Links\", \"Curation_Data_Links_%s\", \"Setting_Links_%s\");\n",
         new_lib_entity_id,
         lib_count,
-        new_lib_entity_id,
         new_lib_entity_id,
         new_lib_entity_id,
         new_lib_entity_id
     );
 
     zdj_sql_exec( (char *)&_sql, zdj_library_db );
+
+    printf( "lib new: %s\n", _sql );
+
+    // Playlist_Links_dd83b50f03c24f5a8315c57063568405
+    // Playlist_Links_d3282c806cc34d6f89466760916c5ec1
 
     // Add a Song_Links table
     // Add optional 'sequence' field to song_links
@@ -104,10 +108,10 @@ zdj_health_status_t zdj_library_new( void ) {
     zdj_sql_exec( (char*)&_sql, zdj_library_db );
 
     // Add a Playlist_Links table
-    snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Playlist_Links_%s' ( 'table_name' TEXT NOT NULL, 'display_name' TEXT, PRIMARY KEY('table_name'))",
-        new_lib_entity_id 
-    );
+    snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Playlist_Links' ( 'table_name' TEXT NOT NULL, 'display_name' TEXT, PRIMARY KEY('table_name'))" );
     zdj_sql_exec( (char*)&_sql, zdj_library_db );
+
+    printf( "creating playlist links: %s\n", _sql );
 
     // Add a Curation_Data_Links table
     snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Curation_Data_Links_%s' ( 'entity_id' TEXT NOT NULL, PRIMARY KEY('entity_id'))",
@@ -174,11 +178,14 @@ zdj_health_status_t zdj_library_add_song_link( char * library_entity_id, zdj_lib
         song->entity_id,
         song->entity_id
     );
+    // printf( "add_song_link:%s\n", sql );
     res = zdj_sql_exec( sql, db );
 
     if( res != SQLITE_OK ) {
+        // printf( "add song link error\n" );
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR; 
     } else {
+        // printf( "add song link okay\n" );
         return ZDJ_HEALTH_STATUS_OKAY;
     }
 }
@@ -229,7 +236,7 @@ zdj_error_type_t zdj_library_populate_playlists_for_library(
 }
 
 void zdj_library_deinit_library( zdj_library_t * library ) {
-
+    
 }
 
 // Make a test library with n songs

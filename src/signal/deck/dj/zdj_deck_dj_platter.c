@@ -450,6 +450,13 @@ void zdj_dj_deck_platter_update_antipop( zdj_deck_t * deck ) {
     // Step forward
     antipop->start_fade_val = antipop->end_fade_val;
 
+    // Observe Antipop defeat settings
+    if( !antipop->enabled ) {
+        antipop->start_fade_val = 1.0;
+        antipop->end_fade_val = 1.0;
+        return;
+    }
+    
     if( fabs( platter->head_move_samps ) > antipop->engage_thresh ) {
         // Lowpass tracking val back toward 0.0 if playback rate > thresh
         antipop->tracking_val *= antipop->lowpass_val;

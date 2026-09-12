@@ -648,7 +648,6 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_PRESS_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE ) {
             if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_PREV_PANEL ] ) { 
-                printf( "prev panel\n" );
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_PREV_PANEL, in_e, c_e ); return true; 
             } else if ( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_RELEASE_0 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_RELEASE_0, in_e, c_e ); return true;
@@ -657,8 +656,12 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_PRESS_1, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_LONG_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_RELEASE_1 ] ) { 
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_RELEASE_1, in_e, c_e ); return true; 
-        } else if( in_e->type == ZDJ_HMI_EVENT_MOD_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_RELEASE_2 ] ) { 
-            _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_RELEASE_2, in_e, c_e ); return true; 
+        } else if( in_e->type == ZDJ_HMI_EVENT_MOD_RELEASE ) {
+            if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_1_RELEASE_2 ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_1_RELEASE_2, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET, in_e, c_e ); return true;
+            }
         }
     }
 
@@ -687,7 +690,6 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_3_PRESS_0, in_e, c_e ); return true; 
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE ) {
             if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_NEXT_PANEL ] ) { 
-                printf( "next panel\n" );
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_NEXT_PANEL, in_e, c_e ); return true; 
             } else if ( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_FN_3_RELEASE_0 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_FN_3_RELEASE_0, in_e, c_e ); return true;
@@ -885,6 +887,7 @@ bool zdj_control_event_is_ui_control( zdj_control_event_t * event ) {
         case ZDJ_UI_CONTROL_TOGGLE_RECORDING_PANEL:
         case ZDJ_UI_CONTROL_TOGGLE_SOUNDCARD_PANEL:
         case ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET:
+        case ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET:
         case ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET: 
         case ZDJ_UI_CONTROL_RECORDING_SAVED: 
         case ZDJ_UI_CONTROL_SCREENCAP_SAVED: return true;

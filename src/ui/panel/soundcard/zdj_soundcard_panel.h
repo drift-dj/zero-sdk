@@ -90,6 +90,8 @@ typedef struct {
     char title[ 256 ];
     char subtitle[ 256 ];
     zdj_ui_data_t data;
+    void * owned_ptr;
+    void * unowned_ptr;
     zdj_menu_item_data_display_type_t data_type;
     char data_prefix[ 32 ];
     char data_suffix[ 32 ];

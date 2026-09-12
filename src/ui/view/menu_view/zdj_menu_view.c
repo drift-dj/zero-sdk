@@ -72,6 +72,7 @@ zdj_view_t * zdj_new_lib_menu_view(
 }
 
 void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // printf( "zdj_menu_draw\n" );
     // Let's try dumping the menu BG pixels here
     SDL_Rect s = { 
         zdj_ui_assets[ ZDJ_UI_ASSET_MENU_BG ].x, 
@@ -84,18 +85,23 @@ void zdj_menu_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     // Menu BG
     boxColor( zdj_renderer( ), clip->dst.x - 1, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
-    // boxColor( zdj_renderer( ), clip->dst.x + 5, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK );
 
     // Update the scroll filter physics simulation.
     // Use the output value to set menu scroll index.
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)view->state;
+    // printf( "%d / %d\n", menu_state->scroll_index, menu_state->item_count );
     zdj_menu_view_update_scroll_filter( view );
+
     if( menu_state->scroll_filter->out_index != menu_state->scroll_index ) {
         _update_scroll( view, menu_state->scroll_filter->out_index );
     }
 
-    if( view->needs_layout_init && view->init_layout ) { view->init_layout( view ); }
-    if( view->needs_subview_update && view->update_subviews ) { view->update_subviews( view ); }
+    // if( menu_state->item_count > 0 ) {
+        if( view->needs_layout_init && view->init_layout ) { view->init_layout( view ); }
+        if( view->needs_subview_update && view->update_subviews ) { view->update_subviews( view ); }
+    // }
+
+    // printf( "zdj_menu_draw done\n" );
 }
 
 void zdj_menu_view_set_scrollview_frame( zdj_view_t * menu_view, zdj_rect_t * frame ) {
@@ -167,8 +173,8 @@ void zdj_menu_view_add_item( zdj_view_t * menu_view, zdj_view_t * item ) {
     zdj_scroll_view_add_subview( menu_state->scroll_view, item );
 
     // Set scroll_index for new item
-    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
     if( item->type == ZDJ_VIEW_MENU_ITEM ) {
+        zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
         item_state->scroll_index = menu_state->item_count++;
         if( item_state->scroll_index == 0 ){ item_state->is_hilite = true; }
     }
@@ -289,6 +295,19 @@ void zdj_menu_view_remove_all_items( zdj_view_t * menu_view ) {
     menu_state->scroll_index = 0;
     menu_state->section_count = 0;
     menu_state->item_count = 0;
+}
+
+void zdj_menu_view_remove_subview( zdj_view_t * menu_view, zdj_view_t * subview ) {
+    if( menu_view->type != ZDJ_VIEW_MENU ) { 
+        printf( "Remove Subviews called on non-menu\n" );
+        return;
+    }
+    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t *)menu_view->state;
+    if( !menu_state) {
+        printf( "Remove Subviews called with menu->state = NULL\n" );
+        return;
+    }
+    zdj_remove_subview_of( menu_state->scroll_view, subview );
 }
 
 void zdj_menu_view_remove_all_subviews( zdj_view_t * menu_view ) {
@@ -575,7 +594,7 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
                 if( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_NORMAL &&            
                     !menu_state->long_press_to_edit 
                 ) {
-                    printf( "menu entering edit mode\n" );
+                    // printf( "menu entering edit mode\n" );
                     // Enter edit mode if not currently editing
                     menu_state->input_mode = ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS;
                     menu_state->edit_item = menu_item;
@@ -645,7 +664,6 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
 
         // Call the back btn handler
         if( menu_header_state->handle_back ) {
-            printf( "direct nav->back\n" );
             menu_header_state->handle_back( view );
         }
 
@@ -716,9 +734,10 @@ static void _update_scroll( zdj_view_t * menu_view, int new_scroll ) {
                     menu_state->scroll_index 
                 );
             }
-            if( !prev_menu_item ) { return; }
-            prev_menu_item_state = prev_menu_item->state;
-            prev_menu_item_state->is_hilite = false;
+            if( prev_menu_item ) {
+                prev_menu_item_state = prev_menu_item->state;
+                prev_menu_item_state->is_hilite = false;
+            }
         }
 
         // Grab a scroll direction and update the scroll index

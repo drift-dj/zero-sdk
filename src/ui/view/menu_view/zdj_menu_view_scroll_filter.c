@@ -47,6 +47,7 @@ void zdj_menu_view_update_scroll_filter( zdj_view_t * view ) {
     if( scroll_filter->out_index >= menu_state->item_count) {
         scroll_filter->position = (float)(menu_state->item_count-1);
         scroll_filter->out_index = menu_state->item_count-1;
+        // printf( "moving scroll filter to menu end: %d / %d\n", scroll_filter->out_index, menu_state->item_count );
     } else if( scroll_filter->out_index < 0 ) {
         // Stop at -1 if back button is present
         if( menu_state->has_back ) {
@@ -59,4 +60,5 @@ void zdj_menu_view_update_scroll_filter( zdj_view_t * view ) {
             scroll_filter->out_index = 0;
         }
     }
+    // printf( "scroll filter: %d / %d\n", scroll_filter->out_index, menu_state->item_count );
 }

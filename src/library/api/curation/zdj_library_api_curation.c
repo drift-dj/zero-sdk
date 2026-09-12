@@ -78,6 +78,7 @@ zdj_health_status_t zdj_library_store_curation(
     zdj_library_curation_t * curation, 
     sqlite3 * db 
 ) {
+    // printf( "zdj_library_store_curation: %p %p\n", db, curation );
     int count = 0;
     int res;
     char sql[ 4096 ];

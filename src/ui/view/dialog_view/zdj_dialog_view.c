@@ -38,8 +38,6 @@ zdj_view_t * zdj_new_dialog_view(
     dialog_view->frame.x = ZDJ_DIALOG_X;
     dialog_view->frame.y = ZDJ_SCREEN_H+2;
     
-    // dialog_view->in_anim = zdj_new_anim( ZDJ_ANIM_DIALOG_SHOW );
-    // dialog_view->out_anim = zdj_new_anim( ZDJ_ANIM_DIALOG_HIDE );
     zdj_set_anim( &dialog_view->in_anim, ZDJ_ANIM_DIALOG_SHOW );
     zdj_set_anim( &dialog_view->out_anim, ZDJ_ANIM_DIALOG_HIDE );
 
@@ -114,7 +112,9 @@ zdj_view_t * zdj_new_dialog_view(
         okay_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, okay_btn );
 
-    } else if( type == ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL ) {
+    } else if( type == ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL || 
+               type == ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL_DEFAULT_YES 
+    ) {
         zdj_view_t * cancel_btn = zdj_new_menu_item( "Cancel", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
         zdj_menu_item_view_state_t * cancel_btn_state = (zdj_menu_item_view_state_t*)cancel_btn->state;
         cancel_btn_state->data.ptr = dialog_view;
@@ -165,6 +165,16 @@ zdj_view_t * zdj_new_dialog_view(
         cancel_btn->frame.w = 29;
         cancel_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, cancel_btn );
+    } else if( type == ZDJ_DIALOG_VIEW_TYPE_CANCEL ) {
+        zdj_view_t * cancel_btn = zdj_new_menu_item( "Cancel", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
+        zdj_menu_item_view_state_t * cancel_btn_state = (zdj_menu_item_view_state_t*)cancel_btn->state;
+        cancel_btn_state->data.ptr = dialog_view;
+        cancel_btn->handle_control_event = &_cancel_btn_handle_event;
+        cancel_btn->frame.x = 40;
+        cancel_btn->frame.y = 28;
+        cancel_btn->frame.w = 29;
+        cancel_btn->frame.h = 10;
+        zdj_menu_view_add_item( _menu, cancel_btn );
     } 
 
     // Add header
@@ -177,6 +187,11 @@ zdj_view_t * zdj_new_dialog_view(
     zdj_menu_header_view_state_t * header_state = (zdj_menu_header_view_state_t*)menu_header->state;
     // header_state->handle_back = &_handle_cancel;
     zdj_menu_view_add_header( _menu, menu_header );
+
+
+    if( type == ZDJ_DIALOG_VIEW_TYPE_OKAY_CANCEL_DEFAULT_YES ) { 
+        zdj_menu_view_set_scroll_index( _menu, 1 );
+    }
 
     return dialog_view;
 }
@@ -209,7 +224,7 @@ static void _okay_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _ev
     zdj_view_t * dialog = view_state->data.ptr;
     zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
     if( dialog_state->handle_dialog_exit && dialog_state->selection_data ) {
-        printf( "handling dialog_exit okay: %p, %p, %p\n", dialog, dialog_state->handle_dialog_exit, dialog_state->selection_data );
+        // printf( "handling dialog_exit okay: %p, %p, %p\n", dialog, dialog_state->handle_dialog_exit, dialog_state->selection_data );
         dialog_state->handle_dialog_exit( dialog, dialog_state->selection_data, true );
     }
 }
@@ -219,7 +234,7 @@ static void _cancel_btn_handle_event( zdj_view_t * view, zdj_control_event_t * _
     zdj_view_t * dialog = view_state->data.ptr;
     zdj_dialog_view_state_t * dialog_state = (zdj_dialog_view_state_t*)dialog->state;
     if( dialog_state->handle_dialog_exit && dialog_state->selection_data ) {
-        printf( "handling dialog_exit okay: %p, %p, %p\n", dialog, dialog_state->handle_dialog_exit, dialog_state->selection_data );
+        // printf( "handling dialog_exit okay: %p, %p, %p\n", dialog, dialog_state->handle_dialog_exit, dialog_state->selection_data );
         dialog_state->handle_dialog_exit( dialog, dialog_state->selection_data, false );
     }
 }

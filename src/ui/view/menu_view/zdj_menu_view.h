@@ -87,6 +87,7 @@ void zdj_menu_view_insert_item( zdj_view_t * menu_view, zdj_view_t * item, int i
 void zdj_menu_view_move_item( zdj_view_t * menu_view, zdj_view_t * item, int dir );
 void zdj_menu_view_remove_all_items( zdj_view_t * menu_view );
 void zdj_menu_view_remove_item_at_scroll_index( zdj_view_t * menu_view, int index );
+void zdj_menu_view_remove_subview( zdj_view_t * menu_view, zdj_view_t * subview );
 void zdj_menu_view_remove_all_subviews( zdj_view_t * menu_view );
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index );
 void zdj_menu_view_add_padding( zdj_view_t * menu_view, int size );

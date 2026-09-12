@@ -39,8 +39,8 @@ static void * _admin_thread_main( void * arg ) {
     while( 1 ) {
         if( (zdj_usb_state != NULL) && 
             zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
-            zdj_usb_state->host_state.has_soundcard_update &&
-            zdj_usb_state->host_state.attached.count > 0
+            zdj_usb_state->host_status.has_soundcard_update &&
+            zdj_usb_state->host_status.attached.count > 0
         ) { 
             
             // Call into the USB I/O node and hand it a new device to prepare.
@@ -58,9 +58,9 @@ static void * _admin_thread_main( void * arg ) {
             if( io_node_state->phase == ZDJ_IO_USB_PHASE_INIT ) {
                 zdj_io_usb_discover_hwparams(
                     admin_soundcard->usb_io_node,
-                    zdj_usb_state->host_state.attached.devices
+                    zdj_usb_state->host_status.attached.devices
                 );
-                zdj_usb_state->host_state.has_soundcard_update = false;
+                zdj_usb_state->host_status.has_soundcard_update = false;
             }
             if( io_node_state->phase == ZDJ_IO_USB_PHASE_TEARDOWN ) {
                 zdj_io_usb_alsa_teardown( admin_soundcard->usb_io_node );

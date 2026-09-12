@@ -10,30 +10,36 @@
 
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/log/zdj_log.h>
+#include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/system/usb/zdj_usb.h>
 
 pthread_t _zdj_usb_thread;
 static void * _zdj_usb_thread_main( void * arg );
 
-static void _update_port_partner( zdj_usb_state_t * state );
+static void _update_gadget_port_partner( zdj_usb_state_t * state );
 static void _update_msd_gadget_state( zdj_usb_state_t * state );
 static void _update_hosted_devices( zdj_usb_state_t * state );
+
+static void _init_state( zdj_usb_state_t * state );
 static void _switch_state( zdj_usb_state_t * state );
 
 void zdj_usb_launch_state_thread( void ) {
     zdj_usb_state->run_state_thread = true;
-    zdj_usb_state->has_port_partner = false;
+    
+    zdj_usb_state->host_status.has_update = false;
+    zdj_usb_state->host_status.has_port_partner = false;
+    zdj_usb_state->host_status.has_control_update = false;
+    zdj_usb_state->host_status.has_file_browser_update = false;
+    zdj_usb_state->host_status.has_soundcard_update = false;
+    zdj_usb_state->host_status.has_usb_panel_update = false;
+    zdj_usb_state->host_status.devices_line_count = 0;
 
-    zdj_usb_state->host_state.has_control_update = false;
-    zdj_usb_state->host_state.has_file_browser_update = false;
-    zdj_usb_state->host_state.has_soundcard_update = false;
-    zdj_usb_state->host_state.has_usb_panel_update = false;
-    zdj_usb_state->host_state.devices_line_count = 0;
-
-    zdj_usb_state->gadget_state.has_update = false;
-    zdj_usb_state->gadget_state.msd_has_been_mounted = false;
-    zdj_usb_state->gadget_state.msd_has_been_hot_unplugged = false;
-    zdj_usb_state->gadget_state.msd_has_been_unmounted_by_host = false;
+    zdj_usb_state->gadget_status.has_update = false;
+    zdj_usb_state->gadget_status.has_port_partner = false;
+    zdj_usb_state->gadget_status.msd_has_been_mounted = false;
+    zdj_usb_state->gadget_status.msd_has_been_hot_unplugged = false;
+    zdj_usb_state->gadget_status.msd_has_been_unmounted_by_host = false;
 
     pthread_create( 
         &_zdj_usb_thread, 
@@ -64,14 +70,26 @@ static void * _zdj_usb_thread_main( void * arg ) {
     }
 
     while( state->run_state_thread ) {
+        // printf( "usb_thread\n" );
+        // zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "thread start mode: %s", zdj_usb_mode_name[ state->mode_state.mode ] );
+
+        ///////////////////////////
+        // Standup //
+        ///////////////////////////
+        if( state->mode_state.mode == ZDJ_USB_MODE_INIT ) {
+            _init_state( state );
+        }
+        
         ///////////////////////////
         // Mode Switch Requested //
         ///////////////////////////
-        if( state->switch_data.switch_req ) {
-            state->switch_data.switch_req = false;
+        if( state->switch_ctx.has_request ) {
+            state->switch_ctx.busy = true;
+            state->switch_ctx.has_request = false;
             _switch_state( state );
+            state->switch_ctx.busy = false;
+            state->switch_ctx.has_update = true;
         }
-
 
         ///////////////
         // HOST MODE //
@@ -80,28 +98,33 @@ static void * _zdj_usb_thread_main( void * arg ) {
             // Check change to attached devices
             _update_hosted_devices( state );
         
-
-
-
-
         /////////////////
         // GADGET MODE //
         /////////////////
         } else if( state->mode_state.mode == ZDJ_USB_MODE_GADGET ) {
-            _update_port_partner( state );
+            _update_gadget_port_partner( state );
             _update_msd_gadget_state( state );
         }
 
+        // printf( "usb_thread done\n" );
         // sleep for a bit between checks
         sleep( 1 );
     }
+
+    return NULL;
 }
 
 
-static void _update_port_partner( zdj_usb_state_t * state ) {
-
+static void _update_gadget_port_partner( zdj_usb_state_t * state ) {
+    // printf( "_update_gadget_port_partner\n" );
     char port_partner[ 128 ];
     char msd_file[ 64 ];
+
+    // Error out if usb driver state isn't valid
+    if( access( "/sys/class/typec", F_OK ) != 0 ) {
+        zdj_usb_put_error_mode( &state->mode_state, ZDJ_USB_MODE_CONFIG_ERROR );
+        return;
+    }
             
     memset( port_partner, 0, 128 );
     zdj_fs_get_popen( 
@@ -112,47 +135,54 @@ static void _update_port_partner( zdj_usb_state_t * state ) {
 
     if( strstr( port_partner, "partner" ) ) { 
         // Partner exists
-        if( state->has_port_partner == false ) {
-            state->has_port_partner_update = true;
+        if( state->gadget_status.has_port_partner == false ) {
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Port Connect" );
+            state->gadget_status.has_port_partner_update = true;
         }
         // printf( "port has partner\n" );
-        state->has_port_partner = true;
+        state->gadget_status.has_port_partner = true;
     } else {
         // Partner does not exist
-        if( state->has_port_partner == true ) {
-            state->has_port_partner_update = true;
+        if( state->gadget_status.has_port_partner == true ) {
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Port Disconnect" );
+            state->gadget_status.has_port_partner_update = true;
         }
         // printf( "port doesn't have partner\n" );
-        state->has_port_partner = false;
+        state->gadget_status.has_port_partner = false;
     }
+    // printf( "_update_gadget_port_partner done\n" );
 }
 
 static void _update_msd_gadget_state( zdj_usb_state_t * state ) {
+    // printf( "_update_msd_gadget_state\n" );
     char msd_file[ 256 ];
-    if( !state->gadget_state.msd_has_been_mounted ) {
+    if( !state->gadget_status.msd_has_been_mounted ) {
         if( access( "/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", F_OK ) == 0 ) {
             zdj_fs_get_popen( 
                 "cat /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", 
                 msd_file 
             );
             if( !strncmp( msd_file, "/dev/mmcblk2p4", 14 ) ) {
-                printf( "host has mounted\n" );
-                state->gadget_state.msd_has_been_mounted = true;
+                // printf( "host has mounted\n" );
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Host mounted MSD" );
+                state->gadget_status.msd_has_been_mounted = true;
             }
         }
 
-    } else if( state->gadget_state.msd_has_been_mounted ) {
+    } else if( state->gadget_status.msd_has_been_mounted ) {
         if( access( "/sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", F_OK ) == 0 ) {
             zdj_fs_get_popen( 
                 "cat /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file", 
                 msd_file 
             );
             if( strncmp( msd_file, "/dev/mmcblk2p4", 14 ) ) {
-                // printf( "host has ejected\n" );
-                state->gadget_state.msd_has_been_unmounted_by_host = true;
+                // printf( "host has ejected: [%s]\n", msd_file );
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Host ejected MSD" );
+                state->gadget_status.msd_has_been_unmounted_by_host = true;
             }
         }
     }
+    // printf( "_update_msd_gadget_state done\n" );
 }
 
 static void _update_hosted_devices( zdj_usb_state_t * state ) {
@@ -170,221 +200,218 @@ static void _update_hosted_devices( zdj_usb_state_t * state ) {
     pclose( fp );
 
     // If line_count doesn't match last time, refresh the devices and flag.
-    if( line_count != state->host_state.devices_line_count ) {
-        printf( "found updated line count\n" );
+    if( line_count != state->host_status.devices_line_count ) {
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Attached device update" );
+        // printf( "found updated line count\n" );
         zdj_usb_update_attached_devices( );
         // Loop thru attached devices and find any matching ALSA cards
         // IMPORTANT - Currently this isn't fully implemented.
         // Only 1 device will be recognized at a time
-        if( zdj_usb_state->host_state.attached.count > 0 ) {
-            zdj_usb_device_t * device = zdj_usb_state->host_state.attached.devices;
+        if( zdj_usb_state->host_status.attached.count > 0 ) {
+            zdj_usb_device_t * device = zdj_usb_state->host_status.attached.devices;
             zdj_usb_update_alsa_profiles( state, device );
         }
 
-        state->host_state.devices_line_count = line_count;
+        state->host_status.devices_line_count = line_count;
 
         // Naively set all update flags
         // TODO: only set updates based on new device type
-        state->host_state.has_control_update = true;
-        state->host_state.has_file_browser_update = true;
-        state->host_state.has_browser_panel_update = true;
-        state->host_state.has_soundcard_update = true;
-        state->host_state.has_usb_panel_update = true;
+        state->host_status.has_control_update = true;
+        state->host_status.has_file_browser_update = true;
+        state->host_status.has_browser_panel_update = true;
+        state->host_status.has_soundcard_update = true;
+        state->host_status.has_usb_panel_update = true;
 
-        printf( "attached devices: %d\n", state->host_state.attached.count );
+        // printf( "attached devices: %d\n", state->host_status.attached.count );
     }
 }
 
 
+// Bring up the USB system.  Depending on Settings, we can keep any valid
+// state we find or force the system into a pre-selected state.
+static void _init_state( zdj_usb_state_t * state ) {
+    // Bring up the user-specified USB mode by reading settings and submitting requests.
+    // This may happen at device boot, or after a crash/relaunch, or after an app transition
+    zdj_usb_setting_init_option_t init_option = zdj_setting_get( ZDJ_SETTING_USB_INIT_OPTION )->i_val;
+    zdj_usb_mode_t prev_mode;
+    switch( init_option ) {
+        case ZDJ_SETTING_USB_INIT_OFFLINE:
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Init prefs: [Offline]" );
+            zdj_usb_put_offline_mode( &state->switch_ctx.request );
+            state->switch_ctx.has_request = true;
+            return;
+        case ZDJ_SETTING_USB_INIT_HOST:
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Init prefs: [Host]" );
+            zdj_usb_put_host_mode( &state->switch_ctx.request );
+            state->switch_ctx.has_request = true;
+            return;
+        case ZDJ_SETTING_USB_INIT_GADGET:
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Init prefs: [Gadget]" );
+            zdj_usb_put_empty_gadget_mode( &state->switch_ctx.request );
+            state->switch_ctx.request.gadget_config.shell = true;
+            state->switch_ctx.has_request = true;
+            return;
+        case ZDJ_SETTING_USB_INIT_PREVIOUS:
+            // Case 1: We are relaunching after a crash or app transition.
+            
+            // Check if we are in Gadget state at init.
+            zdj_usb_update_gadget_driver_health( state );
+            if( state->gadget_status._flags == 0x0 ) { 
+                zdj_usb_put_current_gadget_mode( &state->mode_state );
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Init prefs: Previous - Relaunch > [Gadget]" );
+                return;
+            }
+            // Check if we are in Host state at init.
+            zdj_usb_update_host_driver_health( state );
+            if( state->host_status._flags == 0x0 ) { 
+                zdj_usb_put_host_mode( &state->mode_state );
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Init prefs: Previous - Relaunch > [Host]" );
+                return; 
+            }
+
+            // Case 2: We are launching after reboot
+            // For now, reboot only boots into prev mode if it was Gadget
+            prev_mode = zdj_setting_get( ZDJ_SETTING_USB_PREV_MODE )->i_val;
+            if( prev_mode == ZDJ_USB_MODE_GADGET ) {
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Init prefs: Previous - Reboot > [Gadget]" );
+                zdj_usb_put_empty_gadget_mode( &state->switch_ctx.request );
+                state->switch_ctx.request.gadget_config.shell = true;
+                state->switch_ctx.has_request = true;
+            } else {
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Init prefs: Previous - Reboot > [Offline]" );
+                zdj_usb_put_offline_mode( &state->switch_ctx.request );
+                state->switch_ctx.has_request = true;
+            }
+            return;
+    }
+
+    // If we get here, something went wrong. Go into error mode
+    zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "Init State Error" );
+    zdj_usb_put_error_mode( &state->mode_state, ZDJ_USB_MODE_INIT_ERROR );
+}
 
 
 // Perform a blocking switch sequence to the requested state.
 // This is intended to be called from the USB state thread.
 static void _switch_state( zdj_usb_state_t * state ) {
-    zdj_usb_log_begin( );
-    sprintf( zdj_usb_state->log_str, "USB Switch State\n" );
-    zdj_usb_log( zdj_usb_state->log_str );
+    zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Switch: [%s] -> [%s]", zdj_usb_mode_name[ state->mode_state.mode ], zdj_usb_mode_name[ state->switch_ctx.request.mode ] );
 
     // Make sure we have the latest state
-    zdj_usb_update_mode_from_sysfs( zdj_usb_state );
+    zdj_usb_update_mode_from_sysfs( &state->mode_state );
     
-    // Read the request in from disk
-    zdj_usb_mode_state_t request;
-    FILE * fd = fopen( ZDJ_USB_STATUS_PATH, "r" );
-    if( fd ) { 
-        fread( &request, sizeof( zdj_usb_mode_state_t ), 1, fd );
-        fclose( fd );
-    } else {
-        printf( "failed to read USB switch request from disk\n" );
-        return;
+    // System must be healthy to begin a mode switch to Gadget/Host.
+    // Allow an unhealthy system if we're switching to Offline
+    // If there's a mode error, bug out and let the user
+    // attempt to resolve it via the USB debug UI.
+    if( state->switch_ctx.request.mode != ZDJ_USB_MODE_OFFLINE ) {
+        if( state->mode_state.mode == ZDJ_USB_MODE_INIT_ERROR ||
+            state->mode_state.mode == ZDJ_USB_MODE_CONFIG_ERROR || 
+            state->mode_state.mode == ZDJ_USB_MODE_SWITCH_ERROR
+        ) {
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "[%s] has error. Can't switch to [%s]", zdj_usb_mode_name[ state->mode_state.mode ], zdj_usb_mode_name[ state->switch_ctx.request.mode ] );
+            state->switch_ctx.busy = false;
+            state->switch_ctx.has_update = true;
+            return;
+        }
     }
 
-    printf( "zdj_usb_switch_state: %d/%d %d\n", request.mode, state->mode_state.mode, request.submode );
-    sprintf( zdj_usb_state->log_str, "From:%s To:%s\n", 
-        zdj_usb_mode_name[ state->mode_state.mode ], 
-        zdj_usb_mode_name[ request.mode ] 
-    );
-    zdj_usb_log( zdj_usb_state->log_str );
+    // Begin processing the switch request
+    zdj_usb_mode_state_t * request = &state->switch_ctx.request;
+
+    
 
     struct timespec settle_sleep = { 0, 100000000 };
 
-    char cmd[ 256 ];
-    strcpy( state->switch_data.switch_str_1, " " );
-    strcpy( state->switch_data.switch_str_2, " " );
-    zdj_usb_state->switch_data.should_show_lib_rescan = false;
+    char cmd[ 1024 ];
 
-    // Check if we need to teardown any gadgets
-    if( zdj_usb_has_active_gadget( zdj_usb_state ) ) {
+    // Check if we need to teardown any gadgets.
+    // This is needs to work in the case of a partially stood-up driver stack
+    // so it needs to be more complex than just checking for current valid state.
+    if( zdj_usb_detect_gadgetfs( state ) ) {
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Teardown Gadget" );
+
         // If we're exiting drive mode, make a note for later.
         // We'll pop a dialog asking if user wants to enter import.
-        if( zdj_usb_state->mode_state.submode == ZDJ_USB_SUBMODE_GADGET_SHELL_DRIVE ) {
-            zdj_usb_state->switch_data.should_show_lib_rescan = true;
+        if( zdj_usb_state->mode_state.gadget_config.mass_storage ) {
+            // zdj_usb_state->gadget_status.should_show_lib_rescan = true;
         }
 
-        printf( "Tearing down gadget\n" );
-        sprintf( zdj_usb_state->log_str, "Tearing down gadget state\n" );
-        zdj_usb_log( zdj_usb_state->log_str );
-        strcpy( state->switch_data.switch_str_1, "Removing Gadget(s)" );
-        state->switch_data.has_update = true;
-        strcpy( cmd, "/root/boot/teardown_gadget.sh" );
-        system( cmd );
+        if( !zdj_usb_teardown_gadget( state ) ) {
+            zdj_usb_put_error_mode( &state->mode_state, ZDJ_USB_MODE_SWITCH_ERROR );
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "USB Error at: [%s]", zdj_usb_mode_switch_err_name[ state->switch_ctx.error ] );
+            state->switch_ctx.busy = false;
+            state->switch_ctx.has_update = true;
+            return;
+        }
+
         nanosleep( &settle_sleep, NULL );
-        // settle_sleep.tv_sec = 1;
         settle_sleep.tv_nsec = 100000000;
     }
 
 
     // Check if we need to teardown the entire USB stack before enabling new mode
-    if( request.mode != zdj_usb_state->mode_state.mode &&
-        zdj_usb_state->mode_state.mode > ZDJ_USB_MODE_OFFLINE ) {
-        printf( "Switching USB to offline\n" );
-        sprintf( zdj_usb_state->log_str, "modprobe reset seq:\n" );
-        zdj_usb_log( zdj_usb_state->log_str );
-
-        strcpy( state->switch_data.switch_str_1, "Resetting USB Stack" );
-        // strcpy( cmd, "/root/boot/switch_to_usb_offline.sh" );
-        // system( cmd );
-
-        strcpy( state->switch_data.switch_str_2, "Shell" );
-        state->switch_data.has_update = true;
-        printf( "removing shell\n" );
-        sprintf( zdj_usb_state->log_str, "modprobe -r usb_f_acm\n" );
-        zdj_usb_log( zdj_usb_state->log_str );
-        strcpy( cmd, "modprobe -r usb_f_acm" );
-        system( cmd );
-        nanosleep( &settle_sleep, NULL );
-        // settle_sleep.tv_sec = 1;
-        settle_sleep.tv_nsec = 100000000;
-
-        strcpy( state->switch_data.switch_str_2, "libcomposite" );
-        state->switch_data.has_update = true;
-        printf( "removing libcomposite\n" );
-        sprintf( zdj_usb_state->log_str, "modprobe -r libcomposite\n" );
-        zdj_usb_log( zdj_usb_state->log_str );
-        strcpy( cmd, "modprobe -r libcomposite" );
-        system( cmd );
-        nanosleep( &settle_sleep, NULL );
-        // settle_sleep.tv_sec = 1;
-        settle_sleep.tv_nsec = 100000000;
-
-        strcpy( state->switch_data.switch_str_2, "tcpci" );
-        state->switch_data.has_update = true;
-        printf( "removing tcpci\n" );
-        sprintf( zdj_usb_state->log_str, "modprobe -r tcpci\n" );
-        zdj_usb_log( zdj_usb_state->log_str );
-        strcpy( cmd, "modprobe -r tcpci" );
-        system( cmd );
-        nanosleep( &settle_sleep, NULL );
-        // settle_sleep.tv_sec = 1;
-        settle_sleep.tv_nsec = 100000000;
-
-        strcpy( state->switch_data.switch_str_2, "ci_hdrc_imx" );
-        state->switch_data.has_update = true;
-        printf( "removing ci_hdrc_imx\n" );
-        sprintf( zdj_usb_state->log_str, "modprobe -r ci_hdrc_imx\n" );
-        zdj_usb_log( zdj_usb_state->log_str );
-        strcpy( cmd, "modprobe -r ci_hdrc_imx" );
-        system( cmd );
-        printf( "3\n" );
-        nanosleep( &settle_sleep, NULL );
-        // settle_sleep.tv_sec = 1;
-        settle_sleep.tv_nsec = 100000000;
-
-        strcpy( state->switch_data.switch_str_2, "usbmisc_imx" );
-        state->switch_data.has_update = true;
-        printf( "adding usbmisc_imx\n" );
-        sprintf( zdj_usb_state->log_str, "modprobe usbmisc_imx\n" );
-        zdj_usb_log( zdj_usb_state->log_str );
-        strcpy( cmd, "modprobe usbmisc_imx" );
-        system( cmd );
-        nanosleep( &settle_sleep, NULL );
-        // settle_sleep.tv_sec = 1;
-        settle_sleep.tv_nsec = 100000000;
-        
+    if( request->mode != state->mode_state.mode &&
+        state->mode_state.mode > ZDJ_USB_MODE_OFFLINE 
+    ) {
+        // printf( "Switching USB to offline\n" );
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Teardown Drivers" );
+        if( !zdj_usb_teardown_driver_mods( state ) ) {
+            zdj_usb_put_error_mode( &state->mode_state, ZDJ_USB_MODE_SWITCH_ERROR );
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "USB Error at: [%s]", zdj_usb_mode_switch_err_name[ state->switch_ctx.error ] );
+            state->switch_ctx.busy = false;
+            state->switch_ctx.has_update = true;
+            return;
+        }
     }
+
     
-    printf( "Bringing up USB stack:\n" );
-    sprintf( zdj_usb_state->log_str, "Bringing up USB stack script seq:\n" );
-    zdj_usb_log( zdj_usb_state->log_str );
-    // printf( "req:%p\n", request );
-    // printf( "req:%d\n", request.mode );
-    // printf( "cur:%d\n",  zdj_usb_state->mode_state.mode );
-    // Invoke the mode switch script and wait.
-    switch ( request.mode ) {
+    switch ( request->mode ) {
+        case ZDJ_USB_MODE_OFFLINE:
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Offline Mode" );
+            zdj_usb_put_offline_mode( &state->mode_state );
+            break;
         case ZDJ_USB_MODE_HOST:
-            strcpy( state->switch_data.switch_str_1, "Host Bringup" );
-            strcpy( state->switch_data.switch_str_2, " " );
-            state->switch_data.has_update = true;
-            printf( "Bringing up USB host\n" );
-            sprintf( zdj_usb_state->log_str, "switch_to_usb_host.sh\n" );
-            zdj_usb_log( zdj_usb_state->log_str );
-            strcpy( cmd, "/root/boot/switch_to_usb_host.sh" );
-            system( cmd );
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Standup Host" );
+            if( !zdj_usb_standup_host_mode( state ) ) {
+                zdj_usb_put_error_mode( &state->mode_state, ZDJ_USB_MODE_SWITCH_ERROR );
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "USB Error at: [%s]", zdj_usb_mode_switch_err_name[ state->switch_ctx.error ] );
+                state->switch_ctx.busy = false;
+                state->switch_ctx.has_update = true;
+                return;
+            }
             break;
         case ZDJ_USB_MODE_GADGET:
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Standup Gadget" );
             // Always bring up the shell
-            request.gadget_config.shell = true;
+            request->gadget_config.shell = true;
+            // If we aren't currently in gadget mode, we need to switch the USB driver's role
+            if( state->mode_state.mode != ZDJ_USB_MODE_GADGET ) {
+                if( !zdj_usb_standup_gadget_mode( state ) ) {
+                    zdj_usb_put_error_mode( &state->mode_state, ZDJ_USB_MODE_SWITCH_ERROR );
+                    zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "USB Error at: [%s]", zdj_usb_mode_switch_err_name[ state->switch_ctx.error ] );
+                    state->switch_ctx.busy = false;
+                    state->switch_ctx.has_update = true;
+                    return;
+                }
+            }
+
+            // Bring up the selected set of USB Gadget functions
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Standup Gadget Functions" );
+            if( !zdj_usb_standup_gadget_functions( state ) ) {
+                zdj_usb_put_error_mode( &state->mode_state, ZDJ_USB_MODE_SWITCH_ERROR );
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "USB Error at: [%s]", zdj_usb_mode_switch_err_name[ state->switch_ctx.error ] );
+                state->switch_ctx.busy = false;
+                state->switch_ctx.has_update = true;
+                return;
+            }
             
-            if( zdj_usb_state->mode_state.mode != ZDJ_USB_MODE_GADGET ) {
-                strcpy( state->switch_data.switch_str_1, "Gadget Bringup" );
-                strcpy( state->switch_data.switch_str_2, " " );
-                state->switch_data.has_update = true;
-                printf( "Switching to USB Gadget\n" );
-                sprintf( zdj_usb_state->log_str, "switch_to_usb_gadget.sh\n" );
-                zdj_usb_log( zdj_usb_state->log_str );
-                strcpy( cmd, "/root/boot/switch_to_usb_gadget.sh" );
-                system( cmd );
-                nanosleep( &settle_sleep, NULL );
-                settle_sleep.tv_nsec = 100000000;
-            }
-            // If we're switching to gadget, invoke the appropriate gadget bringup script.
-            if( request.gadget_config.shell && request.gadget_config.mass_storage ) {
-                strcpy( state->switch_data.switch_str_2, "Func:  Shell + Drive" );
-                state->switch_data.has_update = true;
-                printf( "Bringing up Drive + Shell gadget\n" );
-                sprintf( zdj_usb_state->log_str, "bringup_shell_drive_gadget.sh\n" );
-                zdj_usb_log( zdj_usb_state->log_str );
-                strcpy( cmd, "/root/boot/bringup_shell_drive_gadget.sh" );
-                system( cmd );
-                nanosleep( &settle_sleep, NULL );
-            } else if( request.gadget_config.shell ) {
-                strcpy( state->switch_data.switch_str_2, "Func:  Shell" );
-                state->switch_data.has_update = true;
-                printf( "Bringing up Shell gadget\n" );
-                sprintf( zdj_usb_state->log_str, "bringup_shell_gadget.sh\n" );
-                zdj_usb_log( zdj_usb_state->log_str );
-                strcpy( cmd, "/root/boot/bringup_shell_gadget.sh" );
-                system( cmd );
-                nanosleep( &settle_sleep, NULL );
-            }
             break;
     }
 
-    printf( "USB switch done\n" );
-    sprintf( zdj_usb_state->log_str, "USB Switch State Done\n" );
-    zdj_usb_log( zdj_usb_state->log_str );
-    state->switch_data.state = ZDJ_USB_SUBMODE_SWITCH_SUCCESS;
-    state->switch_data.has_update = true;
+    // Update from latest state
+    zdj_usb_update_mode_from_sysfs( &state->mode_state );
+    zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Mode: [%s]", zdj_usb_mode_name[ state->mode_state.mode ] );
 
-    zdj_usb_log_end( );
+    // Store previous USB mode in prefs
+    zdj_setting_set_int( ZDJ_SETTING_USB_PREV_MODE, state->mode_state.mode );
 }

@@ -24,7 +24,7 @@
 //////////////////////////////////////////////
 
 void zdj_dj_deck_new_loop( zdj_deck_t * deck ) {
-    printf( "_new_loop\n" );
+    // printf( "_new_loop\n" );
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
     zdj_deck_control_state_t * controls = &deck->controls;
@@ -147,7 +147,7 @@ void zdj_dj_deck_enable_loop( zdj_deck_t * deck, zdj_library_cuepoint_t * cuepoi
 }
 
 void zdj_dj_deck_disable_loop( zdj_deck_t * deck ) {
-    printf( "disable loop\n" );
+    // printf( "disable loop\n" );
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
     zdj_deck_control_state_t * controls = &deck->controls;
@@ -175,7 +175,8 @@ void zdj_dj_deck_move_loop( zdj_deck_t * deck, double val ) {
         double bg_offset = deck->controls.discon_quantize_val * val;
         req_offset = decode_state->get_d_offset_for_beatgrid_dist( deck_state->decode_node, bg_offset );
     } else {
-        req_offset = val * 7000;
+        // req_offset = val * 200;
+        req_offset = val * ( loop_state->pcm_len * 0.1 );
     }
 
     double loop_start_origin_d = deck->controls.loop_state.start_origin_d;

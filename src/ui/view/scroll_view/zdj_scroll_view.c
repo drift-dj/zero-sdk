@@ -223,6 +223,7 @@ void zdj_scroll_view_by_int( zdj_view_t * scroll_view, int val ) {
 }
 
 void _zdj_scroll_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // printf( "_zdj_scroll_view_draw\n" );
     boxColor( zdj_renderer( ), clip->dst.x, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h, ZDJ_BLACK);
 
     // Create a frame rate-invariant easing factor
@@ -235,6 +236,8 @@ void _zdj_scroll_view_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     float ease_y = ( view->subview_clip.scroll_offset.set_y - view->subview_clip.scroll_offset.cur_y ) * rate;
     view->subview_clip.scroll_offset.cur_y += ease_y;
+
+    // printf( "_zdj_scroll_view_draw done\n" );
 }
 
 void _zdj_scroll_view_debug_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {

@@ -3,11 +3,14 @@
 
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
+#include <zerodj/system/log/zdj_log.h>
 
 zdj_control_map_id_t zdj_control_active_map;
 
 void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
-    printf( "zdj_activate_control_map: %s\n", zdj_control_map_name[ map_id ] );
+    // printf( "zdj_activate_control_map: %s\n", zdj_control_map_name[ map_id ] );
+    zdj_log( ZDJ_LOG_UI, ZDJ_LOG_DEBUG, "Map: %s", zdj_control_map_name[ map_id ] );
+    
     zdj_deactivate_all_controls( );
     switch ( map_id ) {
         case ZDJ_CONTROL_MAP_MENU_BASE:
@@ -23,6 +26,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_PRESS_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_MENU_DJ_ROOT:
@@ -37,6 +41,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_LOG:
@@ -50,6 +55,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_TEXT_INPUT:
@@ -71,6 +77,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_SDK_TEST:
@@ -84,6 +91,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
 
@@ -111,6 +119,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_NEXT_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_PREV_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
     case ZDJ_CONTROL_MAP_SOUNDCARD_OPTIONS_PANEL:
@@ -133,6 +142,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_ASSIST_PANEL:
@@ -158,6 +168,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_NEXT_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_PREV_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_IMAGE_VIEWER:
@@ -167,6 +178,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
 
@@ -191,6 +203,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_EDIT_CUEPOINT:
@@ -226,6 +239,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
 
@@ -251,6 +265,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             // zdj_activate_control( ZDJ_UI_CONTROL_SCROLL_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_EDIT_CUEPOINT:
@@ -286,6 +301,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
 
@@ -316,6 +332,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
 
@@ -338,6 +355,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_MOM_EQ:
@@ -363,6 +381,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_EQ:
@@ -401,6 +420,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_TRIM:
@@ -438,6 +458,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_LOOP:
@@ -482,6 +503,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 ); // Toggle quant
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_LOOP_OFF:
@@ -527,6 +549,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 ); // Toggle quant
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_LOOP_ON:
@@ -571,6 +594,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_TONE_2_RELEASE_0 ); // Toggle quant
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_SYNC:
@@ -607,6 +631,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_1_FILT:
@@ -645,6 +670,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
 
@@ -666,6 +692,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_MOM_EQ:
@@ -691,6 +718,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_EQ:
@@ -730,6 +758,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_TRIM:
@@ -767,6 +796,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_LOOP:
@@ -811,6 +841,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_LOOP_ON:
@@ -855,6 +886,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_LOOP_OFF:
@@ -899,6 +931,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_SYNC:
@@ -935,6 +968,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_2_FILT:
@@ -973,6 +1007,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_EXT_MOM_EQ:
@@ -995,6 +1030,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_3_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_EXT_EQ:
@@ -1022,6 +1058,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_EXT_TRIM:
@@ -1048,6 +1085,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_EXT_SYNC:
@@ -1073,6 +1111,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
         case ZDJ_CONTROL_MAP_STATION_EXT_FILT:
@@ -1100,6 +1139,7 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             zdj_activate_control( ZDJ_UI_CONTROL_FN_1_RELEASE_2 );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PANEL );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_DEBUG_WIDGET );
+            zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_LOG_WIDGET );
             zdj_activate_control( ZDJ_UI_CONTROL_TOGGLE_PERF_WIDGET );
             break;
     }

@@ -24,8 +24,6 @@ zdj_view_t * zdj_new_log_view(
     zdj_view_t * parent_view,
     zdj_rect_t * frame
 ) {
-    printf( "zdj_new_log_view: %d %s\n", type, log_path );
-
     zdj_view_t * view = zdj_new_modal_view( zdj_modal_rect( ) );
     view->type = ZDJ_VIEW_LOG;
     // browser_view->draw = &_draw;

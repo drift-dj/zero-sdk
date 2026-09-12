@@ -6,6 +6,7 @@
 
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -62,36 +63,36 @@ zdj_view_t * zdj_new_crash_widget( void ) {
     skull->frame.y = 4;
     zdj_add_subview( container_view, skull );
 
-    char title_str[ 128 ];
-    sprintf( title_str, "CRASH LOG %03d", zdj_cur_log_num( ZDJ_LOG_TYPE_CRASH ) );
-    zdj_view_t * title = zdj_new_label_view( title_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    title->frame.x = 17;
-    title->frame.y = 4;
-    zdj_add_subview( container_view, title );
+    // char title_str[ 128 ];
+    // sprintf( title_str, "CRASH LOG %03d", zdj_cur_log_num( ZDJ_LOG_TYPE_CRASH ) );
+    // zdj_view_t * title = zdj_new_label_view( title_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    // title->frame.x = 17;
+    // title->frame.y = 4;
+    // zdj_add_subview( container_view, title );
     
-    // Add top 3 lines from log
-    char line_1[ 512 ];
-    char line_2[ 512 ];
-    char line_3[ 512 ];
-    zdj_put_cur_log( ZDJ_LOG_TYPE_CRASH, line_1, line_2, line_3 );
-    zdj_view_t * line_1_label = zdj_new_ticker_view( line_1, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    line_1_label->frame.x = 2;
-    line_1_label->frame.y = 17;
-    line_1_label->frame.w = container_view->frame.w - 2;
-    line_1_label->frame.h = 8;
-    zdj_add_subview( container_view, line_1_label );
-    zdj_view_t * line_2_label = zdj_new_ticker_view( line_2, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    line_2_label->frame.x = 2;
-    line_2_label->frame.y = 24;
-    line_2_label->frame.w = container_view->frame.w - 2;
-    line_2_label->frame.h = 8;
-    zdj_add_subview( container_view, line_2_label );
-    zdj_view_t * line_3_label = zdj_new_ticker_view( line_3, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    line_3_label->frame.x = 2;
-    line_3_label->frame.y = 31;
-    line_3_label->frame.w = container_view->frame.w - 2;
-    line_3_label->frame.h = 8;
-    zdj_add_subview( container_view, line_3_label );
+    // // Add top 3 lines from log
+    // char line_1[ 512 ];
+    // char line_2[ 512 ];
+    // char line_3[ 512 ];
+    // zdj_put_cur_log( ZDJ_LOG_TYPE_CRASH, line_1, line_2, line_3 );
+    // zdj_view_t * line_1_label = zdj_new_ticker_view( line_1, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    // line_1_label->frame.x = 2;
+    // line_1_label->frame.y = 17;
+    // line_1_label->frame.w = container_view->frame.w - 2;
+    // line_1_label->frame.h = 8;
+    // zdj_add_subview( container_view, line_1_label );
+    // zdj_view_t * line_2_label = zdj_new_ticker_view( line_2, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    // line_2_label->frame.x = 2;
+    // line_2_label->frame.y = 24;
+    // line_2_label->frame.w = container_view->frame.w - 2;
+    // line_2_label->frame.h = 8;
+    // zdj_add_subview( container_view, line_2_label );
+    // zdj_view_t * line_3_label = zdj_new_ticker_view( line_3, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    // line_3_label->frame.x = 2;
+    // line_3_label->frame.y = 31;
+    // line_3_label->frame.w = container_view->frame.w - 2;
+    // line_3_label->frame.h = 8;
+    // zdj_add_subview( container_view, line_3_label );
 
     return view;
 }

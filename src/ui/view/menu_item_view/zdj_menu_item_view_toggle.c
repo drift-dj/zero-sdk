@@ -51,7 +51,7 @@ void zdj_menu_item_toggle_init_layout( zdj_view_t * view ) {
         toggle = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TOGGLE_OFF ], NULL );
     }
     zdj_add_subview( state->normal_view, toggle );
-    toggle->frame.x = title_ticker_norm->frame.x + zdj_ticker_view_get_text_w( title_ticker_norm );
+    toggle->frame.x = title_ticker_norm->frame.x + zdj_ticker_view_get_text_w( title_ticker_norm ) + 1;
     toggle->frame.y = 1;
 
 
@@ -85,7 +85,7 @@ void zdj_menu_item_toggle_init_layout( zdj_view_t * view ) {
         toggle_hi = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_TOGGLE_OFF_HI ], NULL );
     }
     zdj_add_subview( state->hilite_view, toggle_hi );
-    toggle_hi->frame.x = title_ticker_norm->frame.x + zdj_ticker_view_get_text_w( title_ticker_norm );
+    toggle_hi->frame.x = title_ticker_norm->frame.x + zdj_ticker_view_get_text_w( title_ticker_norm ) + 1;
     toggle_hi->frame.y = 1;
 
     state->needs_layout_init = false;

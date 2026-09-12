@@ -59,7 +59,7 @@ static void _handle_control( zdj_view_t * menu_stack, zdj_control_event_t * even
 
     // Capture a Nav release if we're at the root menu and retract( )
     if( event->id == ZDJ_UI_CONTROL_NAV_RELEASE_0 && state->retract_cb ) {
-        printf( "handling retract release: %p\n", state->retract_cb );
+        // printf( "handling retract release: %p\n", state->retract_cb );
         event->blocked = true;
         zdj_menu_stack_retract( menu_stack );
         return;

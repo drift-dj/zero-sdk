@@ -62,24 +62,28 @@ zdj_view_t * zdj_new_menu_header(
 }
 
 void _zdj_menu_header_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // printf( "_zdj_menu_header_draw\n" );
+
     zdj_menu_header_view_state_t * state = (zdj_menu_header_view_state_t*)view->state;
 
+    // printf( "_zdj_menu_header_draw 0\n" );
     // BG
     // boxColor( zdj_renderer( ), clip->dst.x+6, clip->dst.y, clip->dst.x+clip->dst.w, clip->dst.y+clip->dst.h-1, ZDJ_WHITE );
 
     if( !state->has_valid_display ) {
         _zdj_menu_header_update_layout( view, clip );
     }
-
     // If show_back is requested by menu system, animate back button into view
     if( state->show_back && state->back_hidden ) {
         // activate header in_anim
-        ((anim_init_t)view->in_anim.init_fn)( &view->in_anim, view );
-        view->anim = &view->in_anim;
+        if( view->in_anim.init_fn ) {
+            ((anim_init_t)view->in_anim.init_fn)( &view->in_anim, view );
+            view->anim = &view->in_anim;
+        }
         state->show_back = false;
         state->back_hidden = false;
     }
-    
+
     // If hide_back is requested by menu system, animate back button out of view
     if( state->hide_back && !state->back_hidden ) {
         // activate header out_anim
@@ -102,6 +106,8 @@ void _zdj_menu_header_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
             }
         }
     }
+
+    // printf( "_zdj_menu_header_draw done\n" );
 }
 
 void _zdj_menu_header_deinit_state( zdj_view_t * view ) {

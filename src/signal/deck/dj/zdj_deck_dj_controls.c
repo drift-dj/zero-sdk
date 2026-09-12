@@ -492,7 +492,7 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
 
     case ZDJ_DECK_1_CONTROL_SKIP_LENGTH:
     case ZDJ_DECK_2_CONTROL_SKIP_LENGTH:
-        printf( "skip len\n" );
+        // printf( "skip len\n" );
         if( zdj_dj_deck_command_request( deck, ZDJ_DECK_COMMAND_REQUEST_CHANGE_SKIP_LENGTH ) ) {
             deck->command_req.event_i_val = event->i_val;
         }
@@ -500,7 +500,7 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
 
     case ZDJ_DECK_1_CONTROL_SKIP_SET_ORIGIN:
     case ZDJ_DECK_2_CONTROL_SKIP_SET_ORIGIN:
-        printf( "setting skip origin\n" );
+        // printf( "setting skip origin\n" );
         zdj_dj_deck_command_request( deck, ZDJ_DECK_COMMAND_REQUEST_SET_SKIP_ORIGIN );
         break;
 

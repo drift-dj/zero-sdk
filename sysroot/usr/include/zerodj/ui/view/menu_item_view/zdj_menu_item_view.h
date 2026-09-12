@@ -134,6 +134,8 @@ typedef struct {
     char title[ 256 ];
     char subtitle[ 256 ];
     zdj_ui_data_t data;
+    void * owned_ptr;
+    void * unowned_ptr;
     zdj_menu_item_data_display_type_t data_type;
     char data_prefix[ 32 ];
     char data_suffix[ 32 ];
@@ -196,7 +198,6 @@ zdj_view_t * zdj_new_browser_device_menu_item(
     zdj_menu_item_view_browser_device_type_t type 
 );
 zdj_view_t * zdj_new_song_menu_item( 
-    // zdj_library_song_t * song, 
     zdj_library_menu_row_t * menu_row, 
     bool show_title_and_artist,
     bool show_key, 

@@ -37,7 +37,7 @@ zdj_view_t * zdj_new_progress_bar_view( zdj_rect_t * frame, zdj_progress_bar_vie
     state->bg->frame.h = progress_bar->frame.h;
     zdj_add_subview( progress_bar, state->bg );
 
-    state->wait_crawl = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_STRIP ], NULL );
+    state->wait_crawl = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ALERT_TEX ], NULL );
     state->wait_crawl->frame.y = -2;
     state->wait_crawl->frame.w = 0;
     state->wait_crawl->frame.h = progress_bar->frame.h + 2;

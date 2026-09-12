@@ -98,7 +98,7 @@ void zdj_library_create_db_tables( sqlite3 * db ) {
     strcpy( sql, "CREATE TABLE 'Data_Source_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
     // Cuepoints
-    strcpy( sql, "CREATE TABLE 'Cuepoint_Entity' ('entity_id' TEXT NOT NULL, 'performance_entity_id' TEXT, 'name' TEXT, 'sample' INT, 'is_loop' INT, 'loop_len' INT, PRIMARY KEY('entity_id'))" );
+    strcpy( sql, "CREATE TABLE 'Cuepoint_Entity' ('entity_id' TEXT NOT NULL, 'performance_entity_id' TEXT, 'name' TEXT, 'num' INT, 'sample' INT, 'is_loop' INT, 'loop_len' INT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
     // Playlists
     strcpy( sql, "CREATE TABLE 'Playlist_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, 'ordered_song_links' TEXT, PRIMARY KEY('entity_id'))" );

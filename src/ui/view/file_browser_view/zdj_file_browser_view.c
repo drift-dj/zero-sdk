@@ -104,7 +104,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     //     // Check for attach/detach of USB drive
     //     // if ( state->usb_host_counter == 0 && zdj_usb_host_has_devices_update( ) ) {
-    //     if ( state->usb_host_counter == 0 && zdj_usb_state->host_state.has_file_browser_update ) {
+    //     if ( state->usb_host_counter == 0 && zdj_usb_state->host_status.has_file_browser_update ) {
     //         // If we're looking at the devices menu, refresh the menu
     //         if( state->is_device_menu ) {
     //             // printf( "file browser host-mode device update\n" );
@@ -123,9 +123,9 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // Update the devices menu when the set of attached devices changes
     if( state->is_device_menu &&
         zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
-        zdj_usb_state->host_state.has_file_browser_update 
+        zdj_usb_state->host_status.has_file_browser_update 
     ) {
-        zdj_usb_state->host_state.has_file_browser_update = false;
+        zdj_usb_state->host_status.has_file_browser_update = false;
         zdj_refresh_device_browser_menu( view, state->devices_menu );
     }
     // printf( "browser _draw done\n" );

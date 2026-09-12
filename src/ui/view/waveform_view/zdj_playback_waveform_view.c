@@ -31,17 +31,12 @@ zdj_view_t * zdj_new_playback_waveform_view(
     bool hires
 ) {
     // printf( "zdj_new_playback_waveform_view\n" );
-    
     // Build a playback waveform
-    // zdj_pipeline_node_t * waveform_node = zdj_new_playback_waveform( 
-    //     deck, style, song, points_per_pixel, frame, hires
-    // );
     zdj_pipeline_node_t * waveform_node = zdj_new_playback_waveform( 
         deck, decode_node, style, song, zoom_val, frame, hires
     );
     if( !waveform_node ) { return NULL; }
 
-    // printf( "zdj_new_playback_waveform_view 0\n" );
     // Build view
     zdj_view_t * view = zdj_new_view( frame );
     view->type = ZDJ_VIEW_WAVEFORM;
@@ -53,12 +48,10 @@ zdj_view_t * zdj_new_playback_waveform_view(
     state->waveform_node = waveform_node;
     state->zoom_val = zoom_val;
 
-    // printf( "zdj_new_playback_waveform_view 1\n" );
     // Set up zoom view accessors
     state->get_center_ratio = &_get_center_ratio;
     state->get_zoom_ratio = &_get_zoom_ratio;
 
-    printf( "zdj_new_playback_waveform_view 2: %p %p\n", zdj_renderer( ), frame );
     // Make a new texture instance for drawing
     state->waveform_tex = SDL_CreateTexture(
         zdj_renderer( ),
