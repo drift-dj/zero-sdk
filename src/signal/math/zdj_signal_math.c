@@ -35,27 +35,6 @@ zdj_gaussian_t * zdj_new_gaussian( int kernel_width, double blur ) {
         double x = x_min + i * x_step;
         kernel->lut[ i ] = _gaussian_pdf( x, mu, sigma );
     }
-
-	// zdj_gaussian_t * kernel = calloc( 1, sizeof( zdj_gaussian_t ) );
-	// double sigma = blur;
-	// kernel->sigma = sigma;
-	// kernel->width = ceil( sigma * 2.5 ); // 3.5 is flavor - increase if edges get weird
-	// kernel->lut = calloc( kernel->width, sizeof( double ) );
-	// double sum = 0.0;
-
-	// for ( int x = 0; x < kernel->width; x++ ) {
-	// 	kernel->lut[ x ] = exp( -0.5 * (pow(x/sigma, 2.0) )) / (2 * M_PI * sigma * sigma);
-	// 	// Accumulate the kernel values
-	// 	sum += kernel->lut[ x ] * 2;
-	// }
-
-	// // Normalize
-	// sum -= kernel->lut[ 0 ];
-	// for ( int x = 0; x < kernel->width; x++ ){ 
-	// 	kernel->lut[ x ] /= sum;
-	// 	// printf( "x: %1.3f\n", kernel->lut[ x ] ); 
-	// }
-
 	return kernel;
 }
 
@@ -63,20 +42,6 @@ zdj_error_type_t zdj_gaussian_free( zdj_gaussian_t * kernel ) {
 	free( kernel->lut );
 	free( kernel );
 }
-
-// double zdj_calc_fader_gain( double travel ) {
-// 	// Max travel = +10dB = 3.162x amplitude
-// 	// Min travel = -∞ = 0x amplitude
-// 	// ^5 places unity @ travel=~0.8
-// 	// ^3 places unity @ travel=~0.6
-// 	return (travel*travel*travel*travel*travel) * 3.162;
-// }
-// double zdj_calc_fader_db( double travel ) {
-// 	// This is super hacky at the moment.
-// 	// Just a linear interpolation where travel=1.0 is +10dB,
-// 	// and travel=fader_gain unity = 0dB
-// 	return (travel - 0.7f) / 0.2f;
-// }
 
 double zdj_signal_lowpass( double state, double input, double coeff ) {
 	return state + ((input-state) * coeff);
@@ -180,12 +145,6 @@ bool zdj_signal_bounds_check( double coord, double start, double end ) {
 	return ( coord >= start ) && ( coord <= end );
 }
 
-// float zdj_signal_accum_floats( float val_1, float val_2 ) {
-// 	val_1 += val_2;
-// 	if( val_1 > 1.0f ) { val_1 = 1.0f; }
-// 	if( val_1 < -1.0f ) { val_1 = -1.0f; }
-// 	return val_1;
-// }
 float zdj_signal_accum_floats( float val_1, float val_2 ) {
 	val_1 += val_2;
 	if( val_1 > 3.0f ) { val_1 = 3.0f; }

@@ -14,6 +14,7 @@
 #include <zerodj/signal/deck/xport/zdj_deck_xport.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
+#include <zerodj/system/log/zdj_log.h>
 
 zdj_deck_manager_t * _zdj_deck_manager;
 
@@ -229,13 +230,13 @@ bool zdj_deck_manager_can_activate_sync( void ) {
         }
         deck = deck->next;
     }
-    printf( "Can activate sync: %d\n", res );
+    // printf( "Can activate sync: %d\n", res );
     return res;
 }
 
 // 
 void zdj_deck_manager_set_sync( double bpm ) {
-    printf( "zdj_deck_manager_set_sync: %1.1f\n", bpm );
+    zdj_log( ZDJ_LOG_PLAYBACK, ZDJ_LOG_MSG, "Set sync: %1.1f", bpm );
     if( !zdj_deck_manager_can_activate_sync( ) ){ return; }
     zdj_deck_manager( )->sync.active = true;
     zdj_deck_manager( )->sync.locked = true;

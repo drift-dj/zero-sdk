@@ -45,6 +45,7 @@ zdj_health_status_t zdj_fs_extract_file_from_binary(
 );
 
 char * zdj_fs_get_file_extension( char * filepath );
+bool zdj_fs_put_file_extension( char * dest, char * filepath );
 
 bool zdj_fs_path_is_dir( char * path );
 bool zdj_fs_path_is_audio_dir( char * path );
@@ -56,6 +57,8 @@ bool zdj_fs_path_is_media_partition( char * path );
 bool zdj_fs_path_is_attached_msd( char * path );
 bool zdj_fs_path_is_dir_with_files( char * path );
 bool zdj_fs_path_is_logfile( char * path );
+
+bool zdj_fs_path_is_rb_xml_library( char * path );
 
 zdj_health_status_t zdj_fs_put_parent_dir( char * path, char * dir );
 void zdj_fs_scan_dir( 

@@ -12,14 +12,14 @@
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 void zdj_dj_deck_set_cuepoint( zdj_deck_t * deck ) {
-    printf( "Set Cuepoint\n" );
+    // printf( "Set Cuepoint\n" );
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
     deck->controls.cue_state.dest_origin_d = decode_state->head.origin_d;
 }
 
 void zdj_dj_deck_next_cuepoint( zdj_deck_t * deck ) {
-    printf( "Next Cuepoint\n" );
+    // printf( "Next Cuepoint\n" );
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     if( deck_state->song->performance && 
         deck_state->song->performance->cuepoint_count > 0 &&
@@ -34,7 +34,7 @@ void zdj_dj_deck_next_cuepoint( zdj_deck_t * deck ) {
 }
 
 void zdj_dj_deck_play_cuepoint( zdj_deck_t * deck ) {
-    printf( "Play at Cuepoint\n" );
+    // printf( "Play at Cuepoint\n" );
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     zdj_pipeline_node_t * decode_node = deck_state->decode_node;
     zdj_decode_node_state_t * decode_state = (zdj_decode_node_state_t*)deck_state->decode_node->state;
@@ -121,7 +121,7 @@ void zdj_dj_deck_play_cuepoint( zdj_deck_t * deck ) {
 }
 
 void zdj_dj_deck_reset_to_cuepoint( zdj_deck_t * deck ) {
-    printf( "Reset to Cuepoint\n" );
+    // printf( "Reset to Cuepoint\n" );
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
     zdj_library_performance_t * perf = deck_state->song->performance;
 

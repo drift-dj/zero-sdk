@@ -16,7 +16,7 @@
 #include <zerodj/ui/asset/zdj_ui_asset.h>
 #include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/panel/settings/zdj_settings_panel.h>
-#include <zerodj/ui/panel/settings/software/zdj_settings_software_panel.h>
+#include <zerodj/ui/panel/settings/system/zdj_settings_system_panel.h>
 #include <zerodj/ui/view/asset_view/zdj_asset_view.h>
 #include <zerodj/ui/view/dialog_view/zdj_dialog_view.h>
 #include <zerodj/ui/view/file_browser_view/zdj_file_browser_view.h>
@@ -162,7 +162,6 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
         menu_state->scroll_index == -1) ||
         _event->id == ZDJ_UI_CONTROL_NAV_RELEASE_0
     ) {
-        printf( "usb_status_view back_btn\n" );
         // Dump the top view on the stack (this view)
         zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
         zdj_pop_subview_of( panel_state->settings_panel, true );
@@ -179,7 +178,6 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _handle_back( zdj_view_t * menu_view ) {
-    printf( "_handle_back\n" );
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }

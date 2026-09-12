@@ -3,11 +3,13 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h> 
 
 #include <sqlite3.h>
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/sql/zdj_sql.h>
 
 static char _sql[ 1024 ];
@@ -83,16 +85,20 @@ zdj_health_status_t zdj_library_new( void ) {
     int lib_count = zdj_sql_rows_in_table ( "Library_Entity", NULL, zdj_library_db );
     char new_lib_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
     zdj_library_put_uuid( new_lib_entity_id );
-    snprintf( _sql, sizeof( _sql ), "INSERT INTO Library_Entity VALUES(\"%s\", \"Library %d\", \"Song_Links_%s\", \"Playlist_Links_%s\", \"Curation_Data_Links_%s\", \"Setting_Links_%s\");\n",
+    snprintf( _sql, sizeof( _sql ), "INSERT INTO Library_Entity VALUES(\"%s\", \"Library %d\", \"Song_Links_%s\", \"Playlist_Links\", \"Curation_Data_Links_%s\", \"Setting_Links_%s\");\n",
         new_lib_entity_id,
         lib_count,
-        new_lib_entity_id,
         new_lib_entity_id,
         new_lib_entity_id,
         new_lib_entity_id
     );
 
     zdj_sql_exec( (char *)&_sql, zdj_library_db );
+
+    printf( "lib new: %s\n", _sql );
+
+    // Playlist_Links_dd83b50f03c24f5a8315c57063568405
+    // Playlist_Links_d3282c806cc34d6f89466760916c5ec1
 
     // Add a Song_Links table
     // Add optional 'sequence' field to song_links
@@ -102,10 +108,10 @@ zdj_health_status_t zdj_library_new( void ) {
     zdj_sql_exec( (char*)&_sql, zdj_library_db );
 
     // Add a Playlist_Links table
-    snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Playlist_Links_%s' ( 'table_name' TEXT NOT NULL, 'display_name' TEXT, PRIMARY KEY('table_name'))",
-        new_lib_entity_id 
-    );
+    snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Playlist_Links' ( 'table_name' TEXT NOT NULL, 'display_name' TEXT, PRIMARY KEY('table_name'))" );
     zdj_sql_exec( (char*)&_sql, zdj_library_db );
+
+    printf( "creating playlist links: %s\n", _sql );
 
     // Add a Curation_Data_Links table
     snprintf( _sql, sizeof( _sql ), "CREATE TABLE 'Curation_Data_Links_%s' ( 'entity_id' TEXT NOT NULL, PRIMARY KEY('entity_id'))",
@@ -172,11 +178,14 @@ zdj_health_status_t zdj_library_add_song_link( char * library_entity_id, zdj_lib
         song->entity_id,
         song->entity_id
     );
+    // printf( "add_song_link:%s\n", sql );
     res = zdj_sql_exec( sql, db );
 
     if( res != SQLITE_OK ) {
+        // printf( "add song link error\n" );
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR; 
     } else {
+        // printf( "add song link okay\n" );
         return ZDJ_HEALTH_STATUS_OKAY;
     }
 }
@@ -227,5 +236,108 @@ zdj_error_type_t zdj_library_populate_playlists_for_library(
 }
 
 void zdj_library_deinit_library( zdj_library_t * library ) {
+    
+}
 
+// Make a test library with n songs
+zdj_error_type_t zdj_library_generate_stress_test_library( int song_count ) {
+    // Clear/create dir structure
+    zdj_fs_remove_dir( "/media/internal/library/test" );
+    zdj_fs_mkdir_p( "/media/internal/library/test" );
+
+    // Get song graph for EID
+    zdj_library_song_t * source_song = zdj_library_fetch_song_dto_for_entity_id( 
+        "7110bef7094a4bd1a5d7d6184b38878b", zdj_library_db 
+    );
+    zdj_library_fetch_playback_song_graph( source_song, zdj_library_db );
+
+    char artist[ 64 ];
+    int artist_count;
+    char album[ 64 ];
+    char genre[ 64 ];
+    char title[ 64 ];
+    float bpm;
+    zdj_library_key_t key;
+    const char genres[ 9 ][ 64 ] = {
+        "House",
+        "Tech House",
+        "Drum n' Bass",
+        "Techno",
+        "Hip Hop",
+        "Electronic",
+        "RnB",
+        "Tech Trance",
+        "Rap"
+    };
+
+    srand( time( NULL ) );
+
+    zdj_library_put_uuid( artist );
+
+    for( int i=0; i<song_count; i++ ) {
+
+        printf( "making song: %d\n", i );
+        // Use current artist or make new
+        int artist_rand = rand( ) % 10;
+        printf( "artist rand: %d\n", artist_rand );
+        if( artist_count > 0 ) {
+            if( (rand( ) % 10) > 4 ) { 
+                zdj_library_put_uuid( artist );
+                artist_count = 0;
+            }
+        }
+        artist_count++;
+        // Use current album or make new
+        if( artist_count == 1 ) { 
+            // always make new album for new artist
+            zdj_library_put_uuid( album );
+        } else {
+            // maybe make new album for repeated artist
+            if( (rand( ) % 10) > 3 ) { 
+                zdj_library_put_uuid( album );
+            }
+        }
+        // Make genre
+        strcpy( genre, genres[ (rand( ) % 8) ] );
+        // Make title
+        zdj_library_put_uuid( title );
+        // Make bpm
+        float sub = (float)(rand( ) % 1000) / 7.0;
+        bpm = 34.0 + sub;
+        // Make key
+        key = rand( ) % (ZDJ_LIBRARY_KEY_COUNT - 1);
+
+        // Make new song graph
+        zdj_library_song_t * song = zdj_library_create_file_import_song_graph( 
+            source_song->audio->filepath, zdj_library_db 
+        );
+        // Fill in song data
+        strncpy( song->catalog->artist, artist, 8 );
+        strncpy( song->catalog->album, album, 12 );
+        strncpy( song->catalog->title, title, 10 );
+        strcpy( song->catalog->genre, genre );
+
+        if( (rand( ) % 10) < 9 ) {
+            song->performance->bpm = bpm;
+            song->performance->has_beat_grid = true;
+            song->performance->beat_grid_start_sample = rand( ) % 10000;
+        }
+        song->performance->key = key;
+        // Create cuepoints
+
+        printf( "song: %s/%s/%s %s %f %d\n", 
+            artist,
+            album,
+            title,
+            genre,
+            bpm,
+            key
+        );
+        zdj_library_store_song_graph( song, zdj_library_db );  
+        zdj_library_add_song_link( 
+            zdj_library_config_get_current_library_id( ), 
+            song, 
+            zdj_library_db 
+        );      
+    }
 }

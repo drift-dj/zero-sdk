@@ -100,6 +100,18 @@ void zdj_anim_init_notify_widget_show( zdj_anim_t * anim, zdj_view_t * view, voi
 void zdj_anim_init_notify_widget_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_update_notify_widget( zdj_anim_t * anim, zdj_view_t * view );
 
+void zdj_anim_init_crash_widget_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_crash_widget_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_crash_widget( zdj_anim_t * anim, zdj_view_t * view );
+
+void zdj_anim_init_log_widget_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_log_widget_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_log_widget( zdj_anim_t * anim, zdj_view_t * view );
+
+void zdj_anim_init_sleep_widget_show( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_init_sleep_widget_hide( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
+void zdj_anim_update_sleep_widget( zdj_anim_t * anim, zdj_view_t * view );
+
 void zdj_anim_init_panel_in_next( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_panel_out_next( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );
 void zdj_anim_init_panel_in_prev( zdj_anim_t * anim, zdj_view_t * view, void * cb_fn );

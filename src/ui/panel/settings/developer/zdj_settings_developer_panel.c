@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/reboot.h>
+#include <signal.h>
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
@@ -10,6 +11,7 @@
 #include <zerodj/system/display/zdj_display.h>
 #include <zerodj/system/error/zdj_error.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/system/screencap/zdj_screencap.h>
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
@@ -36,9 +38,22 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event );
 static void _handle_back( zdj_view_t * menu_view );
 static void _refresh_menu( zdj_view_t * view );
 
+static void _add_settings_toggle( 
+    char * title, 
+    zdj_setting_reserved_id_t setting, 
+    void ( *handle_fn ) ( zdj_view_t*, zdj_control_event_t* ),
+    zdj_view_t * panel_view 
+);
+
 static void _relaunch_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _usb_offline_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _override_btn( zdj_view_t * view, zdj_control_event_t * event );
+
+static void _stretch_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _d1_dc_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _d2_dc_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _de_dc_btn( zdj_view_t * view, zdj_control_event_t * event );
+
 static void _viewer_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _flip_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _image_browser_exit( zdj_view_t * browser, zdj_file_browser_exit_context_t * context );
@@ -57,6 +72,24 @@ static void _drop_screencaps_dialog_exit( zdj_view_t * view, void * data, bool s
 static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _install_soundcard_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _install_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _test_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _segv_btn( zdj_view_t * view, zdj_control_event_t * event );
+
+// Logging
+static void _log_boot_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_printf_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_level_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _show_crash_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_crash_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_ui_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_usb_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_debug_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_playback_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_init_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_fs_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_record_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_mixer_btn( zdj_view_t * view, zdj_control_event_t * event );
 
 
 static void _install_lib_browser_exit( 
@@ -179,6 +212,53 @@ static void _refresh_menu( zdj_view_t * view ) {
     screencaps_state->data.ptr = state;
     zdj_menu_view_add_item( state->menu, screencaps_btn );
 
+    zdj_view_t * test_lib_btn = zdj_new_menu_item( "Make Test Library", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    test_lib_btn->handle_control_event = _test_lib_btn;
+    zdj_menu_item_view_state_t * test_lib_state = (zdj_menu_item_view_state_t*)test_lib_btn->state;
+    test_lib_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, test_lib_btn );
+
+    // Logging Stuff
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Logging System" ) );
+
+    _add_settings_toggle( "Enable Log UI at Boot", ZDJ_SETTING_LOG_DEPLOY_AT_BOOT, &_log_boot_btn, view );
+    _add_settings_toggle( "Enable printf Logging", ZDJ_SETTING_LOG_PRINTF, &_log_printf_btn, view );
+
+    zdj_view_t * log_level_btn = zdj_new_data_menu_item( 
+        "Log Level", ZDJ_MENU_ITEM_LAYOUT_DATA_R, ZDJ_MENU_ITEM_DATA_TYPE_CHAR, NULL, NULL 
+    );
+    log_level_btn->handle_control_event = &_log_level_btn;
+    zdj_menu_item_view_state_t * log_level_state = (zdj_menu_item_view_state_t*)log_level_btn->state;
+    log_level_state->data.ptr = view;
+    int log_level_setting = zdj_setting_get( ZDJ_SETTING_LOG_LEVEL )->i_val;
+    switch ( log_level_setting ) {
+        case ZDJ_LOG_NONE: strcpy( log_level_state->data.c_val, "0: Quiet" ); break;
+        case ZDJ_LOG_DEBUG: strcpy( log_level_state->data.c_val, "1: Debug" ); break;
+        case ZDJ_LOG_MSG: strcpy( log_level_state->data.c_val, "2: Messages" ); break;
+        case ZDJ_LOG_ERROR: strcpy( log_level_state->data.c_val, "3: Errors" ); break;
+        case ZDJ_LOG_CRASH: strcpy( log_level_state->data.c_val, "4: Crashes" ); break;
+    }
+    zdj_menu_view_add_item( state->menu, log_level_btn );
+
+    _add_settings_toggle( "Show Crash Dialog at Launch", ZDJ_SETTING_DEBUG_SHOW_CRASH, &_show_crash_btn, view );
+
+
+    // Logging Stuff
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Show Log Messages" ) );
+
+    _add_settings_toggle( "Crashes", ZDJ_SETTING_LOG_CRASH, &_log_crash_btn, view );
+    _add_settings_toggle( "UI Activity", ZDJ_SETTING_LOG_UI, &_log_ui_btn, view );
+    _add_settings_toggle( "USB Activity", ZDJ_SETTING_LOG_USB, &_log_usb_btn, view );
+    _add_settings_toggle( "Library Info", ZDJ_SETTING_LOG_LIBRARY, &_log_lib_btn, view );
+    _add_settings_toggle( "Debug Info", ZDJ_SETTING_LOG_DEBUG, &_log_debug_btn, view );
+    _add_settings_toggle( "Playback System", ZDJ_SETTING_LOG_PLAYBACK, &_log_playback_btn, view );
+    _add_settings_toggle( "Init Messages", ZDJ_SETTING_LOG_INIT, &_log_init_btn, view );
+    _add_settings_toggle( "Filesystem Activity", ZDJ_SETTING_LOG_FS, &_log_fs_btn, view );
+    _add_settings_toggle( "Recording", ZDJ_SETTING_LOG_RECORD, &_log_record_btn, view );
+    _add_settings_toggle( "Mixer Activity", ZDJ_SETTING_LOG_MIXER, &_log_mixer_btn, view );
+
     // QA Stuff
     zdj_menu_view_add_padding( state->menu, 3 );
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "QA" ) );
@@ -201,27 +281,21 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_view_t * flip_btn = zdj_new_menu_item( "GoodMolecule Flip", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     flip_btn->handle_control_event = _flip_btn;
     zdj_menu_view_add_item( state->menu, flip_btn );
-    
+
+
+    // Deck Stuff
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Deck Debug" ) );
+
+    _add_settings_toggle( "Scratch Override", ZDJ_SETTING_DECK_SCRATCH_OVERRIDE, &_override_btn, view );
+    _add_settings_toggle( "Disable Tempo Stretch", ZDJ_SETTING_DECK_STRETCH_OVERRIDE, &_stretch_btn, view );
+    _add_settings_toggle( "[ ! DANGER ! ] Deck 1 DC Couple", ZDJ_SETTING_DECK_1_DC_COUPLE, &_d1_dc_btn, view );
+    _add_settings_toggle( "[ ! DANGER ! ] Deck 2 DC Couple", ZDJ_SETTING_DECK_2_DC_COUPLE, &_d2_dc_btn, view );
+    _add_settings_toggle( "[ ! DANGER ! ] Deck Ext. DC Couple", ZDJ_SETTING_DECK_EXT_DC_COUPLE, &_de_dc_btn, view );
+
     // System Stuff
     zdj_menu_view_add_padding( state->menu, 3 );
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "System" ) );
-
-    bool scratch_override = false;
-    zdj_setting_t * scratch_setting = zdj_setting_get( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
-    if( scratch_setting ) { scratch_override = scratch_setting->b_val; }
-    if( scratch_override ) {
-        zdj_view_t * override_btn = zdj_new_menu_item( "Disable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-        override_btn->handle_control_event = _override_btn;
-        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
-        override_state->data.ptr = state;
-        zdj_menu_view_add_item( state->menu, override_btn );
-    } else {
-        zdj_view_t * override_btn = zdj_new_menu_item( "Enable Deck Scratch Override", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-        override_btn->handle_control_event = _override_btn;
-        zdj_menu_item_view_state_t * override_state = (zdj_menu_item_view_state_t*)override_btn->state;
-        override_state->data.ptr = state;
-        zdj_menu_view_add_item( state->menu, override_btn );
-    }
 
     bool flag = zdj_setting_get_dev_zerod_flag( );
     if( flag ) {
@@ -238,6 +312,12 @@ static void _refresh_menu( zdj_view_t * view ) {
         zdj_menu_view_add_item( state->menu, relaunch_btn );
     }
 
+    zdj_view_t * segv_btn = zdj_new_menu_item( "SIGSEGV", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    segv_btn->handle_control_event = _segv_btn;
+    zdj_menu_item_view_state_t * segv_state = (zdj_menu_item_view_state_t*)segv_btn->state;
+    segv_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, segv_btn );
+    
     zdj_view_t * reboot_btn = zdj_new_menu_item( "Reboot", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     reboot_btn->handle_control_event = _reboot_btn;
     zdj_menu_item_view_state_t * reboot_state = (zdj_menu_item_view_state_t*)reboot_btn->state;
@@ -245,6 +325,22 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_menu_view_add_item( state->menu, reboot_btn );
 
     state->needs_layout_update = false;
+}
+
+static void _add_settings_toggle( 
+    char * title, 
+    zdj_setting_reserved_id_t setting, 
+    void ( *handle_fn ) ( zdj_view_t*, zdj_control_event_t* ),
+    zdj_view_t * panel_view 
+) {
+    zdj_settings_panel_state_t * panel_state = (zdj_settings_panel_state_t*)panel_view->state;
+
+    zdj_view_t * menu_item = zdj_new_menu_item( title, ZDJ_MENU_ITEM_LAYOUT_TOGGLE );
+    menu_item->handle_control_event = handle_fn;
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
+    item_state->data.ptr = panel_view;
+    item_state->data.b_val = zdj_setting_get( setting )->b_val;
+    zdj_menu_view_add_item( panel_state->menu, menu_item );
 }
 
 static void _relaunch_btn( zdj_view_t * view, zdj_control_event_t * event ) {
@@ -258,10 +354,10 @@ static void _relaunch_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 }
 
 static void _usb_offline_btn( zdj_view_t * view, zdj_control_event_t * event ) {
-    zdj_usb_mode_state_t req;
-    memset( &req, 0, sizeof( zdj_usb_mode_state_t ) );
-    req.mode = ZDJ_USB_MODE_OFFLINE;
-    zdj_usb_enable_mode( &req );
+    // zdj_usb_mode_state_t req;
+    // memset( &req, 0, sizeof( zdj_usb_mode_state_t ) );
+    // req.mode = ZDJ_USB_MODE_OFFLINE;
+    // zdj_usb_enable_mode( &req );
 }
 
 static void _flip_btn( zdj_view_t * view, zdj_control_event_t * event ) {
@@ -356,17 +452,56 @@ static void _lib_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _drop_library_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
-    // printf( "_drop_library_dialog_exit %d\n", selection );
-    zdj_library_reset_db( );
+    if( selection ) {
+        // printf( "_drop_library_dialog_exit %d\n", selection );
+        zdj_library_reset_db( );
+        // zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
+        // zdj_pop_subview_of( panel_state->settings_panel, true );
+        sync( );
+        exit( 1 );
+    }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }
 
 static void _override_btn( zdj_view_t * view, zdj_control_event_t * event ) {
-     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_settings_panel_state_t * panel_state = (zdj_settings_panel_state_t*)state->data.ptr;
-    panel_state->needs_layout_update = true;
     zdj_setting_flip_bool( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _stretch_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_DECK_STRETCH_OVERRIDE );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _d1_dc_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_DECK_1_DC_COUPLE );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _d2_dc_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_DECK_2_DC_COUPLE );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _de_dc_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_DECK_EXT_DC_COUPLE );
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
 }
 
 static void _settings_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
@@ -386,8 +521,11 @@ static void _settings_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _drop_settings_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
-    // printf( "_drop_settings_dialog_exit %d\n", selection );
-    zdj_drop_settings( );
+    if( selection ) {
+        // printf( "_drop_settings_dialog_exit %d\n", selection );
+        zdj_drop_settings( );
+
+    }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }
@@ -467,7 +605,7 @@ static void _logs_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 static void _drop_logs_dialog_exit( zdj_view_t * view, void * data, bool selection ) {
     if( selection ) {
         printf( "clearing logs folder\n" );
-        zdj_error_reset_logs( );
+        zdj_reset_logs( );
     }
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
@@ -594,4 +732,169 @@ static void _install_lib_browser_exit(
     // If we cancelled, just pop browser
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_push_subview( panel_state->settings_panel, browser, true );
+}
+
+static void _test_lib_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_library_generate_stress_test_library( 3000 );
+}
+
+static void _segv_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    printf( "segv btn\n" );
+    raise(SIGSEGV);
+    // char str[ 64 ];
+    // zdj_library_song_t * song;
+    // printf( "song: %p\n", song );
+    // printf( "song->audio: %p\n", song->audio );
+    // song->audio = NULL;
+    // printf( "path:\n" );
+    // printf( "%s\n", song->audio->filepath );
+    // strcpy( str, song->audio->filepath );
+}
+
+
+static void _log_boot_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_DEPLOY_AT_BOOT );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_printf_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_PRINTF );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_level_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    int log_level_setting = zdj_setting_get( ZDJ_SETTING_LOG_LEVEL )->i_val;
+    switch ( log_level_setting ) {
+        case ZDJ_LOG_NONE: zdj_setting_set_int( ZDJ_SETTING_LOG_LEVEL, ZDJ_LOG_DEBUG ); break;
+        case ZDJ_LOG_DEBUG: zdj_setting_set_int( ZDJ_SETTING_LOG_LEVEL, ZDJ_LOG_MSG ); break;
+        case ZDJ_LOG_MSG: zdj_setting_set_int( ZDJ_SETTING_LOG_LEVEL, ZDJ_LOG_ERROR ); break;
+        case ZDJ_LOG_ERROR: zdj_setting_set_int( ZDJ_SETTING_LOG_LEVEL, ZDJ_LOG_CRASH ); break;
+        case ZDJ_LOG_CRASH: zdj_setting_set_int( ZDJ_SETTING_LOG_LEVEL, ZDJ_LOG_NONE ); break;
+    }
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _show_crash_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_DEBUG_SHOW_CRASH );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_crash_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_CRASH );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_ui_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_UI );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_usb_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_USB );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_lib_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_LIBRARY );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_debug_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_DEBUG );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_playback_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_PLAYBACK );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_init_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_INIT );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_fs_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_FS );
+    zdj_log_refresh_settings( );
+    
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_record_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_RECORD );
+    zdj_log_refresh_settings( );
+    
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_mixer_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_MIXER );
+    zdj_log_refresh_settings( );
+    
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
 }

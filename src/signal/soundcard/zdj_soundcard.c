@@ -158,7 +158,7 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     zdj_analog_io_push_samples( zdj_soundcard->analog_io_node );
     if( zdj_usb_state &&
         zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
-        zdj_usb_state->host_state.attached.count > 0
+        zdj_usb_state->host_status.attached.count > 0
     ) {
         zdj_usb_io_push_samples( zdj_soundcard->usb_io_node );
     }
@@ -184,7 +184,7 @@ void _zdj_soundcard_io_fast_cycle_cb( zdj_pipeline_node_t * node ) {
     
     if( zdj_usb_state &&
         zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
-        zdj_usb_state->host_state.attached.count > 0
+        zdj_usb_state->host_status.attached.count > 0
     ) {
         zdj_usb_io_pull_samples( zdj_soundcard->usb_io_node );
     }

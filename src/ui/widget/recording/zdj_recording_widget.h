@@ -28,6 +28,8 @@ typedef struct {
     bool deployed;
     int deploy_timer;
     int vol_change_timer;
+    bool has_new_clip;
+    bool deploy_on_clip;
     zdj_view_t * container;
     zdj_view_t * meter;
     zdj_view_t * time_label;

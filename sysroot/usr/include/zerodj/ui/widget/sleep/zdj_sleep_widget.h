@@ -18,24 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_SETTINGS_SOFTWARE_PANEL_H
-#define ZDJ_SETTINGS_SOFTWARE_PANEL_H
+#ifndef ZDJ_SLEEP_WIDGET_H
+#define ZDJ_SLEEP_WIDGET_H
+
+#include <zerodj/ui/anim/zdj_anim.h>
 
 typedef struct {
-    // PANEL_VIEW_BASE EXTENSION - do not edit
-    zdj_view_t * menu;
-    zdj_view_t * overlay;
-    int overlay_counter;
-    bool needs_layout_update;
-    zdj_view_t * event_target;
-    void (*exit_cb) ( void* );
-    // PANEL_VIEW_BASE EXTENSION - do not edit
-} zdj_settings_software_panel_state_t;
+    bool deployed;
+    int update_counter;
+    zdj_view_t * container;
+    zdj_anim_t * in_anim;
+    zdj_anim_t * out_anim;
+    void ( *toggle )( zdj_view_t* );
+} zdj_sleep_widget_state_t;
 
-zdj_view_t * zdj_new_settings_software_panel( void (*cb)(void*) );
-zdj_view_t * zdj_new_settings_app_panel( void (*cb)(void*), zdj_install_t * install );
-zdj_view_t * zdj_new_settings_installer_panel( void (*cb)(void*), zdj_installer_t * installer );
-zdj_view_t * zdj_new_settings_os_panel( void (*cb)(void*) );
-zdj_view_t * zdj_new_settings_os_install_view( char * mount_path, zdj_os_sysreg_t * sysreg );
+zdj_view_t * zdj_new_sleep_widget( void );
 
 #endif

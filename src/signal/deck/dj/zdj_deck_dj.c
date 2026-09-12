@@ -16,6 +16,7 @@
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_pitch_node.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_tempo_node.h>
+#include <zerodj/system/settings/zdj_settings.h>
 
 // External data/event entry points
 static void _update_state ( zdj_deck_t * deck );
@@ -35,8 +36,9 @@ zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource, int win_bu
     state->decode_win_buf_count = win_buf_count;
     state->tsm_source = ZDJ_DECK_TSM_SOURCE_PITCH;
     
-    state->tempo_tsm_enabled = true;
-    // state->tempo_tsm_enabled = false;
+    // state->tempo_tsm_enabled = true;
+    // Observe user setting for tempo stretch override
+    state->tempo_tsm_enabled = !(zdj_setting_get( ZDJ_SETTING_DECK_STRETCH_OVERRIDE )->b_val);
 
     // Lifecycle
     deck->update_state = &_update_state;
@@ -71,6 +73,7 @@ static void _update_state ( zdj_deck_t * deck ) {
     if( deck->status == ZDJ_DECK_STATUS_RUNNING ) { return; }
     
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
+    int decode_buf_count;
 
     switch ( deck->status ) {
 
@@ -82,8 +85,18 @@ static void _update_state ( zdj_deck_t * deck ) {
         // Stand up pipeline nodes.
         case ZDJ_DECK_STATUS_MAKE_PIPELINE:
             // printf( "ZDJ_DECK_STATUS_MAKE_PIPELINE (%p)\n", deck );            
-            int decode_buf_count = deck_state->decode_win_buf_count; // number of decode buffers which fit in window.
+            decode_buf_count = deck_state->decode_win_buf_count; // number of decode buffers which fit in window.
 
+            // Observe deck DC coupling settings
+            deck->controls.platter.antipop.enabled = true;
+            switch ( deck->station ) {
+                case ZDJ_DECK_STATION_1: 
+                    deck->controls.platter.antipop.enabled = !(zdj_setting_get( ZDJ_SETTING_DECK_1_DC_COUPLE )->b_val);
+                    break;
+                case ZDJ_DECK_STATION_2: 
+                    deck->controls.platter.antipop.enabled = !(zdj_setting_get( ZDJ_SETTING_DECK_2_DC_COUPLE )->b_val);
+                    break;
+            }
             // Set audio fade-out constants - tune these to sound good
             deck->controls.platter.antipop.engage_thresh = 10.0f;
             deck->controls.platter.antipop.lowpass_val = 0.23;
@@ -424,10 +437,10 @@ static void * _pipeline_thread_main( void * arg ) {
             // it should be to refill the node.
             if( decode_state->refresh_mode == ZDJ_DECODE_REFRESH_NOOP_HYPERSCRUB ) {
                 if( deck->controls.loop_state.is_enabled ) {
-                    printf( "exiting hyperscrub to loop\n" );
+                    // printf( "exiting hyperscrub to loop\n" );
                     decode_state->refresh_mode = ZDJ_DECODE_REFRESH_DISCON_LOOP;
                 } else {
-                    printf( "exiting hyperscrub to contig.\n" );
+                    // printf( "exiting hyperscrub to contig.\n" );
                     decode_state->refresh_mode = ZDJ_DECODE_REFRESH_CONTIGUOUS;
                 }
             }
@@ -575,7 +588,7 @@ static void * _pipeline_thread_main( void * arg ) {
 
     // Thread cleanup before exit.
 
-    printf( "DJ deck deinit: %p %d\n", deck, deck->station );
+    // printf( "DJ deck deinit: %p %d\n", deck, deck->station );
 
     // Give back the deck station thread
     switch ( deck->station ) {

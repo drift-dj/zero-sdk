@@ -16,8 +16,6 @@ sqlite3 * zdj_library_import_db;
 zdj_library_config_t * library_config;
 static char _sql[ 1024 ];
 
-static void _zdj_library_create_db_tables( sqlite3 * db );
-
 char * zdj_library_get_uuid( ) {
     uuid_t uuid;
     uuid_generate( uuid );
@@ -69,7 +67,7 @@ zdj_health_status_t zdj_library_health( void ) {
     if( access( ZDJ_LIBRARY_DB_PATH, F_OK ) != 0 ) { return ZDJ_HEALTH_STATUS_MISSING_LIBRARY_DB; }
 }
 
-static void _zdj_library_create_db_tables( sqlite3 * db ) {
+void zdj_library_create_db_tables( sqlite3 * db ) {
     // Create tables
     char sql[ 2048 ];
     // Audio
@@ -100,7 +98,7 @@ static void _zdj_library_create_db_tables( sqlite3 * db ) {
     strcpy( sql, "CREATE TABLE 'Data_Source_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
     // Cuepoints
-    strcpy( sql, "CREATE TABLE 'Cuepoint_Entity' ('entity_id' TEXT NOT NULL, 'performance_entity_id' TEXT, 'name' TEXT, 'sample' INT, 'is_loop' INT, 'loop_len' INT, PRIMARY KEY('entity_id'))" );
+    strcpy( sql, "CREATE TABLE 'Cuepoint_Entity' ('entity_id' TEXT NOT NULL, 'performance_entity_id' TEXT, 'name' TEXT, 'num' INT, 'sample' INT, 'is_loop' INT, 'loop_len' INT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
     // Playlists
     strcpy( sql, "CREATE TABLE 'Playlist_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, 'ordered_song_links' TEXT, PRIMARY KEY('entity_id'))" );
@@ -158,7 +156,7 @@ void zdj_library_reset_db( void ) {
     }
 
     // Setup Tables
-    _zdj_library_create_db_tables( zdj_library_db );
+    zdj_library_create_db_tables( zdj_library_db );
 
     // Create a new Library Config record
     zdj_library_get_config( );
@@ -211,7 +209,7 @@ zdj_health_status_t zdj_library_new_import_db( void ) {
         return ZDJ_HEALTH_STATUS_LIBRARY_DB_ERROR; 
     }
 
-    _zdj_library_create_db_tables( zdj_library_import_db );
+    zdj_library_create_db_tables( zdj_library_import_db );
 
     return ZDJ_HEALTH_STATUS_OKAY;
 }

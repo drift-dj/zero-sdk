@@ -338,7 +338,7 @@ static void _refresh_layers( zdj_pipeline_node_t * node ) {
     if( win_start.origin_d > state->song_pcm_duration ||
         win_end.origin_d < 0
     ) {
-        printf( "Window outside song: [%1.0f - %1.0f]\n", win_start.origin_d, win_end.origin_d );
+        // printf( "Window outside song: [%1.0f - %1.0f]\n", win_start.origin_d, win_end.origin_d );
         return;
     }
 
@@ -560,7 +560,7 @@ static void _clear_out_buffer( zdj_pipeline_node_t * node ) {
 }
 
 static void _install_ui_buffer( zdj_pipeline_node_t * node ) {
-    printf( "_install_ui_buffer: %p\n", node );
+    // printf( "_install_ui_buffer: %p\n", node );
     zdj_decode_node_state_t * state = (zdj_decode_node_state_t*)node->state;
     state->ui_buffer = calloc( state->win_sample_count * 4, sizeof( float ) );
     state->ui_buffer_req = true;

@@ -5,6 +5,7 @@
 #include <math.h>
 #include <unistd.h>
 
+#include <zerodj/ui/widget/zdj_ui_widget.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/buffer/zdj_audio_buffer_node.h>
@@ -456,8 +457,8 @@ static void _meter_node(
             meter_pipe_state->timer_ol_0_0 = 100;
             // Catch record bus clip to trigger UI alert
             if( node->name == ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) {
-                // Catch record bus clip to Force the OL meter to appear
-                zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_RECORD_VOL ] = true;
+                // Signal the Recording widget that there's a clip
+                zdj_ui_recording_widget_add_clip( );
             }
         }
         if( meter_pipe_state->timer_ol_0_0 > 0 ){ meter_pipe_state->timer_ol_0_0--; }
@@ -468,8 +469,8 @@ static void _meter_node(
             meter_pipe_state->timer_ol_0_1 = 100;
             // Catch record bus clip to trigger UI alert
             if( node->name == ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) {
-                // Catch record bus clip to Force the OL meter to appear
-                zdj_deck_manager( )->control_change_flags[ ZDJ_DECK_CONTROL_RECORD_VOL ] = true;
+                // Signal the Recording widget that there's a clip
+                zdj_ui_recording_widget_add_clip( );
             }
         }
         if( meter_pipe_state->timer_ol_0_1 > 0 ){ meter_pipe_state->timer_ol_0_1--; }

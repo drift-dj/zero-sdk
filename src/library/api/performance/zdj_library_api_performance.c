@@ -86,7 +86,8 @@ zdj_library_performance_t * zdj_library_fetch_current_performance_dto_for_song(
 zdj_health_status_t zdj_library_free_performance_dto( 
     zdj_library_performance_t * performance 
 ) {
-
+    // Free cuepoints
+    
 }
 
 zdj_health_status_t zdj_library_store_performance( 

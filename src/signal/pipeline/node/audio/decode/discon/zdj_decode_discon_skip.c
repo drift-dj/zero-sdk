@@ -36,7 +36,7 @@ void zdj_decode_discon_install_skip(
     if( !layer_under_head ) { 
         zdj_decode_addr_t win_start; state->get_win_start_addr( node, &win_start );
         zdj_decode_addr_t win_end; state->get_win_end_addr( node, &win_end );
-        printf( "install_skip missing layer!\n" ); 
+        // printf( "install_skip missing layer!\n" ); 
         // bool node_empty = false;
         // if( !state->first_layer && !state->last_layer ) { node_empty = true; }
         // printf( "empt:%d fls:%1.0f | %1.0f[ t:%1.0f o:%1.0f ]%1.0f | lle:%1.0f dpd:%1.0f\n", 

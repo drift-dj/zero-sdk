@@ -68,10 +68,16 @@ typedef struct {
     int section_count;
     int item_count;
     zdj_menu_view_scroll_filter_t * scroll_filter;
+    char lib_db_table[ 256 ]; // <- for lib db menus
     bool needs_layout_update; // <- for front-end use
 } zdj_menu_view_state_t;
 
 zdj_view_t * zdj_new_menu_view( zdj_ui_orient_t scroll_dir, zdj_rect_t * frame );
+zdj_view_t * zdj_new_lib_menu_view( 
+    zdj_ui_orient_t scroll_dir, 
+    char * table_name, 
+    zdj_rect_t * frame 
+);
 void zdj_menu_view_set_scrollview_frame( zdj_view_t * menu_view, zdj_rect_t * frame );
 void zdj_menu_view_add_header( zdj_view_t * menu_view, zdj_view_t * header );
 void zdj_menu_view_add_section( zdj_view_t * menu_view, zdj_view_t * section );
@@ -81,6 +87,7 @@ void zdj_menu_view_insert_item( zdj_view_t * menu_view, zdj_view_t * item, int i
 void zdj_menu_view_move_item( zdj_view_t * menu_view, zdj_view_t * item, int dir );
 void zdj_menu_view_remove_all_items( zdj_view_t * menu_view );
 void zdj_menu_view_remove_item_at_scroll_index( zdj_view_t * menu_view, int index );
+void zdj_menu_view_remove_subview( zdj_view_t * menu_view, zdj_view_t * subview );
 void zdj_menu_view_remove_all_subviews( zdj_view_t * menu_view );
 void zdj_menu_view_set_scroll_index( zdj_view_t * menu_view, int index );
 void zdj_menu_view_add_padding( zdj_view_t * menu_view, int size );
