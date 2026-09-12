@@ -8,7 +8,7 @@
 #include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/panel/settings/zdj_settings_panel.h>
 #include <zerodj/ui/panel/settings/developer/zdj_settings_developer_panel.h>
-#include <zerodj/ui/panel/settings/software/zdj_settings_software_panel.h>
+#include <zerodj/ui/panel/settings/system/zdj_settings_system_panel.h>
 #include <zerodj/ui/panel/settings/ui/zdj_settings_ui_panel.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
@@ -28,7 +28,7 @@ static void _refresh_menu( zdj_view_t * view );
 static void _subview_exit( void * data );
 
 static void _ui_btn( zdj_view_t * view, zdj_control_event_t * event );
-static void _software_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _system_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _developer_btn( zdj_view_t * view, zdj_control_event_t * event );
 
 zdj_view_t * zdj_new_settings_panel( void ) {
@@ -68,11 +68,11 @@ zdj_view_t * zdj_new_settings_panel( void ) {
     ui_state->data.ptr = view;
     zdj_menu_view_add_item( menu, ui_btn );
 
-    zdj_view_t * software_btn = zdj_new_menu_item( "System", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-    software_btn->handle_control_event = _software_btn;
-    zdj_menu_item_view_state_t * software_state = (zdj_menu_item_view_state_t*)software_btn->state;
-    software_state->data.ptr = view;
-    zdj_menu_view_add_item( menu, software_btn );
+    zdj_view_t * system_btn = zdj_new_menu_item( "System", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    system_btn->handle_control_event = _system_btn;
+    zdj_menu_item_view_state_t * system_state = (zdj_menu_item_view_state_t*)system_btn->state;
+    system_state->data.ptr = view;
+    zdj_menu_view_add_item( menu, system_btn );
 
     zdj_view_t * developer_btn = zdj_new_menu_item( "Developer", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     developer_btn->handle_control_event = _developer_btn;
@@ -93,8 +93,6 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     if( state->overlay_counter > 0 ) { state->overlay->frame.x = 0; state->overlay_counter--; }
     else { state->overlay->frame.x = 129; }
-
-    // if( state->needs_layout_update ) { _refresh_menu( view ); }
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
@@ -122,30 +120,6 @@ static void _subview_exit( void * data ) {
     _zdj_settings_panel_state->event_target = NULL;
 }
 
-// static void _refresh_menu( zdj_view_t * view ) {
-//     zdj_settings_panel_state_t * state = (zdj_settings_panel_state_t*)view->state;
-
-//     zdj_menu_view_remove_all_subviews( state->menu );
-
-//     zdj_view_t * ui_btn = zdj_new_menu_item( "UI", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-//     ui_btn->handle_control_event = _ui_btn;
-//     zdj_menu_item_view_state_t * ui_state = (zdj_menu_item_view_state_t*)ui_btn->state;
-//     ui_state->data.ptr = view;
-//     zdj_menu_view_add_item( state->menu, ui_btn );
-
-//     zdj_view_t * software_btn = zdj_new_menu_item( "Software", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-//     software_btn->handle_control_event = _software_btn;
-//     zdj_menu_item_view_state_t * software_state = (zdj_menu_item_view_state_t*)software_btn->state;
-//     software_state->data.ptr = view;
-//     zdj_menu_view_add_item( state->menu, software_btn );
-
-//     zdj_view_t * developer_btn = zdj_new_menu_item( "Developer", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-//     developer_btn->handle_control_event = _developer_btn;
-//     zdj_menu_item_view_state_t * developer_state = (zdj_menu_item_view_state_t*)developer_btn->state;
-//     developer_state->data.ptr = view;
-//     zdj_menu_view_add_item( state->menu, developer_btn );
-// }
-
 static void _ui_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     printf( "ui_btn\n" );
     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
@@ -156,13 +130,13 @@ static void _ui_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_push_subview( settings_panel, ui_panel, true );
 }
 
-static void _software_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+static void _system_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * settings_panel = (zdj_view_t *)btn_state->data.ptr;
     zdj_settings_panel_state_t * settings_panel_state = (zdj_settings_panel_state_t*)settings_panel->state;
-    zdj_view_t * software_panel = zdj_new_settings_software_panel( &_subview_exit );
-    settings_panel_state->event_target = software_panel;
-    zdj_push_subview( settings_panel, software_panel, true );
+    zdj_view_t * system_panel = zdj_new_settings_system_panel( &_subview_exit );
+    settings_panel_state->event_target = system_panel;
+    zdj_push_subview( settings_panel, system_panel, true );
 }
 
 static void _developer_btn( zdj_view_t * view, zdj_control_event_t * event ) {

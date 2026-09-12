@@ -7,6 +7,7 @@
 
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/signal/soundcard/db/zdj_soundcard_dto.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/sql/zdj_sql.h>
 
 static void _zdj_soundcard_drop_tables( sqlite3 * db );
@@ -1209,7 +1210,8 @@ zdj_error_type_t zdj_soundcard_fetch_all_dtos( int count, zdj_soundcard_dto_t **
 
     // Populate the DTOs
     for( int i=0; i<count; i++ ) {
-        printf( "fetching dto: %s\n", entity_ids[ i ] );
+        // printf( "fetching dto: %s\n", entity_ids[ i ] );
+        // zdj_log( ZDJ_LOG_MIXER, ZDJ_LOG_DEBUG, "Fetch DTO:%s", entity_ids[ i ] );
         dtos[ i ] = calloc( 1, sizeof( zdj_soundcard_dto_t ) );
         zdj_soundcard_fetch_dto( entity_ids[ i ], dtos[ i ] );
     }

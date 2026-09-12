@@ -135,6 +135,18 @@ static void _teardown_layout( zdj_view_t * view ) {
     zdj_view_t * menu_view = state->menu;
     state->needs_layout_teardown = false;
     zdj_menu_view_remove_all_items( menu_view );
+    
+    // Add inert item
+    zdj_view_t * inert_btn = zdj_new_asset_menu_item( 
+        ZDJ_UI_ASSET_BLACK,
+        ZDJ_UI_ASSET_BLACK,
+        true // only show when hilighted
+    );
+    inert_btn->frame.x = 0;
+    inert_btn->frame.y = 0;
+    inert_btn->frame.w = 3;
+    inert_btn->frame.h = 3;
+    zdj_menu_view_add_item( menu_view, inert_btn );
 }
 
 // This should be invoked anytime there's a bus or port linkage change in the soundcard
@@ -149,6 +161,18 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
     state->needs_layout_update = false;
 
     zdj_menu_view_remove_all_items( menu_view );
+
+    // Add inert item
+    zdj_view_t * inert_btn = zdj_new_asset_menu_item( 
+        ZDJ_UI_ASSET_BLACK,
+        ZDJ_UI_ASSET_BLACK,
+        true // only show when hilighted
+    );
+    inert_btn->frame.x = 0;
+    inert_btn->frame.y = 0;
+    inert_btn->frame.w = 3;
+    inert_btn->frame.h = 3;
+    zdj_menu_view_add_item( menu_view, inert_btn );
 
     //////////////////////////////////////////////////////////
     // Analyze port linkages and add approprate meter views //
@@ -425,7 +449,7 @@ int zdj_soundcard_view_add_meter_for_node(
 ) {
     zdj_soundcard_node_t * node = zdj_soundcard_get_node_for_name( zdj_soundcard, meter_name );
     zdj_soundcard_meter_label_t label = zdj_meter_label_for_node( node );
-    // printf( "add_meter_for_node: %s, st:%d in cnt:%d\n", zdj_soundcard_node_name[ node->name ], node->stereo, node->input_link_count );
+    // printf( "add_meter_for_node: %s/%p, st:%d in cnt:%d\n", zdj_soundcard_node_name[ node->name ], node, node->stereo, node->input_link_count );
     zdj_view_t * meter;
 
     if( zdj_soundcard_node_name_is_output( node->name ) ) {

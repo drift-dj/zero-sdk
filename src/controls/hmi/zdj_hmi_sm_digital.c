@@ -233,10 +233,13 @@ void zdj_control_process_hmi_digital_input(
 void _zdj_hmi_promote_mods_for_control( zdj_hmi_input_state_t * input ) {
     zdj_hmi_input_state_t * c;
     for( int i=0; i<ZDJ_HMI_CONTROL_ID_COUNT; i++ ) {
+        // Temporarily disable everything but the Shift Key for mods
+        if( i != ZDJ_HMI_PB_5_NAV ) { continue; }
         // Don't allow Fn btns to become mods - required for momentary deck select function
         if( i == ZDJ_HMI_PB_2_FN_1 || i == ZDJ_HMI_PB_3_FN_2 || i == ZDJ_HMI_PB_4_FN_3 ) {
             continue;
         }
+        
         c = zdj_hmi_input_states[ i ];
         if( c->id == input->id ) {
             // Do not promote the calling control to mod.
@@ -250,7 +253,7 @@ void _zdj_hmi_promote_mods_for_control( zdj_hmi_input_state_t * input ) {
             c->is_modifier = true;
             c->is_modified = false;
             zdj_hmi_mod_bitmap |= (1 << i);
-            printf( "promoting %s to mod:%d\n", zdj_hmi_input_name[ i ], zdj_hmi_mod_bitmap );
+            // printf( "promoting %s to mod:%d\n", zdj_hmi_input_name[ i ], zdj_hmi_mod_bitmap );
         }
     }
 }

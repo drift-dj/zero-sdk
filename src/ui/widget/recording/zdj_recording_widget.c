@@ -7,6 +7,7 @@
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
+#include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -49,6 +50,7 @@ zdj_view_t * zdj_new_recording_widget( void ) {
     state->ui_init = false;
     state->deploy_timer = 0;
     state->container = container_view;
+    state->deploy_on_clip = zdj_setting_get( ZDJ_SETTING_RECORD_WIDGET_ALWAYS_METER )->b_val;
     
     // printf( "zdj_new_volume_widget done\n" );
     return view;
@@ -58,7 +60,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     zdj_recording_widget_state_t * state = (zdj_recording_widget_state_t*)view->state;
 
     if( state->needs_soundcard_update ) {
-        printf( "updating recording widget\n" );
+        // printf( "updating recording widget\n" );
         if( state->container->subviews ) { zdj_remove_all_subviews_of( state->container ); }
         state->ui_init = false;
         state->needs_soundcard_update = false;
@@ -78,6 +80,15 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
             if( !state->deployed ) { _deploy( state->container, state ); }
             state->deploy_timer = 0;
             state->vol_change_timer = 0;
+        }
+        // Deploy when not recording if so configured
+        if( state->has_new_clip ) {
+            state->has_new_clip = false;
+            if( state->deploy_on_clip ) { 
+                // printf( "deploy on clip\n" );
+                if( !state->deployed ) { _deploy( state->container, state ); }
+                state->deploy_timer = 0; 
+            }
         }
 
         if( state->deploy_timer < 100 ) {

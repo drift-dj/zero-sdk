@@ -135,7 +135,7 @@ void zdj_dj_deck_skip( zdj_deck_t * deck, double val ) {
 }
 
 void zdj_dj_deck_change_skip_length( zdj_deck_t * deck, double val ) {
-    printf( "Skip Length Change: %1.3f\n", val );
+    // printf( "Skip Length Change: %1.3f\n", val );
     // Sixteenth
     if( fabs( deck->controls.discon_quantize_val - 0.0625 ) < zdj_eps ) {
         if( val > 0.0 ) { deck->controls.discon_quantize_val = 0.125; }

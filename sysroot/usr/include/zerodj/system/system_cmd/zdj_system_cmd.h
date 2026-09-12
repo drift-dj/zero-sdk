@@ -25,6 +25,7 @@
 
 typedef enum { 
     ZDJ_SYSTEM_CMD_STATUS_IDLE,
+    ZDJ_SYSTEM_CMD_STATUS_BUSY,
     ZDJ_SYSTEM_CMD_STATUS_SUCCESS,
     ZDJ_SYSTEM_CMD_STATUS_ERROR
 } zdj_system_cmd_status_t;

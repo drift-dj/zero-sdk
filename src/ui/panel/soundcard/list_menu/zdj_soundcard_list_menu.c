@@ -5,6 +5,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/uuid/zdj_uuid.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/anim/zdj_anim.h>
@@ -66,7 +67,6 @@ zdj_view_t * zdj_new_soundcard_list_menu(
     zdj_error_type_t err = zdj_soundcard_fetch_all_dtos( dto_count, dtos );
 
     for( int s=0; s<dto_count; s++ ) {
-        printf( "List found Soundcard: %s\n", dtos[ s ]->name );
         // Skip the Default soundcard if we're saving
         if( !strcmp( dtos[ s ]->name, "Current" ) ) { continue; }
         if( !is_load && !strcmp( dtos[ s ]->name, "Default" ) ) { continue; }
@@ -110,6 +110,8 @@ static void _load_dto( zdj_view_t * view, zdj_control_event_t * _event ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     zdj_soundcard_panel_state_t * panel_state = (zdj_soundcard_panel_state_t*)state->data.ptr;
     
+    zdj_log( ZDJ_LOG_MIXER, ZDJ_LOG_DEBUG, "Load: %s", state->data.c_val );
+
     // Teardown the layout before we start deleting nodes
     panel_state->needs_layout_teardown = true;
     zdj_soundcard_load_mixer( zdj_soundcard, state->data.c_val );

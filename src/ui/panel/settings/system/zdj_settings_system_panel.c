@@ -7,10 +7,11 @@
 
 #include <zerodj/system/installer/zdj_installer.h>
 #include <zerodj/system/registry/zdj_registry.h>
+#include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/panel/zdj_ui_panel.h>
 #include <zerodj/ui/panel/settings/zdj_settings_panel.h>
-#include <zerodj/ui/panel/settings/software/zdj_settings_software_panel.h>
+#include <zerodj/ui/panel/settings/system/zdj_settings_system_panel.h>
 #include <zerodj/ui/view/file_browser_view/zdj_file_browser_view.h>
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 #include <zerodj/ui/view/menu_header_view/zdj_menu_header_view.h>
@@ -31,10 +32,10 @@ static void _subview_exit( void * data );
 
 static void _reset_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event );
-static void _app_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _usb_boot_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _os_btn( zdj_view_t * view, zdj_control_event_t * event );
 
-zdj_view_t * zdj_new_settings_software_panel( void (*cb)(void*) ) {
+zdj_view_t * zdj_new_settings_system_panel( void (*cb)(void*) ) {
     zdj_view_t * view = zdj_new_modal_view( zdj_modal_rect( ) );
     view->draw = &_draw;
     view->handle_control_event = &_handle_control;
@@ -77,36 +78,18 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 }
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    // printf( "system panel _handle_control\n" );
     // Ignore events which have been blocked by layers above this one.
     if( _event->blocked ) { return; }
 
-    zdj_settings_panel_state_t * state = (zdj_settings_panel_state_t*)view->state;
-    zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)state->menu->state;
-
-    if( (_event->id == ZDJ_UI_CONTROL_JOG_RELEASE_0 &&
-        menu_state->scroll_index == -1) ||
-        _event->id == ZDJ_UI_CONTROL_NAV_RELEASE_0
-    ) {
-        printf( "usb_status_view back_btn\n" );
-        // Dump the top view on the stack (this view)
-        zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
-        zdj_pop_subview_of( panel_state->settings_panel, true );
-        _event->blocked = true;
-        // Return immediately since we're being dismissed
-        return;
-    } else { 
-        // Send events down into the subview stack
-        zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
-        if( subview->handle_control_event ){ subview->handle_control_event( subview, _event ); }
-        // zdj_settings_panel_state_t * state = (zdj_settings_panel_state_t*)view->state;
-        // state->menu->handle_control_event( state->menu, _event );
-    }
+    // Send events down into the top subview
+    zdj_view_t * subview = zdj_view_stack_top_subview_of( view );
+    subview->handle_control_event( subview, _event );
 
     _event->blocked = true;
 }
 
 static void _handle_back( zdj_view_t * menu_view ) {
-    printf( "_handle_back\n" );
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }
@@ -116,6 +99,8 @@ static void _refresh_menu( zdj_view_t * view ) {
 
     zdj_menu_view_remove_all_subviews( state->menu );
 
+    // System Section
+    zdj_menu_view_add_padding( state->menu, 3 );
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "System" ) );
     // Reboot
     zdj_view_t * reboot_btn = zdj_new_menu_item( "Reboot", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
@@ -128,6 +113,23 @@ static void _refresh_menu( zdj_view_t * view ) {
     reset_state->data.ptr = view;
     zdj_menu_view_add_item( state->menu, reset_btn );
 
+    // USB Section
+    zdj_menu_view_add_padding( state->menu, 3 );
+    zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "USB" ) );
+    // Boot behavior
+    zdj_view_t * usb_boot_btn = zdj_new_data_menu_item( 
+        "Boot Mode", ZDJ_MENU_ITEM_LAYOUT_DATA_R, ZDJ_MENU_ITEM_DATA_TYPE_CHAR, NULL, NULL 
+    );
+    usb_boot_btn->handle_control_event = &_usb_boot_btn;
+    zdj_menu_item_view_state_t * usb_boot_state = (zdj_menu_item_view_state_t*)usb_boot_btn->state;
+    usb_boot_state->data.ptr = view;
+    switch ( zdj_setting_get( ZDJ_SETTING_USB_INIT_OPTION )->i_val ) {
+        case ZDJ_SETTING_USB_INIT_OFFLINE: strcpy( usb_boot_state->data.c_val, "Offline" ); break;
+        case ZDJ_SETTING_USB_INIT_HOST: strcpy( usb_boot_state->data.c_val, "Host" ); break;
+        case ZDJ_SETTING_USB_INIT_GADGET: strcpy( usb_boot_state->data.c_val, "Gadget" ); break;
+        case ZDJ_SETTING_USB_INIT_PREVIOUS: strcpy( usb_boot_state->data.c_val, "Retain" ); break;
+    }
+    zdj_menu_view_add_item( state->menu, usb_boot_btn );
 
     // Software Section
     zdj_menu_view_add_padding( state->menu, 3 );
@@ -137,28 +139,13 @@ static void _refresh_menu( zdj_view_t * view ) {
     install_btn->handle_control_event = _install_btn;
     zdj_menu_view_add_item( state->menu, install_btn );
 
-    // // Loop thru registry, adding menu items for each installed app
-    // zdj_install_t * install = zdj_registry_installs( );
-    // while( install ) {
-    //     if( !strcmp( install->category, "music" ) || !strcmp( install->category, "util" ) ) {
-    //         char * app_name = strdup( install->display_name );
-    //         zdj_view_t * item = zdj_new_menu_item( app_name, ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-    //         item->handle_control_event = &_app_btn;
-    //         zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)item->state;
-    //         strcpy( item_state->link, app_name );
-    //         item_state->data.ptr = view;
-    //         strcpy( item_state->data.c_val, install->registry_name );
-    //         zdj_menu_view_add_item( state->menu, item );
-    //     }
-        
-    //     install = install->next;
-    // }
-
     zdj_view_t * os_btn = zdj_new_menu_item( "DriftOS", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     zdj_menu_item_view_state_t * os_state = (zdj_menu_item_view_state_t*)os_btn->state;
     os_state->data.ptr = view;
     os_btn->handle_control_event = _os_btn;
-    zdj_menu_view_add_item( state->menu, os_btn );
+    zdj_menu_view_add_item( state->menu, os_btn ); 
+    
+    state->needs_layout_update = false;
 }
 
 static void _subview_exit( void * data ) {
@@ -189,7 +176,6 @@ static void _install_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 }
 
 static void _browser_exit( zdj_view_t * browser, zdj_file_browser_exit_context_t * context ) {
-    printf( "_browser_exit!: %p, %d, %s\n", browser, context->status, context->filepath );
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_installer_t * installer;
     if( context->status == ZDJ_FILE_BROWSER_EXIT_STATUS_CANCEL ) {
@@ -201,7 +187,6 @@ static void _browser_exit( zdj_view_t * browser, zdj_file_browser_exit_context_t
         // If selected path is an installer, push an installer detail view.
         installer = zdj_installer_for_filepath( context->filepath );
         
-        printf( "installer: %p path: %s\n", installer, context->filepath );
         if( installer ) {
             zdj_view_t * installer_view = zdj_new_settings_installer_panel( &_subview_exit, installer );
             zdj_push_subview_behind( 
@@ -219,10 +204,10 @@ static void _browser_exit( zdj_view_t * browser, zdj_file_browser_exit_context_t
 
 static void _reset_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * software_panel = (zdj_view_t *)btn_state->data.ptr;
+    zdj_view_t * system_panel = (zdj_view_t *)btn_state->data.ptr;
 
     zdj_view_t * reset_panel = zdj_new_settings_reset_panel( );
-    zdj_push_subview( software_panel, reset_panel, true );
+    zdj_push_subview( system_panel, reset_panel, true );
 }
 
 static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event ) {
@@ -230,23 +215,34 @@ static void _reboot_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     reboot( RB_AUTOBOOT );
 }
 
-// static void _app_btn( zdj_view_t * view, zdj_control_event_t * event ) {
-//     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
-//     zdj_install_t * install = zdj_registry_install_for_name( btn_state->data.c_val );
+static void _usb_boot_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    int usb_boot_setting = zdj_setting_get( ZDJ_SETTING_USB_INIT_OPTION )->i_val;
+    switch ( usb_boot_setting ) {
+        case ZDJ_SETTING_USB_INIT_OFFLINE: 
+            zdj_setting_set_int( ZDJ_SETTING_USB_INIT_OPTION, ZDJ_SETTING_USB_INIT_HOST ); 
+            break;
+        case ZDJ_SETTING_USB_INIT_HOST: 
+            zdj_setting_set_int( ZDJ_SETTING_USB_INIT_OPTION, ZDJ_SETTING_USB_INIT_GADGET ); 
+            break;
+        case ZDJ_SETTING_USB_INIT_GADGET: 
+            zdj_setting_set_int( ZDJ_SETTING_USB_INIT_OPTION, ZDJ_SETTING_USB_INIT_PREVIOUS ); 
+            break;
+        case ZDJ_SETTING_USB_INIT_PREVIOUS: 
+            zdj_setting_set_int( ZDJ_SETTING_USB_INIT_OPTION, ZDJ_SETTING_USB_INIT_OFFLINE ); 
+            break;
+    }
 
-//     zdj_view_t * software_panel = (zdj_view_t *)btn_state->data.ptr;
-//     zdj_settings_software_panel_state_t * software_panel_state = (zdj_settings_software_panel_state_t*)software_panel->state;
-//     zdj_view_t * app_panel = zdj_new_settings_app_panel( &_subview_exit, install );
-//     software_panel_state->event_target = app_panel;
-//     zdj_push_subview( software_panel, app_panel, true );
-// }
+    zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * system_panel = (zdj_view_t *)btn_state->data.ptr;
+    zdj_settings_panel_state_t * system_panel_state = (zdj_settings_panel_state_t*)system_panel->state;
+    system_panel_state->needs_layout_update = true;
+}
 
 static void _os_btn( zdj_view_t * view, zdj_control_event_t * event ) {
-    printf( "_os_btn\n" );
     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
-    zdj_view_t * software_panel = (zdj_view_t *)btn_state->data.ptr;
-    zdj_settings_software_panel_state_t * software_panel_state = (zdj_settings_software_panel_state_t*)software_panel->state;
+    zdj_view_t * system_panel = (zdj_view_t *)btn_state->data.ptr;
+    zdj_settings_panel_state_t * system_panel_state = (zdj_settings_panel_state_t*)system_panel->state;
     zdj_view_t * os_panel = zdj_new_settings_os_panel( &_subview_exit );
-    software_panel_state->event_target = os_panel;
-    zdj_push_subview( software_panel, os_panel, true );
+    system_panel_state->event_target = os_panel;
+    zdj_push_subview( system_panel, os_panel, true );
 }

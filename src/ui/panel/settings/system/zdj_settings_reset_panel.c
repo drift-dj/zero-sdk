@@ -101,6 +101,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
 
 static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
+    // printf( "reset panel _handle_control\n" );
     // Ignore events which have been blocked by layers above this one.
     if( _event->blocked ) { return; }
 
@@ -111,7 +112,7 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
         menu_state->scroll_index == -1) ||
         _event->id == ZDJ_UI_CONTROL_NAV_RELEASE_0
     ) {
-        printf( "app_view back_btn\n" );
+        // printf( "app_view back_btn\n" );
         // Dump the top view on the stack (this view)
         zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
         zdj_pop_subview_of( panel_state->settings_panel, true );
@@ -368,11 +369,7 @@ static void _reset_exit( zdj_view_t * view, void * data, bool selection ) {
 
         if( panel_state->usb ) {
             printf( "resetting usb state\n" );
-            remove( ZDJ_USB_STATUS_PATH );
-            zdj_usb_mode_state_t req;
-            memset( &req, 0, sizeof( zdj_usb_mode_state_t ) );
-            req.mode = ZDJ_USB_MODE_OFFLINE;
-            zdj_usb_enable_mode( &req );
+            zdj_usb_reset_status( );
         }
         if( panel_state->usb_db ) {
             printf( "resetting usb device db\n" );

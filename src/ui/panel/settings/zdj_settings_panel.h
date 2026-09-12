@@ -33,23 +33,11 @@ typedef struct {
     void (*exit_cb) ( void* );
     // PANEL_VIEW_BASE EXTENSION - do not edit
 
-    // zdj_view_t * menu;
-    // bool active;
-    // bool view_needs_refresh;
-    // zdj_view_t * overlay;
-    // int overlay_counter;
     void * data;
     char str[256];
     bool b;
 } zdj_settings_panel_state_t;
 
 zdj_view_t * zdj_new_settings_panel( void );
-
-// zdj_view_t * zdj_new_settings_software_panel( zdj_settings_panel_state_t * parent_panel );
-// zdj_view_t * zdj_new_settings_app_panel( zdj_install_t * install );
-// zdj_view_t * zdj_new_settings_installer_panel( zdj_installer_t * installer );
-// zdj_view_t * zdj_new_settings_os_panel( zdj_settings_panel_state_t * parent_panel );
-// zdj_view_t * zdj_new_settings_os_install_view( char * mount_path, zdj_os_sysreg_t * sysreg );
-// zdj_view_t * zdj_new_settings_developer_panel( zdj_settings_panel_state_t * parent_panel );
 
 #endif

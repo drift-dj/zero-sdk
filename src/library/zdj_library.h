@@ -414,8 +414,8 @@ typedef struct zdj_library_song_t {
 	char current_audio_entity_id[ ZDJ_LIBRARY_ENTITY_ID_LEN ];
 	zdj_library_audio_t * audio;
 	zdj_library_links_t * audio_links;
-	zdj_library_analysis_state_t analysis_state;  // optional - only used during lib import workflows
-	float analysis_progress;
+	volatile zdj_library_analysis_state_t analysis_state;  // optional - only used during lib import workflows
+	volatile float analysis_progress;
 	zdj_library_song_import_context_t import_context;
 	bool has_error;
 	int error_flags;

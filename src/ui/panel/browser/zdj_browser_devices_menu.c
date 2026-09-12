@@ -34,9 +34,7 @@ zdj_view_t * zdj_new_browser_panel_device_menu( zdj_view_t * browser, zdj_rect_t
 
 
 void zdj_browser_panel_refresh_devices_menu( zdj_view_t * browser, zdj_view_t * menu ) {
-    printf( "zdj_refresh_device_browser_menu\n" );
-    
-    if( zdj_usb_state != NULL ) { zdj_usb_update_mode_from_sysfs( zdj_usb_state ); }
+    if( zdj_usb_state != NULL ) { zdj_usb_update_mode_from_sysfs( &zdj_usb_state->mode_state ); }
     
     zdj_menu_view_remove_all_subviews( menu );
 
@@ -81,20 +79,20 @@ void zdj_browser_panel_refresh_devices_menu( zdj_view_t * browser, zdj_view_t * 
     //     return; 
     // }
 
-    // if( zdj_usb_state->host_state.attached.count < 1 ) { 
+    // if( zdj_usb_state->host_status.attached.count < 1 ) { 
     //     printf( "Browser panel found no attached\n" );
     //     return; 
     // }
 
     if( zdj_usb_state != NULL &&
-        zdj_usb_state->host_state.attached.count > 0
+        zdj_usb_state->host_status.attached.count > 0
     ) {
         // Add attached MSDs
-        for( int i=0; i<zdj_usb_state->host_state.attached.count; i++ ) {
+        for( int i=0; i<zdj_usb_state->host_status.attached.count; i++ ) {
 
             zdj_view_t * msd_item = zdj_new_browser_device_menu_item( 
-                zdj_usb_state->host_state.attached.devices[ i ].name_user,
-                zdj_usb_state->host_state.attached.devices[ i ].mount_path, 
+                zdj_usb_state->host_status.attached.devices[ i ].name_user,
+                zdj_usb_state->host_status.attached.devices[ i ].mount_path, 
                 ZDJ_MENU_ITEM_BROWSER_DEVICE_TYPE_MSD 
             );
             zdj_menu_item_view_state_t * msd_state = (zdj_menu_item_view_state_t*)msd_item->state;

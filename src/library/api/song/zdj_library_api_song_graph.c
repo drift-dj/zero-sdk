@@ -11,6 +11,7 @@
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/sql/zdj_sql.h>
 
 // Song graph population/persist routines.
@@ -141,7 +142,7 @@ zdj_library_song_t * zdj_library_create_file_import_song_graph(
 
     // Capture missing file error
     if( access( filepath, F_OK ) != 0 ) { 
-        printf( "zdj_library_create_file_import_song_graph: ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_MISSING\n" );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_MSG, "New import graph missing: %s", filepath );
         song->has_error = true;
         song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_MISSING;
     }

@@ -58,6 +58,8 @@ bool zdj_fs_path_is_attached_msd( char * path );
 bool zdj_fs_path_is_dir_with_files( char * path );
 bool zdj_fs_path_is_logfile( char * path );
 
+bool zdj_fs_path_is_rb_xml_library( char * path );
+
 zdj_health_status_t zdj_fs_put_parent_dir( char * path, char * dir );
 void zdj_fs_scan_dir( 
     char * path,

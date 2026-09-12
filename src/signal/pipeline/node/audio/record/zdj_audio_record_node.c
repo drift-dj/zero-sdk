@@ -23,6 +23,7 @@
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/fs/zdj_fs.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/ui/widget/notify/zdj_notify_widget.h>
 
@@ -129,7 +130,7 @@ static void _deinit_state( zdj_pipeline_node_t * node ) {
 // The following commands come from the UI thread.  All audio processing must be done
 // on the audio fast-cycle thread.
 void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node, bool notify ) {
-    printf( "zdj_new_audio_record_capture\n" );
+    // zdj_log( ZDJ_LOG_RECORDING, ZDJ_LOG_DEBUG, "Record Start" );
     zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
     record_state->save_on_finish = false;
 
@@ -147,7 +148,7 @@ void zdj_new_audio_record_capture( zdj_pipeline_node_t * record_node, bool notif
 }
 
 void zdj_finish_audio_record_capture( zdj_pipeline_node_t * record_node, bool save, bool notify ) {
-    printf( "zdj_finish_audio_record_capture\n" );
+    // printf( "zdj_finish_audio_record_capture\n" );
     zdj_audio_record_node_state_t * record_state = (zdj_audio_record_node_state_t*)record_node->state;
     
     // Show note w/filename
@@ -245,8 +246,8 @@ void * _zdj_record_proc_thread_main( void * arg ) {
             wait_sleep.tv_nsec = 7000000;
 
         } else if( record_state->status == ZDJ_AUDIO_RECORD_BEGIN ) {
-            printf( "ZDJ_AUDIO_RECORD_BEGIN: %p - %d\n", record_state, record_state->status );
-            
+            // printf( "ZDJ_AUDIO_RECORD_BEGIN: %p - %d\n", record_state, record_state->status );
+            zdj_log( ZDJ_LOG_RECORDING, ZDJ_LOG_DEBUG, "Record Start" );
             zdj_pipeline_node_t * pipe = record_state->soundcard_node->data_pipe;
             zdj_audio_buffer_node_state_t * pipe_state = (zdj_audio_buffer_node_state_t *)pipe->state;
             
@@ -302,17 +303,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         recording_num 
     );
 
-    // Create song graph for storage
-    zdj_library_song_t * song = zdj_library_create_file_import_song_graph( out_filename, zdj_library_db );
-    strcpy( song->catalog->artist, ZDJ_RECORDING_ARTIST );
-    char rec_title[ 64 ];
-    sprintf( rec_title, "%s%03d", ZDJ_RECORDING_PREFIX, recording_num );
-    strcpy( song->catalog->title, rec_title );
-    if( zdj_deck_manager( )->sync.active ) {
-        song->performance->has_beat_grid = true;
-        song->performance->bpm = zdj_deck_manager( )->sync.set_bpm;
-    }
-
     // Write tmp data thru AVContext to output file.
 
     AVFormatContext *in_fmt_ctx = NULL;
@@ -342,6 +332,21 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         return;
     }
 
+    // Create song graph for storage
+    zdj_library_song_t * song = zdj_library_create_file_import_song_graph( out_filename, zdj_library_db );
+    // Create graph will flag this as error since output file doesn't exist yet: clear the error.
+    song->has_error = false;
+    song->error_flags = 0;
+
+    strcpy( song->catalog->artist, ZDJ_RECORDING_ARTIST );
+    char rec_title[ 64 ];
+    sprintf( rec_title, "%s%03d", ZDJ_RECORDING_PREFIX, recording_num );
+    strcpy( song->catalog->title, rec_title );
+    if( zdj_deck_manager( )->sync.active ) {
+        song->performance->has_beat_grid = true;
+        song->performance->bpm = zdj_deck_manager( )->sync.set_bpm;
+    }
+
     // Store AVCodecID, stream index, and song duration for later use.
     for (int i = 0; i < in_fmt_ctx->nb_streams; i++) {
         AVCodecParameters * params = in_fmt_ctx->streams[ i ]->codecpar;
@@ -356,9 +361,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
             song->audio->timebase = (double)in_fmt_ctx->streams[ i ]->time_base.den;
         }
     }
-
-
-    // printf( "1\n" );
 
     // Find the audio stream
     for (int i = 0; i < in_fmt_ctx->nb_streams; i++) {
@@ -387,8 +389,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         return;
     }
 
-    // printf( "2\n" );
-
     // Create the output context for the new WAV file
     avformat_alloc_output_context2(&out_fmt_ctx, NULL, NULL, out_filename);
     if (!out_fmt_ctx) {
@@ -405,8 +405,6 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
         avformat_free_context(out_fmt_ctx);
         return;
     }
-    
-    // printf( "3\n" );
 
     // Copy the codec parameters from the input to the output stream
     ret = avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
@@ -463,12 +461,7 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
     avformat_close_input(&in_fmt_ctx);
     avformat_free_context(out_fmt_ctx);
 
-    // printf( "9\n" );
-
     sync( );
-
-    printf( "Wrote file: %s\n", out_filename );
-
 
     /////////////////////////////////////
     // Import new recording to Library //
@@ -537,7 +530,10 @@ static void _write_recording( zdj_pipeline_node_t * record_node ) {
     zdj_fs_copy_file( tmp_thumb_path, thumb_path, true );
     
     zdj_library_db_flush( );
+    zdj_library_refresh_menu_query_table( zdj_library_db );
+    
     zdj_library_free_song_graph( song );
+    
     // return NULL;
 }
 

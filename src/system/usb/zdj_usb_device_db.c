@@ -10,6 +10,7 @@
 #include <sqlite3.h>
 
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/sql/zdj_sql.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/system/uuid/zdj_uuid.h>
@@ -358,9 +359,9 @@ static zdj_error_type_t _add_attached_device(
     device->attached = true;
 
     // Insert new device at head of linked list
-    device->next = zdj_usb_state->host_state.attached.devices;
-    zdj_usb_state->host_state.attached.devices = device;
-    zdj_usb_state->host_state.attached.count++;
+    device->next = zdj_usb_state->host_status.attached.devices;
+    zdj_usb_state->host_status.attached.devices = device;
+    zdj_usb_state->host_status.attached.count++;
 
     // if( !_zdj_usb_attached_devices ) {
     //     _zdj_usb_attached_devices = calloc( 1, sizeof( zdj_usb_attached_devices_t ) );
@@ -383,14 +384,14 @@ static zdj_error_type_t _add_attached_device(
 }
 
 static zdj_error_type_t _clear_attached_devices( void ) {
-    // zdj_usb_device_t * device = zdj_usb_state->host_state.attached.devices;
+    // zdj_usb_device_t * device = zdj_usb_state->host_status.attached.devices;
     // while( device ) {
     //     zdj_usb_device_t * next_device = device->next;
     //     // free( device );
     //     device = next_device;
     // } 
-    zdj_usb_state->host_state.attached.devices = NULL;
-    zdj_usb_state->host_state.attached.count = 0;
+    zdj_usb_state->host_status.attached.devices = NULL;
+    zdj_usb_state->host_status.attached.count = 0;
 
     return ZDJ_ERROR_OKAY;
 }
@@ -547,22 +548,24 @@ sqlite3 * zdj_usb_create_devices_db( void ) {
 
 
 void zdj_usb_reset_devices_db( void ) {
-    printf( "getting db ref\n" );
+    zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Reset Device DB" );
     sqlite3 * db = _zdj_usb_get_device_db( );
     if( !db ) { 
-        printf( "Devices reset failed: couldn't open DB path" );
+        // printf( "Devices reset failed: couldn't open DB path" );
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "DB Reset Failed" );
         return; 
     }
-    printf( "closing db ref\n" );
+    // printf( "closing db ref\n" );
     zdj_sql_close( db );
 
-    printf( "deleting file\n" );
+    // printf( "deleting file\n" );
     remove( ZDJ_USB_DEVICE_DB_PATH );
 
-    printf( "creating new db\n" );
+    // printf( "creating new db\n" );
     db = zdj_sql_open( ZDJ_USB_DEVICE_DB_PATH );
     if( !db ) {
-        printf( "Devices reset failed: couldn't open new DB path" );
+        // printf( "Devices reset failed: couldn't open new DB path" );
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "DB Reset Failed" );
         return;
     }
 

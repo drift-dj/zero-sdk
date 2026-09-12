@@ -92,6 +92,7 @@ add_library(zerodj
     src/system/error/zdj_error.c
     src/system/fs/zdj_fs.c
     src/system/hash/zdj_hash.c
+    src/system/log/zdj_log.c
     src/system/m7/zdj_m7.c
     src/system/installer/zdj_installer.c
     src/system/perf/zdj_perf.c
@@ -105,6 +106,8 @@ add_library(zerodj
     src/system/usb/zdj_usb.c
     src/system/usb/zdj_usb_device_audio.c
     src/system/usb/zdj_usb_device_db.c
+    src/system/usb/zdj_usb_driver.c
+    src/system/usb/zdj_usb_shell.c
     src/system/usb/zdj_usb_thread.c
     src/system/util/zdj_util.c
     src/system/uuid/zdj_uuid.c
@@ -160,12 +163,12 @@ add_library(zerodj
     src/ui/panel/soundcard/select_node/zdj_soundcard_select_node.c
     src/ui/panel/settings/zdj_settings_panel.c
     src/ui/panel/settings/developer/zdj_settings_developer_panel.c
-    src/ui/panel/settings/software/zdj_settings_app_panel.c
-    src/ui/panel/settings/software/zdj_settings_installer_panel.c
-    src/ui/panel/settings/software/zdj_settings_os_install_view.c
-    src/ui/panel/settings/software/zdj_settings_os_panel.c
-    src/ui/panel/settings/software/zdj_settings_reset_panel.c
-    src/ui/panel/settings/software/zdj_settings_software_panel.c
+    src/ui/panel/settings/system/zdj_settings_app_panel.c
+    src/ui/panel/settings/system/zdj_settings_installer_panel.c
+    src/ui/panel/settings/system/zdj_settings_os_install_view.c
+    src/ui/panel/settings/system/zdj_settings_os_panel.c
+    src/ui/panel/settings/system/zdj_settings_reset_panel.c
+    src/ui/panel/settings/system/zdj_settings_system_panel.c
     src/ui/panel/usb/zdj_usb_panel.c
     src/ui/panel/settings/ui/zdj_settings_ui_panel.c
     src/ui/panel/zdj_ui_panel.c
@@ -228,9 +231,11 @@ add_library(zerodj
     src/ui/widget/zdj_ui_widget.c
     src/ui/widget/crash/zdj_crash_widget.c
     src/ui/widget/debug/zdj_debug_widget.c
+    src/ui/widget/log/zdj_log_widget.c
     src/ui/widget/notify/zdj_notify_widget.c
     src/ui/widget/perf/zdj_perf_widget.c
     src/ui/widget/recording/zdj_recording_widget.c
+    src/ui/widget/sleep/zdj_sleep_widget.c
     src/ui/widget/volume/zdj_volume_widget.c
 )
 

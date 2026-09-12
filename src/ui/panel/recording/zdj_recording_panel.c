@@ -90,8 +90,6 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
     // Ignore events which have been blocked by layers above this one.
     if( event->blocked ) { return; }
 
-    printf( "recording panel _handle_control\n" );
-    
     // Send events down into the subview stack
     zdj_recording_panel_state_t * state = (zdj_recording_panel_state_t*)view->state;
 
@@ -102,7 +100,7 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * event ) {
 }
 
 static void _handle_back( zdj_view_t * menu_view ) {
-    printf( "_handle_back\n" );
+    // printf( "_handle_back\n" );
     zdj_ui_panel_toggle( );
 }
 

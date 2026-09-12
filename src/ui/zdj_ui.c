@@ -41,7 +41,7 @@ void zdj_ui_init( void ) {
     }
 
     zdj_display_surface = SDL_CreateRGBSurface( 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, 32, 0, 0, 0, 0 );
-    printf( "Surface format: %s\n", SDL_GetPixelFormatName( zdj_display_surface->format->format ) );
+    // printf( "Surface format: %s\n", SDL_GetPixelFormatName( zdj_display_surface->format->format ) );
     zdj_display_renderer = SDL_CreateSoftwareRenderer( zdj_display_surface );
     zdj_ui_pixels = zdj_display_surface->pixels;
     if( !zdj_display_renderer || !zdj_ui_pixels ) {
@@ -91,7 +91,7 @@ void zdj_ui_min_init( void ) {
     }
 
     zdj_display_surface = SDL_CreateRGBSurface( 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, 32, 0, 0, 0, 0 );
-    printf( "Surface format: %s\n", SDL_GetPixelFormatName( zdj_display_surface->format->format ) );
+    // printf( "Surface format: %s\n", SDL_GetPixelFormatName( zdj_display_surface->format->format ) );
     zdj_display_renderer = SDL_CreateSoftwareRenderer( zdj_display_surface );
     zdj_ui_pixels = zdj_display_surface->pixels;
     if( !zdj_display_renderer || !zdj_ui_pixels ) {

@@ -27,7 +27,7 @@ zdj_view_t * zdj_new_browser_panel( void ) {
     char path[ 256 ];
     strcpy( path, "/media/internal" );
 
-    printf( "zdj_new_file_browser_panel\n" );
+    // printf( "zdj_new_file_browser_panel\n" );
     // Check path and fail before we do anything
     if( access( path, F_OK ) != 0 ) { return NULL; }
 
@@ -94,9 +94,9 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     // Update the devices menu when the set of attached devices changes
     if( zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
-        zdj_usb_state->host_state.has_browser_panel_update 
+        zdj_usb_state->host_status.has_browser_panel_update 
     ) {
-        zdj_usb_state->host_state.has_browser_panel_update = false;
+        zdj_usb_state->host_status.has_browser_panel_update = false;
         zdj_browser_panel_refresh_devices_menu( view, state->devices_menu );
     }
 }
@@ -128,7 +128,6 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _handle_back( zdj_view_t * menu_view ) {
-    printf( "_handle_back\n" );
     // zdj_ui_panel_toggle( );
 }
 

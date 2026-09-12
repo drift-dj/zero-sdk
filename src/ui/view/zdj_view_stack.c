@@ -181,6 +181,7 @@ void zdj_view_stack_handle_events( int start_ind, int end_ind, zdj_view_t * view
 // This is a recursive draw, first getting a clip frame from the view's draw func,
 // then recursing into the view's subviews, finally moving to the next sibling view.
 void zdj_view_stack_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
+    // printf( "zdj_view_stack_draw\n" );
     if( !view ) { return; }
     // Build view count by counting every draw invocation.
     zdj_new_view_count++;

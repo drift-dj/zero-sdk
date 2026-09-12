@@ -102,19 +102,18 @@ static void _handle_control( zdj_view_t * drive_view, zdj_control_event_t * _eve
 }
 
 static void _handle_exit( zdj_view_t * view ) {
-    printf( "_drive view handle_exit\n" );
+    // printf( "_drive view handle_exit\n" );
     // zdj_usb_stop_port_partner_poll( );
 
     // Request the previous gadget mode
-    zdj_usb_mode_state_t req;
-    memset( &req, 0, sizeof( zdj_usb_mode_state_t ) );
-    req.mode = ZDJ_USB_MODE_GADGET;
-    req.gadget_config.hid = _zdj_usb_drive_view_state->prev_config.hid;
-    req.gadget_config.mass_storage = false;
-    req.gadget_config.midi = _zdj_usb_drive_view_state->prev_config.midi;
-    req.gadget_config.uac2 = _zdj_usb_drive_view_state->prev_config.uac2;
-    req.gadget_config.shell = true;
-    zdj_usb_enable_mode( &req );
+    if( !zdj_usb_state->switch_ctx.busy ) {
+        zdj_usb_put_empty_gadget_mode( &zdj_usb_state->switch_ctx.request );
+        zdj_usb_state->switch_ctx.request.gadget_config.shell = true;
+        zdj_usb_state->switch_ctx.has_request = true;
+    } else {
+        // Tried to exit drive mode while state is changing.
+        // How are we supposed to do this?
+    }
 }
 
 static void _handle_exit_btn( zdj_view_t * view, zdj_control_event_t * _event ) {
@@ -130,48 +129,69 @@ static void _deinit_state( zdj_view_t * drive_view ) {
 
 
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
-    printf( "drive panel draw\n" );
+    // printf( "drive panel draw\n" );
     zdj_usb_drive_view_state_t * state = (zdj_usb_drive_view_state_t *)view->state;
 
     switch ( state->mode ) {
     case ZDJ_USB_DRIVE_VIEW_MODE_ENABLE:
-        printf( "enable\n" );
-        // if( state->needs_layout_update ) {
-        //     _enable_update_layout( view );
-        // }
-        // if( zdj_usb_state->switch_data.state == ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
-        //     // zdj_usb_start_port_partner_poll( );
-        //     state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE;
-        //     state->needs_layout_update = true;
-        // } else if( zdj_usb_state->switch_data.state > ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
-        //     state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ERROR;
-        //     state->needs_layout_update = true;
-        // }
+        // printf( "enable\n" );
+        if( state->needs_layout_update ) {
+            _enable_update_layout( view );
+        }
+        if( !zdj_usb_state->switch_ctx.busy && !zdj_usb_state->switch_ctx.has_request ) {
+
+            if( zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_GADGET ) {
+                // zdj_usb_start_port_partner_poll( );
+                state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE;
+                state->needs_layout_update = true;
+
+            } else if( zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_SWITCH_ERROR ||
+                       zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_CONFIG_ERROR 
+            ) {
+                state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ERROR;
+                state->needs_layout_update = true;
+            }
+        }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_DISABLE:
-        printf( "disable\n" );
-        if( zdj_usb_state->switch_data.state == ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
-            state->mode = ZDJ_USB_DRIVE_VIEW_MODE_EXIT;
-        } else if( zdj_usb_state->switch_data.state > ZDJ_USB_SUBMODE_SWITCH_SUCCESS ) {
-            state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ERROR;
-            state->needs_layout_update = true;
+        // printf( "disable\n" );
+        if( !zdj_usb_state->switch_ctx.busy && !zdj_usb_state->switch_ctx.has_request ) { 
+            
+            if( zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_GADGET ) {
+                state->mode = ZDJ_USB_DRIVE_VIEW_MODE_EXIT;
+            } else if( zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_SWITCH_ERROR ||
+                       zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_CONFIG_ERROR 
+            ) {
+                state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ERROR;
+                state->needs_layout_update = true;
+            }
+        
+            if( zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_INIT_ERROR ||
+                zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_CONFIG_ERROR || 
+                zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_SWITCH_ERROR
+            ) {
+                state->mode = ZDJ_USB_DRIVE_VIEW_MODE_ERROR;
+                state->needs_layout_update = true;
+            } else {
+                state->mode = ZDJ_USB_DRIVE_VIEW_MODE_EXIT;
+            }
         }
         if( state->needs_layout_update ) {
             _disable_update_layout( view );
         }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_ACTIVE:
-        printf( "active" );
+        // printf( "active\n" );
         // if( zdj_usb_msd_has_disconnected( ) ) {
-        if( zdj_usb_state->gadget_state.msd_has_been_unmounted_by_host ) {
+        if( zdj_usb_state->gadget_status.msd_has_been_unmounted_by_host ) {
             // Catch a forced-eject from host 
-
+            // printf( "found has_been_unmounted\n" );
             _zdj_usb_drive_view_state->mode = ZDJ_USB_DRIVE_VIEW_MODE_DISABLE;
             _zdj_usb_drive_view_state->needs_layout_update = true;
             _handle_exit( view );
         }
-        if( zdj_usb_state->has_port_partner_update ) { 
-            zdj_usb_state->has_port_partner_update = false;
+        if( zdj_usb_state->gadget_status.has_port_partner_update ) { 
+            zdj_usb_state->gadget_status.has_port_partner_update = false;
             state->needs_layout_update = true;
         }
         if( state->needs_layout_update ) {
@@ -179,11 +199,11 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         }
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_ERROR:
-        printf( "error\n" );
+        // printf( "error\n" );
         _error_update_layout( view );
         break;
     case ZDJ_USB_DRIVE_VIEW_MODE_EXIT:
-        printf( "exit\n" );
+        // printf( "exit\n" );
         state->mode = ZDJ_USB_DRIVE_VIEW_MODE_DONE;
         zdj_pop_subview_of( state->parent_view, true );
         if( _zdj_usb_drive_view_state->exit_cb ) { _zdj_usb_drive_view_state->exit_cb( ); }
@@ -191,15 +211,27 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     default:
         break;
     }
-    printf( "drive panel draw done\n" );
+    // printf( "drive panel draw done\n" );
 }
 
 static void _enable_update_layout( zdj_view_t * view ) {
-    printf( "_enable_update_layout\n" );
+    // printf( "_enable_update_layout\n" );
     zdj_usb_drive_view_state_t * state = (zdj_usb_drive_view_state_t *)view->state;
     zdj_view_t * menu_view = state->menu_view;
 
-    zdj_menu_view_remove_all_subviews( menu_view );
+    zdj_menu_view_remove_all_items( menu_view );
+    // Add an invisible menu item since menu can't deal with no items
+    zdj_view_t * blank_btn = zdj_new_asset_menu_item( 
+        ZDJ_UI_ASSET_BLACK,
+        ZDJ_UI_ASSET_BLACK,
+        true // only show when hilighted
+    );
+    blank_btn->frame.x = 1;
+    blank_btn->frame.y = 1;
+    blank_btn->frame.w = 1;
+    blank_btn->frame.h = 1;
+    zdj_menu_view_add_item( state->menu_view, blank_btn );
+
     
     // Add progress view
     zdj_view_t * progress_bar = zdj_new_progress_bar_view( &(zdj_rect_t){ 7,6,86,6 }, ZDJ_PROGRESS_BAR_VIEW_WAIT );
@@ -218,15 +250,27 @@ static void _enable_update_layout( zdj_view_t * view ) {
 
     state->needs_layout_update = false;
 
-    printf( "_enable_update_layout done\n" );
+    // printf( "_enable_update_layout done\n" );
 }
 
 static void _disable_update_layout( zdj_view_t * view ) {
-    printf( "_disable_update_layout\n" );
+    // printf( "_disable_update_layout\n" );
     zdj_usb_drive_view_state_t * state = (zdj_usb_drive_view_state_t *)view->state;
     zdj_view_t * menu_view = state->menu_view;
 
-    zdj_menu_view_remove_all_subviews( menu_view );
+    zdj_menu_view_remove_all_items( menu_view );
+    // Add an invisible menu item since menu can't deal with no items
+    zdj_view_t * blank_btn = zdj_new_asset_menu_item( 
+        ZDJ_UI_ASSET_BLACK,
+        ZDJ_UI_ASSET_BLACK,
+        true // only show when hilighted
+    );
+    blank_btn->frame.x = 1;
+    blank_btn->frame.y = 1;
+    blank_btn->frame.w = 1;
+    blank_btn->frame.h = 1;
+    zdj_menu_view_add_item( state->menu_view, blank_btn );
+
 
     // Add progress view
     zdj_view_t * progress_bar = zdj_new_progress_bar_view( &(zdj_rect_t){ 7,6,86,6 }, ZDJ_PROGRESS_BAR_VIEW_WAIT );
@@ -243,18 +287,31 @@ static void _disable_update_layout( zdj_view_t * view ) {
     zdj_menu_view_add_item( menu_view, processing_2 );
 
     state->needs_layout_update = false;
+    // printf( "_disable_update_layout done\n" );
 }
 
 static void _active_update_layout( zdj_view_t * view ) {
-    printf( "_active_update_layout\n" );
+    // printf( "_active_update_layout\n" );
     zdj_usb_drive_view_state_t * state = (zdj_usb_drive_view_state_t *)view->state;
     zdj_view_t * menu_view = state->menu_view;
 
-    zdj_menu_view_remove_all_subviews( menu_view );
+    zdj_menu_view_remove_all_items( menu_view );
+    // Add an invisible menu item since menu can't deal with no items
+    zdj_view_t * blank_btn = zdj_new_asset_menu_item( 
+        ZDJ_UI_ASSET_BLACK,
+        ZDJ_UI_ASSET_BLACK,
+        true // only show when hilighted
+    );
+    blank_btn->frame.x = 1;
+    blank_btn->frame.y = 1;
+    blank_btn->frame.w = 1;
+    blank_btn->frame.h = 1;
+    zdj_menu_view_add_item( state->menu_view, blank_btn );
+
 
     zdj_view_t * box;
     zdj_view_t * stat_label;
-    if( zdj_usb_state->has_port_partner ) {
+    if( zdj_usb_state->gadget_status.has_port_partner ) {
         // Add status box
         box = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_BOX_1 ], NULL );
         box->frame.x = 7;
@@ -297,14 +354,27 @@ static void _active_update_layout( zdj_view_t * view ) {
     zdj_menu_view_add_item( menu_view, exit_btn );
 
     state->needs_layout_update = false;
+
+    // printf( "_active_update_layout done\n" );
 }
 
 static void _error_update_layout( zdj_view_t * view ) {
-    printf( "_error_update_layout\n" );
+    // printf( "_error_update_layout\n" );
     zdj_usb_drive_view_state_t * state = (zdj_usb_drive_view_state_t *)view->state;
     zdj_view_t * menu_view = state->menu_view;
 
     zdj_menu_view_remove_all_items( menu_view );
+    // Add an invisible menu item since menu can't deal with no items
+    zdj_view_t * blank_btn = zdj_new_asset_menu_item( 
+        ZDJ_UI_ASSET_BLACK,
+        ZDJ_UI_ASSET_BLACK,
+        true // only show when hilighted
+    );
+    blank_btn->frame.x = 1;
+    blank_btn->frame.y = 1;
+    blank_btn->frame.w = 1;
+    blank_btn->frame.h = 1;
+    zdj_menu_view_add_item( state->menu_view, blank_btn );
 
     // Add zero icon
     zdj_view_t * zero = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_ZERO ], NULL );
@@ -338,4 +408,6 @@ static void _error_update_layout( zdj_view_t * view ) {
     zdj_menu_view_add_item( menu_view, div );
 
     state->needs_layout_update = false;
+
+    // printf( "_error_update_layout done\n" );
 }

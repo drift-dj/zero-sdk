@@ -8,12 +8,14 @@
 
 #include <zerodj/health/zdj_health_type.h>
 #include <zerodj/library/zdj_library.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/sql/zdj_sql.h>
 
 static char _sql[ 4096 ];
 
 void zdj_library_refresh_menu_query_table( sqlite3 * db ) {
     // printf( "zdj_library_refresh_menu_query_table\n" );
+    zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Refresh Menu Query" );
     snprintf( _sql, sizeof( _sql ), "DROP TABLE IF EXISTS Menu_Query; \
         CREATE TABLE \'Menu_Query\' ( \
             \'song_entity_id\'	TEXT NOT NULL, \
@@ -106,12 +108,19 @@ bool zdj_library_query_import_song_match(
         sqlite3_finalize( c_stmt );
     }
 
-    printf( "zdj_library_query_import_song_match (%d): %s - %s - %s\n", 
-        found, 
-        song->catalog->title, 
-        song->catalog->artist,
-        song->catalog->album 
-    );
+    // printf( "zdj_library_query_import_song_match (%d): %s - %s - %s\n", 
+    //     found, 
+    //     song->catalog->title, 
+    //     song->catalog->artist,
+    //     song->catalog->album 
+    // );
+    if( found ) {
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Match: %s - %s - %s\n", 
+            song->catalog->title, 
+            song->catalog->artist,
+            song->catalog->album  
+        );
+    }
 
     return found;
 }
@@ -121,6 +130,7 @@ zdj_error_type_t zdj_library_query_artist_menu(
 	sqlite3 * db 
 ) {
     // printf( "zdj_library_query_artist_menu\n" );
+    // This query is designed to give us results for both section titles AND songs by artist
     snprintf( _sql, sizeof( _sql ), "SELECT *, \
             CASE \
                 WHEN lag(artist) OVER (ORDER BY artist) IS NULL THEN 0 \
@@ -160,6 +170,9 @@ zdj_error_type_t zdj_library_query_artist_menu(
                 song_row->key = sqlite3_column_int ( c_stmt, 7 );
                 song_row->has_error = sqlite3_column_int ( c_stmt, 8 );
                 song_row->error_flags = sqlite3_column_int ( c_stmt, 9 );
+
+                // zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Row err:%d - %s", song_row->has_error, song_row->title );
+
                 row++;
                 section_row->prev = NULL;
                 section_row->next = song_row;
@@ -191,6 +204,8 @@ zdj_error_type_t zdj_library_query_artist_menu(
                 song_row->has_error = sqlite3_column_int ( c_stmt, 8 );
                 song_row->error_flags = sqlite3_column_int ( c_stmt, 9 );
                 row++;
+
+                // zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Row err:%d - %s", song_row->has_error, song_row->title );
                 
                 prev_row->next = song_row;
                 song_row->prev = prev_row;
@@ -199,6 +214,7 @@ zdj_error_type_t zdj_library_query_artist_menu(
         }
         sqlite3_finalize( c_stmt );
     }
+    zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "[Q]artist: %d", row );
     // printf( "sql done\n" );
     return ZDJ_ERROR_LIBRARY_QUERY_OKAY;
 }

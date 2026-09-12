@@ -61,13 +61,13 @@ void zdj_refresh_device_browser_menu( zdj_view_t * browser, zdj_view_t * menu ) 
     // If we're in USB host mode
     // Look for an attached MSD drive
     // zdj_usb_attached_devices_t * attached = zdj_usb_get_attached_devices( ZDJ_USB_TYPE_MSD );
-    if( !zdj_usb_state || zdj_usb_state->host_state.attached.count < 1 ) { return; }
+    if( !zdj_usb_state || zdj_usb_state->host_status.attached.count < 1 ) { return; }
 
     // Add attached MSDs
-    for( int i=0; i<zdj_usb_state->host_state.attached.count; i++ ) {
+    for( int i=0; i<zdj_usb_state->host_status.attached.count; i++ ) {
         zdj_view_t * msd_item = zdj_new_browser_device_menu_item( 
-            zdj_usb_state->host_state.attached.devices[ i ].name_user,
-            zdj_usb_state->host_state.attached.devices[ i ].mount_path, 
+            zdj_usb_state->host_status.attached.devices[ i ].name_user,
+            zdj_usb_state->host_status.attached.devices[ i ].mount_path, 
             ZDJ_MENU_ITEM_BROWSER_DEVICE_TYPE_MSD 
         );
         zdj_menu_item_view_state_t * msd_state = (zdj_menu_item_view_state_t*)msd_item->state;

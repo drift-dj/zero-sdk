@@ -85,7 +85,6 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
         menu_state->scroll_index == -1) ||
         _event->id == ZDJ_UI_CONTROL_NAV_RELEASE_0
     ) {
-        printf( "usb_status_view back_btn\n" );
         // Dump the top view on the stack (this view)
         zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
         zdj_pop_subview_of( panel_state->settings_panel, true );
@@ -102,7 +101,6 @@ static void _handle_control( zdj_view_t * view, zdj_control_event_t * _event ) {
 }
 
 static void _handle_back( zdj_view_t * menu_view ) {
-    printf( "_handle_back\n" );
     zdj_panel_state_t * panel_state = (zdj_panel_state_t*)zdj_panel_view( )->state;
     zdj_pop_subview_of( panel_state->settings_panel, true );
 }

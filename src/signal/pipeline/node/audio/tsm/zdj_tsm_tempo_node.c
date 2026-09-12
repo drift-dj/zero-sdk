@@ -79,8 +79,8 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
         // Figure out where the last sample we copied falls in decode's current window.
         int sample_offset = state->decode_coord - win_start.transport_i;
         if( sample_offset < 0 ) { 
-            printf( "TSM Missed %d decode samples\n", sample_offset * -1 ); 
-            printf( "dc:%1.0f, tp_i:%lu\n", state->decode_coord, win_start.transport_i );
+            // printf( "TSM Missed %d decode samples\n", sample_offset * -1 ); 
+            // printf( "dc:%1.0f, tp_i:%lu\n", state->decode_coord, win_start.transport_i );
             sample_offset = 0; 
         }
 

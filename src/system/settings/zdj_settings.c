@@ -7,8 +7,10 @@
 #include <sqlite3.h>
 
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/settings/zdj_settings.h>
 #include <zerodj/system/sql/zdj_sql.h>
+#include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
 
 sqlite3 * zdj_setting_db;
@@ -86,35 +88,58 @@ static void _reset_default( void ) {
     zdj_setting_set_int( ZDJ_SETTING_RECORDING_COUNTER, 0 );
     zdj_setting_set_int( ZDJ_SETTING_DISPLAY_FLIP, 0 );
     zdj_setting_set_int( ZDJ_SETTING_REFRESH_RATE, 0 );
+
     zdj_setting_set_bool( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE, false );
     zdj_setting_set_bool( ZDJ_SETTING_DECK_STRETCH_OVERRIDE, false );
+    zdj_setting_set_bool( ZDJ_SETTING_DECK_1_DC_COUPLE, false );
+    zdj_setting_set_bool( ZDJ_SETTING_DECK_2_DC_COUPLE, false );
+    zdj_setting_set_bool( ZDJ_SETTING_DECK_EXT_DC_COUPLE, false );
+
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_BPM, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_KEY, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_CAMELOT, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_HIDE_ERROR_SONGS, true );
     zdj_setting_set_bool( ZDJ_SETTING_DEBUG_SHOW_CRASH, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_DEPLOY_AT_BOOT, false );
     zdj_setting_set_bool( ZDJ_SETTING_LOG_CRASH, true );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_UI, false );
     zdj_setting_set_bool( ZDJ_SETTING_LOG_USB, false );
     zdj_setting_set_bool( ZDJ_SETTING_LOG_LIBRARY, false );
     zdj_setting_set_bool( ZDJ_SETTING_LOG_DEBUG, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_PLAYBACK, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_INIT, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_FS, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_RECORD, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_MIXER, false );
+
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_PRINTF, false );
+    zdj_setting_set_bool( ZDJ_SETTING_LOG_TO_FILE, false );
+    zdj_setting_set_int( ZDJ_SETTING_LOG_SCREEN_LINE_COUNT, 5 );
+    zdj_setting_set_int( ZDJ_SETTING_LOG_LEVEL, ZDJ_LOG_NONE );
+
+    zdj_setting_set_int( ZDJ_SETTING_USB_INIT_OPTION, ZDJ_SETTING_USB_INIT_PREVIOUS );
+    zdj_setting_set_int( ZDJ_SETTING_USB_PREV_MODE, ZDJ_USB_MODE_INIT_ERROR );
+
+    zdj_setting_set_bool( ZDJ_SETTING_RECORD_WIDGET_ALWAYS_METER, false );
 }
 
 zdj_setting_t * zdj_setting_get( int id ) {
-    zdj_setting_t * setting = NULL;
+    zdj_setting_t * setting = calloc( 1, sizeof( zdj_setting_t ) );
+    setting->id = id;
+    setting->valid = false;
     char sql[ 256 ];
     sprintf( sql, "select * from Settings where id=%d", id );
     int res;
     sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( sql, zdj_setting_db );
     if( stmt ) {
         while ( (( res = sqlite3_step( stmt ) ) == SQLITE_ROW) ) {
-            setting = calloc( 1, sizeof( zdj_setting_t ) );
-            setting->id = id;
             setting->type = sqlite3_column_int ( stmt, 1 );
             setting->i_val = sqlite3_column_int ( stmt, 2 );
             setting->b_val = sqlite3_column_int ( stmt, 3 );
             setting->d_val = sqlite3_column_double ( stmt, 4 );
             char * c_val = (char*)sqlite3_column_text ( stmt, 5 );
             if( c_val ) { strcpy( setting->c_val, c_val ); }
+            setting->valid = true;
         }
         sqlite3_finalize( stmt );
     }
@@ -123,11 +148,7 @@ zdj_setting_t * zdj_setting_get( int id ) {
 
 zdj_error_type_t zdj_setting_set_int( int id, int val ) {
     zdj_setting_t * _setting = zdj_setting_get( id );
-    if( !_setting ) { 
-        _setting = calloc( 1, sizeof( zdj_setting_t ) ); 
-        _setting->id = id;
-        _setting->type = ZDJ_SETTING_TYPE_INT;
-    }
+    _setting->type = ZDJ_SETTING_TYPE_INT;
     _setting->i_val = val;
 
     char sql[ 4096 ];
@@ -160,11 +181,7 @@ zdj_error_type_t zdj_setting_set_int( int id, int val ) {
 
 zdj_error_type_t zdj_setting_set_bool( int id, bool val ) {
     zdj_setting_t * _setting = zdj_setting_get( id );
-    if( !_setting ) { 
-        _setting = calloc( 1, sizeof( zdj_setting_t ) ); 
-        _setting->id = id;
-        _setting->type = ZDJ_SETTING_TYPE_BOOL;
-    }
+    _setting->type = ZDJ_SETTING_TYPE_BOOL;
     _setting->b_val = val;
 
     char sql[ 4096 ];
@@ -197,11 +214,7 @@ zdj_error_type_t zdj_setting_set_bool( int id, bool val ) {
 
 zdj_error_type_t zdj_setting_set_double( int id, double val ) {
     zdj_setting_t * _setting = zdj_setting_get( id );
-    if( !_setting ) { 
-        _setting = calloc( 1, sizeof( zdj_setting_t ) ); 
-        _setting->id = id;
-        _setting->type = ZDJ_SETTING_TYPE_DOUBLE;
-    }
+    _setting->type = ZDJ_SETTING_TYPE_DOUBLE;
     _setting->d_val = val;
 
     char sql[ 4096 ];
@@ -234,11 +247,7 @@ zdj_error_type_t zdj_setting_set_double( int id, double val ) {
 
 zdj_error_type_t zdj_setting_set_char( int id, char * val ) {
     zdj_setting_t * _setting = zdj_setting_get( id );
-    if( !_setting ) { 
-        _setting = calloc( 1, sizeof( zdj_setting_t ) ); 
-        _setting->id = id;
-        _setting->type = ZDJ_SETTING_TYPE_CHAR;
-    }
+    _setting->type = ZDJ_SETTING_TYPE_CHAR;
     strcpy( _setting->c_val, val );
 
     char sql[ 4096 ];

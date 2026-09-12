@@ -11,6 +11,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include <libxml/tree.h>
+#include <libxml/parser.h>
+
 #include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/hash/zdj_hash.h>
 #include <zerodj/system/error/zdj_error.h>
@@ -375,6 +378,59 @@ bool zdj_fs_path_is_logfile( char * path ) {
     }
 }
 
+bool zdj_fs_path_is_rb_xml_library( char * path ) {
+    // printf( "_rb_migration_check_library_format: %s\n", path );
+
+    // First check for file extension
+    char * ext = zdj_fs_get_file_extension( path );
+
+    // Check for recognized extension
+    if( !strcmp( ext, "xml" ) || !strcmp( ext, "XML" ) ) {
+        //
+    } else {
+        return false;
+    }
+
+    xmlDoc *doc = NULL;
+    xmlNode *root_element = NULL;
+    xmlNode *cur = NULL;
+
+    doc = xmlParseFile( path );
+
+    if ( doc == NULL ) {
+        printf( "error: could not parse RB xml file\n" );
+        return false;
+    }
+
+    root_element = xmlDocGetRootElement(doc);
+    bool found_playlists, found_product, found_collection;
+    // Check for "DJ_PLAYLISTS" at root element
+    if ( ( !xmlStrcmp( root_element->name, (const xmlChar *)"DJ_PLAYLISTS" ) ) ) {
+        found_playlists = true;
+        // printf( "found DJ_PLAYLISTS\n" );
+    }
+    cur = root_element->xmlChildrenNode;
+	while ( cur != NULL ) {
+        // Check for PRODUCT node
+		if ( ( !xmlStrcmp( cur->name, (const xmlChar *)"PRODUCT" ) ) ) {
+            found_product = true;
+            // printf( "found PRODUCT\n" );
+		}
+        // Check for COLLECTION node
+        if ( ( !xmlStrcmp( cur->name, (const xmlChar *)"COLLECTION" ) ) ) {
+            found_collection = true;
+            // printf( "found COLLECTION\n" );
+		}
+        cur = cur->next;
+	}
+    xmlFreeDoc( doc );
+    xmlCleanupParser( );
+
+    bool valid = found_playlists && found_product && found_collection;
+    // printf( "_rb_migration_check_library_format: %d\n", valid );
+    return valid;
+}
+
 zdj_health_status_t zdj_fs_put_parent_dir( char * path, char * dir ) {
     char _path[ 1024 ];
     strcpy( _path, path );
@@ -433,7 +489,6 @@ void zdj_fs_scan_dir(
 
 int zdj_fs_mkdir_p( char * path ) {
     // printf( "zdj_fs_mkdir_p: %s\n", path );
-    /* Adapted from http://stackoverflow.com/a/2336245/119527 */
     char * _path = NULL;
     char * p; 
     int result = -1;
@@ -618,13 +673,26 @@ char * zdj_fs_read_buffer( char * path, int limit ) {
 
 int zdj_fs_write_buffer( char * path, char * buffer ) {
     FILE * fp = fopen( path, "w" );
-    if( !fp ) { return 0; }
+    if( !fp ) { return -1; }
     int bw = fwrite( buffer, sizeof( char ), strlen( buffer ), fp );
     fclose( fp );
     return bw;
 }
+// int write_to_file(const char *path, const char *val) {
+//     int fd = open(path, O_WRONLY);
+//     if (fd < 0) {
+//         perror("open");
+//         return -1;
+//     }
+//     ssize_t ret = write(fd, val, strlen(val));
+//     close(fd);
+//     return (ret < 0) ? -1 : 0;
+// }
+
+
 
 void zdj_fs_get_popen( char * cmd, char * res ) {
+    // printf( "zdj_fs_get_popen: %s\n", cmd );
     FILE *fp;
     char ret[ 256 ];
     int ret_len = 0;
@@ -649,5 +717,7 @@ void zdj_fs_get_popen( char * cmd, char * res ) {
     // return strdup( &res[ 8 ] );
     if( ret_len > 0 ) {
         strcpy( res, ret );
+    } else {
+        sprintf( res, "%c", '\0' );
     }
 }
