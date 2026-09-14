@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  # PR branches are built by pull_request; limiting push to main and
+  # release branches avoids building the same commit twice.
+  push:
+    branches: [ main, 'release/**' ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Cross-compile aarch64
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # clang and lld only; no aarch64 system libraries are needed, as
+      # everything resolves against the in-tree sysroot.
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld ninja-build
+
+      - name: Report toolchain versions
+        run: |
+          clang --version
+          ld.lld --version
+          cmake --version
+          ninja --version
+
+      - name: Build
+        run: bash scripts/build.sh
+
+      - name: Verify artifact
+        run: |
+          test -f build/libzerodj.a
+          ls -lh build/libzerodj.a
