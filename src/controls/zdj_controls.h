@@ -824,6 +824,8 @@ typedef struct {
 extern zdj_special_control_handler_t zdj_special_control_handlers[ 5 ];
 
 void * zdj_control_cycle_thread_main( void * arg );
+// One control cycle (the body of the control cycle thread's loop).
+void zdj_control_cycle_step( void );
 
 extern zdj_control_active_state_t zdj_control_active_state;
 extern zdj_control_map_id_t zdj_control_active_map;
@@ -844,6 +846,8 @@ extern volatile int zdj_ui_event_buf_write;
 extern volatile int zdj_ui_event_buf_read;
 
 zdj_error_type_t zdj_controls_init( void );
+// zdj_controls_init without the thread; drive it with zdj_control_cycle_step.
+zdj_error_type_t zdj_controls_init_stepped( void );
 zdj_error_type_t zdj_clear_controls( void );
 
 zdj_error_type_t zdj_activate_control( zdj_control_id_t control_id );

@@ -49,6 +49,19 @@ zdj_error_type_t zdj_controls_init( void ) {
     return ZDJ_ERROR_OKAY;
 }
 
+// Same as zdj_controls_init, but without the control cycle thread: the caller
+// drives the cycle itself by calling zdj_control_cycle_step. The HMI state
+// machines count cycles, not wall-clock time, so a caller that steps a fixed
+// number of cycles per UI frame gets the same UI events on every run.
+zdj_error_type_t zdj_controls_init_stepped( void ) {
+    zdj_control_hmi_input_init( );
+    zdj_clear_controls( );
+    zdj_control_cycle_counter = 0;
+    memset( &zdj_special_control_handlers, 0, sizeof( zdj_special_control_handler_t )*5 );
+    zdj_control_prepare_hmi_input_scan( );
+    return ZDJ_ERROR_OKAY;
+}
+
 // Wipe any existing control/hmi input events.
 // Reset input mapping states.
 zdj_error_type_t zdj_clear_controls( void ) {
@@ -115,48 +128,54 @@ void * zdj_control_cycle_thread_main( void * arg ) {
         frame_sleep.tv_nsec = 800000;
         nanosleep( &frame_sleep, NULL );
 
-        if( zdj_control_cycle_reset ) {
-            zdj_control_cycle_counter = 0;
-            zdj_control_cycle_reset = false;
-        } else {
-            zdj_control_cycle_counter++;
-        }
-        // Open a tag for the process cycle
-        // zdj_perf_tag_t * tag;
-        // if( zdj_perf_enabled( ) ) {
-        //     tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_CONTROL );
-        //     tag->name = ZDJ_PERF_TAG_CONTROL_CYCLE;
-        //     tag->start = zdj_perf_time( );
-        // }
-
-        // Run HMI scan cycle
-        zdj_control_scan_hmi_input( );
-
-        // Generate Internal HMI Input events
-        zdj_control_process_hmi_input( );
-
-        // Make events from external input sources. (MIDI controllers, etc.)
-        // These can map directly to UI/Deck Control events OR indirectly as HMI Input events -- 
-        // allowing external control surfaces to replicate Zero's built-in buttons/knobs.
-        // Generate MIDI mapped events
-        // zdj_control_process_usb_midi_input( );
-        // Generate USB HID mapped events
-        // zdj_control_process_usb_hid_input( );
-        // Generate Signal mapped events
-        // zdj_control_process_signal_input( );
-
-        // Transform HMI Input events into UI/Deck Control events
-        zdj_control_transform_hmi_events( );
-
-        // If there are unhandled deck events in the ring buffer...
-        if( zdj_deck_event_buf_read != zdj_deck_event_buf_write ) {
-            // ...pass control events into deck_manager.
-            zdj_deck_manager_handle_events( zdj_deck_event_buf_read, zdj_deck_event_buf_write );
-            // Update the event buf's read head so we don't re-process these events
-            zdj_deck_event_buf_read = zdj_deck_event_buf_write;
-        }
-
-        // Close the perf tag
-        // if( zdj_perf_enabled( ) ) { tag->end = zdj_perf_time( ); }
+        zdj_control_cycle_step( );
     }
+}
+
+// One control cycle: scan HMI input, turn it into UI/Deck control events and
+// hand deck events to the deck manager.
+void zdj_control_cycle_step( void ) {
+    if( zdj_control_cycle_reset ) {
+        zdj_control_cycle_counter = 0;
+        zdj_control_cycle_reset = false;
+    } else {
+        zdj_control_cycle_counter++;
+    }
+    // Open a tag for the process cycle
+    // zdj_perf_tag_t * tag;
+    // if( zdj_perf_enabled( ) ) {
+    //     tag = zdj_new_perf_tag_for_thread( ZDJ_SYSTEM_THREAD_CONTROL );
+    //     tag->name = ZDJ_PERF_TAG_CONTROL_CYCLE;
+    //     tag->start = zdj_perf_time( );
+    // }
+
+    // Run HMI scan cycle
+    zdj_control_scan_hmi_input( );
+
+    // Generate Internal HMI Input events
+    zdj_control_process_hmi_input( );
+
+    // Make events from external input sources. (MIDI controllers, etc.)
+    // These can map directly to UI/Deck Control events OR indirectly as HMI Input events -- 
+    // allowing external control surfaces to replicate Zero's built-in buttons/knobs.
+    // Generate MIDI mapped events
+    // zdj_control_process_usb_midi_input( );
+    // Generate USB HID mapped events
+    // zdj_control_process_usb_hid_input( );
+    // Generate Signal mapped events
+    // zdj_control_process_signal_input( );
+
+    // Transform HMI Input events into UI/Deck Control events
+    zdj_control_transform_hmi_events( );
+
+    // If there are unhandled deck events in the ring buffer...
+    if( zdj_deck_event_buf_read != zdj_deck_event_buf_write ) {
+        // ...pass control events into deck_manager.
+        zdj_deck_manager_handle_events( zdj_deck_event_buf_read, zdj_deck_event_buf_write );
+        // Update the event buf's read head so we don't re-process these events
+        zdj_deck_event_buf_read = zdj_deck_event_buf_write;
+    }
+
+    // Close the perf tag
+    // if( zdj_perf_enabled( ) ) { tag->end = zdj_perf_time( ); }
 }

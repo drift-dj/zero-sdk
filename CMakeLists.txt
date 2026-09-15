@@ -342,6 +342,12 @@ if(ZDJ_EMU)
     # upstream). On the device drift-os supplies it; the native harness links
     # the host libasound so the fake-M7 build resolves the snd_* symbols.
     target_link_libraries(zero-emu PRIVATE zerodj avformat avcodec avutil swresample asound)
+
+    # Headless screenshot tool: same library bring-up, no window or audio. The
+    # library's decode/record/USB nodes still need ffmpeg and ALSA to link.
+    add_executable(zero-shots tools/emu/src/shots.c)
+    target_link_directories(zero-shots PRIVATE /usr/lib/ffmpeg4.4)
+    target_link_libraries(zero-shots PRIVATE zerodj png avformat avcodec avutil swresample asound)
 endif()
 
 # add_custom_command(

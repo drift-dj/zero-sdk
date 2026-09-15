@@ -25,5 +25,5 @@ if [ ! -d "$BUILD_DIR" ]; then
   cmake $CONFIG_FLAGS
 fi
 
-echo "Building zero-emu..."
-cmake --build "$BUILD_DIR" --target zero-emu --parallel
+echo "Building zero-emu and zero-shots..."
+cmake --build "$BUILD_DIR" --target zero-emu zero-shots --parallel

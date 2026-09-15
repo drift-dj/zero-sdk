@@ -11,14 +11,19 @@
 # are missing fall back to a substitute (override with ZERO_EMU_FONT).
 #
 # Env passthrough: all ZERO_EMU_* harness variables (see README.md).
+#
+# ZERO_EMU_BIN runs a different binary from build-emu/ (e.g. zero-shots), and
+# ZERO_EMU_MEDIA_DIR mounts a different directory as /media/internal (e.g. a
+# fresh one per run).
 set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd -P)"
 ROOT_DIR=$(realpath "$DIR/..")
-BIN="$ROOT_DIR/build-emu/zero-emu"
+BIN="$ROOT_DIR/build-emu/${ZERO_EMU_BIN:-zero-emu}"
+MEDIA_DIR="${ZERO_EMU_MEDIA_DIR:-$ROOT_DIR/build-emu/media-internal}"
 
 if [ ! -x "$BIN" ]; then
-  echo "zero-emu not built. Run ./scripts/build_emu.sh first." >&2
+  echo "$BIN not built. Run ./scripts/build_emu.sh first." >&2
   exit 1
 fi
 if ! command -v bwrap >/dev/null 2>&1; then
@@ -46,7 +51,7 @@ fi
 # Stage the fake /root/res tree.
 RES_SRC="$ROOT_DIR/res"
 STAGE="$ROOT_DIR/build-emu/emu-root"
-mkdir -p "$STAGE/res/fonts" "$ROOT_DIR/build-emu/media-internal/.system"
+mkdir -p "$STAGE/res/fonts" "$MEDIA_DIR/.system"
 
 # Stale-DB guard: the soundcard/settings schema (incl. the node-name enum the
 # mix graph's link bitmasks are keyed on) is baked into the binary. A DB written
@@ -54,7 +59,7 @@ mkdir -p "$STAGE/res/fonts" "$ROOT_DIR/build-emu/media-internal/.system"
 # node ending up linked to itself, which sends the audio mix into infinite
 # recursion. Drop any *.db older than the freshly built binary; libzerodj
 # regenerates them from the presets on next launch.
-find "$ROOT_DIR/build-emu/media-internal/.system" -maxdepth 1 -name '*.db' ! -newer "$BIN" -delete
+find "$MEDIA_DIR/.system" -maxdepth 1 -name '*.db' ! -newer "$BIN" -delete
 
 cp -f "$RES_SRC/zero_atlas-32bit.bmp" "$STAGE/res/zero_atlas-32bit.bmp"
 real_fonts=0
@@ -91,5 +96,5 @@ exec bwrap \
   --bind "$ROOT_DIR" "$ROOT_DIR" \
   --tmpfs /root \
   --ro-bind "$STAGE/res" /root/res \
-  --bind "$ROOT_DIR/build-emu/media-internal" /media/internal \
+  --bind "$MEDIA_DIR" /media/internal \
   -- "$BIN" "$@"
