@@ -3,13 +3,14 @@
 # its hardcoded device paths (/root/res/..., /media/internal/...) without
 # polluting the host or needing real root.
 #
-#   - /root/res            -> repo resources (atlas) + substitute fonts
+#   - /root/res            -> repo resources (atlas) + device fonts
 #   - /media/internal      -> a writable repo-local state dir (settings.db)
 #
-# Substitute fonts are used as stand-ins for the device's pixel fonts (the real
-# TTFs aren't in this repo); set ZERO_EMU_FONT=/path/to.ttf to override.
+# The device's pixel fonts aren't in this repo; they're copied from
+# ZERO_EMU_FONTS_DIR (default ~/.local/share/fonts) when present, and any that
+# are missing fall back to a substitute (override with ZERO_EMU_FONT).
 #
-# Env passthrough: ZERO_EMU_SCALE, ZERO_EMU_HZ, ZERO_EMU_FULL_UI (see harness).
+# Env passthrough: all ZERO_EMU_* harness variables (see README.md).
 set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd -P)"
