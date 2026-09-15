@@ -27,6 +27,7 @@
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/emu/zdj_emu_input.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/system/m7/zdj_m7.h>
 #include <zerodj/system/settings/zdj_settings.h>
@@ -106,6 +107,8 @@ int main( int argc, char ** argv ) {
     // --- Library bring-up (mirrors drift-os's init order) ---------------------
     // settings first: opens/creates the settings DB and sets the UI refresh Hz.
     zdj_settings_init( );
+    // log settings are read from the settings DB; zdj_log crashes before this.
+    zdj_log_init( );
 
     // UI: brings up SDL video, the software renderer + offscreen surface, fonts,
     // the texture atlas and the view stack. min-init skips the panel/widget
