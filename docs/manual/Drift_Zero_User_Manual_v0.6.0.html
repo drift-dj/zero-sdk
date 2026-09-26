@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drift Zero User Manual (v0.6.0)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg-main: #090d16;
+        --bg-sidebar: #0d131f;
+        --bg-card: #111827;
+        --bg-elevated: #1a2234;
+        --border-subtle: #1e293b;
+        --border-strong: #334155;
+        --border-focus: #38bdf8;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --accent-primary: #38bdf8;
+        --accent-secondary: #818cf8;
+        --accent-emerald: #34d399;
+        --accent-rose: #f43f5e;
+        --accent-amber: #fbbf24;
+        --code-bg: #06090f;
+        --kbd-bg: #1e293b;
+        --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", Consolas, Menlo, Monaco, monospace;
+        --sidebar-w: 320px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+        font-family: var(--font-sans);
+        background: var(--bg-main);
+        color: var(--text-secondary);
+        line-height: 1.68;
+        font-size: 15px;
+        letter-spacing: -0.01em;
+        overflow-x: hidden;
+    }
+
+    /* Page Layout */
+    .app-layout {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+        width: var(--sidebar-w);
+        background: var(--bg-sidebar);
+        border-right: 1px solid var(--border-subtle);
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        z-index: 100;
+        overflow-y: auto;
+    }
+    .sidebar-header {
+        padding: 24px 20px 16px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-sidebar);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+    .brand-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        color: #000;
+        font-size: 14px;
+        font-family: var(--font-mono);
+    }
+    .brand-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: 0.5px;
+    }
+    .badge-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .badge {
+        font-size: 11px;
+        font-family: var(--font-mono);
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .badge-firmware {
+        background: rgba(56, 189, 248, 0.15);
+        color: var(--accent-primary);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .badge-git {
+        background: rgba(129, 140, 248, 0.15);
+        color: var(--accent-secondary);
+        border: 1px solid rgba(129, 140, 248, 0.3);
+    }
+
+    .search-box {
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .search-input {
+        width: 100%;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: var(--font-sans);
+        outline: none;
+        transition: border-color 0.15s ease;
+    }
+    .search-input:focus {
+        border-color: var(--accent-primary);
+    }
+
+    .sidebar-toc {
+        padding: 16px 12px;
+        flex: 1;
+    }
+    .toc-nav { list-style: none; }
+    .toc-item { margin-bottom: 2px; }
+    .toc-h1 {
+        margin-top: 14px;
+        margin-bottom: 4px;
+        font-weight: 700;
+        font-size: 13px;
+    }
+    .toc-h1 a {
+        color: var(--text-primary);
+        padding: 6px 10px;
+        border-radius: 5px;
+    }
+    .toc-h2 {
+        padding-left: 12px;
+        font-size: 12.5px;
+    }
+    .toc-h2 a {
+        color: var(--text-muted);
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    .toc-h3 {
+        padding-left: 24px;
+        font-size: 12px;
+    }
+    .toc-h3 a {
+        color: #64748b;
+        padding: 3px 6px;
+        border-radius: 4px;
+    }
+    .toc-link {
+        display: block;
+        text-decoration: none;
+        transition: all 0.15s ease;
+        line-height: 1.4;
+    }
+    .toc-link:hover {
+        color: var(--accent-primary);
+        background: rgba(56, 189, 248, 0.08);
+    }
+    .toc-link.active {
+        color: var(--accent-primary);
+        background: rgba(56, 189, 248, 0.15);
+        font-weight: 600;
+        border-left: 3px solid var(--accent-primary);
+    }
+
+    .sidebar-footer {
+        padding: 14px 20px;
+        border-top: 1px solid var(--border-subtle);
+        background: var(--bg-sidebar);
+        font-size: 11px;
+        color: var(--text-muted);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .sidebar-footer a {
+        color: var(--accent-primary);
+        text-decoration: none;
+    }
+
+    /* Main Content Area */
+    .main-wrapper {
+        margin-left: var(--sidebar-w);
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        justify-content: center;
+        padding: 48px 40px 96px;
+    }
+    .content-container {
+        max-width: 860px;
+        width: 100%;
+    }
+
+    /* Header Title Card */
+    .doc-hero {
+        background: linear-gradient(180deg, var(--bg-card), var(--bg-sidebar));
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 36px 40px;
+        margin-bottom: 48px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .doc-hero h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.02em;
+    }
+    .doc-hero h3 {
+        font-size: 1.15rem;
+        font-weight: 500;
+        color: var(--accent-primary);
+        margin: 0 0 18px 0;
+    }
+    .doc-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        border-top: 1px solid var(--border-subtle);
+        padding-top: 16px;
+        font-size: 12.5px;
+    }
+    .doc-meta-item {
+        color: var(--text-muted);
+    }
+    .doc-meta-item strong {
+        color: var(--text-primary);
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+        color: var(--text-primary);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+    h1 {
+        font-size: 1.85rem;
+        margin-top: 56px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-subtle);
+        scroll-margin-top: 32px;
+    }
+    h2 {
+        font-size: 1.4rem;
+        margin-top: 36px;
+        margin-bottom: 14px;
+        color: #e2e8f0;
+        scroll-margin-top: 32px;
+    }
+    h3 {
+        font-size: 1.15rem;
+        margin-top: 28px;
+        margin-bottom: 10px;
+        color: #cbd5e1;
+        scroll-margin-top: 32px;
+    }
+    h4 {
+        font-size: 1.0rem;
+        margin-top: 20px;
+        margin-bottom: 8px;
+        color: var(--accent-primary);
+    }
+    p { margin-bottom: 1.25em; line-height: 1.7; }
+    ul, ol {
+        margin-bottom: 1.3em;
+        padding-left: 24px;
+    }
+    li {
+        margin-bottom: 0.45em;
+        line-height: 1.65;
+    }
+    li::marker { color: var(--accent-primary); }
+
+    strong { color: var(--text-primary); font-weight: 600; }
+    a {
+        color: var(--accent-primary);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s ease;
+    }
+    a:hover { border-bottom-color: var(--accent-primary); }
+
+    /* Hardware Keys Styling */
+    .hw-key {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        font-weight: 700;
+        background: #1e293b;
+        color: #38bdf8;
+        border: 1px solid #475569;
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 1px 6px;
+        margin: 0 2px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        vertical-align: baseline;
+        text-transform: uppercase;
+    }
+
+    /* Inline Code */
+    code:not([class]) {
+        font-family: var(--font-mono);
+        background: var(--code-bg);
+        color: #7dd3fc;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.88em;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Pre & Code Blocks */
+    pre {
+        background: var(--code-bg);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        margin: 20px 0 24px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 1.55;
+    }
+    pre code {
+        background: none !important;
+        border: none !important;
+        padding: 0 !important;
+        color: #e2e8f0;
+    }
+
+    /* Tables */
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 24px 0 32px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        overflow: hidden;
+        font-size: 13.5px;
+    }
+    th, td {
+        padding: 11px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    th {
+        background: var(--bg-card);
+        color: #f8fafc;
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.2px;
+        border-bottom: 2px solid var(--border-strong);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
+    tr:hover td { background: rgba(56, 189, 248, 0.04); }
+
+    /* Callout Alert Boxes */
+    .callout {
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 24px 0;
+        border-left: 4px solid;
+        background: var(--bg-card);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .callout-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+    .callout-body {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #cbd5e1;
+    }
+    .callout-body p:last-child { margin-bottom: 0; }
+
+    .callout-note {
+        border-left-color: var(--accent-primary);
+        background: rgba(56, 189, 248, 0.06);
+    }
+    .callout-note .callout-header { color: var(--accent-primary); }
+
+    .callout-tip {
+        border-left-color: var(--accent-emerald);
+        background: rgba(52, 211, 153, 0.06);
+    }
+    .callout-tip .callout-header { color: var(--accent-emerald); }
+
+    .callout-important {
+        border-left-color: var(--accent-secondary);
+        background: rgba(129, 140, 248, 0.06);
+    }
+    .callout-important .callout-header { color: var(--accent-secondary); }
+
+    .callout-warning {
+        border-left-color: var(--accent-rose);
+        background: rgba(244, 63, 94, 0.06);
+    }
+    .callout-warning .callout-header { color: var(--accent-rose); }
+
+    /* OLED Simulator Frame */
+    .oled-simulator {
+        margin: 32px 0;
+        display: flex;
+        justify-content: center;
+    }
+    .oled-bezel {
+        background: #05080f;
+        border: 2px solid #1e293b;
+        border-radius: 10px;
+        padding: 14px 18px 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255,255,255,0.05);
+        max-width: 640px;
+        width: 100%;
+    }
+    .oled-status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: #64748b;
+        letter-spacing: 0.5px;
+    }
+    .oled-dot {
+        width: 7px;
+        height: 7px;
+        background: #38bdf8;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #38bdf8;
+        display: inline-block;
+    }
+    .oled-screen-frame {
+        background: #000;
+        border: 1px solid #1e293b;
+        border-radius: 4px;
+        padding: 6px;
+        display: flex;
+        justify-content: center;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+    }
+    .oled-display-img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 2px;
+        image-rendering: pixelated;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+    }
+    .oled-caption {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: #94a3b8;
+        text-align: center;
+        margin-top: 10px;
+        letter-spacing: 0.3px;
+    }
+
+    /* Console Diagram Frame */
+    .console-diagram {
+        margin: 28px 0;
+        background: var(--code-bg);
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .console-titlebar {
+        background: #0f172a;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .console-pill {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .console-pill.red { background: #f43f5e; }
+    .console-pill.yellow { background: #fbbf24; }
+    .console-pill.green { background: #34d399; }
+    .console-title {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: #94a3b8;
+        margin-left: 8px;
+        letter-spacing: 0.5px;
+    }
+    .console-screen {
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        padding: 16px 20px !important;
+    }
+
+    /* Print Stylesheet */
+    @media print {
+        body {
+            background: #fff !important;
+            color: #111 !important;
+            font-size: 11pt;
+        }
+        .sidebar { display: none !important; }
+        .main-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+        .content-container { max-width: 100% !important; }
+        .doc-hero {
+            background: none !important;
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            padding: 20px !important;
+            page-break-after: avoid;
+        }
+        .doc-hero h1 { color: #000 !important; }
+        .doc-hero h3 { color: #333 !important; }
+        h1 {
+            break-before: page;
+            color: #000 !important;
+            border-bottom: 2px solid #000 !important;
+        }
+        h2, h3, h4 { color: #111 !important; }
+        pre, .console-diagram {
+            border: 1px solid #bbb !important;
+            background: #f8f8f8 !important;
+            page-break-inside: avoid;
+        }
+        pre code { color: #222 !important; }
+        .callout {
+            border: 1px solid #aaa !important;
+            border-left-width: 4px !important;
+            background: #fbfbfb !important;
+            page-break-inside: avoid;
+        }
+        .callout-body { color: #222 !important; }
+        .oled-bezel {
+            border: 1px solid #ccc !important;
+            background: #f9f9f9 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+        }
+        table {
+            border: 1px solid #aaa !important;
+            page-break-inside: avoid;
+        }
+        th { background: #eee !important; color: #000 !important; }
+        td { color: #222 !important; }
+        .hw-key {
+            background: #eee !important;
+            color: #111 !important;
+            border-color: #999 !important;
+        }
+    }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-row">
+                <div class="brand-icon">Z0</div>
+                <div class="brand-title">DRIFT ZERO</div>
+            </div>
+            <div class="badge-row">
+                <span class="badge badge-firmware">FIRMWARE v0.6.0</span>
+                <span class="badge badge-git">397d19e</span>
+            </div>
+        </div>
+        <div class="search-box">
+            <input type="text" id="search-input" class="search-input" placeholder="Filter sections... (/)">
+        </div>
+        <div class="sidebar-toc">
+            <ul class="toc-nav">
+  <li class="toc-item toc-h3"><a href="#official-operational-technical-reference-manual" class="toc-link" data-target="official-operational-technical-reference-manual">Official Operational &amp; Technical Reference Manual</a></li>
+  <li class="toc-item toc-h1"><a href="#1-system-overview-hardware-architecture" class="toc-link" data-target="1-system-overview-hardware-architecture">1. System Overview &amp; Hardware Architecture</a></li>
+  <li class="toc-item toc-h2"><a href="#front-panel-controls-nomenclature" class="toc-link" data-target="front-panel-controls-nomenclature">Front Panel Controls &amp; Nomenclature</a></li>
+  <li class="toc-item toc-h3"><a href="#1-rotary-encoders-pushbuttons" class="toc-link" data-target="1-rotary-encoders-pushbuttons">1. Rotary Encoders &amp; Pushbuttons</a></li>
+  <li class="toc-item toc-h3"><a href="#2-transport-navigation-buttons" class="toc-link" data-target="2-transport-navigation-buttons">2. Transport &amp; Navigation Buttons</a></li>
+  <li class="toc-item toc-h3"><a href="#3-faders" class="toc-link" data-target="3-faders">3. Faders</a></li>
+  <li class="toc-item toc-h2"><a href="#back-panel-connections-power-architecture" class="toc-link" data-target="back-panel-connections-power-architecture">Back Panel Connections &amp; Power Architecture</a></li>
+  <li class="toc-item toc-h1"><a href="#2-dj-playback-engine-live-workflow" class="toc-link" data-target="2-dj-playback-engine-live-workflow">2. DJ Playback Engine &amp; Live Workflow</a></li>
+  <li class="toc-item toc-h2"><a href="#screen-visualization-layout" class="toc-link" data-target="screen-visualization-layout">Screen Visualization Layout</a></li>
+  <li class="toc-item toc-h3"><a href="#visual-telemetry-elements" class="toc-link" data-target="visual-telemetry-elements">Visual Telemetry Elements</a></li>
+  <li class="toc-item toc-h2"><a href="#procedure-beatmatching-phase-aligning-two-tracks" class="toc-link" data-target="procedure-beatmatching-phase-aligning-two-tracks">Procedure: Beatmatching &amp; Phase-Aligning Two Tracks</a></li>
+  <li class="toc-item toc-h2"><a href="#jog-wheel-operation" class="toc-link" data-target="jog-wheel-operation">Jog Wheel Operation</a></li>
+  <li class="toc-item toc-h2"><a href="#transport-cuepoint-mechanics" class="toc-link" data-target="transport-cuepoint-mechanics">Transport &amp; Cuepoint Mechanics</a></li>
+  <li class="toc-item toc-h2"><a href="#time-scale-modification-tsm-engine" class="toc-link" data-target="time-scale-modification-tsm-engine">Time-Scale Modification (TSM) Engine</a></li>
+  <li class="toc-item toc-h2"><a href="#failure-modes-troubleshooting" class="toc-link" data-target="failure-modes-troubleshooting">Failure Modes &amp; Troubleshooting</a></li>
+  <li class="toc-item toc-h1"><a href="#3-function-knob-pages-audio-processing" class="toc-link" data-target="3-function-knob-pages-audio-processing">3. Function Knob Pages &amp; Audio Processing</a></li>
+  <li class="toc-item toc-h2"><a href="#page-navigation-deck-assignment" class="toc-link" data-target="page-navigation-deck-assignment">Page Navigation &amp; Deck Assignment</a></li>
+  <li class="toc-item toc-h2"><a href="#function-knob-page-matrix" class="toc-link" data-target="function-knob-page-matrix">Function Knob Page Matrix</a></li>
+  <li class="toc-item toc-h2"><a href="#failure-modes-troubleshooting_1" class="toc-link" data-target="failure-modes-troubleshooting_1">Failure Modes &amp; Troubleshooting</a></li>
+  <li class="toc-item toc-h1"><a href="#4-library-navigation-harmonic-mixing-engine" class="toc-link" data-target="4-library-navigation-harmonic-mixing-engine">4. Library Navigation &amp; Harmonic Mixing Engine</a></li>
+  <li class="toc-item toc-h2"><a href="#library-navigation-architecture" class="toc-link" data-target="library-navigation-architecture">Library Navigation Architecture</a></li>
+  <li class="toc-item toc-h3"><a href="#row-annotations-metadata-flags" class="toc-link" data-target="row-annotations-metadata-flags">Row Annotations &amp; Metadata Flags</a></li>
+  <li class="toc-item toc-h2"><a href="#procedure-loading-tracks-by-harmonic-compatibility" class="toc-link" data-target="procedure-loading-tracks-by-harmonic-compatibility">Procedure: Loading Tracks by Harmonic Compatibility</a></li>
+  <li class="toc-item toc-h2"><a href="#harmonic-mixing-engine-camelot-lookup-table" class="toc-link" data-target="harmonic-mixing-engine-camelot-lookup-table">Harmonic Mixing Engine &amp; Camelot Lookup Table</a></li>
+  <li class="toc-item toc-h2"><a href="#real-time-compatibility-glyphs" class="toc-link" data-target="real-time-compatibility-glyphs">Real-Time Compatibility Glyphs</a></li>
+  <li class="toc-item toc-h2"><a href="#failure-modes-troubleshooting_2" class="toc-link" data-target="failure-modes-troubleshooting_2">Failure Modes &amp; Troubleshooting</a></li>
+  <li class="toc-item toc-h1"><a href="#5-audio-import-workflows-rekordbox-xml-integration" class="toc-link" data-target="5-audio-import-workflows-rekordbox-xml-integration">5. Audio Import Workflows &amp; Rekordbox XML Integration</a></li>
+  <li class="toc-item toc-h2"><a href="#workflow-1-direct-usb-c-flash-drive-import" class="toc-link" data-target="workflow-1-direct-usb-c-flash-drive-import">Workflow 1: Direct USB-C Flash Drive Import</a></li>
+  <li class="toc-item toc-h2"><a href="#workflow-2-workstation-file-transfer-drive-mode" class="toc-link" data-target="workflow-2-workstation-file-transfer-drive-mode">Workflow 2: Workstation File Transfer (Drive Mode)</a></li>
+  <li class="toc-item toc-h2"><a href="#workflow-3-rekordbox-xml-collection-import" class="toc-link" data-target="workflow-3-rekordbox-xml-collection-import">Workflow 3: Rekordbox XML Collection Import</a></li>
+  <li class="toc-item toc-h3"><a href="#verified-import-procedure" class="toc-link" data-target="verified-import-procedure">Verified Import Procedure</a></li>
+  <li class="toc-item toc-h2"><a href="#failure-modes-troubleshooting_3" class="toc-link" data-target="failure-modes-troubleshooting_3">Failure Modes &amp; Troubleshooting</a></li>
+  <li class="toc-item toc-h1"><a href="#6-track-metadata-cuepoints-beatgrid-calibration" class="toc-link" data-target="6-track-metadata-cuepoints-beatgrid-calibration">6. Track Metadata, Cuepoints &amp; Beatgrid Calibration</a></li>
+  <li class="toc-item toc-h3"><a href="#procedure-programming-and-auditioning-hotcues" class="toc-link" data-target="procedure-programming-and-auditioning-hotcues">Procedure: Programming and Auditioning Hotcues</a></li>
+  <li class="toc-item toc-h3"><a href="#procedure-calibrating-a-drifting-beatgrid" class="toc-link" data-target="procedure-calibrating-a-drifting-beatgrid">Procedure: Calibrating a Drifting Beatgrid</a></li>
+  <li class="toc-item toc-h2"><a href="#failure-modes-troubleshooting_4" class="toc-link" data-target="failure-modes-troubleshooting_4">Failure Modes &amp; Troubleshooting</a></li>
+  <li class="toc-item toc-h1"><a href="#7-control-panels-recording-soundcard-routing-usb-subsystems" class="toc-link" data-target="7-control-panels-recording-soundcard-routing-usb-subsystems">7. Control Panels: Recording, Soundcard Routing &amp; USB Subsystems</a></li>
+  <li class="toc-item toc-h2"><a href="#deploying-navigating-control-panels" class="toc-link" data-target="deploying-navigating-control-panels">Deploying &amp; Navigating Control Panels</a></li>
+  <li class="toc-item toc-h3"><a href="#telemetry-metadata-specifications" class="toc-link" data-target="telemetry-metadata-specifications">Telemetry &amp; Metadata Specifications</a></li>
+  <li class="toc-item toc-h3"><a href="#procedure-recording-a-live-dj-set" class="toc-link" data-target="procedure-recording-a-live-dj-set">Procedure: Recording a Live DJ Set</a></li>
+  <li class="toc-item toc-h3"><a href="#channel-strips" class="toc-link" data-target="channel-strips">Channel Strips</a></li>
+  <li class="toc-item toc-h3"><a href="#output-port-modes" class="toc-link" data-target="output-port-modes">Output Port Modes</a></li>
+  <li class="toc-item toc-h3"><a href="#procedure-enabling-split-cue-monitoring" class="toc-link" data-target="procedure-enabling-split-cue-monitoring">Procedure: Enabling Split-Cue Monitoring</a></li>
+  <li class="toc-item toc-h3"><a href="#ui-settings" class="toc-link" data-target="ui-settings">UI Settings</a></li>
+  <li class="toc-item toc-h3"><a href="#system-settings" class="toc-link" data-target="system-settings">System Settings</a></li>
+  <li class="toc-item toc-h2"><a href="#failure-modes-troubleshooting_5" class="toc-link" data-target="failure-modes-troubleshooting_5">Failure Modes &amp; Troubleshooting</a></li>
+  <li class="toc-item toc-h1"><a href="#8-troubleshooting-diagnostics-recovery" class="toc-link" data-target="8-troubleshooting-diagnostics-recovery">8. Troubleshooting, Diagnostics &amp; Recovery</a></li>
+  <li class="toc-item toc-h2"><a href="#hardware-diagnostic-failure-matrix" class="toc-link" data-target="hardware-diagnostic-failure-matrix">Hardware Diagnostic &amp; Failure Matrix</a></li>
+  <li class="toc-item toc-h2"><a href="#audio-pipeline-slew-smoothing-firmware-060" class="toc-link" data-target="audio-pipeline-slew-smoothing-firmware-060">Audio Pipeline Slew Smoothing (Firmware 0.6.0+)</a></li>
+  <li class="toc-item toc-h2"><a href="#developer-diagnostics-submenu-pr-33" class="toc-link" data-target="developer-diagnostics-submenu-pr-33">Developer Diagnostics Submenu (PR #33)</a></li>
+  <li class="toc-item toc-h2"><a href="#hardware-recovery-config-mode-boot" class="toc-link" data-target="hardware-recovery-config-mode-boot">Hardware Recovery &amp; Config-Mode Boot</a></li>
+  <li class="toc-item toc-h3"><a href="#procedure-entering-emergency-recovery-mode" class="toc-link" data-target="procedure-entering-emergency-recovery-mode">Procedure: Entering Emergency Recovery Mode</a></li>
+  <li class="toc-item toc-h1"><a href="#9-glossary-of-dj-hardware-terms" class="toc-link" data-target="9-glossary-of-dj-hardware-terms">9. Glossary of DJ &amp; Hardware Terms</a></li>
+  <li class="toc-item toc-h3"><a href="#beatgrid" class="toc-link" data-target="beatgrid">Beatgrid</a></li>
+  <li class="toc-item toc-h3"><a href="#camelot-wheel" class="toc-link" data-target="camelot-wheel">Camelot Wheel</a></li>
+  <li class="toc-item toc-h3"><a href="#crossfader" class="toc-link" data-target="crossfader">Crossfader</a></li>
+  <li class="toc-item toc-h3"><a href="#cue-pfl-pre-fader-listen" class="toc-link" data-target="cue-pfl-pre-fader-listen">Cue / PFL (Pre-Fader Listen)</a></li>
+  <li class="toc-item toc-h3"><a href="#downbeat-bar-1-beat-1" class="toc-link" data-target="downbeat-bar-1-beat-1">Downbeat (Bar 1, Beat 1)</a></li>
+  <li class="toc-item toc-h3"><a href="#hotcue" class="toc-link" data-target="hotcue">Hotcue</a></li>
+  <li class="toc-item toc-h3"><a href="#isolator-eq" class="toc-link" data-target="isolator-eq">Isolator EQ</a></li>
+  <li class="toc-item toc-h3"><a href="#needledrop" class="toc-link" data-target="needledrop">Needledrop</a></li>
+  <li class="toc-item toc-h3"><a href="#nudge-pitch-bend" class="toc-link" data-target="nudge-pitch-bend">Nudge (Pitch Bend)</a></li>
+  <li class="toc-item toc-h3"><a href="#quantize" class="toc-link" data-target="quantize">Quantize</a></li>
+  <li class="toc-item toc-h3"><a href="#slew-interpolation" class="toc-link" data-target="slew-interpolation">Slew Interpolation</a></li>
+  <li class="toc-item toc-h3"><a href="#split-cue" class="toc-link" data-target="split-cue">Split-Cue</a></li>
+  <li class="toc-item toc-h3"><a href="#tsm-time-scale-modification" class="toc-link" data-target="tsm-time-scale-modification">TSM (Time-Scale Modification)</a></li>
+  <li class="toc-item toc-h3"><a href="#usb-host-mode-vs-gadget-mode" class="toc-link" data-target="usb-host-mode-vs-gadget-mode">USB Host Mode vs. Gadget Mode</a></li>
+</ul>
+        </div>
+        <div class="sidebar-footer">
+            <span>Model ZDJ-1</span>
+            <a href="javascript:window.print()">Print / PDF</a>
+        </div>
+    </aside>
+
+    <main class="main-wrapper">
+        <div class="content-container">
+            <header class="doc-hero">
+                <h1>Drift Zero User Manual</h1>
+                <h3>Official Operational & Technical Reference Manual</h3>
+                <div class="doc-meta-grid">
+                    <div class="doc-meta-item">
+                        <strong>Firmware Version</strong>
+                        <span>0.6.0 Production</span>
+                    </div>
+                    <div class="doc-meta-item">
+                        <strong>Hardware Platform</strong>
+                        <span>Model ZDJ-1 Dual Deck</span>
+                    </div>
+                    <div class="doc-meta-item">
+                        <strong>Git Reference</strong>
+                        <span>397d19e (main)</span>
+                    </div>
+                    <div class="doc-meta-item">
+                        <strong>Revision Date</strong>
+                        <span>September 25, 2026</span>
+                    </div>
+                </div>
+            </header>
+
+            <article class="manual-body">
+                <h1 id="drift-zero-user-manual">Drift Zero User Manual</h1>
+<h3 id="official-operational-technical-reference-manual">Official Operational &amp; Technical Reference Manual</h3>
+<p><strong>Firmware Version:</strong> <code>0.6.0</code> | <strong>Git Commit:</strong> <code>397d19e</code> (<code>main</code>) | <strong>Revision Date:</strong> <code>2026-09-25</code><br />
+<strong>Hardware Platform:</strong> Drift Zero DJ Console (Model ZDJ-1) | <strong>Target SDK:</strong> <a href="https://github.com/drift-dj/zero-sdk"><code>drift-dj/zero-sdk</code></a></p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-system-overview--hardware-architecture">System Overview &amp; Hardware Architecture</a></li>
+<li><a href="#2-dj-playback-engine--live-workflow">DJ Playback Engine &amp; Live Workflow</a></li>
+<li><a href="#3-function-knob-pages--audio-processing">Function Knob Pages &amp; Audio Processing</a></li>
+<li><a href="#4-library-navigation--harmonic-mixing-engine">Library Navigation &amp; Harmonic Mixing Engine</a></li>
+<li><a href="#5-audio-import-workflows--rekordbox-xml-integration">Audio Import Workflows &amp; Rekordbox XML Integration</a></li>
+<li><a href="#6-track-metadata-cuepoints--beatgrid-calibration">Track Metadata, Cuepoints &amp; Beatgrid Calibration</a></li>
+<li><a href="#7-control-panels-recording-soundcard-routing--usb-subsystems">Control Panels: Recording, Soundcard Routing &amp; USB Subsystems</a></li>
+<li><a href="#8-troubleshooting-diagnostics--recovery">Troubleshooting, Diagnostics &amp; Recovery</a></li>
+<li><a href="#9-glossary-of-dj--hardware-terms">Glossary of DJ &amp; Hardware Terms</a></li>
+</ol>
+<h1 id="1-system-overview-hardware-architecture">1. System Overview &amp; Hardware Architecture</h1>
+<p>Drift Zero is a standalone dual-deck DJ performance instrument running on an embedded dual-architecture platform. A host Linux system manages user interface rendering, database management, and media decoding, while an integrated ARM Cortex-M7 real-time coprocessor handles low-latency audio input/output (I/O) and hardware digital signal processing (DSP) over shared memory buffers at 44.1 kHz.</p>
+<p>Zero operates in three primary UI environments:
+1. <strong>DJ Playback:</strong> The live performance screen providing waveform visualizations, beatgrid alignment, looper status, and deck audio manipulation.
+2. <strong>Library Menu:</strong> A searchable, key-aware SQLite database browser for tracks, playlists, and file imports.
+3. <strong>Control Panels:</strong> Contextual modal overlays for audio routing (Soundcard/Mixer), USB mode configuration, direct recording, and system diagnostics.</p>
+<h2 id="front-panel-controls-nomenclature">Front Panel Controls &amp; Nomenclature</h2>
+<p>The physical console provides high-density, multifunction rotary and tactile controls.</p>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+-------------------------------------------------------------+
+|  [TONE 1]        [TONE 2]        [TONE 3]     [ 1 EXT . 2 ] |
+|  (Encoder+Btn)   (Encoder+Btn)   (Encoder+Btn)     (VOL)    |
+|                                                             |
+|  +---------------------------------------+   [DECK 1]       |
+|  |             OLED DISPLAY              |   [ EXT  ]       |
+|  |            (128 x 64 px)              |   [DECK 2]       |
+|  +---------------------------------------+                  |
+|                                                [NAV/SHIFT]  |
+|      ( JOG WHEEL )                [CUE]                     |
+|     (Encoder + Push)              [PLAY]                    |
+|                                                             |
+|  [DECK 1 FADER]      [CROSSFADER]       [DECK 2 FADER]      |
+|        |                  |                    |            |
++-------------------------------------------------------------+
+</code></pre>
+</div>
+<h3 id="1-rotary-encoders-pushbuttons">1. Rotary Encoders &amp; Pushbuttons</h3>
+<ul>
+<li><strong>Jog Wheel (<kbd class="hw-key">JOG</kbd>):</strong> Primary optical encoder with integrated center pushbutton.</li>
+<li><strong>Turn:</strong> Nudges playing deck; scrubs stopped deck; scrolls menu lists.</li>
+<li><strong>Press:</strong> Selects active menu item; confirms modal dialogs.</li>
+<li><strong>Long Press (Hold 0.5s):</strong> Deploys or dismisses the Control Panels overlay (<code>ZDJ_UI_CONTROL_TOGGLE_PANEL</code>).</li>
+<li><strong>Shift + Turn:</strong> Needledrop fast-scan through loaded track timeline.</li>
+<li><strong>Press + Turn:</strong> Adjusts playback tempo in 0.1 BPM increments (adjusts lead tempo when Sync is enabled, or focused deck tempo when independent).</li>
+<li><strong>Tone Encoders (<kbd class="hw-key">TONE 1</kbd>, <kbd class="hw-key">TONE 2</kbd>, <kbd class="hw-key">TONE 3</kbd>):</strong> Three rotary encoders with integrated push switches (<code>FN_1</code>, <code>FN_2</code>, <code>FN_3</code>). These control the active <strong>Function Knob Page</strong> (EQ, Trim/Cue, Filter, Sync, Looper).</li>
+<li><strong>Master Volume Rotary (<code>1 EXT . 2 VOL.</code> / <code>OUT</code>):</strong> Dual-function analog matrix and cue attenuator.</li>
+<li><strong>Turn:</strong> Adjusts Main Master L/R Bus Volume.</li>
+<li><strong>Press + Turn:</strong> Adjusts Headphone Cue Bus Volume.</li>
+<li><strong>Shift + Turn:</strong> Adjusts Recording Bus Gain.</li>
+</ul>
+<h3 id="2-transport-navigation-buttons">2. Transport &amp; Navigation Buttons</h3>
+<ul>
+<li><strong>Play / Pause (<kbd class="hw-key">PLAY</kbd>):</strong></li>
+<li><strong>Press:</strong> Starts or pauses playback on the focused deck.</li>
+<li><strong>Shift + Press:</strong> Toggles background session recording (<code>Start/Stop Recording</code>).</li>
+<li><strong>Cue (<kbd class="hw-key">CUE</kbd>):</strong></li>
+<li><strong>Press &amp; Hold:</strong> Auditions audio from the active cuepoint.</li>
+<li><strong>Release:</strong> Instantly returns playhead to cuepoint and stops audio.</li>
+<li><strong>Shift + Press:</strong> Advances to the next stored cuepoint (<code>1</code> through <code>8</code>).</li>
+<li><strong>Nav / Shift (<kbd class="hw-key">NAV/SHIFT</kbd>):</strong></li>
+<li><strong>Press:</strong> Toggles Library Menu overlay.</li>
+<li><strong>Hold:</strong> Modifies buttons and encoders to secondary functions.</li>
+<li><strong>Deck Select Buttons (<kbd class="hw-key">DECK 1</kbd>, <kbd class="hw-key">EXT</kbd>, <kbd class="hw-key">DECK 2</kbd>):</strong></li>
+<li><strong>Press:</strong> Focuses the Playback UI and Function Knob assignments on Deck 1, Ext Deck, or Deck 2.</li>
+<li><strong>Press Focused Deck:</strong> Cycles forward through Function Knob Pages.</li>
+<li><strong>Shift + Press Focused Deck:</strong> Cycles backward through Function Knob Pages.</li>
+<li><strong>Inside Control Panels:</strong> Navigates left/right between panel tabs.</li>
+</ul>
+<h3 id="3-faders">3. Faders</h3>
+<ul>
+<li><strong>Deck 1 &amp; Deck 2 Channel Faders:</strong> Smooth linear faders controlling direct deck volume into the mix bus.</li>
+<li><strong>Crossfader:</strong> Low-friction horizontal fader transitioning audio between Deck 1 and Deck 2 with software-selectable curves (fast cut or linear blend).</li>
+</ul>
+<h2 id="back-panel-connections-power-architecture">Back Panel Connections &amp; Power Architecture</h2>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+-------------------------------------------------------------+
+|  [POWER]   (OUT 1)   (OUT 2)   (IN 1)   (IN 2)   [ USB-C ]  |
++-------------------------------------------------------------+
+</code></pre>
+</div>
+<ul>
+<li><strong>Power Button (<kbd class="hw-key">POWER</kbd>):</strong></li>
+<li><strong>Hold 1 Second:</strong> Powers on console.</li>
+<li><strong>Hold 6 Seconds:</strong> Executes safe Linux system shutdown and powers off hardware.</li>
+<li><strong>Analog Audio Outputs (<kbd class="hw-key">OUTPUT 1</kbd>, <kbd class="hw-key">OUTPUT 2</kbd>):</strong></li>
+<li>Dual 3.5 mm (1/8") Tip-Ring-Sleeve (TRS) stereo analog outputs.</li>
+<li>Default routing: <kbd class="hw-key">OUTPUT 1</kbd> = Main Master Mix (L/R); <kbd class="hw-key">OUTPUT 2</kbd> = Headphone Monitor / Cue Bus.</li>
+<li><strong>Analog Audio Inputs (<kbd class="hw-key">INPUT 1</kbd>, <kbd class="hw-key">INPUT 2</kbd>):</strong></li>
+<li>Dual 3.5 mm (1/8") TRS stereo line-level analog inputs routed to the ARM Cortex-M7 analog-to-digital converter (ADC) stage.</li>
+<li>Signals route to the <kbd class="hw-key">EXT</kbd> Deck for live EQ/filtering or directly to the session recording bus.</li>
+<li><strong>USB-C Port:</strong></li>
+<li>Dual-role USB 2.0 controller:<ul>
+<li><strong>USB Host Mode:</strong> Supplies 5V bus power to external USB flash drives, SSDs, or class-compliant USB MIDI controllers.</li>
+<li><strong>USB Gadget Mode:</strong> Connects Zero to a host workstation as a USB Mass Storage drive, a 4-in/4-out USB audio interface, or a USB MIDI interface.</li>
+</ul>
+</li>
+</ul>
+<div class="callout callout-important">
+    <div class="callout-header"><svg class="callout-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg> <span>IMPORTANT</span></div>
+    <div class="callout-body"><p><strong>Interconnect Cables for Professional Audio Equipment</strong><br />
+Zero uses standard 3.5 mm (1/8") TRS stereo jacks. To interface with professional DJ mixers, audio interfaces, or active studio monitors, use a <strong>3.5 mm TRS stereo to dual RCA male</strong> or <strong>3.5 mm TRS stereo to dual 1/4" TS male</strong> breakout cable. Connecting a mono TS cable directly into Zero shorts the right audio channel to ground.</p></div>
+</div>
+<p>Connect power before attaching high-drain USB storage devices.</p>
+<div class="callout callout-warning">
+    <div class="callout-header"><svg class="callout-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg> <span>WARNING</span></div>
+    <div class="callout-body"><p><strong>Power Requirements &amp; Brownout Prevention</strong><br />
+Drift Zero requires a stable 5V DC power supply capable of delivering at least 2.0A (10W). Powering the unit from unpowered USB hubs or low-current legacy USB-A ports can cause voltage drops during heavy bass transients, resulting in screen flickering or sudden hardware resets.</p></div>
+</div>
+<h1 id="2-dj-playback-engine-live-workflow">2. DJ Playback Engine &amp; Live Workflow</h1>
+<p>DJ Playback Mode provides real-time audio telemetry, waveform visualization, playhead positioning, and deck control on the 128x64 OLED display.</p>
+<h2 id="screen-visualization-layout">Screen Visualization Layout</h2>
+<p>The display divides into three horizontal monitoring bands: Deck 1 (top), External Deck / Clock monitor (center), and Deck 2 (bottom).</p>
+<div class="oled-simulator">
+    <div class="oled-bezel">
+        <div class="oled-status-bar">
+            <span class="oled-dot"></span>
+            <span class="oled-label">DRIFT ZERO OLED MONITOR (128x64)</span>
+            <span class="oled-freq">60 FPS</span>
+        </div>
+        <div class="oled-screen-frame">
+            <img src="assets/dj_playback_animated.gif" alt="DJ Playback OLED Telemetry Mockup" class="oled-display-img">
+        </div>
+        <div class="oled-caption">DJ Playback OLED Telemetry Mockup</div>
+    </div>
+</div>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [D1] &gt; PLAY   124.00 BPM  [=] 11B             PAGE: [EQ]    |
+| |WWWWWWWWW|WWWWWWw..w.........|  [1]     L: -2dB M: 0dB H: 0|
+| . . . | . . . | . . . | . . . | (SYNC)                      |
++-------------------------------------------------------------+
+| [EXT] IN 1/2  LINE LEVEL  [TRIM: +0.0dB]      CLK: 124.0 BPM|
++-------------------------------------------------------------+
+| [D2] || PAUSE 124.00 BPM  [+] 12B             PAGE: [TRIM]  |
+| |..w...WWWWWWWWWWWWww.........|  [1] [2] PFL: ON  GAIN: 0dB |
+| . . . | . . . | . . . | . . . | (FOLLOWER)                  |
++=============================================================+
+</code></pre>
+</div>
+<h3 id="visual-telemetry-elements">Visual Telemetry Elements</h3>
+<ul>
+<li><strong>Dynamic Waveform Display:</strong> Renders audio amplitude and transient profiles decoded by FFmpeg in real time.</li>
+<li><strong>Playhead Marker:</strong> A vertical line (<code>|</code>) indicating current playback position relative to total duration.</li>
+<li><strong>Beatgrid Ticks:</strong> Baseline tick marks (<code>. . . |</code>) indicating quarter-note beat intervals generated by library analysis or Rekordbox XML imports.</li>
+<li><strong>Cuepoint Markers:</strong> Numerical indicators (<code>[1]</code>, <code>[2]</code>) showing stored hotcue locations along the track timeline.</li>
+<li><strong>Knob Page Header:</strong> The right column indicates the current DSP assignment for encoders <kbd class="hw-key">TONE 1</kbd>, <kbd class="hw-key">TONE 2</kbd>, and <kbd class="hw-key">TONE 3</kbd>.</li>
+</ul>
+<h2 id="procedure-beatmatching-phase-aligning-two-tracks">Procedure: Beatmatching &amp; Phase-Aligning Two Tracks</h2>
+<ol>
+<li>Press <kbd class="hw-key">DECK 2</kbd>. Deck 2 receives UI focus, and its transport parameters highlight on screen.</li>
+<li>Cycle Deck 2 to the <code>TRIM/CUE</code> page and press <kbd class="hw-key">TONE 2</kbd>. Pre-Fader Listen engages (<code>PFL: ON</code>), routing Deck 2 audio to the headphone monitor bus.</li>
+<li>Hold <kbd class="hw-key">NAV/SHIFT</kbd> and turn <kbd class="hw-key">JOG</kbd>. The playhead rapidly jumps across bars through the track intro to the first transient.</li>
+<li>Release <kbd class="hw-key">NAV/SHIFT</kbd> and turn <kbd class="hw-key">JOG</kbd> in scrub mode. The playhead moves in fine sample increments to align directly on the kick drum downbeat.</li>
+<li>Cycle the knob page to <code>SYNC</code> and press <kbd class="hw-key">TONE 1</kbd>. Deck 2 tempo matches Deck 1 BPM, and the beatgrid locks phase with the session leader.</li>
+<li>Press <kbd class="hw-key">PLAY</kbd> on Deck 2 on the downbeat of a phrase. Deck 2 begins playback aligned to the master clock.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> clockwise or counter-clockwise if transient adjustment is required. Playback temporarily accelerates or decelerates to align phase without altering the base tempo setting.</li>
+<li>Raise <kbd class="hw-key">DECK 2 FADER</kbd> while turning <kbd class="hw-key">TONE 1</kbd> on the <code>EQ</code> page to execute the low-frequency transition. The incoming track blends into the master mix bus.</li>
+</ol>
+<h2 id="jog-wheel-operation">Jog Wheel Operation</h2>
+<p>The <kbd class="hw-key">JOG</kbd> encoder adapts function based on transport state and modifier buttons:</p>
+<table>
+<thead>
+<tr>
+<th>Physical Input</th>
+<th>Transport State</th>
+<th>System Operation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Turn</strong></td>
+<td>Deck Playing</td>
+<td><strong>Nudge (Pitch Bend):</strong> Temporarily accelerates or decelerates playback to adjust phase alignment. Base tempo is unchanged.</td>
+</tr>
+<tr>
+<td><strong>Turn</strong></td>
+<td>Deck Stopped</td>
+<td><strong>Scrub:</strong> Moves the playhead forward or backward at fine resolution for cuepoint positioning.</td>
+</tr>
+<tr>
+<td><strong>Shift + Turn</strong></td>
+<td>Any State</td>
+<td><strong>Needledrop:</strong> Scans the playhead in multi-bar increments to locate musical sections quickly.</td>
+</tr>
+<tr>
+<td><strong>Press + Turn</strong></td>
+<td>Sync Disabled</td>
+<td><strong>Manual Tempo:</strong> Adjusts focused deck playback tempo in 0.1 BPM increments.</td>
+</tr>
+<tr>
+<td><strong>Press + Turn</strong></td>
+<td>Sync Enabled</td>
+<td><strong>Master Lead Tempo:</strong> Adjusts session master tempo. All follower decks track the change.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="transport-cuepoint-mechanics">Transport &amp; Cuepoint Mechanics</h2>
+<h3 id="play-pause-play">Play / Pause (<kbd class="hw-key">PLAY</kbd>)</h3>
+<ul>
+<li><strong>Press:</strong> Toggles audio playback on the focused deck. Audio resumes instantly from the current playhead buffer.</li>
+<li><strong>Shift + Press:</strong> Toggles background session recording to internal storage. The on-screen <code>[REC]</code> badge illuminates when active.</li>
+</ul>
+<h3 id="cue-cue">Cue (<kbd class="hw-key">CUE</kbd>)</h3>
+<ul>
+<li><strong>Press &amp; Hold:</strong> Auditions playback from the active cuepoint. Audio plays while the button is held. Releasing the button returns the playhead to the cuepoint and halts playback.</li>
+<li><strong>Cue Latch (<kbd class="hw-key">CUE</kbd> + <kbd class="hw-key">PLAY</kbd>):</strong> While holding <kbd class="hw-key">CUE</kbd>, pressing <kbd class="hw-key">PLAY</kbd> latches playback into continuous play mode. Releasing <kbd class="hw-key">CUE</kbd> does not stop playback.</li>
+<li><strong>Cycle Cuepoints (<code>SHIFT + CUE</code>):</strong> Advances the active cue index to the next stored bookmark (<code>1</code> through <code>8</code>).</li>
+</ul>
+<h2 id="time-scale-modification-tsm-engine">Time-Scale Modification (TSM) Engine</h2>
+<p>Zero incorporates real-time audio time-stretching and pitch-shifting nodes (<code>zdj_tsm_tempo_node.c</code>):
+* <strong>Tempo Mode (Key Lock):</strong> When tempo changes via Sync or manual Jog commands, the DSP engine scales playback duration while holding musical pitch constant. Vocal and harmonic frequencies maintain their original pitch across tempo adjustments.
+* <strong>Pitch Mode (Variable Speed):</strong> When Key Lock is disabled in Settings, tempo adjustments scale playback sample rate directly. Pitch shifts proportionally with playback speed: increasing BPM raises pitch; decreasing BPM lowers pitch.</p>
+<h2 id="failure-modes-troubleshooting">Failure Modes &amp; Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Symptom</th>
+<th>Root Cause</th>
+<th>Corrective Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase drift during playback</td>
+<td>Synced deck gradually falls out of alignment</td>
+<td>Inaccurate beatgrid analysis on variable-tempo audio</td>
+<td>Calibrate beatgrid downbeat and tempo in <code>Station Edit Mode</code>, or nudge manually using <kbd class="hw-key">JOG</kbd>.</td>
+</tr>
+<tr>
+<td>Audio stutter on transport start</td>
+<td>Playback exhibits crackle when pressing <kbd class="hw-key">PLAY</kbd></td>
+<td>Storage read latency or background file scan overhead</td>
+<td>Ensure background analysis is complete before starting live playback (<code>ZDJ_LIBRARY_ANALYSIS_STATE_IDLE</code>).</td>
+</tr>
+<tr>
+<td>Cue fails to return to start</td>
+<td>Releasing <kbd class="hw-key">CUE</kbd> leaves audio playing</td>
+<td>Transport latched into continuous playback via <kbd class="hw-key">PLAY</kbd></td>
+<td>Press <kbd class="hw-key">PLAY</kbd> to pause the deck, then press <kbd class="hw-key">CUE</kbd> to reset playhead to the anchor.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="3-function-knob-pages-audio-processing">3. Function Knob Pages &amp; Audio Processing</h1>
+<p>The three rotary encoders at the top of the console (<kbd class="hw-key">TONE 1</kbd>, <kbd class="hw-key">TONE 2</kbd>, <kbd class="hw-key">TONE 3</kbd>) dynamically control deck digital signal processing (DSP) functions according to the active <strong>Function Knob Page</strong>.</p>
+<h2 id="page-navigation-deck-assignment">Page Navigation &amp; Deck Assignment</h2>
+<ul>
+<li><strong>Deck Selection:</strong> Press <kbd class="hw-key">DECK 1</kbd>, <kbd class="hw-key">EXT</kbd>, or <kbd class="hw-key">DECK 2</kbd> to bind the Function Knobs to that deck.</li>
+<li><strong>Cycling Pages Forward:</strong> Press the active Deck Select button to advance through that deck's available Function Knob Pages.</li>
+<li><strong>Cycling Pages Backward:</strong> Hold <kbd class="hw-key">NAV/SHIFT</kbd> and press the active Deck Select button to reverse the cycle.</li>
+<li><strong>Reordering Pages:</strong> Go to <code>Control Panels &gt; Settings &gt; UI Settings &gt; Knob Pages</code> to show, hide, or reorder available pages.</li>
+</ul>
+<h2 id="function-knob-page-matrix">Function Knob Page Matrix</h2>
+<h3 id="1-3-band-isolator-equalizer-eq">1. 3-Band Isolator Equalizer (<code>EQ</code>)</h3>
+<p>Provides 3-band isolator equalization with total band kill (-inf) and +6 dB boost.</p>
+<div class="oled-simulator">
+    <div class="oled-bezel">
+        <div class="oled-status-bar">
+            <span class="oled-dot"></span>
+            <span class="oled-label">DRIFT ZERO OLED MONITOR (128x64)</span>
+            <span class="oled-freq">60 FPS</span>
+        </div>
+        <div class="oled-screen-frame">
+            <img src="assets/bass_swap_animated.gif" alt="EQ Isolator Bass Swap OLED Animation" class="oled-display-img">
+        </div>
+        <div class="oled-caption">EQ Isolator Bass Swap OLED Animation</div>
+    </div>
+</div>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [D1] EQ ISOLATOR      SWAP: [D1 &lt;-&gt; D2]       PAGE: [1/5]   |
+| LOW:  [-12dB]  [||||......] (TONE 1: TURN=ADJ / PRESS+TURN) |
+| MID:  [  0dB]  [||||||....] (TONE 2: TURN)                  |
+| HIGH: [ +2dB]  [||||||||..] (TONE 3: TURN)                  |
++=============================================================+
+</code></pre>
+</div>
+<ul>
+<li><strong><kbd class="hw-key">TONE 1</kbd> (Turn):</strong> Adjusts Low EQ (-inf to +6 dB).</li>
+<li><strong><kbd class="hw-key">TONE 1</kbd> (Press + Turn):</strong> <strong>Bass Swap:</strong> Continuously adjusts Deck 1 and Deck 2 Low EQ in inverse directions. Rotating clockwise attenuates Deck 1 low frequencies while proportionally boosting Deck 2 low frequencies (<code>zdj_soundcard_deck.c</code>).</li>
+<li><strong><kbd class="hw-key">TONE 2</kbd> (Turn):</strong> Adjusts Mid EQ (-inf to +6 dB).</li>
+<li><strong><kbd class="hw-key">TONE 3</kbd> (Turn):</strong> Adjusts High EQ (-inf to +6 dB).</li>
+</ul>
+<h4 id="procedure-low-frequency-bass-swap-transition">Procedure: Low-Frequency Bass Swap Transition</h4>
+<ol>
+<li>Raise <kbd class="hw-key">DECK 2 FADER</kbd> to full volume with Deck 2 Low EQ set to minimum (-inf). Deck 2 mids and highs become audible over Deck 1.</li>
+<li>Press and rotate <kbd class="hw-key">TONE 1</kbd> clockwise on Beat 1 of a musical phrase. Deck 1 low frequencies attenuate while Deck 2 low frequencies increase in inverse proportion.</li>
+<li>Lower <kbd class="hw-key">DECK 1 FADER</kbd> to zero. Deck 2 now carries the full frequency spectrum of the mix.</li>
+</ol>
+<h3 id="2-deck-gain-headphone-monitoring-trimcue">2. Deck Gain &amp; Headphone Monitoring (<code>TRIM/CUE</code>)</h3>
+<p>Manages pre-fader channel amplification and headphone cue bus routing.</p>
+<ul>
+<li><strong><kbd class="hw-key">TONE 1</kbd> (Turn):</strong> Adjusts Deck Pre-Fader Gain (-12 dB to +12 dB).</li>
+<li><strong><kbd class="hw-key">TONE 2</kbd> (Press):</strong> Toggles Pre-Fader Listen (PFL / Cue Mute) for this deck on the headphone monitor bus.</li>
+<li><strong><kbd class="hw-key">TONE 2</kbd> (Turn):</strong> Adjusts headphone cue balance for this deck.</li>
+</ul>
+<h3 id="3-bipolar-resonant-filter-filter">3. Bipolar Resonant Filter (<code>FILTER</code>)</h3>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [D1] BIPOLAR FILTER   STATE: [HPF ACTIVE]     PAGE: [3/5]   |
+| CUTOFF: [4.2 kHz]     [.........||||] (TONE 1: TURN/PRESS=R)|
+| RESONANCE: [ 45%]     [|||||........] (TONE 2: TURN)        |
+| MODE: 24dB/OCT        SWEEP: HIGH-PASS                      |
++=============================================================+
+</code></pre>
+</div>
+<p>A dual-topology 24 dB/octave sweep filter combining Low-Pass and High-Pass operation on a single control:
+* <strong><kbd class="hw-key">TONE 1</kbd> (Turn):</strong> Sweeps cutoff frequency:
+  * <strong>Counter-Clockwise:</strong> Low-Pass Filter (LPF). Attenuates high frequencies progressively.
+  * <strong>Center (12 O'Clock):</strong> Filter bypassed.
+  * <strong>Clockwise:</strong> High-Pass Filter (HPF). Attenuates low and mid frequencies progressively.
+* <strong><kbd class="hw-key">TONE 1</kbd> (Press):</strong> Resets filter cutoff immediately to center bypass.
+* <strong><kbd class="hw-key">TONE 2</kbd> (Turn):</strong> Adjusts filter resonance (Q factor).</p>
+<h3 id="4-beat-sync-engine-sync">4. Beat Sync Engine (<code>SYNC</code>)</h3>
+<p>Aligns tempo and phase to the session master clock using beatgrid reference anchors:
+* <strong><kbd class="hw-key">TONE 1</kbd> (Press):</strong> Toggles Sync active. The follower deck's tempo and transient phase lock to the master lead deck.
+* <strong><kbd class="hw-key">TONE 1</kbd> (Turn):</strong> Adjusts phase offset against the master clock.</p>
+<h3 id="5-quantized-looper-beat-skip-loopskip">5. Quantized Looper &amp; Beat Skip (<code>LOOP/SKIP</code>)</h3>
+<div class="oled-simulator">
+    <div class="oled-bezel">
+        <div class="oled-status-bar">
+            <span class="oled-dot"></span>
+            <span class="oled-label">DRIFT ZERO OLED MONITOR (128x64)</span>
+            <span class="oled-freq">60 FPS</span>
+        </div>
+        <div class="oled-screen-frame">
+            <img src="assets/looper_stutter_animated.gif" alt="Performance Looper &amp; Stutter Roll Animation" class="oled-display-img">
+        </div>
+        <div class="oled-caption">Performance Looper &amp; Stutter Roll Animation</div>
+    </div>
+</div>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [D1] LOOPER ACTIVE    [ 4 BEATS ]             PAGE: [5/5]   |
+| LOOP RANGE: BAR 16.1 -&gt; 17.1 (SNAP: ON) (TONE 1: PRESS=EXIT)|
+| QUANTIZE: [ 1 BEAT ]  MOVE: [+- 1 BAR]  (TONE 2: MOVE/QUANT)|
+| BEAT SKIP: [+- 1 BEAT]                  (TONE 3: SKIP)      |
++=============================================================+
+</code></pre>
+</div>
+<p>Controls loop capture, boundary modulation, and position jumping:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>State: Loop Inactive (<code>LOOP OFF</code>)</th>
+<th>State: Loop Active (<code>LOOP ON</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><kbd class="hw-key">TONE 1</kbd> (Press)</strong></td>
+<td><strong>Engage Loop:</strong> Captures loop of selected length at playhead.</td>
+<td><strong>Exit Loop:</strong> Releases loop boundary and resumes linear playback.</td>
+</tr>
+<tr>
+<td><strong><kbd class="hw-key">TONE 1</kbd> (Turn)</strong></td>
+<td><strong>Set Default Length:</strong> Selects length (1/16, 1/8, 1/4, 1/2, 1, 2, 4, 8, 16, 32 beats).</td>
+<td><strong>Resize Active Loop:</strong> Dynamically doubles or halves the active loop length.</td>
+</tr>
+<tr>
+<td><strong><kbd class="hw-key">TONE 2</kbd> (Turn)</strong></td>
+<td>No action</td>
+<td><strong>Move Loop:</strong> Shifts active loop boundaries forward or backward by 1 bar.</td>
+</tr>
+<tr>
+<td><strong><kbd class="hw-key">TONE 2</kbd> (Press)</strong></td>
+<td><strong>Toggle Quantize:</strong> Enforces beatgrid snap.</td>
+<td><strong>Toggle Quantize:</strong> Enforces beatgrid snap.</td>
+</tr>
+<tr>
+<td><strong><kbd class="hw-key">TONE 2</kbd> (Press + Turn)</strong></td>
+<td>Adjusts Quantize grid resolution (1/4, 1/2, 1 beat).</td>
+<td>Adjusts Quantize grid resolution (1/4, 1/2, 1 beat).</td>
+</tr>
+<tr>
+<td><strong><kbd class="hw-key">TONE 3</kbd> (Turn)</strong></td>
+<td><strong>Beat Skip:</strong> Jumps playhead forward or backward by the quantize interval.</td>
+<td><strong>Beat Skip:</strong> Shifts loop frame by the quantize interval.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="procedure-capturing-halving-and-exiting-a-quantized-loop">Procedure: Capturing, Halving, and Exiting a Quantized Loop</h4>
+<ol>
+<li>Go to the <code>LOOP/SKIP</code> page on Deck 1. The loop control parameters display.</li>
+<li>Turn <kbd class="hw-key">TONE 1</kbd> to select <code>4 Beats</code>. The display confirms <code>[ 4 BEATS ]</code>.</li>
+<li>Press <kbd class="hw-key">TONE 1</kbd> on the downbeat of a musical section. Playhead loops continuously across the 4-beat boundary.</li>
+<li>Turn <kbd class="hw-key">TONE 1</kbd> counter-clockwise during playback. The loop duration halves sequentially to <code>2 Beats</code>, <code>1 Beat</code>, and <code>1/2 Beat</code>.</li>
+<li>Press <kbd class="hw-key">TONE 1</kbd>. The loop releases, and continuous audio playback resumes in sync with the track timeline.</li>
+</ol>
+<h2 id="external-ext-deck-specifications-architecture">External (<kbd class="hw-key">EXT</kbd>) Deck Specifications &amp; Architecture</h2>
+<p>When the <kbd class="hw-key">EXT</kbd> Deck receives focus, audio originates from the analog rear-panel line jacks (<kbd class="hw-key">INPUT 1</kbd> or <kbd class="hw-key">INPUT 2</kbd>). Because incoming line audio is processed directly by the ARM Cortex-M7 ADC without non-volatile storage or pre-calculated beatgrid metadata:
+* The <kbd class="hw-key">EXT</kbd> Deck supports <strong><code>EQ</code></strong>, <strong><code>TRIM/CUE</code></strong>, <strong><code>FILTER</code></strong>, and <strong><code>SYNC</code></strong> (tracking external analog clock pulses).
+* The <strong><code>LOOP/SKIP</code></strong> page is omitted from the Ext Deck cycle. Real-time looping requires RAM-buffered PCM audio tables available only on digital file playback decks.</p>
+<h2 id="failure-modes-troubleshooting_1">Failure Modes &amp; Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Symptom</th>
+<th>Root Cause</th>
+<th>Corrective Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bass Swap operates on wrong decks</td>
+<td>Turning Tone 1 affects Deck 1 and Ext Deck instead of Deck 2</td>
+<td>Control map bindings set to external input</td>
+<td>Ensure Deck 1 and Deck 2 are both active and Ext Deck is bypassed in the soundcard routing matrix.</td>
+</tr>
+<tr>
+<td>Loop triggers off-beat</td>
+<td>Captured loop boundary does not align with transients</td>
+<td>Quantize is disabled (<code>SNAP: OFF</code>)</td>
+<td>Press <kbd class="hw-key">TONE 2</kbd> on the <code>LOOP/SKIP</code> page to enable Quantize (<code>SNAP: ON</code>).</td>
+</tr>
+<tr>
+<td>High-resonance filter screech</td>
+<td>High audio peaks or distortion during filter sweep</td>
+<td>Filter resonance (<kbd class="hw-key">TONE 2</kbd>) set above 80%</td>
+<td>Turn <kbd class="hw-key">TONE 2</kbd> counter-clockwise to reduce Q factor before sweeping cutoff frequency.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="4-library-navigation-harmonic-mixing-engine">4. Library Navigation &amp; Harmonic Mixing Engine</h1>
+<p>The Library Menu provides hierarchical browsing across internal solid-state storage and mounted external USB drives. It incorporates real-time harmonic compatibility evaluation based on the Camelot wheel.</p>
+<h2 id="library-navigation-architecture">Library Navigation Architecture</h2>
+<ul>
+<li><strong>Open / Close Library:</strong> Press <kbd class="hw-key">NAV/SHIFT</kbd> to toggle the Library Menu overlay.</li>
+<li><strong>Scroll &amp; Browse:</strong> Turn <kbd class="hw-key">JOG</kbd> to navigate lists vertically.</li>
+<li><strong>Load Track:</strong> Press <kbd class="hw-key">JOG</kbd> on any track to load audio, waveform, beatgrid, and cuepoint data into the focused deck.</li>
+<li><strong>Back Navigation:</strong> Scroll to the list top and press <kbd class="hw-key">JOG</kbd> on <code>[ BACK ]</code>, or press <kbd class="hw-key">NAV/SHIFT</kbd> to return directly to the performance screen.</li>
+</ul>
+<div class="oled-simulator">
+    <div class="oled-bezel">
+        <div class="oled-status-bar">
+            <span class="oled-dot"></span>
+            <span class="oled-label">DRIFT ZERO OLED MONITOR (128x64)</span>
+            <span class="oled-freq">60 FPS</span>
+        </div>
+        <div class="oled-screen-frame">
+            <img src="assets/harmonic_library_animated.gif" alt="Library Harmonic Compatibility Navigation" class="oled-display-img">
+        </div>
+        <div class="oled-caption">Library Harmonic Compatibility Navigation</div>
+    </div>
+</div>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [LIBRARY: ALL SONGS]   (SORT: KEY)            TARGET: [D2]  |
+| [ &lt; BACK TO ROOT ]                                          |
+| 01. Solar Fields - Sol          124.0 BPM  [=] 11B (PERFECT)|
+|&gt;02. Tycho - Awake (Edit)        124.0 BPM  [+] 12B (LIFT)   |
+| 03. Jon Hopkins - Open Eye      124.0 BPM  [~] 11A (MODE)   |
+| 04. Bicep - Glue                124.0 BPM  [Δ]  8A (MOOD)   |
+| 05. Floating Points - LesAlp    128.0 BPM  [-] 10B (DROP)   |
++=============================================================+
+</code></pre>
+</div>
+<h3 id="row-annotations-metadata-flags">Row Annotations &amp; Metadata Flags</h3>
+<p>Row indicators can be enabled or disabled under <code>Control Panels &gt; Settings &gt; UI Settings &gt; Library Menu</code>:
+* <strong>BPM Tag:</strong> Analyzed tempo (e.g. <code>124.0</code>).
+* <strong>Key Tag:</strong> Musical key notation (e.g. <code>11B</code> or <code>A maj</code>).
+* <strong>Harmonic Match Indicator:</strong> Real-time compatibility glyph evaluated against the currently playing audio deck.
+* <strong>Error Tag (<code>[!Err]</code>):</strong> Flags corrupt headers or unsupported audio encodings.</p>
+<h2 id="procedure-loading-tracks-by-harmonic-compatibility">Procedure: Loading Tracks by Harmonic Compatibility</h2>
+<ol>
+<li>Press <kbd class="hw-key">DECK 2</kbd>. The header displays <code>TARGET: [D2]</code>.</li>
+<li>Press <kbd class="hw-key">NAV/SHIFT</kbd>. The Library Menu displays.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> to highlight <code>Songs</code>. The root song catalog displays.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> to inspect candidate tracks. Compare the bracketed compatibility glyphs against the lead track:</li>
+<li>Select <code>[=]</code> for identical key signature and zero harmonic dissonance.</li>
+<li>Select <code>[+]</code> or <code>[++]</code> for upward energy transitions.</li>
+<li>Select <code>[-]</code> or <code>[--]</code> for downward energy transitions.</li>
+<li>Select <code>[~]</code> for relative Major/Minor mode transitions.</li>
+<li>Select <code>[Δ]</code> for parallel key transitions.</li>
+<li>Press <kbd class="hw-key">JOG</kbd> on the selected track. The track loads into Deck 2, and the display returns to DJ Playback.</li>
+</ol>
+<h2 id="harmonic-mixing-engine-camelot-lookup-table">Harmonic Mixing Engine &amp; Camelot Lookup Table</h2>
+<p>Zero evaluates musical harmony using an embedded 26x26 key lookup table (<code>_zdj_library_camelot_lut</code> in <code>zdj_library_api_key.c</code>). The engine compares the candidate song's key against the deck currently active on the master mix bus.</p>
+<p>The Camelot system numbers the Circle of Fifths from <code>1</code> to <code>12</code>:
+* <strong><code>B</code></strong> denotes Major scales (e.g. <code>8B</code> = C Major, <code>11B</code> = A Major).
+* <strong><code>A</code></strong> denotes Minor scales (e.g. <code>5A</code> = C Minor, <code>8A</code> = A Minor).</p>
+<pre><code class="language-text">                     12B (E) / 12A (Dbm)
+               11B (A)                 1B (B)
+             11A (F#m)                 1A (Abm)
+         10B (D)                             2B (F#)
+         10A (Bm)                            2A (Ebm)
+        9B (G)                                  3B (Db)
+        9A (Em)                                 3A (Bbm)
+         8B (C)                              4B (Ab)
+         8A (Am)                             4A (Fm)
+               7B (F)                  5B (Eb)
+               7A (Dm)                 5A (Cm)
+                      6B (Bb) / 6A (Gm)
+</code></pre>
+<h2 id="real-time-compatibility-glyphs">Real-Time Compatibility Glyphs</h2>
+<p>The song list renders distinct glyphs (<code>zdj_menu_item_view_song.c</code>) reflecting harmonic intervals:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Glyph</th>
+<th>Internal Enum</th>
+<th>Musical Relationship</th>
+<th>Harmonic Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong><code>=</code></strong></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_EQUAL</code></td>
+<td><strong>Exact Key Match</strong> (e.g. <code>11B</code> to <code>11B</code>)</td>
+<td>Zero harmonic tension. Melodic and bass elements mix without dissonance.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong><code>+</code></strong></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_PLUS</code></td>
+<td><strong>Step Boost (+1)</strong> (e.g. <code>11B</code> to <code>12B</code>)</td>
+<td>One step clockwise on Circle of Fifths. Perceived energy elevation.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong><code>++</code></strong></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_PLUS_PLUS</code></td>
+<td><strong>Energy Surge (+2)</strong> (e.g. <code>11B</code> to <code>1B</code>)</td>
+<td>Two steps clockwise. Sharp key modulation for peak transitions.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong><code>-</code></strong></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_MINUS</code></td>
+<td><strong>Step Drop (-1)</strong> (e.g. <code>11B</code> to <code>10B</code>)</td>
+<td>One step counter-clockwise. Harmonically releases tension.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong><code>--</code></strong></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_MINUS_MINUS</code></td>
+<td><strong>Deep Drop (-2)</strong> (e.g. <code>11B</code> to <code>9B</code>)</td>
+<td>Two steps counter-clockwise. Melodic downshift.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong><code>~</code></strong></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_TILDA</code></td>
+<td><strong>Relative Mode Swap</strong> (e.g. <code>11B</code> to <code>11A</code>)</td>
+<td>Uses identical scale pitches with a shifted tonal center (Major to Minor).</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong><code>Δ</code></strong></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_DELTA</code></td>
+<td><strong>Parallel Root Modulation</strong> (e.g. <code>11B</code> [A Maj] to <code>8A</code> [A Min])</td>
+<td>Root pitch remains unchanged while scale tonality shifts between Major and Minor.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><em>(None)</em></td>
+<td><code>ZDJ_LIBRARY_CAMELOT_NONE</code></td>
+<td><strong>Incompatible / Unmatched</strong></td>
+<td>Dissonant scale intervals. No badge is rendered.</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-note">
+    <div class="callout-header"><svg class="callout-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg> <span>NOTE</span></div>
+    <div class="callout-body"><p>Early documentation drafts erroneously cited a <code>"???"</code> wildcard indicator. In production firmware, non-matching musical keys leave the compatibility badge area blank.</p></div>
+</div>
+<h2 id="failure-modes-troubleshooting_2">Failure Modes &amp; Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Symptom</th>
+<th>Root Cause</th>
+<th>Corrective Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Track loads into wrong deck</td>
+<td>Audio plays on active deck instead of cue deck</td>
+<td>Target focus was set to playing deck before load</td>
+<td>Check <code>TARGET: [D1/D2]</code> in the top-right corner of the library before pressing <kbd class="hw-key">JOG</kbd>. Press <kbd class="hw-key">DECK 1</kbd> or <kbd class="hw-key">DECK 2</kbd> to change destination.</td>
+</tr>
+<tr>
+<td>Key tag displays <code>---</code></td>
+<td>No key or compatibility glyph is shown</td>
+<td>Track analysis incomplete or audio file has insufficient harmonic content</td>
+<td>Let background analysis complete, or enter <code>Station Edit Mode</code> to manually assign key metadata.</td>
+</tr>
+<tr>
+<td>Red <code>[!Err]</code> tag on song row</td>
+<td>Track refuses to load when selected</td>
+<td>File missing from disk, corrupted audio header, or unreadable storage sector</td>
+<td>Run <code>File System Check</code> in Settings, or re-import the file over USB.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="5-audio-import-workflows-rekordbox-xml-integration">5. Audio Import Workflows &amp; Rekordbox XML Integration</h1>
+<p>Drift Zero supports three methods for populating its internal SQLite audio database: direct USB-C drive imports, workstation Mass Storage file transfers (Drive Mode), and Pioneer Rekordbox XML collection imports with cuepoint and beatgrid preservation.</p>
+<h2 id="workflow-1-direct-usb-c-flash-drive-import">Workflow 1: Direct USB-C Flash Drive Import</h2>
+<ol>
+<li>Go to <code>Control Panels &gt; USB Setup</code> and verify the controller role is set to <code>USB Host</code>.</li>
+<li>Connect a USB-C flash drive or portable SSD to the rear USB-C port. The drive mounts to <code>/media/usb/</code>.</li>
+<li>Press <kbd class="hw-key">NAV/SHIFT</kbd> to open the Library Menu, scroll to <code>+ Add Music</code>, and select <code>Browse Files</code>. The file system browser displays.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> to highlight an audio file (<code>.wav</code>, <code>.aif</code>, <code>.mp3</code>, <code>.flac</code>) or directory, and press <kbd class="hw-key">JOG</kbd>. The selected files copy to internal storage.</li>
+<li>Background analysis commences automatically (<code>ZDJ_LIBRARY_ANALYSIS_STATE_SCAN</code>). The background thread decodes audio transients via FFmpeg, calculates BPM, constructs beatgrid anchors, and logs Camelot musical keys to the SQLite database.</li>
+</ol>
+<h2 id="workflow-2-workstation-file-transfer-drive-mode">Workflow 2: Workstation File Transfer (Drive Mode)</h2>
+<ol>
+<li>Connect Zero to a host computer using a high-speed USB-C data cable.</li>
+<li>Go to <code>Library Menu &gt; + Add Music &gt; Drive Mode</code> (or <code>Control Panels &gt; USB Setup &gt; Drive Mode</code>). Zero enables its USB Mass Storage gadget driver (<code>zdj_usb_driver.c</code>).</li>
+<li>Observe the host computer desktop. The internal storage partition mounts as an external mass storage drive.</li>
+<li>Drag audio files and directories into the music partition.</li>
+<li>Eject the volume from the host operating system to flush disk write caches.</li>
+<li>Press <kbd class="hw-key">JOG</kbd> on Zero. Drive Mode exits, and the primary performance interface returns.</li>
+<li>Go to <code>Library Menu &gt; + Add Music &gt; Scan for New Files</code>. Zero scans local storage for newly copied files and enqueues them for background audio analysis.</li>
+</ol>
+<h2 id="workflow-3-rekordbox-xml-collection-import">Workflow 3: Rekordbox XML Collection Import</h2>
+<p>Rekordbox XML files contain metadata, cuepoint markers, and playlist hierarchies; they do not contain audio data. Both the XML file and the corresponding audio folder must reside on Zero's storage for successful ingestion.</p>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+-------------------------------------------------------------+
+| REKORDBOX WORKSTATION                                       |
+| 1. Export collection as XML (rekordbox.xml)                 |
+| 2. Connect Zero in Drive Mode and copy XML + Audio root     |
++-------------------------------------------------------------+
+                             |
+                             v
++-------------------------------------------------------------+
+| DRIFT ZERO HARDWARE CONSOLE                                 |
+| 3. Eject drive on computer and exit Drive Mode on Zero      |
+| 4. Go to Library Menu &gt; + Add Music &gt; Rekordbox XML         |
+| 5. Dialog 1/3: Select rekordbox.xml file                    |
+| 6. Dialog 2/3: Select audio root directory (/Contents)      |
+| 7. Dialog 3/3: Set Error Policy (Skip Errors / Abort)       |
+| 8. Execute database ingestion and playlist generation       |
++-------------------------------------------------------------+
+</code></pre>
+</div>
+<h3 id="verified-import-procedure">Verified Import Procedure</h3>
+<ol>
+<li>In Rekordbox on your workstation, go to <code>File &gt; Export Collection in XML format</code> and save <code>rekordbox.xml</code>.</li>
+<li>Connect Zero to your computer, select <code>Drive Mode</code>, and wait for the volume to mount.</li>
+<li>Copy <code>rekordbox.xml</code> to the root of the Zero drive volume, and copy your Rekordbox audio directory (typically <code>/Contents</code>) onto the drive.</li>
+<li>Eject the drive volume on your computer operating system.</li>
+<li>Press <kbd class="hw-key">JOG</kbd> on Zero to terminate Drive Mode. The normal UI displays.</li>
+<li>Go to <code>Library Menu &gt; + Add Music &gt; Rekordbox XML</code>. The XML selection dialog displays.</li>
+</ol>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [IMPORT: REKORDBOX XML]               DIALOG 1/3: LOCATE XML|
+| SELECT XML FILE:                                            |
+|   ../                                                       |
+| &gt; rekordbox.xml                       (14.2 MB) [2,420 TRKS]|
+|   backup_collection.xml                (9.8 MB)             |
++=============================================================+
+</code></pre>
+</div>
+<ol>
+<li>Turn <kbd class="hw-key">JOG</kbd> to highlight <code>rekordbox.xml</code> and press <kbd class="hw-key">JOG</kbd>. The audio root selection dialog displays.</li>
+</ol>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [IMPORT: REKORDBOX XML]               DIALOG 2/3: AUDIO ROOT|
+|&gt;[ SELECT THIS DIR: /media/internal/Contents ]               |
+|   ../                                                       |
+|   Artist_A/                                                 |
+|   Artist_B/                                                 |
++=============================================================+
+</code></pre>
+</div>
+<ol>
+<li>Turn <kbd class="hw-key">JOG</kbd> to highlight the folder where audio files were placed (e.g. <code>/media/internal/Contents</code>) and press <kbd class="hw-key">JOG</kbd> on <code>[ Select this dir ]</code>. The policy configuration dialog displays.</li>
+</ol>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [IMPORT: REKORDBOX XML]               DIALOG 3/3: POLICIES  |
+| ERROR POLICY:      &gt;[ SKIP ERRORS ]     [ ABORT ON ERROR ]  |
+| CUEPOINTS:          [ IMPORT ALL (8) ]                      |
+| BEATGRIDS:          [ OVERWRITE EXISTING ]                  |
+| &gt; [ BEGIN INGESTION: 2,420 TRACKS ]                         |
++=============================================================+
+</code></pre>
+</div>
+<ol>
+<li>Select the desired error policy:</li>
+<li><strong>Skip Errors:</strong> Continues importing remaining tracks if an unreadable audio file or missing path is encountered.</li>
+<li><strong>Abort on Error:</strong> Halts execution immediately upon encountering an unresolvable reference.</li>
+<li>Press <kbd class="hw-key">JOG</kbd> on <code>[ BEGIN INGESTION ]</code>. Zero parses the XML tree using <code>libxml2</code>, constructs database entities (<code>zdj_library_create_rb_xml_import_song_graph</code>), registers TrackIDs, imports stored <code>&lt;POSITIONMARK&gt;</code> hotcues, and generates playlist trees.</li>
+</ol>
+<h2 id="failure-modes-troubleshooting_3">Failure Modes &amp; Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Symptom</th>
+<th>Root Cause</th>
+<th>Corrective Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tracks listed but will not play</td>
+<td>Error displayed upon loading imported Rekordbox track</td>
+<td>XML file was copied without copying the underlying audio files</td>
+<td>Copy the audio directory to Zero's storage and repeat the XML import, selecting the audio folder in Dialog 2/3.</td>
+</tr>
+<tr>
+<td>Zero not recognized over USB</td>
+<td>Computer does not detect external drive volume</td>
+<td>Zero is set to Host Mode instead of Gadget Mode, or cable is power-only</td>
+<td>Go to <code>Control Panels &gt; USB Setup</code> and switch to <code>Gadget Mode</code>. Use a verified USB-C high-speed data cable.</td>
+</tr>
+<tr>
+<td>Filesystem mounts read-only</td>
+<td>Workstation rejects file write operations</td>
+<td>Volume was unplugged without unmounting, setting dirty flag</td>
+<td>Run <code>Control Panels &gt; Settings &gt; System &gt; File System Check</code> to clear the journal lock.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="6-track-metadata-cuepoints-beatgrid-calibration">6. Track Metadata, Cuepoints &amp; Beatgrid Calibration</h1>
+<p>While Zero automatically analyzes imported audio, parameters can be inspected and manually calibrated using Station Edit Modes (<code>zdj_control_map.c</code>):
+* <code>STATION_1_EDIT_SONG</code> / <code>STATION_2_EDIT_SONG</code>: Metadata inspection and manual overrides.
+* <code>STATION_1_EDIT_CUEPOINT</code> / <code>STATION_2_EDIT_CUEPOINT</code>: Real-time hotcue programming and deletion.
+* <code>STATION_1_EDIT_BEATGRID</code> / <code>STATION_2_EDIT_BEATGRID</code>: Transient grid anchor and interval alignment.</p>
+<h2 id="1-cuepoint-management-edit_cuepoint">1. Cuepoint Management (<code>EDIT_CUEPOINT</code>)</h2>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [D1: CUEPOINT EDIT]   SLOT: [2/8]             TIME: 01:24.32|
+| |...WWWWWW|WWWWWWw.....|  [1]&gt;[2]             TONE 1: COMMIT|
+| (JOG: SCRUB POSITION) (NAV+TONE 1: MOVE)      TONE 3: DELETE|
++=============================================================+
+</code></pre>
+</div>
+<p>Zero supports up to 8 stored hotcue points per track. Cuepoints are stored non-volatilely in the internal SQLite database and persist across reboots.</p>
+<h3 id="procedure-programming-and-auditioning-hotcues">Procedure: Programming and Auditioning Hotcues</h3>
+<ol>
+<li>Press <kbd class="hw-key">PLAY</kbd> to stop playback on the deck to edit. Playback halts.</li>
+<li>Long-press <kbd class="hw-key">JOG</kbd> on the loaded track and select <code>Edit Cuepoints</code> (or hold <kbd class="hw-key">NAV/SHIFT</kbd> and press <kbd class="hw-key">CUE</kbd>). The cuepoint editor displays.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> in scrub mode. The playhead moves along the waveform to align with the desired transient.</li>
+<li>Press <kbd class="hw-key">TONE 1</kbd>. The active cue slot (e.g. <code>[2]</code>) assigns to the current playhead timestamp.</li>
+<li>Press and hold <kbd class="hw-key">CUE</kbd>. Audio plays back from the cuepoint while held, and returns to the cuepoint upon release.</li>
+<li>Hold <kbd class="hw-key">NAV/SHIFT</kbd> and press <kbd class="hw-key">TONE 3</kbd> if a cuepoint requires removal. The selected cue slot clears.</li>
+</ol>
+<h2 id="2-beatgrid-calibration-edit_beatgrid">2. Beatgrid Calibration (<code>EDIT_BEATGRID</code>)</h2>
+<div class="oled-simulator">
+    <div class="oled-bezel">
+        <div class="oled-status-bar">
+            <span class="oled-dot"></span>
+            <span class="oled-label">DRIFT ZERO OLED MONITOR (128x64)</span>
+            <span class="oled-freq">60 FPS</span>
+        </div>
+        <div class="oled-screen-frame">
+            <img src="assets/beatgrid_calibrate_animated.gif" alt="Beatgrid Calibration &amp; Downbeat Anchor" class="oled-display-img">
+        </div>
+        <div class="oled-caption">Beatgrid Calibration &amp; Downbeat Anchor</div>
+    </div>
+</div>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [D1: BEATGRID CALIBRATION]                    BPM: [124.00] |
+| |===||====|====|====| (ANCHOR: BAR 1.1)       TONE 1: ANCHOR|
+| GRID PHASE: [+0.0 ms]  SPAN: [NORMAL]         TONE 2: STRETCH|
+| (JOG: FINE NUDGE)     (TONE 2 P+T: 2X//2)     TONE 3: PHASE |
++=============================================================+
+</code></pre>
+</div>
+<p>Precise beatgrids are required for automated Sync, quantized looping, and beat skipping.</p>
+<h3 id="procedure-calibrating-a-drifting-beatgrid">Procedure: Calibrating a Drifting Beatgrid</h3>
+<ol>
+<li>Select <code>Edit Beatgrid</code> from the track options menu. The display zooms 400% on the waveform transients.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> in scrub mode to locate the primary kick drum marking Bar 1, Beat 1. The playhead rests on the initial transient.</li>
+<li>Press <kbd class="hw-key">TONE 1</kbd>. A solid vertical anchor locks to this transient, establishing the reference origin for all subsequent quarter-note ticks.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> forward 32 bars to verify downstream alignment against later kick transients:</li>
+<li><strong>Ticks behind transients (Grid interval too long):</strong> Turn <kbd class="hw-key">TONE 2</kbd> clockwise to contract the beat interval (increasing calculated BPM).</li>
+<li><strong>Ticks ahead of transients (Grid interval too short):</strong> Turn <kbd class="hw-key">TONE 2</kbd> counter-clockwise to expand the beat interval (decreasing calculated BPM).</li>
+<li>Press and turn <kbd class="hw-key">TONE 2</kbd> if the track was analyzed at half or double tempo (e.g. 70 BPM instead of 140 BPM). The tempo multiplier toggles between <code>1x</code>, <code>2x</code>, and <code>/2</code>.</li>
+<li>Press <kbd class="hw-key">TONE 1</kbd>. The calibrated grid anchors and tempo write to the SQLite database.</li>
+</ol>
+<h2 id="3-metadata-overrides-edit_song">3. Metadata Overrides (<code>EDIT_SONG</code>)</h2>
+<p>Within the song editor modal:
+* <strong>Key Override:</strong> If harmonic analysis detected an ambiguous modal scale, turn <kbd class="hw-key">TONE 1</kbd> to override the Camelot key tag (e.g. <code>8A</code> to <code>8B</code>).
+* <strong>Gain Calibration:</strong> Turn <kbd class="hw-key">TONE 2</kbd> to configure a persistent track-level gain offset. Tracks mastered at low volumes can be boosted to match modern standards upon loading.</p>
+<h2 id="failure-modes-troubleshooting_4">Failure Modes &amp; Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Symptom</th>
+<th>Root Cause</th>
+<th>Corrective Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cuepoint does not save</td>
+<td>Configured cuepoint vanishes after restarting console</td>
+<td>Database write transaction was interrupted</td>
+<td>Ensure <code>TONE 1 (Commit)</code> is pressed before exiting the cuepoint editing modal.</td>
+</tr>
+<tr>
+<td>Beatgrid drifts progressively</td>
+<td>Grid aligns at start but desynchronizes toward track end</td>
+<td>Audio file was recorded from vinyl with tempo flutter</td>
+<td>Lock a secondary anchor later in the track, or disable automated Sync and nudge manually using <kbd class="hw-key">JOG</kbd>.</td>
+</tr>
+<tr>
+<td>Tempo halved on drum-and-bass</td>
+<td>Display reads 87 BPM instead of 174 BPM</td>
+<td>Transient detector detected half-time kick intervals</td>
+<td>Press and turn <kbd class="hw-key">TONE 2</kbd> in the beatgrid editor to apply the <code>2x</code> multiplier.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="7-control-panels-recording-soundcard-routing-usb-subsystems">7. Control Panels: Recording, Soundcard Routing &amp; USB Subsystems</h1>
+<p>The Control Panels provide system configuration, input/output (I/O) signal routing, session recording, and diagnostic utilities.</p>
+<h2 id="deploying-navigating-control-panels">Deploying &amp; Navigating Control Panels</h2>
+<ul>
+<li><strong>Deploy / Dismiss Panels:</strong> Long-press <kbd class="hw-key">JOG</kbd> (hold for 0.5s) from any screen to toggle the Control Panel overlay (<code>ZDJ_UI_CONTROL_TOGGLE_PANEL</code>).</li>
+<li><strong>Switch Panels:</strong> Press <kbd class="hw-key">DECK 1</kbd> (Previous Panel) or <kbd class="hw-key">DECK 2</kbd> (Next Panel) to navigate horizontally between panel tabs.</li>
+<li><strong>Select &amp; Adjust:</strong> Turn <kbd class="hw-key">JOG</kbd> to highlight parameters, and press <kbd class="hw-key">JOG</kbd> to modify values or deploy submenus.</li>
+</ul>
+<pre><code class="language-text">[ RECORDING ] &lt;-&gt; [ SOUNDCARD / MIXER ] &lt;-&gt; [ FILE BROWSER ] &lt;-&gt; [ USB SETUP ] &lt;-&gt; [ SETTINGS ]
+</code></pre>
+<h2 id="1-recording-control-panel-zdj_ui_panel_recording">1. Recording Control Panel (<code>ZDJ_UI_PANEL_RECORDING</code>)</h2>
+<p>The recording engine captures uncompressed 32-bit floating-point, 44.1 kHz stereo WAV audio directly to internal flash storage (<code>zdj_audio_record_node.c</code>).</p>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [PANEL: RECORDING]    STATUS: [RECORDING]     TIME: 00:42:15|
+| L: [||||||||||||||||||....] -3.2 dB (PEAK)    REC GAIN: -2dB|
+| R: [||||||||||||||||||....] -3.2 dB (PEAK)   (SHIFT+VOL=ADJ)|
+| FILE: /media/internal/recordings/recording_001.wav          |
+| INPUT: &gt;[ MAIN BUS LR ]                                     |
++=============================================================+
+</code></pre>
+</div>
+<h3 id="telemetry-metadata-specifications">Telemetry &amp; Metadata Specifications</h3>
+<ul>
+<li><strong>Active Status:</strong> Displays elapsed session time, real-time peak VU level meters, and the destination filename (<code>recording_XXX.wav</code>).</li>
+<li><strong>Storage Location:</strong> Written to <code>/media/internal/recordings/</code>.</li>
+<li><strong>Database Cataloging:</strong> When recording finalizes, the file is automatically registered in the SQLite library with artist <code>"Zero Recording"</code> and title <code>"recording_XXX"</code>.</li>
+<li><strong>Sync Grid Inheritance:</strong> If Sync is engaged during recording, the WAV file automatically inherits the master deck's BPM and beatgrid metadata (<code>zdj_audio_record_node.c:345</code>).</li>
+<li><strong>Record Headroom Gain:</strong> Hold <kbd class="hw-key">NAV/SHIFT</kbd> and turn <kbd class="hw-key">VOL</kbd> to adjust digital recording gain (-12 dB to +12 dB). Because audio is stored in 32-bit float, internal mixing cannot clip digitally before writing to disk.</li>
+</ul>
+<h3 id="procedure-recording-a-live-dj-set">Procedure: Recording a Live DJ Set</h3>
+<ol>
+<li>Long-press <kbd class="hw-key">JOG</kbd> for 0.5s. The Control Panels overlay displays.</li>
+<li>Press <kbd class="hw-key">DECK 1</kbd> or <kbd class="hw-key">DECK 2</kbd> until the <code>RECORDING</code> tab displays.</li>
+<li>Turn <kbd class="hw-key">VOL</kbd> while holding <kbd class="hw-key">NAV/SHIFT</kbd> to calibrate record bus gain. The peak VU meters reflect input amplitude.</li>
+<li>Press <kbd class="hw-key">TONE 1</kbd> (or press <code>SHIFT + PLAY</code> from the live performance view). Recording commences, the <code>[REC]</code> badge illuminates, and the session timer starts.</li>
+<li>Press <code>SHIFT + PLAY</code> when the set concludes. The audio engine cleanly flushes memory buffers, closes the WAV header, and logs the file to the library.</li>
+</ol>
+<h2 id="2-soundcard-mixer-panel-zdj_ui_panel_soundcard">2. Soundcard / Mixer Panel (<code>ZDJ_UI_PANEL_SOUNDCARD</code>)</h2>
+<p>Governs the low-level ALSA audio crossbar and DSP routing matrix (<code>zdj_soundcard_panel.c</code>). The panel renders as a horizontally scrolling channel-strip interface.</p>
+<div class="console-diagram">
+    <div class="console-titlebar">
+        <span class="console-pill red"></span>
+        <span class="console-pill yellow"></span>
+        <span class="console-pill green"></span>
+        <span class="console-title">Hardware Telemetry Display</span>
+    </div>
+    <pre class="console-screen"><code>+=============================================================+
+| [PANEL: SOUNDCARD]    ROUTING MATRIX          PRESET: [CLUB]|
+| [D1]  [EXT]  [D2]  |  [AUX0]  [CV0]  [MAIN]  [CUE]  [OUT 1] |
+| -2dB   0dB   -6dB  |   0dB     PPQN   -1dB   -3dB   STEREO  |
+| (JOG: SCROLL CHANNELS) (TONE 1: GAIN) (TONE 2: PAN/ROUTING) |
++=============================================================+
+</code></pre>
+</div>
+<h3 id="channel-strips">Channel Strips</h3>
+<ul>
+<li><strong>Decks:</strong> Deck 1 (<code>DECK_1_PREFADE</code>), Ext Deck (<code>DECK_EXT_PREFADE</code>), Deck 2 (<code>DECK_2_PREFADE</code>).</li>
+<li><strong>Auxiliary Busses:</strong> Aux 0 through Aux 3 for sub-mixing and external effects routing.</li>
+<li><strong>Control Voltage (CV) Busses:</strong> CV 0 through CV 3 for analog clock synchronization (1, 2, or 4 Pulses Per Quarter Note / PPQN).</li>
+<li><strong>Busses:</strong> Main Bus (<code>MAIN_BUS</code>), Headphone Cue Bus (<code>CUE_BUS</code>), Record Bus (<code>RECORD_BUS</code>).</li>
+<li><strong>Hardware Ports:</strong> Output 1, Output 2, Input 1, Input 2, and USB I/O.</li>
+</ul>
+<h3 id="output-port-modes">Output Port Modes</h3>
+<ul>
+<li><strong><kbd class="hw-key">OUTPUT 1</kbd> Assignment:</strong></li>
+<li><strong>Master Stereo (Default):</strong> Primary front-of-house sound system feed (L/R).</li>
+<li><strong>Booth Stereo:</strong> Independent secondary monitor feed with dedicated gain trim.</li>
+<li><strong><kbd class="hw-key">OUTPUT 2</kbd> Assignment:</strong></li>
+<li><strong>Headphone Cue (Stereo Default):</strong> Dedicated stereo cue bus with pre-fader listen (PFL) mixing.</li>
+<li><strong>Split-Cue Mode (Mono L/R):</strong> Left headphone ear receives the cue bus (PFL); right headphone ear receives the master house mix.</li>
+</ul>
+<h3 id="procedure-enabling-split-cue-monitoring">Procedure: Enabling Split-Cue Monitoring</h3>
+<ol>
+<li>Long-press <kbd class="hw-key">JOG</kbd> to deploy the Control Panels.</li>
+<li>Press <kbd class="hw-key">DECK 2</kbd> until the <code>SOUNDCARD</code> panel displays.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> horizontally to highlight the <kbd class="hw-key">OUTPUT 2</kbd> strip and press <kbd class="hw-key">JOG</kbd>. The output options menu displays.</li>
+<li>Turn <kbd class="hw-key">JOG</kbd> to <code>Routing Mode</code> and press <kbd class="hw-key">JOG</kbd> to select <code>Split-Cue (Mono L/R)</code>.</li>
+<li>Put on headphones. Left ear monitors active PFL channels; right ear monitors the live master bus.</li>
+<li>Long-press <kbd class="hw-key">JOG</kbd> to return to DJ Playback.</li>
+</ol>
+<h2 id="3-file-browser-panel-zdj_ui_panel_browser">3. File Browser Panel (<code>ZDJ_UI_PANEL_BROWSER</code>)</h2>
+<p>Provides direct navigation of local Linux file partitions, internal storage <code>/media/internal/</code>, and external USB devices <code>/media/usb/</code>.</p>
+<ul>
+<li><strong>Audio Auditioning:</strong> Highlight an audio file (<code>.wav</code>, <code>.mp3</code>) and press <kbd class="hw-key">TONE 2</kbd>. Audio plays in headphones via the cue bus without interrupting playing decks.</li>
+<li><strong>File Operations:</strong> Copy, move, or delete files, and stage system <code>.pkg</code> update packages.</li>
+</ul>
+<h2 id="4-usb-setup-panel-zdj_ui_panel_usb">4. USB Setup Panel (<code>ZDJ_UI_PANEL_USB</code>)</h2>
+<p>Configures USB controller operation:</p>
+<ul>
+<li><strong>USB Host Mode:</strong> Zero acts as the host controller, supplying 5V bus power to attached flash drives, SSDs, and USB MIDI keyboards.</li>
+<li><strong>USB Gadget Mode:</strong> Zero acts as a peripheral connected to a workstation computer:</li>
+<li><strong>Drive Mode (Mass Storage):</strong> Mounts internal storage as an external drive volume.</li>
+<li><strong>USB Audio Mode:</strong> Operates as a class-compliant 4-in / 4-out USB audio interface (44.1 kHz, 24-bit PCM) for recording into DAWs.</li>
+<li><strong>USB MIDI Mode:</strong> Sends and receives MIDI clock pulses for external hardware sequencer synchronization.</li>
+</ul>
+<h2 id="5-settings-developer-panel-zdj_ui_panel_settings">5. Settings &amp; Developer Panel (<code>ZDJ_UI_PANEL_SETTINGS</code>)</h2>
+<h3 id="ui-settings">UI Settings</h3>
+<ul>
+<li><strong>Function Knob Pages:</strong> Toggle visibility or customize order for knob pages (<code>EQ</code>, <code>TRIM</code>, <code>FILTER</code>, <code>SYNC</code>, <code>LOOP</code>).</li>
+<li><strong>Library Annotations:</strong> Toggle BPM, Key, and Camelot compatibility badges.</li>
+<li><strong>Display Contrast:</strong> Calibrate OLED brightness.</li>
+</ul>
+<h3 id="system-settings">System Settings</h3>
+<ul>
+<li><strong>OS Updates:</strong> Installs signed firmware update archives (<code>.pkg</code>).</li>
+<li><strong>Granular Reset Dialogs:</strong></li>
+<li><strong>Reset Library Database:</strong> Clears SQLite track tables and resets library indices without deleting audio files on disk.</li>
+<li><strong>Reset Soundcard DB:</strong> Restores factory audio routing matrices and presets.</li>
+<li><strong>Full System Reset:</strong> Returns all settings, soundcard profiles, and UI configurations to factory state.</li>
+</ul>
+<h3 id="developer-diagnostics-submenu-zdj_settings_developer_panelc">Developer &amp; Diagnostics Submenu (<code>zdj_settings_developer_panel.c</code>)</h3>
+<p><em>Added in System Version 0.6.0 (PR #33):</em>
+* <strong>Configurable Crash Dialog:</strong> Toggles an on-screen crash notification widget upon unexpected process restart, preventing silent reboots.
+* <strong>Crash Log Viewer:</strong> Displays backtraces and core dump information from <code>/var/log/zdj_crash.log</code>.
+* <strong>DSP Performance Telemetry:</strong> Displays real-time CPU load, audio ring buffer margin, and memory utilization.</p>
+<h2 id="failure-modes-troubleshooting_5">Failure Modes &amp; Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Symptom</th>
+<th>Root Cause</th>
+<th>Corrective Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Recording stops unexpectedly</td>
+<td>Session terminates mid-set</td>
+<td>Internal storage partition reached capacity</td>
+<td>Verify available disk space in <code>Settings &gt; System Info</code> before long recording sessions.</td>
+</tr>
+<tr>
+<td>Split-Cue delivers identical audio to both ears</td>
+<td>Both headphone sides play master mix</td>
+<td>PFL not engaged on incoming deck, or Output 2 set to Stereo</td>
+<td>Go to <code>TRIM/CUE</code> knob page and press <kbd class="hw-key">TONE 2</kbd> to engage PFL on the auditioning deck.</td>
+</tr>
+<tr>
+<td>USB Audio not visible in DAW</td>
+<td>Workstation audio settings do not list Zero</td>
+<td>USB controller is in Host Mode instead of Gadget Audio Mode</td>
+<td>Go to <code>Control Panels &gt; USB Setup</code>, select <code>Gadget Mode</code>, and set profile to <code>USB Audio</code>.</td>
+</tr>
+</tbody>
+</table>
+<h1 id="8-troubleshooting-diagnostics-recovery">8. Troubleshooting, Diagnostics &amp; Recovery</h1>
+<p>This reference provides failure mode diagnostics, recovery procedures, and developer diagnostic tools for Drift Zero hardware and firmware.</p>
+<h2 id="hardware-diagnostic-failure-matrix">Hardware Diagnostic &amp; Failure Matrix</h2>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Failure Symptom</th>
+<th>Underlying Cause</th>
+<th>Corrective Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Power &amp; Stability</strong></td>
+<td>OLED display flickers, unit suddenly reboots during bass transients</td>
+<td>Input voltage brownout below 4.75V due to insufficient USB power supply</td>
+<td>Connect to a dedicated 5V / 2.0A (10W minimum) USB-C power source. Avoid unpowered USB hubs.</td>
+</tr>
+<tr>
+<td><strong>USB Connectivity</strong></td>
+<td>Zero is unrecognized by host computer</td>
+<td>Zero set to Host Mode, or connected via charge-only cable</td>
+<td>Go to <code>Control Panels &gt; USB Setup</code>, switch role to <code>USB Gadget (Drive Mode)</code>, and verify cable supports USB 2.0 High-Speed data.</td>
+</tr>
+<tr>
+<td><strong>Mass Storage</strong></td>
+<td>Host OS mounts drive as read-only; cannot copy tracks</td>
+<td>Storage unmounted improperly, setting filesystem dirty flag</td>
+<td>Go to <code>Control Panels &gt; Settings &gt; System &gt; File System Check</code> to repair journal locks.</td>
+</tr>
+<tr>
+<td><strong>Audio Engine</strong></td>
+<td>Audio clicks or dropouts during dense looping</td>
+<td>DSP CPU load exceeded 85% headroom limit</td>
+<td>Open <code>Settings &gt; Developer &gt; DSP Telemetry</code>. Reduce simultaneous 1/16-beat loopers during active background track analysis.</td>
+</tr>
+<tr>
+<td><strong>Fader Response</strong></td>
+<td>Zipper noise or stepping artifacts when moving faders</td>
+<td>Outdated firmware version without slew smoothing</td>
+<td>Verify firmware is updated to version 0.6.0+, which incorporates micro-frame slew interpolation on all faders (PR #31).</td>
+</tr>
+<tr>
+<td><strong>Database</strong></td>
+<td>Songs missing from playlists or search crashes</td>
+<td>SQLite index corruption following sudden power loss</td>
+<td>Go to <code>Control Panels &gt; Settings &gt; System &gt; Reset Library Database</code>. Existing audio files on disk remain untouched.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="audio-pipeline-slew-smoothing-firmware-060">Audio Pipeline Slew Smoothing (Firmware 0.6.0+)</h2>
+<p>System Version 0.6.0 incorporates control smoothing across linear faders, crossfaders, and rotary gain stages (<code>zdj_soundcard_dsp_gain_pan.c</code>). Control updates are interpolated over micro-frame sample buffers, eliminating zipper artifacts during rapid fader cuts.</p>
+<p>If clicking persists:
+1. Verify system firmware version under <code>Control Panels &gt; Settings &gt; System Info</code>.
+2. Inspect the <strong>DSP Performance Telemetry</strong> view. If audio buffer margin drops below 15%, check background process activity.</p>
+<h2 id="developer-diagnostics-submenu-pr-33">Developer Diagnostics Submenu (PR #33)</h2>
+<p>Accessed via <code>Control Panels &gt; Settings &gt; Developer</code>:
+* <strong>Crash Notification Dialog:</strong> When enabled, an unexpected software restart halts execution at a diagnostic screen rather than performing a silent restart.
+* <strong>Crash Log Inspection:</strong> Reads backtrace dumps from <code>/var/log/zdj_crash.log</code>. Displays register states, faulting memory addresses, and function call stacks.
+* <strong>DSP Telemetry:</strong> Displays real-time metrics for:
+  * Audio thread execution time (target: &lt; 2.5 ms per 512-sample frame).
+  * Cortex-M7 shared memory ring buffer margin.
+  * System memory usage and CPU core thermals.</p>
+<h2 id="hardware-recovery-config-mode-boot">Hardware Recovery &amp; Config-Mode Boot</h2>
+<p>If firmware corruption or an interrupted system update prevents normal boot:</p>
+<h3 id="procedure-entering-emergency-recovery-mode">Procedure: Entering Emergency Recovery Mode</h3>
+<ol>
+<li>Hold <kbd class="hw-key">POWER</kbd> for 6 seconds until all LEDs extinguish. Power turns off completely.</li>
+<li>Press and hold both <kbd class="hw-key">DECK 1</kbd> and <kbd class="hw-key">DECK 2</kbd> Select buttons simultaneously.</li>
+<li>Press and hold <kbd class="hw-key">POWER</kbd> for 2 seconds while maintaining pressure on <kbd class="hw-key">DECK 1</kbd> and <kbd class="hw-key">DECK 2</kbd>.</li>
+<li>Release <kbd class="hw-key">POWER</kbd>. Continue holding <kbd class="hw-key">DECK 1</kbd> and <kbd class="hw-key">DECK 2</kbd> until the OLED display illuminates:<br />
+<code>=== DRIFT ZERO RECOVERY / CONFIG MODE ===</code></li>
+<li>Connect Zero to a host workstation via USB-C. Zero mounts an emergency read-only recovery partition containing <code>factory_image.pkg</code> and <code>recovery.log</code>.</li>
+<li>Copy an official release firmware package into the <code>update/</code> directory.</li>
+<li>Reboot the console. The bootloader verifies package cryptographic signatures and executes automated flash recovery.</li>
+</ol>
+<h1 id="9-glossary-of-dj-hardware-terms">9. Glossary of DJ &amp; Hardware Terms</h1>
+<h3 id="beatgrid">Beatgrid</h3>
+<p>A sequence of timestamped quarter-note intervals mapped to an audio track. Zero's software engine uses beatgrids to synchronize playback tempo, calculate phase offsets, and align automated loop boundaries.</p>
+<h3 id="camelot-wheel">Camelot Wheel</h3>
+<p>A harmonic categorization system numbering the Circle of Fifths from 1 to 12 with letter designations A (Minor) and B (Major). Adjacent numbers and relative letter swaps indicate compatible musical keys that blend without harmonic dissonance.</p>
+<h3 id="crossfader">Crossfader</h3>
+<p>A horizontal slider transitioning audio between Deck 1 and Deck 2. Moving the fader fully to the left routes only Deck 1; moving it fully to the right routes only Deck 2. Center position mixes both decks simultaneously.</p>
+<h3 id="cue-pfl-pre-fader-listen">Cue / PFL (Pre-Fader Listen)</h3>
+<p>An isolated monitoring bus routing pre-fader deck audio directly to headphones. Allows auditioning and phase alignment before opening the channel volume fader to the audience.</p>
+<h3 id="downbeat-bar-1-beat-1">Downbeat (Bar 1, Beat 1)</h3>
+<p>The primary rhythmic pulse initiating a musical measure or phrase. Zero anchors beatgrid calculations to the initial downbeat transient.</p>
+<h3 id="hotcue">Hotcue</h3>
+<p>A persistent digital bookmark mapped to an exact waveform timestamp. Triggering a hotcue jumps the playhead to the marker and immediately initiates playback.</p>
+<h3 id="isolator-eq">Isolator EQ</h3>
+<p>A 3-band equalizer providing full frequency band attenuation (-infinity dB) at minimum knob rotation. Allows complete removal of low, mid, or high bands without affecting neighboring frequencies.</p>
+<h3 id="needledrop">Needledrop</h3>
+<p>A navigation shortcut (<code>SHIFT + Turn Jog</code>) that moves the playback position in multi-bar intervals to scan track arrangements rapidly.</p>
+<h3 id="nudge-pitch-bend">Nudge (Pitch Bend)</h3>
+<p>A temporary increase or decrease in playback speed executed by rotating <kbd class="hw-key">JOG</kbd> while a deck is playing. Aligns transient phase without permanently modifying track tempo.</p>
+<h3 id="quantize">Quantize</h3>
+<p>An execution timing assist that aligns manual performance triggers (such as loop engagement or hotcue strikes) to the nearest beatgrid interval.</p>
+<h3 id="slew-interpolation">Slew Interpolation</h3>
+<p>Digital signal smoothing applied to fader and encoder parameters across audio buffer frames. Eliminates zipper noise and stepping artifacts during fast fader motions.</p>
+<h3 id="split-cue">Split-Cue</h3>
+<p>A headphone monitoring mode dividing the stereo output: the left channel monitors the pre-fader Cue bus, and the right channel monitors the master output mix.</p>
+<h3 id="tsm-time-scale-modification">TSM (Time-Scale Modification)</h3>
+<p>A digital signal processing algorithm that alters audio playback speed (tempo) while maintaining original musical key and pitch.</p>
+<h3 id="usb-host-mode-vs-gadget-mode">USB Host Mode vs. Gadget Mode</h3>
+<ul>
+<li><strong>Host Mode:</strong> Zero acts as the host controller, supplying 5V bus power to external flash drives, SSDs, and USB MIDI controllers.</li>
+<li><strong>Gadget Mode:</strong> Zero acts as an accessory device attached to a workstation computer, providing USB Mass Storage drive access, a 4-in/4-out USB audio interface, or USB MIDI clock communication.</li>
+</ul>
+            </article>
+        </div>
+    </main>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Scrollspy for sidebar TOC links
+        const links = Array.from(document.querySelectorAll('.toc-link'));
+        const headers = Array.from(document.querySelectorAll('h1[id], h2[id], h3[id]'));
+        
+        function updateActiveLink() {
+            const scrollPos = window.scrollY + 100;
+            let currentHeader = null;
+            
+            for (let i = 0; i < headers.length; i++) {
+                if (headers[i].offsetTop <= scrollPos) {
+                    currentHeader = headers[i];
+                } else {
+                    break;
+                }
+            }
+            
+            if (currentHeader) {
+                const targetId = currentHeader.id;
+                links.forEach(link => {
+                    if (link.getAttribute('data-target') === targetId) {
+                        link.classList.add('active');
+                        // Auto-scroll sidebar if active item is out of view
+                        const linkRect = link.getBoundingClientRect();
+                        const sidebarRect = document.querySelector('.sidebar').getBoundingClientRect();
+                        if (linkRect.top < sidebarRect.top || linkRect.bottom > sidebarRect.bottom) {
+                            link.scrollIntoView({ block: 'nearest' });
+                        }
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+        }
+        
+        window.addEventListener('scroll', updateActiveLink, { passive: true });
+        updateActiveLink();
+
+        // Search / Filter
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const tocItems = document.querySelectorAll('.toc-item');
+                tocItems.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    if (!query || text.includes(query)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+    </script>
+</body>
+</html>
