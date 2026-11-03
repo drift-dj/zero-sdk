@@ -117,11 +117,11 @@ uint64_t zdj_soundcard_dto_get_linkmap_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE: return dto->deck_2_prefade_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE: return dto->deck_2_postfade_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE: return dto->deck_2_cue_link_map;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT: return dto->deck_ext_input_link_map;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE: return dto->deck_ext_edge_link_map;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return dto->deck_ext_prefade_link_map;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE: return dto->deck_ext_postfade_link_map;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE: return dto->deck_ext_cue_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT: return dto->deck_ext_input_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_EDGE: return dto->deck_ext_edge_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE: return dto->deck_ext_prefade_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE: return dto->deck_ext_postfade_link_map;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE: return dto->deck_ext_cue_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_A: return dto->xfade_a_link_map;
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_B: return dto->xfade_b_link_map;
         default: return 0;
@@ -164,11 +164,11 @@ int zdj_soundcard_dto_set_linkmap_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE: dto->deck_2_prefade_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE: dto->deck_2_postfade_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE: dto->deck_2_cue_link_map = link_map; break;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT: dto->deck_ext_input_link_map = link_map; break;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE: dto->deck_ext_edge_link_map = link_map; break;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: dto->deck_ext_prefade_link_map = link_map; break;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE: dto->deck_ext_postfade_link_map = link_map; break;
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE: dto->deck_ext_cue_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT: dto->deck_ext_input_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_EDGE: dto->deck_ext_edge_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE: dto->deck_ext_prefade_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE: dto->deck_ext_postfade_link_map = link_map; break;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE: dto->deck_ext_cue_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_A: dto->xfade_a_link_map = link_map; break;
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_B: dto->xfade_b_link_map = link_map; break;
         default: break;
@@ -244,11 +244,11 @@ int zdj_soundcard_dto_get_stereo_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: 
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE: 
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_EDGE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE: 
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE: 
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE:
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_A:
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_B: return 1;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_OUT_0: return dto->ana_out_0_stereo;
@@ -474,10 +474,10 @@ zdj_soundcard_dsp_dto_t * zdj_soundcard_dto_get_dsp_for_node_name(
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE: return &dto->deck_2_prefade_dsp; 
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE: return &dto->deck_2_postfade_dsp; 
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE: return &dto->deck_2_cue_dsp; 
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT: return &dto->deck_ext_input_dsp; 
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return &dto->deck_ext_prefade_dsp; 
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE: return &dto->deck_ext_postfade_dsp; 
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE: return &dto->deck_ext_cue_dsp; 
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT: return &dto->deck_ext_input_dsp; 
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE: return &dto->deck_ext_prefade_dsp; 
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE: return &dto->deck_ext_postfade_dsp; 
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE: return &dto->deck_ext_cue_dsp; 
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_0: return &dto->ana_in_0_dsp;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_1: return &dto->ana_in_1_dsp;
         case ZDJ_SOUNDCARD_NODE_NAME_ANALOG_IN_2: return &dto->ana_in_2_dsp;

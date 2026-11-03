@@ -7,7 +7,7 @@
 
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck.h>
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
@@ -21,7 +21,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event );
 // Pipeline update thread
 static void * _pipeline_thread_main( void * arg );
 
-zdj_error_type_t zdj_new_xport_deck( zdj_deck_t * deck ) {
+zdj_error_type_t zdj_new_clock_deck( zdj_deck_t * deck ) {
     deck->update_state = &_update_state;
     deck->deinit = &_deinit;
     deck->push_edge_data = &_push_edge_data;
@@ -29,15 +29,15 @@ zdj_error_type_t zdj_new_xport_deck( zdj_deck_t * deck ) {
     deck->can_sync = true;
     deck->handle_control_event = NULL; // handle_control is set later in the init flow
     
-    zdj_xport_deck_state_t * state = calloc( 1, sizeof( zdj_xport_deck_state_t ) );
+    zdj_clock_deck_state_t * state = calloc( 1, sizeof( zdj_clock_deck_state_t ) );
     state->set_bpm = 120.0;
     state->transport_bg = 0.0;
     state->meter_on = false;
     state->meter_counter = 0;
     deck->state = state;
 
-    zdj_deck_xport_init_sync( deck );
-    zdj_deck_xport_init_transport( deck );
+    zdj_deck_clock_init_sync( deck );
+    zdj_deck_clock_init_transport( deck );
 
     sem_init( &state->start_cycle, 0, 0 );
 
@@ -45,7 +45,7 @@ zdj_error_type_t zdj_new_xport_deck( zdj_deck_t * deck ) {
 }
 
 static void _deinit( zdj_deck_t * deck ) {
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
 }
 
 // Called from the slow deck update thread (~.25Hz).
@@ -54,7 +54,7 @@ static void _update_state ( zdj_deck_t * deck ) {
     // Early exit if we're up and running.
     if( deck->status == ZDJ_DECK_STATUS_RUNNING ) { return; }
     
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
 
     switch ( deck->status ) {
 
@@ -131,7 +131,7 @@ static void _update_state ( zdj_deck_t * deck ) {
 // Push clock synth samples out to soundcard node
 static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool stereo ) {
     zdj_deck_t * deck = (zdj_deck_t*)_deck;
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
     // printf( "clock get edge data\n" );
 
     // Get a reference to external deck input node's buffer
@@ -180,7 +180,7 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
 static void _push_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool stereo ) {
     
     zdj_deck_t * deck = (zdj_deck_t*)_deck;
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
     // printf( "clock push edge data\n" );
 
     // Get a reference to the soundcard deck edge buffer with samples.
@@ -201,7 +201,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // All external clock and transport signals flow through here.
     // They are then re-routed based on instantaneous system state
 
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
     zdj_deck_platter_t * platter = &deck->controls.platter;
 
     switch ( event->id ) {
@@ -210,7 +210,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 //     // Play / Pause //
 //     //////////////////  
      
-    case ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE:
+    case ZDJ_DECK_CLOCK_CONTROL_PLAY_PAUSE:
         if( !platter->motor.enabled ) {
             platter->motor.enabled = true;
             platter->motor.set_rate = platter->motor.pitch_setting;
@@ -229,7 +229,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 //     // Scrub //
 //     ///////////  
 
-    case ZDJ_DECK_XPORT_CONTROL_SCRUB:
+    case ZDJ_DECK_CLOCK_CONTROL_SCRUB:
         // Nudge clock synth
         if( platter->motor.enabled ) {
             // printf( "clock_nudge: %d\n", event->i_val );
@@ -242,7 +242,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 //     // Tempo //
 //     ///////////  
 
-    case ZDJ_DECK_XPORT_CONTROL_TEMPO:
+    case ZDJ_DECK_CLOCK_CONTROL_TEMPO:
     
         if( zdj_deck_manager( )->sync.preferred &&
             !zdj_deck_manager( )->sync.active &&
@@ -260,7 +260,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
         }
         break;
 
-    case ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE:
+    case ZDJ_DECK_CLOCK_CONTROL_TEMPO_FINE:
 
         // if( clock_is_output( ) ) {
         if( zdj_deck_manager( )->sync.preferred &&
@@ -288,7 +288,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
 //     // Sync //
 //     //////////  
 
-    case ZDJ_DECK_XPORT_CONTROL_SYNC_MULT:
+    case ZDJ_DECK_CLOCK_CONTROL_SYNC_MULT:
         if( deck->can_sync ) { 
             deck_state->sync_mult_ui_counter += event->i_val;
             if( abs( deck_state->sync_mult_ui_counter ) > 4 ) {

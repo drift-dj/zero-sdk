@@ -366,13 +366,13 @@ static void _handle_meter_source( zdj_view_t * view, zdj_control_event_t * _even
     zdj_setting_t * waveform_source_setting = zdj_setting_get( ZDJ_SETTING_EXT_WAVEFORM_SOURCE );
     if( waveform_source_setting ) {
         if( waveform_source_setting->i_val == ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS ) {
-            node_name = ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
+            node_name = ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE;
         } else {
             node_name = ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
         }
     }
     zdj_setting_set_int( ZDJ_SETTING_EXT_WAVEFORM_SOURCE, node_name );
     options_state->needs_layout_update = true;
-    zdj_deck_t * deck_ext = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_EXT );
+    zdj_deck_t * deck_ext = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_X );
     if( deck_ext ) { deck_ext->needs_ui_reset = true; }
 }

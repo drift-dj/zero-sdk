@@ -4,7 +4,7 @@
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/node/analysis/meter/zdj_meter_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
@@ -40,7 +40,7 @@ zdj_view_t * zdj_new_clock_meter_view(
     // Add clock pulse
     // Get xport deck instance for tracking pulse state
     zdj_deck_t * xport_deck = zdj_soundcard->clock_deck;
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)xport_deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)xport_deck->state;
 
     zdj_view_t * clock_pulse = zdj_new_asset_view( 
         &zdj_ui_assets[ ZDJ_UI_ASSET_MIXER_CLOCK_PULSE ], 
@@ -103,7 +103,7 @@ void _zdj_clock_meter_draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
 
     // Get xport deck instance for tracking pulse state
     zdj_deck_t * xport_deck = zdj_soundcard->clock_deck;
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)xport_deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)xport_deck->state;
 
     if( state->is_hilite ) {
         state->detail->frame.w = 7;

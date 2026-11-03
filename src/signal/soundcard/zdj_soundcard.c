@@ -74,7 +74,7 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     soundcard->recording_node = zdj_new_audio_record_node( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) );
 
     // Bring up a clock deck and obey any linkage in current soundcard
-    soundcard->clock_deck = zdj_deck_manager_add_deck( ZDJ_DECK_TYPE_XPORT, ZDJ_DECK_STATION_XPORT, NULL, 0 );
+    soundcard->clock_deck = zdj_deck_manager_add_deck( ZDJ_DECK_TYPE_CLOCK, ZDJ_DECK_STATION_CLOCK, NULL, 0 );
     zdj_soundcard_init_clock_deck( soundcard );
 
     // Bring up USB admin thread
@@ -287,9 +287,9 @@ void _zdj_soundcard_io_reset_cycle_cb( zdj_pipeline_node_t * node ) {
     if( deck_1 ) { zdj_soundcard_link_deck( zdj_soundcard, deck_1 ); }
     zdj_deck_t * deck_2 = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_2 );
     if( deck_2 ) { zdj_soundcard_link_deck( zdj_soundcard, deck_2 ); }
-    zdj_deck_t * deck_xport = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
+    zdj_deck_t * deck_xport = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_CLOCK );
     if( deck_xport ) { zdj_soundcard_link_deck( zdj_soundcard, deck_xport ); }
-    zdj_deck_t * deck_ext = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_EXT );
+    zdj_deck_t * deck_ext = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_X );
     if( deck_ext ) { 
         zdj_soundcard_link_deck( zdj_soundcard, deck_ext ); 
         deck_ext->needs_ui_reset = true;

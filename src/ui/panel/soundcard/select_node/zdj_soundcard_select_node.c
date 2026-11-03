@@ -265,9 +265,9 @@ zdj_error_type_t zdj_soundcard_build_select_node_output_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE );
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
@@ -327,9 +327,9 @@ zdj_error_type_t zdj_soundcard_build_select_node_input_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE );
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
@@ -421,9 +421,9 @@ zdj_error_type_t zdj_soundcard_build_select_node_aux_bus_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE );
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
@@ -483,9 +483,9 @@ zdj_error_type_t zdj_soundcard_build_select_node_deck_menu(
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE );
 
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Crossfader" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_XFADE_A );
@@ -538,7 +538,7 @@ zdj_error_type_t zdj_soundcard_build_select_node_cv_menu(
     zdj_menu_view_add_section( menu, zdj_new_menu_section( "Decks" ) );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_1_INPUT );
     _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_2_INPUT );
-    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+    _zdj_soundcard_add_select_menu_item( menu, context, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT );
 }
 
 zdj_error_type_t zdj_soundcard_build_select_node_midi_menu( 

@@ -21,13 +21,13 @@ void zdj_soundcard_reset_db_defaults( void ) {
     // Add default linkages
 
     // Analog input outs
-    dto->ana_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_0_stereo = true;
-    dto->ana_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_1_stereo = true;
-    dto->ana_in_2_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_2_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_2_stereo = true;
-    dto->ana_in_3_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_3_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_3_stereo = true;
 
     dto->ana_out_0_stereo = true;
@@ -40,9 +40,9 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->ana_out_3_sig = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_HI;
 
     // USB I/O
-    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->usb_in_0_stereo = true;
-    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->usb_in_1_stereo = true;
 
     dto->usb_out_0_stereo = true;
@@ -103,10 +103,10 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_2_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
 
     // Ext Deck
-    dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->deck_ext_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->deck_ext_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE;
-    dto->deck_ext_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE;
+    dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE;
+    dto->deck_ext_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE;
+    dto->deck_ext_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE;
+    dto->deck_ext_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE;
     dto->deck_ext_cue_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
     dto->deck_ext_postfade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
     dto->deck_ext_prefade_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ;
@@ -159,13 +159,13 @@ void zdj_soundcard_reset_db_defaults( void ) {
     // Add default linkages
 
     // Analog input outs
-    dto->ana_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_0_stereo = true;
-    dto->ana_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_1_stereo = true;
-    dto->ana_in_2_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_2_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_2_stereo = true;
-    dto->ana_in_3_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_3_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_3_stereo = true;
 
     dto->ana_out_0_stereo = true;
@@ -178,9 +178,9 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->ana_out_3_sig = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_HI;
 
     // USB I/O
-    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->usb_in_0_stereo = true;
-    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->usb_in_1_stereo = true;
 
     dto->usb_out_0_stereo = true;
@@ -239,10 +239,10 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_2_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
 
     // Ext Deck
-    dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->deck_ext_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->deck_ext_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE;
-    dto->deck_ext_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE;
+    dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE;
+    dto->deck_ext_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE;
+    dto->deck_ext_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE;
+    dto->deck_ext_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE;
     dto->deck_ext_cue_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
     dto->deck_ext_postfade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
     dto->deck_ext_prefade_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ;
@@ -289,13 +289,13 @@ void zdj_soundcard_reset_db_defaults( void ) {
     // Add default linkages
 
     // Analog input outs
-    dto->ana_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_0_stereo = true;
-    dto->ana_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_1_stereo = true;
-    dto->ana_in_2_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_2_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_2_stereo = true;
-    dto->ana_in_3_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->ana_in_3_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->ana_in_3_stereo = true;
 
     dto->ana_out_0_stereo = false;
@@ -308,9 +308,9 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->ana_out_3_sig = ZDJ_SOUNDCARD_SIGNAL_HEADPHONE_HI;
 
     // USB I/O
-    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->usb_in_0_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->usb_in_0_stereo = true;
-    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT;
+    dto->usb_in_1_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT;
     dto->usb_in_1_stereo = true;
 
     dto->usb_out_0_stereo = true;
@@ -368,10 +368,10 @@ void zdj_soundcard_reset_db_defaults( void ) {
     dto->deck_2_prefade_dsp.stages[ 1 ].knob_2 = 0.0; // Res
 
     // Ext Deck
-    dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
-    dto->deck_ext_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE;
+    dto->deck_ext_input_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE;
+    dto->deck_ext_edge_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE;
     dto->deck_ext_prefade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE;
-    dto->deck_ext_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE;
+    dto->deck_ext_prefade_link_map |= 1ULL << ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE;
     dto->deck_ext_cue_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_CUE_BUS;
     dto->deck_ext_postfade_link_map = 1ULL << ZDJ_SOUNDCARD_NODE_NAME_MAIN_BUS;
     dto->deck_ext_prefade_dsp.stages[ 0 ].type = ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ;

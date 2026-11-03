@@ -29,14 +29,14 @@
 typedef enum {
     ZDJ_XPORT_DECK_DIRECTION_OUTPUT,
     ZDJ_XPORT_DECK_DIRECTION_INPUT
-} zdj_xport_deck_direction_t;
+} zdj_clock_deck_direction_t;
 
 typedef enum {
     ZDJ_XPORT_DECK_SYNC_MODE_NORMAL,
     ZDJ_XPORT_DECK_SYNC_MODE_HALF,
     ZDJ_XPORT_DECK_SYNC_MODE_DOUBLE,
     ZDJ_XPORT_DECK_SYNC_MODE_OFF,
-} zdj_xport_deck_sync_mode_t;
+} zdj_clock_deck_sync_mode_t;
 
 typedef struct {
     // Thread management
@@ -48,16 +48,16 @@ typedef struct {
     int meter_counter;
     double transport_d;
     double transport_bg;
-    zdj_xport_deck_direction_t direction;
-    zdj_xport_deck_sync_mode_t sync_mode;
+    zdj_clock_deck_direction_t direction;
+    zdj_clock_deck_sync_mode_t sync_mode;
 
     // Sync
     double set_bpm;
     int sync_mult_ui_counter;
-} zdj_xport_deck_state_t;
+} zdj_clock_deck_state_t;
 
-zdj_error_type_t zdj_new_xport_deck( zdj_deck_t * deck );
-void zdj_deck_xport_init_transport( zdj_deck_t * deck );
-void zdj_deck_xport_init_sync( zdj_deck_t * deck );
+zdj_error_type_t zdj_new_clock_deck( zdj_deck_t * deck );
+void zdj_deck_clock_init_transport( zdj_deck_t * deck );
+void zdj_deck_clock_init_sync( zdj_deck_t * deck );
 
 #endif

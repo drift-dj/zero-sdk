@@ -42,9 +42,9 @@ add_library(zerodj
     src/signal/deck/dj/zdj_deck_dj_sync.c
     src/signal/deck/dj/zdj_deck_dj_platter.c
     src/signal/deck/extern/zdj_deck_extern.c
-    src/signal/deck/xport/zdj_deck_xport.c
-    src/signal/deck/xport/zdj_deck_xport_sync.c
-    src/signal/deck/xport/zdj_deck_xport_transport.c
+    src/signal/deck/clock/zdj_deck_clock.c
+    src/signal/deck/clock/zdj_deck_clock_sync.c
+    src/signal/deck/clock/zdj_deck_clock_transport.c
     src/signal/math/zdj_signal_math.c
     src/signal/pipeline/zdj_pipeline.c
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c

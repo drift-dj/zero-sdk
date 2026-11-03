@@ -181,7 +181,7 @@ static void _update_state ( zdj_deck_t * deck ) {
             ) {
                 zdj_thread_launch_deck_station_2_cycle( _pipeline_thread_main, deck );
                 deck->status = ZDJ_DECK_STATUS_WAIT_THREAD_READY;
-            } else if( deck->station == ZDJ_DECK_STATION_EXT &&
+            } else if( deck->station == ZDJ_DECK_STATION_X &&
                 zdj_thread_deck_ext_station_available 
             ) {
                 zdj_thread_launch_deck_station_ext_cycle( _pipeline_thread_main, deck );
@@ -351,7 +351,7 @@ static void * _pipeline_thread_main( void * arg ) {
             CPU_SET( 3,&cpuset );
             zdj_thread_deck_2_station_available = false;
             break;
-        case ZDJ_DECK_STATION_EXT:
+        case ZDJ_DECK_STATION_X:
             CPU_SET( 2,&cpuset );
             zdj_thread_deck_ext_station_available = false;
             break;
@@ -599,7 +599,7 @@ static void * _pipeline_thread_main( void * arg ) {
         case ZDJ_DECK_STATION_2:
             zdj_thread_deck_2_station_available = true;
             break;
-        case ZDJ_DECK_STATION_EXT:
+        case ZDJ_DECK_STATION_X:
             zdj_thread_deck_ext_station_available = true;
             break;
         default: break;

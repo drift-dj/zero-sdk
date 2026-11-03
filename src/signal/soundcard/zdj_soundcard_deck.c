@@ -6,7 +6,7 @@
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/record/zdj_audio_record_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
@@ -38,16 +38,16 @@ zdj_error_type_t zdj_soundcard_link_deck(
             edge_node->get_edge_input_data = deck->get_edge_data;
             edge_node->edge_input_link = deck;
             break;
-        case ZDJ_DECK_STATION_EXT:
-            edge_input_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+        case ZDJ_DECK_STATION_X:
+            edge_input_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT );
             edge_input_node->push_edge_output_data = deck->push_edge_data;
             edge_input_node->edge_output_link = deck;
 
-            edge_output_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE );
+            edge_output_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_EDGE );
             edge_output_node->get_edge_input_data = deck->get_edge_data;
             edge_output_node->edge_input_link = deck;
             break;
-        case ZDJ_DECK_STATION_XPORT:
+        case ZDJ_DECK_STATION_CLOCK:
             edge_input_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 );
             edge_input_node->push_edge_output_data = deck->push_edge_data;
             edge_input_node->edge_output_link = deck;
@@ -80,8 +80,8 @@ zdj_error_type_t zdj_soundcard_unlink_deck(
             edge_node->get_edge_input_data = NULL;
             edge_node->edge_input_link = NULL;
             break;
-        case ZDJ_DECK_STATION_EXT:
-            edge_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE );
+        case ZDJ_DECK_STATION_X:
+            edge_node = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_EDGE );
             edge_node->get_edge_input_data = NULL;
             edge_node->edge_input_link = NULL;
             break;
@@ -174,7 +174,7 @@ void zdj_soundcard_handle_deck_event(
 
 void zdj_soundcard_init_clock_deck( zdj_soundcard_t * soundcard ) {
     zdj_deck_t * deck = soundcard->clock_deck;
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
     // deck_state->ppqn = soundcard->dto.clock_1_val;
     // state->set_bpm = zdj_soundcard_get_set_bpm_for_clock( &zdj_soundcard->dto );
     // state->sync_mode = zdj_soundcard_get_sync_mode_for_clock( &zdj_soundcard->dto );

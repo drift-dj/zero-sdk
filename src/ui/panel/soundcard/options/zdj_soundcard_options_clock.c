@@ -5,7 +5,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 
 #include <zerodj/signal/deck/zdj_deck_manager.h>
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/ui/zdj_ui.h>
@@ -37,7 +37,7 @@ void zdj_soundcard_options_update_clock_layout( zdj_view_t * view ) {
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view->state;
     zdj_view_t * menu_view = options_state->menu;
     zdj_deck_t * clock_deck = zdj_soundcard->clock_deck;
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)clock_deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)clock_deck->state;
 
     options_state->needs_layout_update = false;
 
@@ -286,8 +286,8 @@ static void _handle_ppqn( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view_state->data.ptr;
 
     // Build a ref to the xport deck
-    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
-    zdj_xport_deck_state_t * xport_state = (zdj_xport_deck_state_t*)xport_deck->state;
+    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_CLOCK );
+    zdj_clock_deck_state_t * xport_state = (zdj_clock_deck_state_t*)xport_deck->state;
 
     switch( zdj_soundcard_dto_get_sigtype_for_node_name( &zdj_soundcard->dto, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 ) 
     ) {
@@ -340,8 +340,8 @@ static void _handle_direction( zdj_view_t * view, zdj_control_event_t * event ) 
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view_state->data.ptr;
 
     // Build a ref to the xport deck
-    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
-    zdj_xport_deck_state_t * xport_state = (zdj_xport_deck_state_t*)xport_deck->state;
+    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_CLOCK );
+    zdj_clock_deck_state_t * xport_state = (zdj_clock_deck_state_t*)xport_deck->state;
 
     switch( zdj_soundcard_dto_get_source_for_node_name( 
             &zdj_soundcard->dto, ZDJ_SOUNDCARD_NODE_NAME_XPORT_0 
@@ -376,8 +376,8 @@ static void _handle_sync( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view_state->data.ptr;
 
     // Build a ref to the xport deck
-    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
-    zdj_xport_deck_state_t * xport_state = (zdj_xport_deck_state_t*)xport_deck->state;
+    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_CLOCK );
+    zdj_clock_deck_state_t * xport_state = (zdj_clock_deck_state_t*)xport_deck->state;
 
 
     switch( zdj_soundcard_dto_get_sync_for_node_name( 
@@ -425,8 +425,8 @@ static void _handle_status( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view_state->data.ptr;
 
     // Build a ref to the xport deck
-    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
-    zdj_xport_deck_state_t * xport_state = (zdj_xport_deck_state_t*)xport_deck->state;
+    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_CLOCK );
+    zdj_clock_deck_state_t * xport_state = (zdj_clock_deck_state_t*)xport_deck->state;
 
     xport_deck->controls.platter.motor.enabled = !xport_deck->controls.platter.motor.enabled;
     options_state->needs_layout_update = true;
@@ -437,8 +437,8 @@ static void _handle_bpm( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_soundcard_options_state_t * options_state = (zdj_soundcard_options_state_t*)view_state->data.ptr;
 
     // Build a ref to the xport deck
-    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
-    zdj_xport_deck_state_t * xport_state = (zdj_xport_deck_state_t*)xport_deck->state;
+    zdj_deck_t * xport_deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_CLOCK );
+    zdj_clock_deck_state_t * xport_state = (zdj_clock_deck_state_t*)xport_deck->state;
 
     options_state->needs_layout_update = true;
 }

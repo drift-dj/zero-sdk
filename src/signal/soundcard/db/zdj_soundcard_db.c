@@ -200,18 +200,18 @@ zdj_error_type_t zdj_soundcard_fetch_dto( char * entity_id, zdj_soundcard_dto_t 
             str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_2_CUE_DSP );
             if( str ) { strcpy( dto->deck_2_cue_dsp_eid, str ); }
 
-            dto->deck_ext_input_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_INPUT_LINK );
-            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_CUE_DSP );
+            dto->deck_ext_input_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_INPUT_LINK );
+            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_CUE_DSP );
             if( str ) { strcpy( dto->deck_ext_cue_dsp_eid, str ); }
-            dto->deck_ext_edge_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_EDGE_LINK );
-            dto->deck_ext_prefade_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_PREFADE_LINK );
-            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_PREFADE_DSP );
+            dto->deck_ext_edge_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_EDGE_LINK );
+            dto->deck_ext_prefade_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_PREFADE_LINK );
+            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_PREFADE_DSP );
             if( str ) { strcpy( dto->deck_ext_prefade_dsp_eid, str ); }
-            dto->deck_ext_postfade_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_POSTFADE_LINK );
-            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_POSTFADE_DSP );
+            dto->deck_ext_postfade_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_POSTFADE_LINK );
+            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_POSTFADE_DSP );
             if( str ) { strcpy( dto->deck_ext_postfade_dsp_eid, str ); }
-            dto->deck_ext_cue_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_CUE_LINK );
-            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_EXT_CUE_DSP );
+            dto->deck_ext_cue_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_CUE_LINK );
+            str = (char*)sqlite3_column_text ( stmt, ZDJ_SOUNDCARD_COL_DECK_X_CUE_DSP );
             if( str ) { strcpy( dto->deck_ext_cue_dsp_eid, str ); }
 
             dto->aux_bus_0_link_map = sqlite3_column_int64 ( stmt, ZDJ_SOUNDCARD_COL_AUX_BUS_0_LINK );

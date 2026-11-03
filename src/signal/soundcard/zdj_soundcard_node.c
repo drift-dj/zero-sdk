@@ -661,11 +661,11 @@ bool zdj_soundcard_node_name_is_audio( zdj_soundcard_node_name_t name ) {
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_PREFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_POSTFADE:
         case ZDJ_SOUNDCARD_NODE_NAME_DECK_2_CUE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_EDGE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_POSTFADE:
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE: 
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_EDGE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_POSTFADE:
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE: 
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_A: 
         case ZDJ_SOUNDCARD_NODE_NAME_XFADE_B: return true;
         default: return false;
@@ -773,7 +773,7 @@ bool zdj_soundcard_node_name_is_dj_deck( zdj_soundcard_node_name_t name ) {
 
 bool zdj_soundcard_node_name_is_ext_deck( zdj_soundcard_node_name_t name ) {
     switch ( name ) {
-        case ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE: return true;
+        case ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE: return true;
         default: return false;
     }
 }

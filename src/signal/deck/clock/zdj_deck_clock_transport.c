@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include <zerodj/signal/deck/zdj_deck.h>
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 #include <zerodj/signal/pipeline/node/audio/tsm/zdj_tsm_pitch_node.h>
@@ -12,7 +12,7 @@
 
 static void _update_platter_model_inputs( zdj_deck_t * deck );
 
-void zdj_deck_xport_init_transport( zdj_deck_t * deck ) {
+void zdj_deck_clock_init_transport( zdj_deck_t * deck ) {
     deck->update_platter_model = &_update_platter_model_inputs;
 }
 
@@ -44,7 +44,7 @@ void zdj_xport_deck_reset_platter(
 
 static void _update_platter_model_inputs( zdj_deck_t * deck ) {
     // printf( "_update_platter_model_inputs %p\n", deck );
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
     if( deck->status < ZDJ_DECK_STATUS_RUNNING ){ return; }
 
     // Get platter models

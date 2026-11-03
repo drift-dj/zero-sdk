@@ -11,7 +11,7 @@
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
 #include <zerodj/signal/deck/dj/zdj_deck_dj.h>
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 #include <zerodj/system/log/zdj_log.h>
@@ -127,12 +127,12 @@ zdj_deck_station_t zdj_deck_manager_get_station_for_map( zdj_control_map_id_t ma
         case ZDJ_CONTROL_MAP_STATION_2_DELAY:
         case ZDJ_CONTROL_MAP_STATION_2_MOM_EQ: return ZDJ_DECK_STATION_2;
 
-        case ZDJ_CONTROL_MAP_STATION_EXT_EQ:
-        case ZDJ_CONTROL_MAP_STATION_EXT_TRIM:
-        case ZDJ_CONTROL_MAP_STATION_EXT_FILT:
-        case ZDJ_CONTROL_MAP_STATION_EXT_SYNC:
-        case ZDJ_CONTROL_MAP_STATION_EXT_DELAY:
-        case ZDJ_CONTROL_MAP_STATION_EXT_MOM_EQ: return ZDJ_DECK_STATION_EXT;
+        case ZDJ_CONTROL_MAP_STATION_X_EQ:
+        case ZDJ_CONTROL_MAP_STATION_X_TRIM:
+        case ZDJ_CONTROL_MAP_STATION_X_FILT:
+        case ZDJ_CONTROL_MAP_STATION_X_SYNC:
+        case ZDJ_CONTROL_MAP_STATION_X_DELAY:
+        case ZDJ_CONTROL_MAP_STATION_X_MOM_EQ: return ZDJ_DECK_STATION_X;
         
         default: return ZDJ_DECK_STATION_NONE;
     }
@@ -207,9 +207,9 @@ void zdj_deck_manager_set_prefer_sync( bool prefer ) {
             zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
             zdj_deck_manager_set_sync( deck_state->set_bpm );
        
-        } else if ( station == ZDJ_DECK_STATION_EXT ) { 
-            zdj_deck_t * deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_XPORT );
-            zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)deck->state;
+        } else if ( station == ZDJ_DECK_STATION_X ) { 
+            zdj_deck_t * deck = zdj_deck_manager_get_deck_for_station( ZDJ_DECK_STATION_CLOCK );
+            zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)deck->state;
             zdj_deck_manager_set_sync( deck_state->set_bpm );
         }
     }
@@ -568,49 +568,49 @@ static bool _station_can_handle_event( zdj_deck_station_t station, zdj_control_e
         case ZDJ_DECK_2_CONTROL_HOTCUE_15: return station == ZDJ_DECK_STATION_2;
 
 
-        case ZDJ_DECK_EXT_CONTROL_TRIM:
-        case ZDJ_DECK_EXT_CONTROL_EQ_LO:
-        case ZDJ_DECK_EXT_CONTROL_EQ_MID:
-        case ZDJ_DECK_EXT_CONTROL_EQ_HI:
-        case ZDJ_DECK_EXT_CONTROL_PFL_TRIM:
-        case ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_TOGGLE:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_ON:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_OFF:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_START:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_START_ALT:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_END:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_LENGTH:
-        case ZDJ_DECK_EXT_CONTROL_LOOP_LENGTH_ALT:
-        case ZDJ_DECK_EXT_CONTROL_SKIP:
-        case ZDJ_DECK_EXT_CONTROL_SKIP_LENGTH:
-        case ZDJ_DECK_EXT_CONTROL_SKIP_SET_ORIGIN:
-        case ZDJ_DECK_EXT_CONTROL_SKIP_RESET_TO_ORIGIN:
-        case ZDJ_DECK_EXT_CONTROL_FX_SELECT:
-        case ZDJ_DECK_EXT_CONTROL_FX_0:
-        case ZDJ_DECK_EXT_CONTROL_FX_1:
-        case ZDJ_DECK_EXT_CONTROL_FX_2:
-        case ZDJ_DECK_EXT_CONTROL_FX_3:
-        case ZDJ_DECK_EXT_CONTROL_FX_4:
-        case ZDJ_DECK_EXT_CONTROL_FX_5:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_0:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_1:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_2:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_RESET:
-        case ZDJ_DECK_EXT_CONTROL_SYNC_MULT:
-        case ZDJ_DECK_EXT_CONTROL_SCRUB:
-        case ZDJ_DECK_EXT_CONTROL_SCRUB_ALT_0:
-        case ZDJ_DECK_EXT_CONTROL_SCRUB_ALT_1: return station == ZDJ_DECK_STATION_EXT;
+        case ZDJ_DECK_X_CONTROL_TRIM:
+        case ZDJ_DECK_X_CONTROL_EQ_LO:
+        case ZDJ_DECK_X_CONTROL_EQ_MID:
+        case ZDJ_DECK_X_CONTROL_EQ_HI:
+        case ZDJ_DECK_X_CONTROL_PFL_TRIM:
+        case ZDJ_DECK_X_CONTROL_PFL_TOGGLE_MUTE:
+        case ZDJ_DECK_X_CONTROL_LOOP_TOGGLE:
+        case ZDJ_DECK_X_CONTROL_LOOP_ON:
+        case ZDJ_DECK_X_CONTROL_LOOP_OFF:
+        case ZDJ_DECK_X_CONTROL_LOOP_START:
+        case ZDJ_DECK_X_CONTROL_LOOP_START_ALT:
+        case ZDJ_DECK_X_CONTROL_LOOP_END:
+        case ZDJ_DECK_X_CONTROL_LOOP_LENGTH:
+        case ZDJ_DECK_X_CONTROL_LOOP_LENGTH_ALT:
+        case ZDJ_DECK_X_CONTROL_SKIP:
+        case ZDJ_DECK_X_CONTROL_SKIP_LENGTH:
+        case ZDJ_DECK_X_CONTROL_SKIP_SET_ORIGIN:
+        case ZDJ_DECK_X_CONTROL_SKIP_RESET_TO_ORIGIN:
+        case ZDJ_DECK_X_CONTROL_FX_SELECT:
+        case ZDJ_DECK_X_CONTROL_FX_0:
+        case ZDJ_DECK_X_CONTROL_FX_1:
+        case ZDJ_DECK_X_CONTROL_FX_2:
+        case ZDJ_DECK_X_CONTROL_FX_3:
+        case ZDJ_DECK_X_CONTROL_FX_4:
+        case ZDJ_DECK_X_CONTROL_FX_5:
+        case ZDJ_DECK_X_CONTROL_FILTER_0:
+        case ZDJ_DECK_X_CONTROL_FILTER_1:
+        case ZDJ_DECK_X_CONTROL_FILTER_2:
+        case ZDJ_DECK_X_CONTROL_FILTER_RESET:
+        case ZDJ_DECK_X_CONTROL_SYNC_MULT:
+        case ZDJ_DECK_X_CONTROL_SCRUB:
+        case ZDJ_DECK_X_CONTROL_SCRUB_ALT_0:
+        case ZDJ_DECK_X_CONTROL_SCRUB_ALT_1: return station == ZDJ_DECK_STATION_X;
 
-        case ZDJ_DECK_XPORT_CONTROL_SCRUB:
-        case ZDJ_DECK_XPORT_CONTROL_SYNC_MULT:
-        case ZDJ_DECK_XPORT_CONTROL_TEMPO:
-        case ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE:
-        case ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE:
-        case ZDJ_DECK_XPORT_CONTROL_PAUSE:
-        case ZDJ_DECK_XPORT_CONTROL_CUE_START:
-        case ZDJ_DECK_XPORT_CONTROL_CUE_STOP:
-        case ZDJ_DECK_XPORT_CONTROL_CUE_END: return station == ZDJ_DECK_STATION_XPORT;
+        case ZDJ_DECK_CLOCK_CONTROL_SCRUB:
+        case ZDJ_DECK_CLOCK_CONTROL_SYNC_MULT:
+        case ZDJ_DECK_CLOCK_CONTROL_TEMPO:
+        case ZDJ_DECK_CLOCK_CONTROL_TEMPO_FINE:
+        case ZDJ_DECK_CLOCK_CONTROL_PLAY_PAUSE:
+        case ZDJ_DECK_CLOCK_CONTROL_PAUSE:
+        case ZDJ_DECK_CLOCK_CONTROL_CUE_START:
+        case ZDJ_DECK_CLOCK_CONTROL_CUE_STOP:
+        case ZDJ_DECK_CLOCK_CONTROL_CUE_END: return station == ZDJ_DECK_STATION_CLOCK;
 
         default: return false;
     }

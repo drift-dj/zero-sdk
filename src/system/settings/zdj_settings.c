@@ -93,7 +93,7 @@ static void _reset_default( void ) {
     zdj_setting_set_bool( ZDJ_SETTING_DECK_STRETCH_OVERRIDE, false );
     zdj_setting_set_bool( ZDJ_SETTING_DECK_1_DC_COUPLE, false );
     zdj_setting_set_bool( ZDJ_SETTING_DECK_2_DC_COUPLE, false );
-    zdj_setting_set_bool( ZDJ_SETTING_DECK_EXT_DC_COUPLE, false );
+    zdj_setting_set_bool( ZDJ_SETTING_DECK_X_DC_COUPLE, false );
 
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_BPM, false );
     zdj_setting_set_bool( ZDJ_SETTING_LIB_MENU_SHOW_KEY, false );

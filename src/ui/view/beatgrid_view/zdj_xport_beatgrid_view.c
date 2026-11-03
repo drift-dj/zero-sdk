@@ -5,7 +5,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
 
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/ui/zdj_ui.h>
@@ -43,7 +43,7 @@ zdj_view_t * zdj_new_xport_beatgrid_view(
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // printf( "xport_beatgrid_view draw\n" );
     zdj_beatgrid_view_state_t * view_state = (zdj_beatgrid_view_state_t*)view->state;
-    zdj_xport_deck_state_t * deck_state = (zdj_xport_deck_state_t*)view_state->deck->state;
+    zdj_clock_deck_state_t * deck_state = (zdj_clock_deck_state_t*)view_state->deck->state;
     
     // Remove grid markers
     zdj_remove_all_subviews_of( view );

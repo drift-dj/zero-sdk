@@ -190,7 +190,7 @@ static void _update_layout( zdj_view_t * view, zdj_view_clip_t * clip ) {
     );
     // Add Ext Deck
     meter_x += zdj_soundcard_view_add_meter_for_node( 
-        menu_view, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE, true, false, meter_x 
+        menu_view, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE, true, false, meter_x 
     );
     // Add Deck 2
     meter_x += zdj_soundcard_view_add_meter_for_node( 

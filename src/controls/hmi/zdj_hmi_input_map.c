@@ -62,8 +62,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_SCRUB, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_SCRUB ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_SCRUB, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_SCRUB ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_SCRUB, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_SCRUB ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_SCRUB, in_e, c_e ); return true; 
             }
         } else if( in_e->type == ZDJ_HMI_EVENT_MOD_ADJUST ) {
             // Sort Jog scroll events among UI/Decks
@@ -80,10 +80,10 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_TEMPO, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_TEMPO ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_TEMPO, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_TEMPO ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_TEMPO, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_TEMPO ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_TEMPO, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_TEMPO ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_TEMPO, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_TEMPO ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_TEMPO, in_e, c_e ); return true; 
             }  
         } else if( in_e->type == ZDJ_HMI_EVENT_MOD_PRESS_ADJUST ) {
             // Sort Jog scroll events among UI/Decks
@@ -91,10 +91,10 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_TEMPO, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_TEMPO ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_TEMPO, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_TEMPO ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_TEMPO, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_TEMPO ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_TEMPO, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_TEMPO ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_TEMPO, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_TEMPO ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_TEMPO, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_LOOP_START_ALT ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_LOOP_START_ALT, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_LOOP_START_ALT ] ) { 
@@ -176,8 +176,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_FILTER_RESET, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_FILTER_RESET ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_FILTER_RESET, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_FILTER_RESET ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_FILTER_RESET, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_FILTER_RESET ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_FILTER_RESET, in_e, c_e ); return true; 
             }
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE ) {
             // UI Release
@@ -216,16 +216,16 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_EQ_LO, in_e, c_e ); return true;
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_EQ_LO ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_EQ_LO, in_e, c_e ); return true;
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_EQ_LO ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_EQ_LO, in_e, c_e ); return true;
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_EQ_LO ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_EQ_LO, in_e, c_e ); return true;
             
             // Deck Trim
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_TRIM ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_TRIM, in_e, c_e ); return true;
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_TRIM ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_TRIM, in_e, c_e ); return true;
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_TRIM ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_TRIM, in_e, c_e ); return true;
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_TRIM ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_TRIM, in_e, c_e ); return true;
 
             // Loop Length
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_LOOP_LENGTH ] ) { 
@@ -238,8 +238,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_FILTER_0, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_FILTER_0 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_FILTER_0, in_e, c_e ); return true; 
-            }  else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_FILTER_0 ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_FILTER_0, in_e, c_e ); return true; 
+            }  else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_FILTER_0 ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_FILTER_0, in_e, c_e ); return true; 
             }
 
         } else if( in_e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ) {
@@ -296,8 +296,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_PFL_TOGGLE_MUTE, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_PFL_TOGGLE_MUTE ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_PFL_TOGGLE_MUTE, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_PFL_TOGGLE_MUTE ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_PFL_TOGGLE_MUTE, in_e, c_e ); return true; 
             }
         
         } else if( in_e->type == ZDJ_HMI_EVENT_MOD_PRESS ) {
@@ -330,8 +330,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_EQ_MID, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_EQ_MID ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_EQ_MID, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_EQ_MID ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_EQ_MID, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_EQ_MID ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_EQ_MID, in_e, c_e ); return true; 
 
             // Loop start
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_LOOP_START ] ) { 
@@ -354,8 +354,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_FILTER_1, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_FILTER_1 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_FILTER_1, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_FILTER_1 ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_FILTER_1, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_FILTER_1 ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_FILTER_1, in_e, c_e ); return true; 
             }
         
         } else if( in_e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ) {
@@ -459,16 +459,16 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_EQ_HI, in_e, c_e ); return true;
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_EQ_HI ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_EQ_HI, in_e, c_e ); return true;
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_EQ_HI ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_EQ_HI, in_e, c_e ); return true;
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_EQ_HI ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_EQ_HI, in_e, c_e ); return true;
             
             // PFL Trim
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_PFL_TRIM ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_PFL_TRIM, in_e, c_e ); return true;
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_PFL_TRIM ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_PFL_TRIM, in_e, c_e ); return true;
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_PFL_TRIM ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_PFL_TRIM, in_e, c_e ); return true;
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_PFL_TRIM ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_PFL_TRIM, in_e, c_e ); return true;
 
             // Skip
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_SKIP ] ) { 
@@ -487,18 +487,18 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_FILTER_2, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_FILTER_2 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_FILTER_2, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_FILTER_2 ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_FILTER_2, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_FILTER_2 ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_FILTER_2, in_e, c_e ); return true; 
 
             // Sync Mult
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_SYNC_MULT ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_SYNC_MULT ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_SYNC_MULT ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_SYNC_MULT ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_SYNC_MULT ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_SYNC_MULT ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_SYNC_MULT, in_e, c_e ); return true; 
             }
  
         } else if( in_e->type == ZDJ_HMI_EVENT_PRESS_ADJUST ) {
@@ -511,8 +511,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_FILTER_0, in_e, c_e ); return true;
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_FILTER_0 ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_FILTER_0, in_e, c_e ); return true;
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_FILTER_0 ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_FILTER_0, in_e, c_e ); return true;
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_FILTER_0 ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_FILTER_0, in_e, c_e ); return true;
             }
         } else if( in_e->type == ZDJ_HMI_EVENT_MOD_ADJUST ) {
             // UI Shift Adjust
@@ -538,8 +538,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_CUE_START, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_CUE_START ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_CUE_START, in_e, c_e ); return true; 
-            // } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_CUE_START ] ) { 
-            //     _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_CUE_START, in_e, c_e ); return true; 
+            // } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_CUE_START ] ) { 
+            //     _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_CUE_START, in_e, c_e ); return true; 
             }
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE ) {
             if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_RELEASE_0 ] ) { 
@@ -549,8 +549,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_CUE_END, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_CUE_END ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_CUE_END, in_e, c_e ); return true; 
-            // } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_CUE_END ] ) { 
-            //     _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_CUE_END, in_e, c_e ); return true; 
+            // } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_CUE_END ] ) { 
+            //     _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_CUE_END, in_e, c_e ); return true; 
             
             // Loop Reset
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_1_CONTROL_LOOP_RESET_TO_START ] ) { 
@@ -577,8 +577,8 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_CUE_END, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_CUE_END ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_CUE_END, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_CUE_END ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_CUE_END, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_CUE_END ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_CUE_END, in_e, c_e ); return true; 
             }
         } else if( in_e->type == ZDJ_HMI_EVENT_MOD_RELEASE ){
             if( zdj_control_active_state.controls[ ZDJ_UI_CONTROL_HOTCUE_RELEASE_2 ] ) { 
@@ -601,10 +601,10 @@ bool zdj_control_map_hmi_input_event( zdj_hmi_input_event_t * in_e, zdj_control_
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_1_CONTROL_PLAY_PAUSE, in_e, c_e ); return true; 
             } else if( zdj_control_active_state.controls[ ZDJ_DECK_2_CONTROL_PLAY_PAUSE ] ) { 
                 _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_2_CONTROL_PLAY_PAUSE, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE, in_e, c_e ); return true; 
-            } else if( zdj_control_active_state.controls[ ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE ] ) { 
-                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_X_CONTROL_PLAY_PAUSE ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_X_CONTROL_PLAY_PAUSE, in_e, c_e ); return true; 
+            } else if( zdj_control_active_state.controls[ ZDJ_DECK_CLOCK_CONTROL_PLAY_PAUSE ] ) { 
+                _zdj_control_copy_hmi_to_control_event( ZDJ_DECK_CLOCK_CONTROL_PLAY_PAUSE, in_e, c_e ); return true; 
             }
         } else if( in_e->type == ZDJ_HMI_EVENT_RELEASE && zdj_control_active_state.controls[ ZDJ_UI_CONTROL_PLAY_RELEASE_0 ] ) { 
             _zdj_control_copy_hmi_to_control_event( ZDJ_UI_CONTROL_PLAY_RELEASE_0, in_e, c_e ); return true; 
@@ -1033,39 +1033,39 @@ bool zdj_control_event_is_deck_control( zdj_control_event_t * event ) {
         case ZDJ_DECK_2_CONTROL_HOTCUE_13:
         case ZDJ_DECK_2_CONTROL_HOTCUE_14:
         case ZDJ_DECK_2_CONTROL_HOTCUE_15:
-        case ZDJ_DECK_EXT_CONTROL_TRIM:
-        case ZDJ_DECK_EXT_CONTROL_EQ_LO:
-        case ZDJ_DECK_EXT_CONTROL_EQ_MID:
-        case ZDJ_DECK_EXT_CONTROL_EQ_HI:
-        case ZDJ_DECK_EXT_CONTROL_PFL_TRIM:
-        case ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE:
-        case ZDJ_DECK_EXT_CONTROL_FX_SELECT:
-        case ZDJ_DECK_EXT_CONTROL_FX_0:
-        case ZDJ_DECK_EXT_CONTROL_FX_1:
-        case ZDJ_DECK_EXT_CONTROL_FX_2:
-        case ZDJ_DECK_EXT_CONTROL_FX_3:
-        case ZDJ_DECK_EXT_CONTROL_FX_4:
-        case ZDJ_DECK_EXT_CONTROL_FX_5:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_0:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_1:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_2:
-        case ZDJ_DECK_EXT_CONTROL_FILTER_RESET:
-        case ZDJ_DECK_EXT_CONTROL_SYNC_MULT:
-        case ZDJ_DECK_EXT_CONTROL_TEMPO:
-        case ZDJ_DECK_EXT_CONTROL_TEMPO_FINE:
-        case ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE:
-        case ZDJ_DECK_EXT_CONTROL_PAUSE: 
+        case ZDJ_DECK_X_CONTROL_TRIM:
+        case ZDJ_DECK_X_CONTROL_EQ_LO:
+        case ZDJ_DECK_X_CONTROL_EQ_MID:
+        case ZDJ_DECK_X_CONTROL_EQ_HI:
+        case ZDJ_DECK_X_CONTROL_PFL_TRIM:
+        case ZDJ_DECK_X_CONTROL_PFL_TOGGLE_MUTE:
+        case ZDJ_DECK_X_CONTROL_FX_SELECT:
+        case ZDJ_DECK_X_CONTROL_FX_0:
+        case ZDJ_DECK_X_CONTROL_FX_1:
+        case ZDJ_DECK_X_CONTROL_FX_2:
+        case ZDJ_DECK_X_CONTROL_FX_3:
+        case ZDJ_DECK_X_CONTROL_FX_4:
+        case ZDJ_DECK_X_CONTROL_FX_5:
+        case ZDJ_DECK_X_CONTROL_FILTER_0:
+        case ZDJ_DECK_X_CONTROL_FILTER_1:
+        case ZDJ_DECK_X_CONTROL_FILTER_2:
+        case ZDJ_DECK_X_CONTROL_FILTER_RESET:
+        case ZDJ_DECK_X_CONTROL_SYNC_MULT:
+        case ZDJ_DECK_X_CONTROL_TEMPO:
+        case ZDJ_DECK_X_CONTROL_TEMPO_FINE:
+        case ZDJ_DECK_X_CONTROL_PLAY_PAUSE:
+        case ZDJ_DECK_X_CONTROL_PAUSE: 
         
         // External Transport Deck
-        case ZDJ_DECK_XPORT_CONTROL_SCRUB:
-        case ZDJ_DECK_XPORT_CONTROL_SYNC_MULT:
-        case ZDJ_DECK_XPORT_CONTROL_TEMPO:
-        case ZDJ_DECK_XPORT_CONTROL_TEMPO_FINE:
-        case ZDJ_DECK_XPORT_CONTROL_PLAY_PAUSE:
-        case ZDJ_DECK_XPORT_CONTROL_PAUSE:
-        case ZDJ_DECK_XPORT_CONTROL_CUE_START:
-        case ZDJ_DECK_XPORT_CONTROL_CUE_STOP:
-        case ZDJ_DECK_XPORT_CONTROL_CUE_END: return true;
+        case ZDJ_DECK_CLOCK_CONTROL_SCRUB:
+        case ZDJ_DECK_CLOCK_CONTROL_SYNC_MULT:
+        case ZDJ_DECK_CLOCK_CONTROL_TEMPO:
+        case ZDJ_DECK_CLOCK_CONTROL_TEMPO_FINE:
+        case ZDJ_DECK_CLOCK_CONTROL_PLAY_PAUSE:
+        case ZDJ_DECK_CLOCK_CONTROL_PAUSE:
+        case ZDJ_DECK_CLOCK_CONTROL_CUE_START:
+        case ZDJ_DECK_CLOCK_CONTROL_CUE_STOP:
+        case ZDJ_DECK_CLOCK_CONTROL_CUE_END: return true;
         default: return false;
     }
 }

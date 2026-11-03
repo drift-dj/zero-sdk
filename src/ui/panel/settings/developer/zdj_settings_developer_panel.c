@@ -294,7 +294,7 @@ static void _refresh_menu( zdj_view_t * view ) {
     _add_settings_toggle( "Disable Tempo Stretch", ZDJ_SETTING_DECK_STRETCH_OVERRIDE, &_stretch_btn, view );
     _add_settings_toggle( "[ ! DANGER ! ] Deck 1 DC Couple", ZDJ_SETTING_DECK_1_DC_COUPLE, &_d1_dc_btn, view );
     _add_settings_toggle( "[ ! DANGER ! ] Deck 2 DC Couple", ZDJ_SETTING_DECK_2_DC_COUPLE, &_d2_dc_btn, view );
-    _add_settings_toggle( "[ ! DANGER ! ] Deck Ext. DC Couple", ZDJ_SETTING_DECK_EXT_DC_COUPLE, &_de_dc_btn, view );
+    _add_settings_toggle( "[ ! DANGER ! ] Deck Ext. DC Couple", ZDJ_SETTING_DECK_X_DC_COUPLE, &_de_dc_btn, view );
 
     // System Stuff
     zdj_menu_view_add_padding( state->menu, 3 );
@@ -500,7 +500,7 @@ static void _d2_dc_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 }
 
 static void _de_dc_btn( zdj_view_t * view, zdj_control_event_t * event ) {
-    zdj_setting_flip_bool( ZDJ_SETTING_DECK_EXT_DC_COUPLE );
+    zdj_setting_flip_bool( ZDJ_SETTING_DECK_X_DC_COUPLE );
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
     zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;

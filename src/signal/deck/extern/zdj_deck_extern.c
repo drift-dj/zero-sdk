@@ -76,12 +76,12 @@ static void _update_state ( zdj_deck_t * deck ) {
             // Start serving deck samples to soundcard.
             zdj_soundcard_link_deck( zdj_soundcard, deck );
             // Mute the headphone cue channel
-            zdj_soundcard_node_t * cue_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+            zdj_soundcard_node_t * cue_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE );
             cue_node->dsp_dto->mute = true;
             cue_node->dsp_dto->gain = 1.0;
-            zdj_soundcard_node_t * prefade_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+            zdj_soundcard_node_t * prefade_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
             prefade_node->dsp_dto->gain = 1.0;
-            zdj_soundcard_node_t * input_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+            zdj_soundcard_node_t * input_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT );
             input_node->dsp_dto->gain = 1.0;
             // Accept control events when we're ready for playback
             deck->handle_control_event = &_handle_control;
@@ -134,7 +134,7 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
     // printf( "ext get edge data: %p->%p\n", deck_state, deck_state->dsp_node );
 
     // Get a reference to external deck input node's buffer
-    zdj_soundcard_node_t * ext_input_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_INPUT );
+    zdj_soundcard_node_t * ext_input_node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_INPUT );
     float * input_buf = ext_input_node->data_pipe->get_data( ext_input_node->data_pipe );
     // printf( "deck in: %p %p\n", input_buf, deck_state->dsp_node );
 
@@ -191,7 +191,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // Play / Pause //
     //////////////////  
      
-    case ZDJ_DECK_EXT_CONTROL_PLAY_PAUSE:
+    case ZDJ_DECK_X_CONTROL_PLAY_PAUSE:
         // Play - start clock synth
        
         
@@ -209,7 +209,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // Scrub //
     ///////////  
 
-    case ZDJ_DECK_EXT_CONTROL_SCRUB:
+    case ZDJ_DECK_X_CONTROL_SCRUB:
         // Nudge clock synth
 
         break;
@@ -219,7 +219,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // Tempo //
     ///////////  
 
-    case ZDJ_DECK_EXT_CONTROL_TEMPO:
+    case ZDJ_DECK_X_CONTROL_TEMPO:
         // Tempo will ultimately control ext. deck buffer playback
         // if( zdj_deck_manager( )->sync.active ) {
         //     // If we're synced, update the overall tempo
@@ -229,7 +229,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
         // }
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_TEMPO_FINE:
+    case ZDJ_DECK_X_CONTROL_TEMPO_FINE:
         // Tempo will ultimately control ext. deck buffer playback
         // if( zdj_deck_manager( )->sync.active ) {
         //     // If we're synced, update the overall tempo
@@ -244,33 +244,33 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // EQ + Filter //
     /////////////////
 
-    case ZDJ_DECK_EXT_CONTROL_EQ_LO:
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+    case ZDJ_DECK_X_CONTROL_EQ_LO:
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
         dsp_dto = node->dsp_dto;
         dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
         if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 0, event->i_val ); }
         // printf( "dj deck ext eq lo\n" );
         break;
     
-    case ZDJ_DECK_EXT_CONTROL_EQ_MID:
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+    case ZDJ_DECK_X_CONTROL_EQ_MID:
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
         dsp_dto = node->dsp_dto;
         dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
         if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 1, event->i_val ); }
         // printf( "ext deck eq mid\n" );
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_EQ_HI:
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+    case ZDJ_DECK_X_CONTROL_EQ_HI:
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
         dsp_dto = node->dsp_dto;
         dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_EQ );
         if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 2, event->i_val ); }
         // printf( "ext deck eq hi\n" );
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_FILTER_0:
+    case ZDJ_DECK_X_CONTROL_FILTER_0:
         // printf( "deck filter 0\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
         dsp_dto = node->dsp_dto;
         dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
         if( dsp_stage ) { 
@@ -278,17 +278,17 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
         }
         break;
     
-    case ZDJ_DECK_EXT_CONTROL_FILTER_2:
+    case ZDJ_DECK_X_CONTROL_FILTER_2:
         // printf( "dj deck filter 2\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
         dsp_dto = node->dsp_dto;
         dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
         if( dsp_stage ) { dsp_stage->adjust_knob( dsp_stage, 2, event->i_val ); }
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_FILTER_RESET:
+    case ZDJ_DECK_X_CONTROL_FILTER_RESET:
         // printf( "dj deck filter reset\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
         dsp_dto = node->dsp_dto;
         dsp_stage = dsp_dto->get_stage_for_type( node, ZDJ_SOUNDCARD_DSP_STAGE_TYPE_FILT );
         if( dsp_stage ) { dsp_stage->set_knob( dsp_stage, 0, 0.0 ); }
@@ -302,23 +302,23 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
         // printf( "ext deck xfad\n" );
         break;
     
-    case ZDJ_DECK_EXT_CONTROL_TRIM:
+    case ZDJ_DECK_X_CONTROL_TRIM:
         // printf( "ext deck trim\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_PREFADE );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_PREFADE );
         node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_PFL_TRIM:
+    case ZDJ_DECK_X_CONTROL_PFL_TRIM:
         // printf( "ext deck pfl trim\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE );
         node->dsp_dto->adjust_gain( node, event->i_val );
         event->blocked = true;
         break;
     
-    case ZDJ_DECK_EXT_CONTROL_PFL_TOGGLE_MUTE:
+    case ZDJ_DECK_X_CONTROL_PFL_TOGGLE_MUTE:
         // printf( "ext deck pfl mute\n" );
-        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_EXT_CUE );
+        node = zdj_soundcard_get_node_for_name( zdj_soundcard, ZDJ_SOUNDCARD_NODE_NAME_DECK_X_CUE );
         node->dsp_dto->toggle_mute( node );
         event->blocked = true;
         break;
@@ -328,7 +328,7 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // Sync //
     //////////  
 
-    case ZDJ_DECK_EXT_CONTROL_SYNC_MULT:
+    case ZDJ_DECK_X_CONTROL_SYNC_MULT:
         // if( deck->can_sync ) { request_sync_mult( event->i_val ); }
         break;
 
@@ -337,25 +337,25 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event ) {
     // FX //
     ////////  
 
-    case ZDJ_DECK_EXT_CONTROL_FX_SELECT:
+    case ZDJ_DECK_X_CONTROL_FX_SELECT:
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_FX_0:
+    case ZDJ_DECK_X_CONTROL_FX_0:
         break;
     
-    case ZDJ_DECK_EXT_CONTROL_FX_1:
+    case ZDJ_DECK_X_CONTROL_FX_1:
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_FX_2:
+    case ZDJ_DECK_X_CONTROL_FX_2:
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_FX_3:
+    case ZDJ_DECK_X_CONTROL_FX_3:
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_FX_4:
+    case ZDJ_DECK_X_CONTROL_FX_4:
         break;
 
-    case ZDJ_DECK_EXT_CONTROL_FX_5:
+    case ZDJ_DECK_X_CONTROL_FX_5:
         break;
 
     default:

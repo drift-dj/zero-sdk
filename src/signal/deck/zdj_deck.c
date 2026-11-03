@@ -6,7 +6,7 @@
 #include <math.h>
 
 #include <zerodj/signal/deck/zdj_deck.h>
-#include <zerodj/signal/deck/xport/zdj_deck_xport.h>
+#include <zerodj/signal/deck/clock/zdj_deck_clock.h>
 #include <zerodj/signal/deck/dj/zdj_deck_dj.h>
 #include <zerodj/signal/deck/extern/zdj_deck_extern.h>
 #include <zerodj/signal/math/zdj_signal_math.h>
@@ -30,7 +30,7 @@ zdj_deck_t * zdj_new_deck(
     switch ( type ) {
         case ZDJ_DECK_TYPE_DJ: zdj_new_dj_deck( deck, resource, win_buf_count ); break;
         case ZDJ_DECK_TYPE_EXTERNAL: zdj_new_extern_deck( deck ); break;
-        case ZDJ_DECK_TYPE_XPORT: zdj_new_xport_deck( deck ); break;
+        case ZDJ_DECK_TYPE_CLOCK: zdj_new_clock_deck( deck ); break;
         // case ZDJ_DECK_TYPE_TEST:
         //     // deck->get_edge_data = &_zdj_deck_get_test_data;
         //     // zdj_test_deck_state_t * state = calloc( 1, sizeof( zdj_test_deck_state_t ) );
