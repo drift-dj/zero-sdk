@@ -49,40 +49,14 @@ zdj_pipeline_node_t * zdj_new_waveform_maker(
     state->samples_per_point = samples_per_point;
     
     // Set up the sample normalizer
-    switch ( decode_state->song->audio->av_codec_id ) {
-        
-        case AV_CODEC_ID_MP3:
-        case AV_CODEC_ID_AAC:
-        case AV_CODEC_ID_FLAC: 
-        case AV_CODEC_ID_PCM_F32LE:
-        case AV_CODEC_ID_PCM_F32BE: 
-            state->norm_fn = _norm_flt; 
+    switch ( decode_state->song->audio->av_sample_format ) {
+        case AV_SAMPLE_FMT_S16: // wav, aif, flac
+            state->norm_fn = _norm_s16;
             break;
-
-        case AV_CODEC_ID_PCM_S16LE:
-        case AV_CODEC_ID_PCM_S16BE: 
-            state->norm_fn = _norm_s16; 
+        case AV_SAMPLE_FMT_S32: // wav, aif, flac
+            state->norm_fn = _norm_s32;
             break;
-
-        case AV_CODEC_ID_PCM_U16LE:
-        case AV_CODEC_ID_PCM_U16BE: 
-            state->norm_fn = _norm_u16; 
-            break;
-
-        case AV_CODEC_ID_PCM_S24LE:
-        case AV_CODEC_ID_PCM_S24BE:
-        case AV_CODEC_ID_PCM_S32LE:
-        case AV_CODEC_ID_PCM_S32BE: 
-            state->norm_fn = _norm_s32; 
-            break;
-
-        case AV_CODEC_ID_PCM_U24LE:
-        case AV_CODEC_ID_PCM_U24BE:
-        case AV_CODEC_ID_PCM_U32LE:
-        case AV_CODEC_ID_PCM_U32BE: 
-            state->norm_fn = _norm_u32; 
-            break;
-
+        case AV_SAMPLE_FMT_FLT: 
         default: 
             state->norm_fn = _norm_flt; 
             break;
@@ -164,26 +138,21 @@ static void _deinit_state( zdj_pipeline_node_t * node ) {
 
 // Normalize funcs to bound sampls to +- 1.0
 static float _norm_flt( float * buf, int index ) {
-    // printf( "_norm_flt\n" );
     return buf[ index ];
 }
 
 static float _norm_s16( float * buf, int index ) {
-    // printf( "_norm_s16\n" );
     return buf[ index ] / (float)SDL_MAX_SINT16;
 }
 
 static float _norm_u16( float * buf, int index ) {
-    // printf( "_norm_u16\n" );
     return buf[ index ] / (float)SDL_MAX_UINT16;
 }
 
 static float _norm_s32( float * buf, int index ) {
-    // printf( "_norm_s32\n" );
     return buf[ index ] / (float)SDL_MAX_SINT32;
 }
 
 static float _norm_u32( float * buf, int index ) {
-    // printf( "_norm_u32\n" );
     return buf[ index ] / (float)SDL_MAX_UINT32;
 }

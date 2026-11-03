@@ -6,11 +6,13 @@
 #include <zerodj/ui/view/menu_view/zdj_menu_view.h>
 
 void zdj_menu_view_add_scroll_filter_input( zdj_view_t * view, int input ) {
+    // printf( "zdj_menu_view_add_scroll_filter_input\n" );
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)view->state;
     menu_state->scroll_filter->jog_force += (float)input;
 }
 
 void zdj_menu_view_update_scroll_filter( zdj_view_t * view ) {
+    // printf( "zdj_menu_view_update_scroll_filter\n" );
     zdj_menu_view_state_t * menu_state = (zdj_menu_view_state_t*)view->state;
     zdj_menu_view_scroll_filter_t * scroll_filter = (zdj_menu_view_scroll_filter_t*)menu_state->scroll_filter;
 

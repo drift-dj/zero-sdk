@@ -78,9 +78,11 @@ static void _segv_btn( zdj_view_t * view, zdj_control_event_t * event );
 // Logging
 static void _log_boot_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _log_printf_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_file_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _log_level_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _show_crash_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _log_crash_btn( zdj_view_t * view, zdj_control_event_t * event );
+static void _log_system_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _log_ui_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _log_usb_btn( zdj_view_t * view, zdj_control_event_t * event );
 static void _log_lib_btn( zdj_view_t * view, zdj_control_event_t * event );
@@ -200,12 +202,6 @@ static void _refresh_menu( zdj_view_t * view ) {
     recordings_state->data.ptr = state;
     zdj_menu_view_add_item( state->menu, recordings_btn );
 
-    zdj_view_t * logs_btn = zdj_new_menu_item( "Reset Logs", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-    logs_btn->handle_control_event = _logs_btn;
-    zdj_menu_item_view_state_t * logs_state = (zdj_menu_item_view_state_t*)logs_btn->state;
-    logs_state->data.ptr = state;
-    zdj_menu_view_add_item( state->menu, logs_btn );
-
     zdj_view_t * screencaps_btn = zdj_new_menu_item( "Reset Screencaps", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     screencaps_btn->handle_control_event = _screencaps_btn;
     zdj_menu_item_view_state_t * screencaps_state = (zdj_menu_item_view_state_t*)screencaps_btn->state;
@@ -224,6 +220,7 @@ static void _refresh_menu( zdj_view_t * view ) {
 
     _add_settings_toggle( "Enable Log UI at Boot", ZDJ_SETTING_LOG_DEPLOY_AT_BOOT, &_log_boot_btn, view );
     _add_settings_toggle( "Enable printf Logging", ZDJ_SETTING_LOG_PRINTF, &_log_printf_btn, view );
+    _add_settings_toggle( "Log to file", ZDJ_SETTING_LOG_TO_FILE, &_log_file_btn, view );
 
     zdj_view_t * log_level_btn = zdj_new_data_menu_item( 
         "Log Level", ZDJ_MENU_ITEM_LAYOUT_DATA_R, ZDJ_MENU_ITEM_DATA_TYPE_CHAR, NULL, NULL 
@@ -243,12 +240,18 @@ static void _refresh_menu( zdj_view_t * view ) {
 
     _add_settings_toggle( "Show Crash Dialog at Launch", ZDJ_SETTING_DEBUG_SHOW_CRASH, &_show_crash_btn, view );
 
+    zdj_view_t * logs_btn = zdj_new_menu_item( "Reset Logs", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    logs_btn->handle_control_event = _logs_btn;
+    zdj_menu_item_view_state_t * logs_state = (zdj_menu_item_view_state_t*)logs_btn->state;
+    logs_state->data.ptr = state;
+    zdj_menu_view_add_item( state->menu, logs_btn );
 
     // Logging Stuff
     zdj_menu_view_add_padding( state->menu, 3 );
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Show Log Messages" ) );
 
     _add_settings_toggle( "Crashes", ZDJ_SETTING_LOG_CRASH, &_log_crash_btn, view );
+    _add_settings_toggle( "System Messages", ZDJ_SETTING_LOG_SYSTEM, &_log_system_btn, view );
     _add_settings_toggle( "UI Activity", ZDJ_SETTING_LOG_UI, &_log_ui_btn, view );
     _add_settings_toggle( "USB Activity", ZDJ_SETTING_LOG_USB, &_log_usb_btn, view );
     _add_settings_toggle( "Library Info", ZDJ_SETTING_LOG_LIBRARY, &_log_lib_btn, view );
@@ -772,6 +775,16 @@ static void _log_printf_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     ui_panel_state->needs_layout_update = true;
 }
 
+static void _log_file_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_TO_FILE );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
 static void _log_level_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     int log_level_setting = zdj_setting_get( ZDJ_SETTING_LOG_LEVEL )->i_val;
     switch ( log_level_setting ) {
@@ -801,6 +814,16 @@ static void _show_crash_btn( zdj_view_t * view, zdj_control_event_t * event ) {
 
 static void _log_crash_btn( zdj_view_t * view, zdj_control_event_t * event ) {
     zdj_setting_flip_bool( ZDJ_SETTING_LOG_CRASH );
+    zdj_log_refresh_settings( );
+
+    zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
+    zdj_settings_panel_state_t * ui_panel_state = (zdj_settings_panel_state_t*)ui_panel_view->state;
+    ui_panel_state->needs_layout_update = true;
+}
+
+static void _log_system_btn( zdj_view_t * view, zdj_control_event_t * event ) {
+    zdj_setting_flip_bool( ZDJ_SETTING_LOG_SYSTEM );
     zdj_log_refresh_settings( );
 
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)view->state;

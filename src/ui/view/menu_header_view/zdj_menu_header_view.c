@@ -33,8 +33,8 @@ zdj_view_t * zdj_new_menu_header(
     // Build state
     zdj_menu_header_view_state_t * state = calloc( 1, sizeof( zdj_menu_header_view_state_t ) );
     menu_header->state = state;
-    strcpy( state->name, name );
-    strcpy( state->title, title );
+    snprintf( state->name, 16, "%s", name );
+    snprintf( state->title, 256, "%s", title );
     state->style = style;
     state->back_style = back_btn_style;
     state->has_back = (back_btn_style > ZDJ_MENU_HEADER_BACK_STYLE_NONE) ? true : false;

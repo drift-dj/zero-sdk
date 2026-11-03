@@ -46,7 +46,7 @@ zdj_view_t * zdj_new_menu_section( char * title ) {
     if( strlen( title ) > 0 ) {
         strcpy( str, title );
     } else {
-        strcpy( str, "No Artist" );
+        strcpy( str, "NO ARTIST" );
     }
     zdj_view_t * title_norm = zdj_new_label_view( str, ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     state->title_norm = title_norm;

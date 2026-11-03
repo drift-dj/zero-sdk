@@ -53,6 +53,7 @@ typedef enum {
     ZDJ_MENU_ITEM_LAYOUT_SONG,
     ZDJ_MENU_ITEM_LAYOUT_SONG_PLAYLIST,
     ZDJ_MENU_ITEM_LAYOUT_SONG_IMPORT,
+    ZDJ_MENU_ITEM_LAYOUT_SONG_ERROR,
     ZDJ_MENU_ITEM_LAYOUT_TOGGLE,
     ZDJ_MENU_ITEM_LAYOUT_ASSET,
     ZDJ_MENU_ITEM_LAYOUT_CUEPOINT,
@@ -103,9 +104,9 @@ typedef enum {
 
 typedef enum {
     ZDJ_MENU_ITEM_OPTIONS_NONE,
-    ZDJ_MENU_ITEM_OPTIONS_DJ_SONG_MENU,
-    ZDJ_MENU_ITEM_OPTIONS_LIB_PLAYLIST,
+    ZDJ_MENU_ITEM_OPTIONS_DJ_SONG,
     ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST,
+    ZDJ_MENU_ITEM_OPTIONS_SONG_ERROR,
     ZDJ_MENU_ITEM_OPTIONS_FILE,
     ZDJ_MENU_ITEM_OPTIONS_DIR,
 } zdj_menu_item_options_type_t;
@@ -120,8 +121,9 @@ typedef enum {
     ZDJ_MENU_ITEM_ACTION_START_MOVE,
     ZDJ_MENU_ITEM_ACTION_END_MOVE,
     ZDJ_MENU_ITEM_ACTION_EDIT,
-    ZDJ_MENU_ITEM_ACTION_LEAD_DECK_1,
-    ZDJ_MENU_ITEM_ACTION_LEAD_DECK_2,
+    ZDJ_MENU_ITEM_ACTION_LOAD_DECK_1,
+    ZDJ_MENU_ITEM_ACTION_LOAD_DECK_2,
+    ZDJ_MENU_ITEM_ACTION_RESCAN,
     ZDJ_MENU_ITEM_ACTION_DONE
 } zdj_menu_item_action_t;
 
@@ -253,6 +255,7 @@ void zdj_menu_item_inert_status_update_layout( zdj_view_t * view );
 void zdj_menu_item_playlist_update_layout( zdj_view_t * view );
 void zdj_menu_item_slider_update_layout( zdj_view_t * view );
 void zdj_menu_item_song_playlist_update_layout( zdj_view_t * view );
+void zdj_menu_item_song_error_update_layout( zdj_view_t * view );
 void zdj_menu_item_song_import_update_layout( zdj_view_t * view );
 void zdj_menu_item_toggle_update_layout( zdj_view_t * view );
 

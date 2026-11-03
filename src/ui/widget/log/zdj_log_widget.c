@@ -68,7 +68,7 @@ static void _draw_container( zdj_view_t * view, zdj_view_clip_t * clip ) {
         int iter = 0;
         while( line && iter++ < 1000 ) {
             float y = 55 - (iter-1)*8;
-            zdj_view_t * label = zdj_new_label_view( line->buf, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+            zdj_view_t * label = zdj_new_label_view( line->buf, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
             // Draw a black box behind the label
             boxColor( zdj_renderer( ), 0, y, label->frame.w, y+8, ZDJ_BLACK );
             label->frame.y = y;
@@ -145,21 +145,24 @@ void zdj_log_widget_append_line( char * str ) {
         zdj_log_line_t * line = calloc( 1, sizeof( zdj_log_line_t ) );
         snprintf( line->buf, ZDJ_LOG_WIDGET_LINE_LEN, "%s", str );
         
+        state->line_count++;
         
         if( state->lines ) { 
-            // Trim extra lines if we're over line_count
-            if( state->line_count++ > 6 ) {
+            // Trim last line if we're over line_count
+            if( state->line_count > ZDJ_LOG_WIDGET_LINE_COUNT ) {
                 zdj_log_line_t * _line = state->lines;
                 zdj_log_line_t * _prev_line = state->lines;
                 int iter = 0;
-                while( _line && iter++ < 10 ) {
+                while( _line && iter++ < 1000 ) {
                     // Remove the prev line's ref to this line and free it
                     if( !_line->next ) { 
                         _prev_line->next = NULL;
-                        free( _line );
+                        // free( _line );
+                        _line = NULL;
+                    } else {
+                        _prev_line = _line;
+                        _line = _line->next;
                     }
-                    _prev_line = _line;
-                    _line = _line->next;
                 }
             }
 

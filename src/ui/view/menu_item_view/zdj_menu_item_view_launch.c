@@ -54,7 +54,7 @@ void zdj_menu_item_launch_big_init_layout( zdj_view_t * view ) {
     // app_name_hi->frame.w = view->frame.w - 8;
     app_name_hi->frame.h = 18;
 
-    zdj_view_t * launch_str_hi = zdj_new_label_view( state->data.c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * launch_str_hi = zdj_new_label_view( state->data.c_val, ZDJ_FONT_BYTESIZED, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, launch_str_hi );
     launch_str_hi->frame.x = 3;
     launch_str_hi->frame.y = 11;
@@ -94,7 +94,7 @@ void zdj_menu_item_launch_sm_init_layout( zdj_view_t * view ) {
     view->frame.h = 8;
     
     // Setup normal view
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_ticker_norm );
     title_ticker_norm->frame.x = ZDJ_MENU_ITEM_MARGIN_L;
     title_ticker_norm->frame.y = -1;
@@ -123,7 +123,7 @@ void zdj_menu_item_launch_sm_init_layout( zdj_view_t * view ) {
     launch_hi->frame.x = view->frame.w - zdj_ticker_view_get_text_w( title_ticker_norm ) - 7;
     launch_hi->frame.y = 0;
 
-    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
     zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)title_ticker_hilite->state;
     zdj_add_subview( state->hilite_view, title_ticker_hilite );
     title_ticker_hilite->frame.x = ZDJ_MENU_ITEM_MARGIN_L;

@@ -32,11 +32,11 @@ void zdj_menu_item_toggle_init_layout( zdj_view_t * view ) {
         state->normal_view->frame.h = view->frame.h;
     }
 
-    view->frame.h = 7;
+    view->frame.h = 8;
     bool toggle_state = state->data.b_val;
     
     // Setup normal view
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.w = view->frame.w - 8;
@@ -66,7 +66,7 @@ void zdj_menu_item_toggle_init_layout( zdj_view_t * view ) {
     hilite_bg_r->frame.y = 0;
     hilite_bg_r->frame.x = view->frame.w-1;
 
-    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)title_ticker_hilite->state;
     zdj_add_subview( state->hilite_view, title_ticker_hilite );
     title_ticker_hilite->frame.x = 1;

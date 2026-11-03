@@ -32,14 +32,15 @@ zdj_library_song_t * zdj_library_fetch_song_dto_for_entity_id(
     );
 
     int _eid_col = 0;
-    int _cceid_col = 1;
-    int _cpeid_col = 2;
-    int _ccueid_col = 3;
-    int _caeid_col = 4;
-    int _as_col = 5;
-    int _ap_col = 6;
-    int _he_col = 7;
-    int _ef_col = 8;
+    int _oid_col = 1;
+    int _cceid_col = 2;
+    int _cpeid_col = 3;
+    int _ccueid_col = 4;
+    int _caeid_col = 5;
+    int _as_col = 6;
+    int _ap_col = 7;
+    int _he_col = 8;
+    int _ef_col = 9;
 
 
     zdj_library_song_t * song = NULL;
@@ -49,6 +50,10 @@ zdj_library_song_t * zdj_library_fetch_song_dto_for_entity_id(
         while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
             song = calloc( 1, sizeof( zdj_library_song_t ) );
             strcpy( song->entity_id, (char*)sqlite3_column_text ( stmt, _eid_col ) );
+            char * origin_id = (char*)sqlite3_column_text ( stmt, _oid_col );
+            if( origin_id ) {
+                strcpy( song->origin_id, (char*)sqlite3_column_text ( stmt, _oid_col ) );
+            }
             strcpy( song->current_catalog_entity_id, (char*)sqlite3_column_text ( stmt, _cceid_col ) );
             strcpy( song->current_performance_entity_id, (char*)sqlite3_column_text ( stmt, _cpeid_col ) );
             strcpy( song->current_curation_entity_id, (char*)sqlite3_column_text ( stmt, _ccueid_col ) );
@@ -79,15 +84,16 @@ zdj_health_status_t zdj_library_store_song(
     char sql[ 4096 ];
     snprintf( sql, sizeof( sql ), 
         // Insert new record
-        "INSERT INTO %s(entity_id,catalog_data_entity_id,performance_data_entity_id,curation_data_entity_id,audio_data_entity_id,analysis_state,analysis_progress,has_error,error_flags) VALUES('%s','%s','%s','%s','%s',%d,%f,%d,%d)\n"
+        "INSERT INTO %s(entity_id,origin_id,catalog_data_entity_id,performance_data_entity_id,curation_data_entity_id,audio_data_entity_id,analysis_state,analysis_progress,has_error,error_flags) VALUES('%s','%s','%s','%s','%s','%s',%d,%f,%d,%d)\n"
         // Or update existing record
-        "ON CONFLICT(entity_id) DO UPDATE SET entity_id='%s',catalog_data_entity_id='%s',performance_data_entity_id='%s',curation_data_entity_id='%s',audio_data_entity_id='%s',analysis_state=%d,analysis_progress=%f,has_error=%d,error_flags=%d",
+        "ON CONFLICT(entity_id) DO UPDATE SET entity_id='%s',origin_id='%s',catalog_data_entity_id='%s',performance_data_entity_id='%s',curation_data_entity_id='%s',audio_data_entity_id='%s',analysis_state=%d,analysis_progress=%f,has_error=%d,error_flags=%d",
 
         // Table name
         ZDJ_LIBRARY_TABLE_SONG,
 
         // Insert new record
         song->entity_id,
+        song->origin_id,
         song->current_catalog_entity_id,
         song->current_performance_entity_id,
         song->current_curation_entity_id,
@@ -99,6 +105,7 @@ zdj_health_status_t zdj_library_store_song(
 
         // Update existing record
         song->entity_id,
+        song->origin_id,
         song->current_catalog_entity_id,
         song->current_performance_entity_id,
         song->current_curation_entity_id,
@@ -176,10 +183,10 @@ void zdj_library_merge_song_with_entity_id(
     char sql[ 2048 ];
     snprintf( sql, sizeof( sql ), "SELECT \
         s.entity_id, \
-        s.current_audio_entity_id, \
-        s.current_catalog_entity_id, \
-        s.current_performance_entity_id, \
-        s.current_curation_entity_id, \
+        s.audio_data_entity_id, \
+        s.catalog_data_entity_id, \
+        s.performance_data_entity_id, \
+        s.curation_data_entity_id, \
         cat.artist, \
         cat.title, \
         cat.genre, \
@@ -187,7 +194,7 @@ void zdj_library_merge_song_with_entity_id(
         perf.bpm, \
         perf.key, \
         perf.has_beat_grid, \
-        perf.beat_grid_start_sample, \
+        perf.beat_grid_start_sample \
         FROM Song_Entity s \
         LEFT JOIN Audio_Data_Entity a ON s.entity_id = a.song_entity_id \
         LEFT JOIN Catalog_Data_Entity cat ON s.entity_id = cat.song_entity_id \
@@ -255,6 +262,8 @@ void zdj_library_merge_song_with_entity_id(
                 strcpy( song->curation->entity_id, cur_eid );
                 strcpy( song->current_curation_entity_id, cur_eid );
             }
+
+            // printf( "found merge target eid: %s\n", song->entity_id );
         }
         sqlite3_finalize( stmt );
     }
@@ -269,10 +278,10 @@ void zdj_library_replace_entity_id_with_song(
     char sql[ 2048 ];
     snprintf( sql, sizeof( sql ), "SELECT \
         s.entity_id, \
-        s.current_audio_entity_id, \
-        s.current_catalog_entity_id, \
-        s.current_performance_entity_id, \
-        s.current_curation_entity_id, \
+        s.audio_data_entity_id, \
+        s.catalog_data_entity_id, \
+        s.performance_data_entity_id, \
+        s.curation_data_entity_id, \
         cat.artist, \
         cat.title, \
         cat.genre, \
@@ -280,7 +289,7 @@ void zdj_library_replace_entity_id_with_song(
         perf.bpm, \
         perf.key, \
         perf.has_beat_grid, \
-        perf.beat_grid_start_sample, \
+        perf.beat_grid_start_sample \
         FROM Song_Entity s \
         LEFT JOIN Audio_Data_Entity a ON s.entity_id = a.song_entity_id \
         LEFT JOIN Catalog_Data_Entity cat ON s.entity_id = cat.song_entity_id \
@@ -334,6 +343,7 @@ void zdj_library_replace_entity_id_with_song(
                 strcpy( song->curation->entity_id, cur_eid );
                 strcpy( song->current_curation_entity_id, cur_eid );
             }
+            // printf( "found replace target eid: %s\n", song->entity_id );
         }
         sqlite3_finalize( stmt );
     }
@@ -364,9 +374,11 @@ bool zdj_library_song_has_error_flag( zdj_library_song_t * song, zdj_library_son
 }
 
 bool zdj_library_song_can_play( zdj_library_song_t * song ) {
+    if( !song ) { return false; }
+    
     if( song->has_error ) {
-        if( zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_BAD_FORMAT ) ||
-	        zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_BAD_ENCODING ) ||
+        if( zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_UNSUP_SAMPLE_RATE ) ||
+            zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_UNSUP_CODEC ) ||
 	        zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_FILE_MISSING ) ||
 	        zdj_library_song_has_error_flag( song, ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED ) 
         ) {

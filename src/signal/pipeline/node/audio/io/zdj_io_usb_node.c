@@ -23,7 +23,7 @@ static void _push_to_s16_buf( float * source, int16_t * dest, int samples, int c
 static void _push_to_s32_buf( float * source, int32_t * dest, int samples, int channels );
 
 static void _pull_from_s16_buf( int16_t * source, int source_channels, float * dest, int dest_channels, int samples );
-static void _pull_from_s32_buf( int16_t * source, int source_channels, float * dest, int dest_channels, int samples );
+static void _pull_from_s32_buf( int32_t * source, int source_channels, float * dest, int dest_channels, int samples );
 
 static void _start_log( zdj_pipeline_node_t * node ) {
     zdj_io_usb_node_state_t * node_state = (zdj_io_usb_node_state_t*)node->state;
@@ -523,7 +523,7 @@ static void _pull_from_s16_buf( int16_t * source, int source_channels, float * d
     }
 }
 
-static void _pull_from_s32_buf( int16_t * source, int source_channels, float * dest, int dest_channels, int samples ) {
+static void _pull_from_s32_buf( int32_t * source, int source_channels, float * dest, int dest_channels, int samples ) {
     for( int i=0; i<samples; i++ ) {
 
         if( source_channels == 1 ) {
@@ -544,3 +544,115 @@ static void _pull_from_s32_buf( int16_t * source, int source_channels, float * d
         }
     }
 }
+
+
+
+
+
+
+// AI recco:
+
+
+// #include <alsa/asoundlib.h>
+// #include <alsa/pcm_external.h>
+// #include <stdbool.h>
+// #include <stdint.h>
+
+// // Simulated Shared Memory Structure layout
+// typedef struct {
+//     volatile uint32_t ready_flag;     // 1 = M7 processed data / ready for next chunk
+//     uint32_t sample_count;            // Number of frames per period
+//     int32_t  playback_buffer[2048];   // Example fixed layout to DAC
+//     int32_t  capture_buffer[2048];    // Example fixed layout from ADC
+// } __attribute__((packed)) shared_memory_t;
+
+// // Custom plugin state tracking
+// typedef struct {
+//     snd_pcm_ioplug_t io;              // Must be the first element
+//     shared_memory_t *shm;             // Pointer to the mapped A53/M7 memory
+//     snd_pcm_uframes_t hw_ptr;         // Current position in frames (0 to buffer_size - 1)
+// } m7_sync_plugin_t;
+
+// // 1. Pointer callback: Called by ALSA to check buffer progress
+// static snd_pcm_sframes_t m7_sync_pointer(snd_pcm_ioplug_t *io) {
+//     m7_sync_plugin_t *plugin = (m7_sync_plugin_t *)io;
+//     return plugin->hw_ptr;
+// }
+
+// // 2. Transfer callback: Moves data between ALSA application and M7 shared memory
+// static snd_pcm_sframes_t m7_sync_transfer(snd_pcm_ioplug_t *io,
+//                                           const snd_pcm_channel_area_t *areas,
+//                                           snd_pcm_uframes_t offset,
+//                                           snd_pcm_uframes_t size) {
+//     m7_sync_plugin_t *plugin = (m7_sync_plugin_t *)io;
+    
+//     // Calculate memory offsets based on 'offset' and 'size'
+//     // Extract raw application buffer pointer via: snd_pcm_channel_area_addr(areas, offset)
+    
+//     if (io->stream == SND_PCM_STREAM_PLAYBACK) {
+//         // Copy audio frames from ALSA application buffer directly into plugin->shm->playback_buffer
+//         // Respecting the interleaved/non-interleaved configurations in 'areas'
+//     } else {
+//         // Copy audio frames from plugin->shm->capture_buffer into ALSA application buffer
+//     }
+
+//     return size; // Return number of frames successfully handled
+// }
+
+// // 3. Synchronization Loop: Drives ALSA based on the M7's clock flag
+// static int m7_sync_wait_and_process(m7_sync_plugin_t *plugin) {
+//     // A53 Polls the shared memory flag set by the M7
+//     // Ensure memory barriers are used so the compiler/CPU doesn't cache the read
+//     while (__atomic_load_n(&plugin->shm->ready_flag, __ATOMIC_ACQUIRE) == 0) {
+//         // Low-latency options here: 
+//         // - asm volatile("yield" ::: "memory"); // ARM-specific hint to save power while spinning
+//         // - usleep(1); if you want to trade a bit of latency to free up the A53 core
+//     }
+
+//     // Clear the flag to acknowledge the M7 hardware interrupt
+//     __atomic_store_n(&plugin->shm->ready_flag, 0, __ATOMIC_RELEASE);
+
+//     // Update the ring buffer pointer by one period size
+//     plugin->hw_ptr += plugin->io.period_size;
+//     if (plugin->hw_ptr >= plugin->io.buffer_size) {
+//         plugin->hw_ptr = 0; // Wrap around the ring buffer
+//     }
+
+//     return 0;
+// }
+
+// // ioplug callback table mapping
+// static snd_pcm_ioplug_callback_t m7_sync_ops = {
+//     .pointer  = m7_sync_pointer,
+//     .transfer = m7_sync_transfer,
+//     // Add .start, .stop, .close initialization logic as needed
+// };
+
+
+
+
+
+// 2. Implement the "Master Clock" via Buffer Level Tracking
+
+// Because you have multiple layers of ring buffers, you must pick one specific ring buffer in the middle of your pipeline to serve as the tracking node for clock drift.
+
+// Calculate the Delta: 
+// In your USB I/O thread (which blocks on the USB clock via ALSA), inspect the current fill-level (in frames) of your tracking ring buffer during every loop iteration.
+
+// Smooth the Signal: 
+// Run this raw fill-level through a simple software Low-Pass Filter (or a proportional-integral Delay-Locked Loop) to eliminate short-term jitter caused by thread scheduling.
+
+// The Target: 
+// If the tracking buffer's target fill level is 50% capacity, compute an error value: Error = Current_Fill - Target_Fill.
+
+// 3. Dynamically Drive the Resampler (SRC)
+// Your C application needs to dynamically alter its consumption or production rate based on that error value. You can achieve this by inserting a dynamic sample rate converter right at the ingress/egress point of your USB thread.
+
+// When an arbitrary USB device is plugged in, query its native format and rate via snd_pcm_hw_params. 
+
+// Then, instantiate your resampler:
+// If the USB clock runs fast: Your tracking buffer will begin to accumulate too many samples (Error > 0). 
+
+// The DLL will slightly decrease the resampling ratio (e.g., from 1.00000 to 0.99992), processing fewer samples from the USB side per iteration to match the M7's consumption.
+
+// If the USB clock runs slow: The tracking buffer will begin to deplete (Error < 0). The DLL will slightly increase the ratio, stretching the audio packets up to keep the M7 double-buffer fed.

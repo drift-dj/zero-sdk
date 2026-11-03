@@ -197,22 +197,18 @@ zdj_error_type_t zdj_library_populate_playlists_for_library(
     // printf( "zdj_library_populate_playlists_for_library\n" );
     // Drop any current playlist state before fetching
     if( library->playlist_table_names ) {
-        for( int i=0; i<library->playlist_count; i++ ){
-            if( library->playlist_table_names[ i ] ) { free( library->playlist_table_names[ i ] ); }
-        }
         free( library->playlist_table_names );
     }
 
     // Count playlists in lib's playlist links table
-    library->playlist_count = zdj_sql_rows_in_table( library->playlist_links_table, NULL, db );
-    // printf( "playlist_count: %d %s\n", library->playlist_count, library->playlist_links_table );
+    library->playlist_count = zdj_library_count_playlists_in_db( library, db );
     if( library->playlist_count == 0 ) { 
         return ZDJ_ERROR_OKAY; 
     }
 
     // Alloc storage for playlist eids
-    library->playlist_table_names = calloc( library->playlist_count, sizeof( char* ) );
-    library->playlist_titles = calloc( library->playlist_count, sizeof( char* ) );
+    library->playlist_table_names = calloc( library->playlist_count, ZDJ_LIBRARY_TABLE_LINK_LEN );
+    library->playlist_titles = calloc( library->playlist_count, ZDJ_LIBRARY_PLAYLIST_TITLE_LEN );
 
     // Fill playlist eids/titles from table
     int res;
@@ -223,10 +219,15 @@ zdj_error_type_t zdj_library_populate_playlists_for_library(
     sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&sql, db );
     if( stmt ) {
         while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
-            // printf( "found table %d: %s/%s\n", t, sqlite3_column_text ( stmt, 0 ), sqlite3_column_text ( stmt, 1 ) );
-            library->playlist_table_names[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 0 ) );
-            library->playlist_titles[ t ] = strdup( (char*)sqlite3_column_text ( stmt, 1 ) );
-            // printf( "data %s/%s\n", library->playlist_table_names[ t ], library->playlist_titles[ t ] );
+            char * table_name = (char*)sqlite3_column_text ( stmt, 0 );
+            if( table_name ) {
+                snprintf( library->playlist_table_names[ t ], ZDJ_LIBRARY_TABLE_LINK_LEN, "%s", table_name );
+            }
+            char * playlist_title = (char*)sqlite3_column_text ( stmt, 1 );
+            if( playlist_title ) {
+                snprintf( library->playlist_titles[ t ], ZDJ_LIBRARY_PLAYLIST_TITLE_LEN, "%s", playlist_title );
+            }
+
             t++;
         }
         sqlite3_finalize( stmt );

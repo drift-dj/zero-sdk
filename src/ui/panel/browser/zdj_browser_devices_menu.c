@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <dirent.h>
+#include <stdbool.h>
 
 #include <SDL2/SDL2_gfxPrimitives.h>
 
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/usb/zdj_usb.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -89,7 +91,7 @@ void zdj_browser_panel_refresh_devices_menu( zdj_view_t * browser, zdj_view_t * 
     ) {
         // Add attached MSDs
         for( int i=0; i<zdj_usb_state->host_status.attached.count; i++ ) {
-
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Dev: %s", zdj_usb_state->host_status.attached.devices[ i ].mount_path );
             zdj_view_t * msd_item = zdj_new_browser_device_menu_item( 
                 zdj_usb_state->host_status.attached.devices[ i ].name_user,
                 zdj_usb_state->host_status.attached.devices[ i ].mount_path, 

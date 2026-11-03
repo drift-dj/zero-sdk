@@ -22,6 +22,8 @@
 #define ZDJ_FS_H
 
 #include <stdbool.h>
+#include <pthread.h>
+
 #include <zerodj/health/zdj_health_type.h>
 
 typedef struct {
@@ -42,6 +44,30 @@ zdj_health_status_t zdj_fs_extract_file_from_binary(
     unsigned long long offset, 
     unsigned long long len,
     bool overwrite
+);
+
+typedef enum {
+    ZDJ_FS_COPY_STATE_INIT,
+    ZDJ_FS_COPY_STATE_COPYING,
+    ZDJ_FS_COPY_STATE_ERROR,
+    ZDJ_FS_COPY_STATE_SUCCESS,
+} zdj_fs_copy_context_state_t;
+
+typedef struct {
+    zdj_fs_copy_context_state_t state;
+    char src_path[ 512 ];
+    char dst_path[ 512 ];
+    bool check_hash;
+    bool overwrite;
+    float progress;
+    pthread_t thread;
+} zdj_fs_copy_context_t;
+
+zdj_fs_copy_context_t * zdj_fs_bg_copy_file( 
+    char * src, 
+    char * dst,
+    bool check_hash, 
+    bool overwrite 
 );
 
 char * zdj_fs_get_file_extension( char * filepath );

@@ -295,6 +295,10 @@ typedef enum {
 typedef struct {
     int count;
     zdj_usb_device_t * devices;
+    bool has_msd;
+    bool has_uac2;
+    bool has_midi;
+    bool has_hid;
 } zdj_usb_attached_devices_t;
 
 typedef enum {

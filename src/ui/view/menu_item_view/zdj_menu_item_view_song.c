@@ -21,6 +21,7 @@ static void _draw_edit( zdj_view_t * view );
 static void _draw_move_item( zdj_view_t * view );
 static void _draw_delete( zdj_view_t * view );
 static void _draw_add_to_list( zdj_view_t * view );
+static void _draw_rescan( zdj_view_t * view );
 
 static void _enter_edit_mode( zdj_view_t * item );
 static void _exit_edit_mode( zdj_view_t * item );
@@ -61,7 +62,7 @@ void zdj_menu_item_song_import_init_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
 
     // Add title ticker
-    state->normal_view = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
+    state->normal_view = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, state->normal_view );
     state->normal_view->frame.x = ZDJ_MENU_ITEM_MARGIN_L;
     state->normal_view->frame.w = view->frame.w - ZDJ_MENU_ITEM_MARGIN_L - ZDJ_MENU_ITEM_MARGIN_R;
@@ -124,7 +125,7 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
     view->frame.h = 8;
     
     // Setup normal view
-    zdj_view_t * title_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_norm = zdj_new_label_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_norm );
     title_norm->frame.x = 1;
     title_norm->frame.y = -1;
@@ -141,7 +142,7 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
     hilite_bg_r->frame.x = view->frame.w-2;
     hilite_bg_r->frame.h = 8;
 
-    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)title_ticker_hilite->state;
     zdj_add_subview( state->hilite_view, title_ticker_hilite );
     title_ticker_hilite->frame.x = 1;
@@ -293,7 +294,6 @@ void zdj_menu_item_song_init_layout( zdj_view_t * view ) {
 void zdj_menu_item_song_update_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     int _edit_option_index = (int)round(state->edit_option_index);
-    // printf( "zdj_menu_item_song_update_layout: %d\n", _edit_option_index );
     switch( _edit_option_index ) {
         case 0:
             break;
@@ -303,12 +303,12 @@ void zdj_menu_item_song_update_layout( zdj_view_t * view ) {
             break;
         case 2:
         case 3:
-            state->edit_action = ZDJ_MENU_ITEM_ACTION_LEAD_DECK_1;
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_LOAD_DECK_1;
             _draw_deck_1( view );
             break;
         case 4:
         case 5:
-            state->edit_action = ZDJ_MENU_ITEM_ACTION_LEAD_DECK_2;
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_LOAD_DECK_2;
             _draw_deck_2( view );
             break;
         case 6:
@@ -322,10 +322,15 @@ void zdj_menu_item_song_update_layout( zdj_view_t * view ) {
             _draw_add_to_list( view );
             break;
         case 10:
+        case 11:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_DELETE;
+            _draw_delete( view );
+            break;
+        case 12:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
             _draw_base( view );
             break;
-        case 11:
+        case 13:
             break;
     }
 
@@ -336,7 +341,6 @@ void zdj_menu_item_song_update_layout( zdj_view_t * view ) {
 void zdj_menu_item_song_playlist_update_layout( zdj_view_t * view ) {
     zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
     int _edit_option_index = (int)round(state->edit_option_index);
-    // printf( "zdj_menu_item_song_playlist_update_layout: %d\n", _edit_option_index );
     switch( _edit_option_index ) {
         case 0:
             break;
@@ -346,31 +350,68 @@ void zdj_menu_item_song_playlist_update_layout( zdj_view_t * view ) {
             break;
         case 2:
         case 3:
-            state->edit_action = ZDJ_MENU_ITEM_ACTION_LEAD_DECK_1;
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_LOAD_DECK_1;
             _draw_deck_1( view );
             break;
         case 4:
-            state->edit_action = ZDJ_MENU_ITEM_ACTION_LEAD_DECK_2;
+        case 5:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_LOAD_DECK_2;
             _draw_deck_2( view );
             break;
-        case 5:
+        case 6:
+        case 7:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_EDIT;
             _draw_edit( view );
             break;
-        case 6:
+        case 8:
+        case 9:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_START_MOVE;
             _draw_move_item( view );
             break;
-        case 7:
-        case 8:
+        case 10:
+        case 11:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_DELETE;
             _draw_delete( view );
             break;
-        case 9:
+        case 12:
             state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
             _draw_base( view );
             break;
-        case 10:
+        case 13:
+            break;
+    }
+
+    state->needs_layout_update = false;
+}
+
+void zdj_menu_item_song_error_update_layout( zdj_view_t * view ) {
+    zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    int _edit_option_index = (int)round(state->edit_option_index);
+    switch( _edit_option_index ) {
+        case 0:
+            break;
+        case 1:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
+            _draw_base( view );
+            break;
+        case 2:
+        case 3:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_RESCAN;
+            _draw_rescan( view );
+            break;
+        case 4:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_EDIT;
+            _draw_edit( view );
+            break;
+        case 5:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_DELETE;
+            _draw_delete( view );
+            break;
+        case 6:
+            state->edit_action = ZDJ_MENU_ITEM_ACTION_DONE;
+            _draw_base( view );
+            break;
+        case 7:
             break;
     }
 
@@ -385,7 +426,7 @@ static void _draw_base( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( state->normal_view );
 
     // Setup normal view
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.y = -1;
@@ -399,7 +440,7 @@ static void _draw_base( zdj_view_t * view ) {
     hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.h = 8;
 
-    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)title_ticker_hilite->state;
     zdj_add_subview( state->hilite_view, title_ticker_hilite );
     title_ticker_hilite->frame.x = 1;
@@ -421,7 +462,7 @@ static void _draw_deck_1( zdj_view_t * view ) {
     hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.h = 8;
 
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.y = -1;
@@ -447,7 +488,7 @@ static void _draw_deck_2( zdj_view_t * view ) {
     hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.h = 8;
 
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.y = -1;
@@ -473,7 +514,7 @@ static void _draw_edit( zdj_view_t * view ) {
     hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.h = 8;
 
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.y = -1;
@@ -499,7 +540,7 @@ static void _draw_move_item( zdj_view_t * view ) {
     hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.h = 8;
 
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.y = -1;
@@ -528,7 +569,7 @@ static void _draw_delete( zdj_view_t * view ) {
     hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.h = 8;
 
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.y = -1;
@@ -555,7 +596,7 @@ static void _draw_add_to_list( zdj_view_t * view ) {
     hilite_bg->frame.w = view->frame.w;
     hilite_bg->frame.h = 8;
 
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_ticker_norm );
     title_ticker_norm->frame.x = 1;
     title_ticker_norm->frame.y = -1;
@@ -565,6 +606,32 @@ static void _draw_add_to_list( zdj_view_t * view ) {
     zdj_view_t * btn = zdj_new_noclip_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_ADD_TO_PLAYLIST ], NULL );
     btn->frame.x = -9;
     btn->frame.y = -3;
+    zdj_add_subview( state->hilite_view, btn );
+}
+
+static void _draw_rescan( zdj_view_t * view ) {
+    // printf( "_draw_rescan\n" );
+    zdj_menu_item_view_state_t * state = (zdj_menu_item_view_state_t*)view->state;
+    zdj_remove_all_subviews_of( state->hilite_view );
+    zdj_remove_all_subviews_of( state->normal_view );
+
+    // Setup normal view
+    zdj_view_t * hilite_bg = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_HILITE_7_L ], NULL );
+    zdj_add_subview( state->hilite_view, hilite_bg );
+    hilite_bg->frame.y = 0;
+    hilite_bg->frame.w = view->frame.w;
+    hilite_bg->frame.h = 8;
+
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_add_subview( state->hilite_view, title_ticker_norm );
+    title_ticker_norm->frame.x = 1;
+    title_ticker_norm->frame.y = -1;
+    title_ticker_norm->frame.w = view->frame.w;
+    title_ticker_norm->frame.h = view->frame.h;
+
+    zdj_view_t * btn = zdj_new_noclip_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_LIB_RESCAN ], NULL );
+    btn->frame.x = -10;
+    btn->frame.y = -2;
     zdj_add_subview( state->hilite_view, btn );
 }
 

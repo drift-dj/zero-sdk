@@ -59,6 +59,7 @@ typedef struct {
     int edit_item_move_top_index;
     int edit_item_move_bottom_index;
     double move_item_index;
+    void ( *move_cb )( void*, void*, int, int );
     zdj_view_t * scroll_view;
     zdj_rect_t scroll_view_frame;
     bool scroll_enabled;

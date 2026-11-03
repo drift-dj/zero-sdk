@@ -83,7 +83,7 @@ void zdj_library_create_db_tables( sqlite3 * db ) {
     strcpy( sql, "CREATE TABLE 'Performance_Data_Entity' ('entity_id' TEXT NOT NULL, 'song_entity_id' TEXT, 'data_source_entity_id' TEXT, 'length_in_samples' INT, 'key' INT, 'bpm' REAL, 'has_beat_grid' INT, 'beat_grid_start_sample' INT, 'cuepoint_links' TEXT, 'error' INT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
     // Song
-    strcpy( sql, "CREATE TABLE 'Song_Entity' ('entity_id' TEXT NOT NULL, 'catalog_data_entity_id' TEXT, 'performance_data_entity_id' TEXT, 'curation_data_entity_id' TEXT, 'audio_data_entity_id' TEXT, 'analysis_state' INT, 'analysis_progress' REAL, 'has_error' INT, 'error_flags' INT, PRIMARY KEY('entity_id'))" );
+    strcpy( sql, "CREATE TABLE 'Song_Entity' ('entity_id' TEXT NOT NULL, 'origin_id' TEXT, 'catalog_data_entity_id' TEXT, 'performance_data_entity_id' TEXT, 'curation_data_entity_id' TEXT, 'audio_data_entity_id' TEXT, 'analysis_state' INT, 'analysis_progress' REAL, 'has_error' INT, 'error_flags' INT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
     // Library
     strcpy( sql, "CREATE TABLE 'Library_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, 'song_links' TEXT, 'playlist_links' TEXT, 'curation_data_links' TEXT, 'setting_links' TEXT, PRIMARY KEY('entity_id'))" );
@@ -105,6 +105,12 @@ void zdj_library_create_db_tables( sqlite3 * db ) {
     zdj_sql_exec( (char*)&sql, db );
     // Tags
     strcpy( sql, "CREATE TABLE 'Tag_Entity' ('entity_id' TEXT NOT NULL, 'name' TEXT, PRIMARY KEY('entity_id'))" );
+    zdj_sql_exec( (char*)&sql, db );
+    // Version
+    strcpy( sql, "CREATE TABLE 'Version_Entity' ('entity_id' TEXT NOT NULL, 'major' INT, 'minor' INT, 'hotfix' INT, 'state' INT, 'substate' INT, PRIMARY KEY('entity_id'))" );
+    zdj_sql_exec( (char*)&sql, db );
+    // Migration
+    strcpy( sql, "CREATE TABLE 'Migration_Entity' ('entity_id' TEXT NOT NULL, 'src_major' INT, 'src_minor' INT, 'src_hotfix' INT, 'dst_major' INT, 'dst_minor' INT, 'dst_hotfix' INT, 'state' INT, 'substate' INT, PRIMARY KEY('entity_id'))" );
     zdj_sql_exec( (char*)&sql, db );
 }
 

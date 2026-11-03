@@ -321,11 +321,29 @@ bool zdj_setting_get_dev_zerod_flag( void ) {
 
 void zdj_setting_set_dev_zerod_flag( bool flag ) {
     if( flag ) {
-        FILE * dev_flag_fd = fopen( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH, "w" );
+        FILE * force_quit_flag_fd = fopen( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH, "w" );
+        fwrite( "true", sizeof( char ), 5, force_quit_flag_fd );
+        fclose( force_quit_flag_fd );
+    } else {
+        remove( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH );
+    }
+}
+
+bool zdj_setting_get_dev_force_quit_flag( void ) {
+    if( access( ZDJ_SETTINGS_DEV_FORCE_QUIT_FLAG_PATH, F_OK ) == 0 ) { 
+        return true; 
+    } else {
+        return false;
+    }
+}
+
+void zdj_setting_set_dev_force_quit_flag( bool flag ) {
+    if( flag ) {
+        FILE * dev_flag_fd = fopen( ZDJ_SETTINGS_DEV_FORCE_QUIT_FLAG_PATH, "w" );
         fwrite( "true", sizeof( char ), 5, dev_flag_fd );
         fclose( dev_flag_fd );
     } else {
-        remove( ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH );
+        remove( ZDJ_SETTINGS_DEV_FORCE_QUIT_FLAG_PATH );
     }
 }
 

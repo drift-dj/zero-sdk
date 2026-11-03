@@ -123,7 +123,7 @@ zdj_pipeline_node_t * zdj_new_decode_node(
             state->requires_garbage = true;
             break;
         case AV_CODEC_ID_FLAC:
-            state->estimated_packet_sample_count = 1152;
+            state->estimated_packet_sample_count = 4096;
             state->av_timebase_factor = 1;
             state->requires_garbage = true;
             break;

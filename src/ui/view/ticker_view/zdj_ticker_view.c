@@ -46,7 +46,7 @@ zdj_view_t * zdj_new_ticker_view(
         // requires the beginning and end of the string to appear a 
         // few pixels from eachother to acheive seemless scrolling.
         char double_str[ 1024 ];
-        snprintf( double_str, sizeof( double_str ), "%s        %s",
+        snprintf( double_str, sizeof( double_str ), "%s ... %s",
             str,
             str
         );

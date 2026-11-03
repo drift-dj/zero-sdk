@@ -135,9 +135,9 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_menu_view_add_padding( state->menu, 3 );
     zdj_menu_view_add_section( state->menu, zdj_new_menu_section( "Software" ) );
 
-    zdj_view_t * install_btn = zdj_new_menu_item( "+ Install Apps", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
-    install_btn->handle_control_event = _install_btn;
-    zdj_menu_view_add_item( state->menu, install_btn );
+    // zdj_view_t * install_btn = zdj_new_menu_item( "+ Install Apps", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
+    // install_btn->handle_control_event = _install_btn;
+    // zdj_menu_view_add_item( state->menu, install_btn );
 
     zdj_view_t * os_btn = zdj_new_menu_item( "DriftOS", ZDJ_MENU_ITEM_LAYOUT_BASIC_L );
     zdj_menu_item_view_state_t * os_state = (zdj_menu_item_view_state_t*)os_btn->state;

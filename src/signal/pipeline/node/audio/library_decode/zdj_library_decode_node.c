@@ -38,8 +38,38 @@ zdj_pipeline_node_t * zdj_new_library_decode_node( zdj_library_song_t * song ) {
     state->done = false;
     state->available_samples = 0;
     state->channel_count = song->audio->av_channel_count;
+    state->has_valid_decode = false;
 
-    state->out_buffer = calloc( 10000, sizeof( float ) );
+
+    switch( state->song->audio->av_codec_id ) {
+        case AV_CODEC_ID_MP3:
+            state->out_buffer_len = 1152 * 2;
+            break;
+        case AV_CODEC_ID_AAC:
+            state->out_buffer_len = 1152 * 2;
+            break;
+        case AV_CODEC_ID_FLAC:
+            state->out_buffer_len = 4096 * 2;
+            break;
+        case AV_CODEC_ID_PCM_S16LE:
+        case AV_CODEC_ID_PCM_S16BE:
+        case AV_CODEC_ID_PCM_U16LE:
+        case AV_CODEC_ID_PCM_U16BE:
+        case AV_CODEC_ID_PCM_S24LE:
+        case AV_CODEC_ID_PCM_S24BE:
+        case AV_CODEC_ID_PCM_U24LE:
+        case AV_CODEC_ID_PCM_U24BE:
+        case AV_CODEC_ID_PCM_S32LE:
+        case AV_CODEC_ID_PCM_S32BE:
+        case AV_CODEC_ID_PCM_U32LE:
+        case AV_CODEC_ID_PCM_U32BE:
+        case AV_CODEC_ID_PCM_F32LE:
+        case AV_CODEC_ID_PCM_F32BE:
+            state->out_buffer_len = 1024 * 2;
+            break;
+    }
+    // state->out_buffer = calloc( 10000, sizeof( float ) );
+    state->out_buffer = calloc( state->out_buffer_len, sizeof( float ) );
 
     av_log_set_level( AV_LOG_QUIET );
 
@@ -90,12 +120,22 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     if( decode_count == 0 ) { 
         state->song->analysis_state = ZDJ_LIBRARY_ANALYSIS_STATE_DONE; 
     } else if( decode_count < 0 ) {
+        // // Attempt a couple more decodes before giving up
+        int attempt = 0;
+        while( attempt++ < 3 ) {
+            decode_count = _decode( node, av_packet, av_frame );
+            state->available_samples = decode_count;
+            if( decode_count > 0 ) { break; }
+        }
         state->song->audio->has_libav_error = true;
         state->song->has_error = true;
         state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
         state->song->analysis_state = ZDJ_LIBRARY_ANALYSIS_STATE_DONE; 
-        // printf( "zdj_library_create_file_import_song_graph: ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED\n" );
-        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_ERROR, "Decode Fail: %s", basename( state->song->audio->filepath ) );
+        char codec_str[ 16 ];
+        const AVCodecDescriptor * desc = avcodec_descriptor_get( state->song->audio->av_codec_id );
+        if ( desc ) { snprintf( codec_str, 16, "%s", desc->name ); } 
+        else { strcpy( codec_str, "none" ); }
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_ERROR, "Decode Fail 1: %s codec: %s", basename( state->song->audio->filepath ), codec_str );
     }
 
     
@@ -105,6 +145,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
     float * frame_buf_flt;
     switch ( av_frame->format ) {
         case AV_SAMPLE_FMT_S16: 
+            state->has_valid_decode = true;
             frame_buf_s16 = (int16_t*)av_frame->data[ 0 ];
             for( int i=0; i<decode_count; i++ ){
                 state->out_buffer[ i*channel_count ] = frame_buf_s16[ i*channel_count ];
@@ -114,6 +155,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
             }
             break;
         case AV_SAMPLE_FMT_S32: 
+            state->has_valid_decode = true;
             frame_buf_s32 = (int32_t*)av_frame->data[ 0 ];
             for( int i=0; i<decode_count; i++ ){
                 state->out_buffer[ i*channel_count ] = frame_buf_s32[ i*channel_count ];
@@ -123,6 +165,7 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
             }
             break;
         case AV_SAMPLE_FMT_FLT:
+            state->has_valid_decode = true;
             frame_buf_flt = (float*)av_frame->data[ 0 ];
             for( int i=0; i<decode_count; i++ ){
                 state->out_buffer[ i*channel_count ] = frame_buf_flt[ i*channel_count ];
@@ -132,6 +175,14 @@ static void _update_wait( zdj_pipeline_node_t * node ) {
             }
             break;
         default: break;
+    }
+
+    if( !state->has_valid_decode ) {
+        state->song->audio->has_libav_error = true;
+        state->song->has_error = true;
+        state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
+        state->song->analysis_state = ZDJ_LIBRARY_ANALYSIS_STATE_DONE; 
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_ERROR, "Decode Fail 2: %s", basename( state->song->audio->filepath ) );
     }
 
     av_packet_unref( av_packet );
@@ -165,8 +216,9 @@ static int _decode(
     res = av_read_frame( state->fmt_ctx, av_packet );
     if( res != 0 ) {
         if( state->fmt_ctx->pb->eof_reached ) {
-            // packet->has_eof = true;
             return decoded_frame_count;
+        } else if( res == AVERROR_EOF ) {
+            return 0;
         } else {
             // packet->has_decode_error = true;
             // printf( "av_read_frame failed\n" );
@@ -191,7 +243,7 @@ static int _decode(
             state->song->has_error = true;
             state->song->error_flags |= 0x1 << ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED;
             // printf( "zdj_library_create_file_import_song_graph: ZDJ_LIBRARY_SONG_ERROR_FLAG_DECODE_FAILED\n" );
-            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_ERROR, "Decode Fail: %s", basename( state->song->audio->filepath ) );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_ERROR, "Decode Fail 3: %s", basename( state->song->audio->filepath ) );
             return 0; 
         }
         // Attempt to read another frame to see if things improve

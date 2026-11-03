@@ -17,7 +17,8 @@ zdj_log_settings_t * zdj_log_settings;
 static char _log_buf[ ZDJ_LOG_BUF_LEN ];
 static char _log_out[ ZDJ_LOG_BUF_LEN ];
 
-static bool _put_remap_line_for_addr( char * addr, char * remap_line, FILE * remap_file );
+static FILE * activity_log;
+static FILE * usb_log;
 
 void zdj_log_init( void ) {
     // printf( "zdj_log_init\n" );
@@ -31,6 +32,7 @@ void zdj_log_refresh_settings( void ) {
     // Read stored settings
     zdj_log_settings->log_level = zdj_setting_get( ZDJ_SETTING_LOG_LEVEL )->i_val;
     zdj_log_settings->log_printf = zdj_setting_get( ZDJ_SETTING_LOG_PRINTF )->b_val;
+    zdj_log_settings->log_to_file = zdj_setting_get( ZDJ_SETTING_LOG_TO_FILE )->b_val;
 
     // Build subject mask:
     zdj_log_settings->subject_masks = 0x0;
@@ -43,6 +45,8 @@ void zdj_log_refresh_settings( void ) {
     zdj_log_settings->subject_masks |= (((int)zdj_setting_get( ZDJ_SETTING_LOG_FS )->b_val) << ZDJ_LOG_FS);
     zdj_log_settings->subject_masks |= (((int)zdj_setting_get( ZDJ_SETTING_LOG_RECORD )->b_val) << ZDJ_LOG_RECORDING);
     zdj_log_settings->subject_masks |= (((int)zdj_setting_get( ZDJ_SETTING_LOG_MIXER )->b_val) << ZDJ_LOG_MIXER);
+    zdj_log_settings->subject_masks |= (((int)zdj_setting_get( ZDJ_SETTING_LOG_SYSTEM )->b_val) << ZDJ_LOG_SYSTEM);
+    zdj_log_settings->subject_masks |= (((int)zdj_setting_get( ZDJ_SETTING_LOG_CRASH )->b_val) << ZDJ_LOG_CRASH);
 }
 
 void zdj_log( zdj_log_subject_t subject, zdj_log_level_t level, const char* fmt, ... ) {
@@ -64,24 +68,28 @@ void zdj_log( zdj_log_subject_t subject, zdj_log_level_t level, const char* fmt,
 
         if( zdj_log_settings->log_printf ) { printf( "%s\n", _log_out ); }
 
-        // if( zdj_log_settings->log_to_file ) { }
+        if( zdj_log_settings->log_to_file ) { 
+            zdj_log_file_append_line( subject, _log_out );
+        }
     }
 }
-
 
 int zdj_cur_log_num( zdj_log_subject_t subject ) {
     char log_dir[ 512 ];
     char count_path[ 512 ];
     switch ( subject ) {
         case ZDJ_LOG_USB:
-            strcpy( log_dir, ZDJ_USB_LOG_DIR );
-            strcpy( count_path, ZDJ_USB_LOG_COUNT );
+            snprintf( log_dir, 512, "%s", ZDJ_USB_LOG_DIR );
+            snprintf( count_path, 512, "%s", ZDJ_USB_LOG_COUNT );
             break;
-        case ZDJ_LOG_LIBRARY:
-            strcpy( log_dir, ZDJ_ACTIVITY_LOG_DIR );
-            strcpy( count_path, ZDJ_ACTIVITY_LOG_COUNT );
+        case ZDJ_LOG_CRASH_REPORT:
+            snprintf( log_dir, 512, "%s", ZDJ_CRASH_LOG_DIR );
+            snprintf( count_path, 512, "%s", ZDJ_CRASH_LOG_COUNT );
             break;
-        default: return 0;
+        default: 
+            snprintf( log_dir, 512, "%s", ZDJ_ACTIVITY_LOG_DIR );
+            snprintf( count_path, 512, "%s", ZDJ_ACTIVITY_LOG_COUNT );
+            break;
     }
 
     // Create the logs dir if it's missing
@@ -101,14 +109,17 @@ static int _inc_current_log_num( zdj_log_subject_t subject ) {
     char count_path[ 512 ];
     switch ( subject ) {
         case ZDJ_LOG_USB:
-            strcpy( log_dir, ZDJ_USB_LOG_DIR );
-            strcpy( count_path, ZDJ_USB_LOG_COUNT );
+            snprintf( log_dir, 512, "%s", ZDJ_USB_LOG_DIR );
+            snprintf( count_path, 512, "%s", ZDJ_USB_LOG_COUNT );
             break;
-        case ZDJ_LOG_LIBRARY:
-            strcpy( log_dir, ZDJ_ACTIVITY_LOG_DIR );
-            strcpy( count_path, ZDJ_ACTIVITY_LOG_COUNT );
+        case ZDJ_LOG_CRASH_REPORT:
+            snprintf( log_dir, 512, "%s", ZDJ_CRASH_LOG_DIR );
+            snprintf( count_path, 512, "%s", ZDJ_CRASH_LOG_COUNT );
             break;
-        default: return 0;
+        default: 
+            snprintf( log_dir, 512, "%s", ZDJ_ACTIVITY_LOG_DIR );
+            snprintf( count_path, 512, "%s", ZDJ_ACTIVITY_LOG_COUNT );
+            break;
     }
 
     // Create the logs dir if it's missing, fail to 0 
@@ -120,14 +131,13 @@ static int _inc_current_log_num( zdj_log_subject_t subject ) {
     if( count_fp ) {
         fread( &num, sizeof( int ), 1, count_fp );
         fclose( count_fp );
-        
-        // Increment and write the new num to counter
-        num++;
-        count_fp = fopen( count_path, "w" );
-        if( count_fp ) {
-            fwrite( &num, sizeof( int ), 1, count_fp );
-            fclose( count_fp );
-        }
+    }
+    // Increment and write the new num to counter
+    num++;
+    count_fp = fopen( count_path, "w" );
+    if( count_fp ) {
+        fwrite( &num, sizeof( int ), 1, count_fp );
+        fclose( count_fp );
     }
     return num;
 }
@@ -136,16 +146,16 @@ int zdj_new_log_num( zdj_log_subject_t subject ) {
     return _inc_current_log_num( subject );
 }
 
-void zdj_put_cur_log( zdj_log_subject_t subject, char * str_1, char * str_2, char * str_3 ) {
+void zdj_put_cur_log( zdj_log_subject_t subject, char * str_1, char * str_2, char * str_3, char * str_4 ) {
     int cur_log_num = zdj_cur_log_num( subject );
 
     char log_path[ 512 ];
     switch ( subject ) {
         case ZDJ_LOG_USB:
-            sprintf( log_path, "%s/usb_log_%03d.txt", ZDJ_USB_LOG_DIR, cur_log_num );
+            snprintf( log_path, sizeof( log_path ), "%s/usb_log_%03d.txt", ZDJ_USB_LOG_DIR, cur_log_num );
             break;
-        case ZDJ_LOG_LIBRARY:
-            sprintf( log_path, "%s/lib_log_%03d.txt", ZDJ_CRASH_LOG_DIR, cur_log_num );
+        case ZDJ_LOG_CRASH_REPORT:
+            snprintf( log_path, sizeof( log_path ), "%s/crash_log_%03d.txt", ZDJ_CRASH_LOG_DIR, cur_log_num );
             break;
         default: return;
     }
@@ -154,129 +164,70 @@ void zdj_put_cur_log( zdj_log_subject_t subject, char * str_1, char * str_2, cha
     FILE * log = fopen( log_path, "r" );
     if( !log ) { return; }
     
-    printf( "reading log: %s\n", log_path );
+    // printf( "reading log: %s\n", log_path );
     char line[ 512 ];
     if( str_1 && fgets( line, 512, log ) ) {
-        strcpy( str_1, line );
+        snprintf( str_1, 512, "%s", line );
     }
     if( str_2 && fgets( line, 512, log ) ) {
-        strcpy( str_2, line );
+        snprintf( str_2, 512, "%s", line );
     }
     if( str_3 && fgets( line, 512, log ) ) {
-        strcpy( str_3, line );
+        snprintf( str_3, 512, "%s", line );
+    }
+    if( str_4 && fgets( line, 512, log ) ) {
+        snprintf( str_4, 512, "%s", line );
     }
 
     fclose( log );
 }
 
-
-// Get the most recent crash log and reformat to human-readable
-void zdj_process_latest_crash_log_file( void ) {
-    
-    // Find crash log
-    int log_num = zdj_cur_log_num( ZDJ_LOG_CRASH );
-    char log_filepath[ 512 ];
-    sprintf( log_filepath, "%s/crash_log_%03d.txt", ZDJ_CRASH_LOG_DIR, log_num );
-
-    printf( "_process_latest_crash_log_file: %s\n", log_filepath );
-
-    FILE * log_file = fopen( log_filepath, "r" );
-    if ( !log_file ) { printf( "FAILED TO OPEN CRASH LOG!!!\n" ); return; }
-
-    FILE * remap_file = fopen( "/usr/bin/zero-dj/zero-dj.remap", "r" );
-    if ( !remap_file ) { printf( "FAILED TO OPEN REMAP!!!\n" ); return; }
-
-    // If crash log isn't raw, it's already been processed, bug out
-    // char first_line[ 256 ];
-    // if( fgets( first_line, sizeof( first_line ), log_file ) ) {
-    //     if( strncmp( first_line, "###", 3 ) == 0 ) { printf( "Processing a non-raw file!!!\n" ); return; }
-    // };
-    rewind( log_file );
-
-    // Create an array of lines from the log file
-    // Max out at 10 lines
-    #define MAX_LINES 10
-    char lines[ MAX_LINES ][ 256 ];
-    char remap_lines[ MAX_LINES ][ 256 ];
-    int line_counter = 0;
-    
-    while ( fgets( lines[ line_counter ], sizeof( lines[ line_counter ] ), log_file ) ) { 
-        line_counter++; 
-        if( line_counter >= MAX_LINES ){ break; }
-    }
-
-    // Rewrite each line using data from the remap file
-    int output_line = 0;
-    char addr_str[ 64 ];
-    for( int i=0; i<line_counter; i++ ) {
-        // Get address from log line
-        if ( sscanf( lines[ i ], "%*[^(](%*[+]%31[^)])", addr_str ) == 1 ) {
-            // Rewrite log line with function name and source file
-            if( _put_remap_line_for_addr( addr_str, remap_lines[ output_line ], remap_file ) ) {
-                output_line++;
-            }
-        }
-    }
-
-    // Close log file and re-open to overwrite
-    fclose( log_file );
-    log_file = fopen( log_filepath, "w" );
-    if ( !log_file ) { printf( "FAILED TO OPEN CRASH LOG!!!\n" ); return; }
-
-    // Write re-formatted lines to log
-    for( int o=0; o<output_line; o++ ){  
-        // printf( "%s\n", remap_lines[ o ] );
-        fprintf( log_file, "%s\n", remap_lines[ o ] );
-    }
-}
-
-static bool _put_remap_line_for_addr( char * addr, char * remap_line, FILE * remap_file ) {
-    bool found_remap_line = false;
-    // Make int from addr
-    long result = strtol( addr, NULL, 16 );
-    // Scan remap file until address is captured
-    char line[ 512 ];
-    char source_file[ 128 ];
-    char function_name[ 128 ];
-    long vma = 0;
-    char prev_source_file[ 128 ];
-    char prev_function_name[ 128 ];
-    long prev_vma = 0;
-    // Find first address/func in remap file
-    rewind( remap_file );
-    fgets( line, sizeof( line ), remap_file );
-    int res = sscanf( line, "%lx %s %s", &vma, (char*)&source_file, (char*)&function_name );
-    if( res == 3 ) {
-        strcpy( prev_function_name, function_name );
-        strcpy( prev_source_file, source_file );
-        prev_vma = vma;
-    }
-
-    // Start full scan of remap file
-    rewind( remap_file );
-    while ( fgets( line, sizeof( line ), remap_file ) ) {
-        int res = sscanf( line, "%lx %s %s", &vma, &source_file, &function_name );
-        if( res == 3 ) {
-            if( result > prev_vma && result < vma &&
-                strncmp( prev_function_name, "_zdj_error_sig", 12 ) != 0
-            ) { 
-                // printf( "found line: %llx %llx %s %s\n", result, vma, source_file, function_name );
-                snprintf( remap_line, 256, "%s( )    [%s/0x%lx (0x%lx + 0x%lx)]",
-                    prev_function_name,
-                    prev_source_file,
-                    result,
-                    prev_vma,
-                    result - prev_vma
+void zdj_log_file_append_line( zdj_log_subject_t subject, char* line ) {
+    FILE * log_fp;
+    char log_path[ 512 ];
+    switch ( subject ) {
+        case ZDJ_LOG_INIT:
+        case ZDJ_LOG_UI:
+        case ZDJ_LOG_RECORDING:
+        case ZDJ_LOG_MIXER:
+        case ZDJ_LOG_SYSTEM:
+        case ZDJ_LOG_LIBRARY:
+        case ZDJ_LOG_PLAYBACK:
+            if( !activity_log ) { 
+                snprintf( 
+                    log_path, 
+                    sizeof( log_path ), 
+                    "%s/activity_log_%03d.txt", 
+                    ZDJ_ACTIVITY_LOG_DIR, 
+                    zdj_new_log_num( ZDJ_LOG_ANY ) 
                 );
-                printf( "%s\n", remap_line );
-                found_remap_line = true;
-                // Exit the loop early when we find the line
-                break;
+                activity_log = fopen( log_path, "w" ); 
             }
-            strcpy( prev_function_name, function_name );
-            strcpy( prev_source_file, source_file );
-            prev_vma = vma;
-        }
+            if( activity_log ) { log_fp = activity_log; }
+            else { return; }
+            break;
+        case ZDJ_LOG_USB:
+            if( !usb_log ) { 
+                snprintf( 
+                    log_path, 
+                    sizeof( log_path ), 
+                    "%s/usb_log_%03d.txt", 
+                    ZDJ_USB_LOG_DIR, 
+                    zdj_new_log_num( ZDJ_LOG_USB ) 
+                );
+                usb_log = fopen( log_path, "w" ); 
+            }
+            if( usb_log ) { log_fp = usb_log; }
+            else { return; }
+            break;
+        default: return;
     }
-    return found_remap_line;
+
+    // Write log line and flush buffer
+    fprintf( log_fp, "%s\n", line );
+    fflush( log_fp );
+    
+    // Sync log to disk file
+    int fd = fileno( log_fp );
+    if ( fd != -1 ) { fsync( fd ); }
 }

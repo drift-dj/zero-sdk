@@ -30,6 +30,7 @@
 
 #define ZDJ_SETTINGS_DB_PATH  "/media/internal/.system/settings.db"
 #define ZDJ_SETTINGS_DEV_ZEROD_FLAG_PATH "/media/internal/.system/zerod_dev"
+#define ZDJ_SETTINGS_DEV_FORCE_QUIT_FLAG_PATH "/media/internal/.system/force_quit_dev"
 #define ZDJ_SETTINGS_DEBUG_CRASH_FLAG_PATH "/media/internal/.system/debug_crash"
 
 typedef enum {
@@ -57,6 +58,7 @@ typedef enum {
     
     ZDJ_SETTING_DEBUG_SHOW_CRASH = 600,
     ZDJ_SETTING_LOG_DEPLOY_AT_BOOT,
+    ZDJ_SETTING_LOG_SYSTEM,
     ZDJ_SETTING_LOG_CRASH,
     ZDJ_SETTING_LOG_UI,
     ZDJ_SETTING_LOG_USB,
@@ -122,6 +124,9 @@ bool zdj_setting_flip_bool( int id );
 
 bool zdj_setting_get_dev_zerod_flag( void );
 void zdj_setting_set_dev_zerod_flag( bool flag );
+
+bool zdj_setting_get_dev_force_quit_flag( void );
+void zdj_setting_set_dev_force_quit_flag( bool flag );
 
 bool zdj_setting_get_crash_flag( void );
 void zdj_setting_set_crash_flag( bool flag );

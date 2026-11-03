@@ -123,10 +123,4 @@ void zdj_error_init( char * binary_path );
 zdj_error_state_t * zdj_error_state( void );
 void zdj_print_error( zdj_error_type_t error );
 
-// int zdj_new_log_num( zdj_log_type_t type );
-// int zdj_cur_log_num( zdj_log_type_t type );
-// void zdj_reset_logs( void );
-// void zdj_put_cur_log( zdj_log_type_t type, char * str_1, char * str_2, char * str_3 );
-// void zdj_process_latest_crash_log_file( void );
-
 #endif

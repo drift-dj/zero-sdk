@@ -98,10 +98,13 @@ static void _handle_controls( zdj_deck_t * deck, zdj_control_event_t * event ) {
         
         // if( clock_is_output( ) ) {
         if( zdj_deck_manager( )->sync.active ) {
+            // printf( "sync active: %d\n", event->i_val );
             zdj_deck_manager_update_sync_bpm( event->i_val * 1 );
         } else if( deck->can_sync ) {
+            // printf( "can_sync: %d\n", event->i_val );
             deck->offset_sync_bpm( deck, event->i_val * 1 );
         } else {
+            // printf( "offset pitch: %d\n", event->i_val );
             deck->offset_pitch_setting( deck, (double)event->i_val * 0.01 );
         }
         // } else {

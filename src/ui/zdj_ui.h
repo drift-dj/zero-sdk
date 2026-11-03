@@ -40,7 +40,7 @@
 #define ZDJ_BLINK_PERIOD 7
 #define ZDJ_BLINK_DUTY 3
 
-#define ZDJ_UI_DATA_STRLEN 32
+#define ZDJ_UI_DATA_STRLEN 256
 
 #define ZDJ_SCREEN_W 128
 #define ZDJ_SCREEN_H 64
@@ -123,7 +123,12 @@ typedef enum {
     ZDJ_FONT_12,
     ZDJ_FONT_12_CAPS,
     ZDJ_FONT_18,
-    ZDJ_FONT_18_CAPS
+    ZDJ_FONT_18_CAPS,
+    ZDJ_FONT_TINY5,
+    ZDJ_FONT_BYTESIZED,
+    ZDJ_FONT_PIXELSIX,
+    ZDJ_FONT_MONA_12,
+    ZDJ_FONT_MONA_12_NAR
 } zdj_font_t;
 
 typedef enum {

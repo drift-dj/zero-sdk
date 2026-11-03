@@ -40,7 +40,8 @@ static void * _admin_thread_main( void * arg ) {
         if( (zdj_usb_state != NULL) && 
             zdj_usb_state->mode_state.mode == ZDJ_USB_MODE_HOST &&
             zdj_usb_state->host_status.has_soundcard_update &&
-            zdj_usb_state->host_status.attached.count > 0
+            zdj_usb_state->host_status.attached.count > 0 &&
+            zdj_usb_state->host_status.attached.has_uac2
         ) { 
             
             // Call into the USB I/O node and hand it a new device to prepare.

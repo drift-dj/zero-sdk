@@ -108,7 +108,6 @@ static void _handle_back( zdj_view_t * menu_view ) {
 static void _refresh_menu( zdj_view_t * view ) {
     zdj_settings_ui_panel_state_t * state = (zdj_settings_ui_panel_state_t*)view->state;
 
-    printf( "refresh menu\n" );
     zdj_menu_view_remove_all_subviews( state->menu );
 
 
@@ -153,7 +152,6 @@ static void _refresh_menu( zdj_view_t * view ) {
     zdj_setting_t * rate_setting = zdj_setting_get( ZDJ_SETTING_REFRESH_RATE );
     if( rate_setting ) {
         zdj_setting_refresh_rate_t rate = rate_setting->i_val;
-        printf( "display rate: %d\n", rate );
         switch ( rate ) {
             case ZDJ_SETTING_REFRESH_RATE_115: sprintf( rate_state->data.c_val, "%d Hz", 115 ); break;
             case ZDJ_SETTING_REFRESH_RATE_60: sprintf( rate_state->data.c_val, "%d Hz", 60 ); break;
@@ -324,6 +322,9 @@ static void _handle_hide_error( zdj_view_t * view, zdj_control_event_t * event )
     zdj_view_t * ui_panel_view = (zdj_view_t*)item_state->data.ptr;
     zdj_settings_ui_panel_state_t * ui_panel_state = (zdj_settings_ui_panel_state_t*)ui_panel_view->state;
     ui_panel_state->needs_layout_update = true;
+
+    //Refresh the menu query table so front-end will redraw all menus
+    zdj_library_refresh_menu_query_table( zdj_library_db );
 }
 
 static void _handle_show_bpm( zdj_view_t * view, zdj_control_event_t * event ) {

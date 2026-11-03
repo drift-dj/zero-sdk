@@ -409,10 +409,10 @@ static void _reset_btn_layout_init( zdj_view_t * view ) {
     float btn_w = 0.0;
 
     // Setup normal view
-    zdj_view_t * title = zdj_new_label_view( state->data.c_val, ZDJ_FONT_12_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title = zdj_new_label_view( state->data.c_val, ZDJ_FONT_MONA_12, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title );
-    title->frame.x = 2;
-    title->frame.y = 4;
+    title->frame.x = 1;
+    title->frame.y = 6;
     btn_w += title->frame.w;
     
     // Setup hilite view
@@ -427,10 +427,10 @@ static void _reset_btn_layout_init( zdj_view_t * view ) {
     hilite_bg_r->frame.x = btn_w;
     hilite_bg_r->frame.h = 20;
 
-    zdj_view_t * title_hi = zdj_new_label_view( state->data.c_val, ZDJ_FONT_12_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_hi = zdj_new_label_view( state->data.c_val, ZDJ_FONT_MONA_12, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_hi );
     title_hi->frame.x = 2;
-    title_hi->frame.y = 4;
+    title_hi->frame.y = 6;
 
     zdj_view_t * launch_str_hi = zdj_new_label_view( "RUN", ZDJ_FONT_6_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, launch_str_hi );

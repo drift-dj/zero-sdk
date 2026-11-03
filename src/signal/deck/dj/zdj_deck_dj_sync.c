@@ -64,16 +64,11 @@ static void _set_sync_bpm( zdj_deck_t * deck, double bpm ) {
 
 static void _offset_sync_bpm( zdj_deck_t * deck, double offset ) {
     zdj_dj_deck_state_t * deck_state = (zdj_dj_deck_state_t*)deck->state;
-    if( deck_state->set_bpm < 10 ) { return; }
+    if( deck_state->set_bpm < 10 && offset < 0.0 ) { return; }
     deck_state->set_bpm += offset;
-    // if( deck_state->set_bpm < 0.07 ){ deck_state->set_bpm = 0.07; }
 
     if( deck_state->song->performance && (fabs( deck_state->song->performance->bpm ) > zdj_eps) ) {
-        
-        // deck->controls.platter.motor.pitch_setting = deck_state->set_bpm / deck_state->song->performance->bpm;
         deck->controls.platter.motor.pitch_setting = (deck_state->set_bpm * deck->sync_factor) / deck_state->song->performance->bpm;
-
-        // printf( "pitch set: %1.2f\n", deck->controls.platter.motor.pitch_setting );
     }
 }
 

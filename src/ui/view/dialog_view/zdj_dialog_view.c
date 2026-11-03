@@ -44,6 +44,8 @@ zdj_view_t * zdj_new_dialog_view(
     // Add a state instance
     zdj_dialog_view_state_t * state = calloc( 1, sizeof( zdj_dialog_view_state_t ) );
     dialog_view->state = state;
+    state->selection_data = NULL;
+    state->type = type;
 
     // Add menu
     zdj_view_t * _menu = zdj_new_menu_view( ZDJ_VERTICAL, zdj_dialog_rect( ) );
@@ -55,23 +57,45 @@ zdj_view_t * zdj_new_dialog_view(
 
     // Add body
     if( type == ZDJ_DIALOG_VIEW_TYPE_PROCESSING ) {
-        zdj_view_t * processing = zdj_new_label_view( "Processing...", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+        zdj_view_t * processing = zdj_new_label_view( "Processing...", ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
         processing->frame.x = 3;
         processing->frame.y = 4;
         zdj_menu_view_add_item( _menu, processing );
 
         zdj_view_t * progress_bar = zdj_new_progress_bar_view( &(zdj_rect_t){ 10,15,100,4 }, ZDJ_PROGRESS_BAR_VIEW_WAIT );
         zdj_menu_view_add_item( _menu, progress_bar );
+
+    } else if( type == ZDJ_DIALOG_VIEW_TYPE_LOADING ) {        
+        if( body_1 ) {
+            zdj_view_t * body_1_ticker = zdj_new_ticker_view( body_1, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+            body_1_ticker->frame.x = 3;
+            body_1_ticker->frame.y = 1;
+            body_1_ticker->frame.w = dialog_view->frame.w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
+            zdj_menu_view_add_item( _menu, body_1_ticker );
+        }
+
+        if( body_2 ) {
+            zdj_view_t * body_2_ticker = zdj_new_ticker_view( body_2, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+            body_2_ticker->frame.x = 3;
+            body_2_ticker->frame.y = 9;
+            body_2_ticker->frame.w = dialog_view->frame.w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
+            zdj_menu_view_add_item( _menu, body_2_ticker );
+        }
+
+        state->progress = 0.0;
+        state->progress_bar = zdj_new_progress_bar_view( &(zdj_rect_t){ 3,21,dialog_view->frame.w-6,6 }, ZDJ_PROGRESS_BAR_VIEW_COMBO );
+        zdj_menu_view_add_item( _menu, state->progress_bar );
+
     } else {
         if( body_1 ) {
-            zdj_view_t * body_1_ticker = zdj_new_ticker_view( body_1, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+            zdj_view_t * body_1_ticker = zdj_new_ticker_view( body_1, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
             body_1_ticker->frame.x = 7;
             body_1_ticker->frame.y = 4;
             body_1_ticker->frame.w = dialog_view->frame.w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
             zdj_menu_view_add_item( _menu, body_1_ticker );
         }
         if( body_2 ) {
-            zdj_view_t * body_2_ticker = zdj_new_ticker_view( body_2, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+            zdj_view_t * body_2_ticker = zdj_new_ticker_view( body_2, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
             body_2_ticker->frame.x = 7;
             body_2_ticker->frame.w = dialog_view->frame.w - 7 - ZDJ_MENU_ITEM_MARGIN_R;
             zdj_menu_view_add_item( _menu, body_2_ticker );
@@ -87,7 +111,7 @@ zdj_view_t * zdj_new_dialog_view(
         discard_btn->handle_control_event = &_cancel_btn_handle_event;
         discard_btn->frame.x = 40;
         discard_btn->frame.y = 28;
-        discard_btn->frame.w = 29;
+        discard_btn->frame.w = 32;
         discard_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, discard_btn );
 
@@ -97,7 +121,7 @@ zdj_view_t * zdj_new_dialog_view(
         okay_btn->handle_control_event = &_okay_btn_handle_event;
         okay_btn->frame.x = 73;
         okay_btn->frame.y = 28;
-        okay_btn->frame.w = 21;
+        okay_btn->frame.w = 24;
         okay_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, okay_btn );
 
@@ -108,7 +132,7 @@ zdj_view_t * zdj_new_dialog_view(
         okay_btn->handle_control_event = &_okay_btn_handle_event;
         okay_btn->frame.x = 73;
         okay_btn->frame.y = 28;
-        okay_btn->frame.w = 21;
+        okay_btn->frame.w = 24;
         okay_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, okay_btn );
 
@@ -119,9 +143,9 @@ zdj_view_t * zdj_new_dialog_view(
         zdj_menu_item_view_state_t * cancel_btn_state = (zdj_menu_item_view_state_t*)cancel_btn->state;
         cancel_btn_state->data.ptr = dialog_view;
         cancel_btn->handle_control_event = &_cancel_btn_handle_event;
-        cancel_btn->frame.x = 40;
+        cancel_btn->frame.x = 46;
         cancel_btn->frame.y = 28;
-        cancel_btn->frame.w = 29;
+        cancel_btn->frame.w = 26;
         cancel_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, cancel_btn );
 
@@ -129,9 +153,9 @@ zdj_view_t * zdj_new_dialog_view(
         zdj_menu_item_view_state_t * okay_btn_state = (zdj_menu_item_view_state_t*)okay_btn->state;
         okay_btn_state->data.ptr = dialog_view;
         okay_btn->handle_control_event = &_okay_btn_handle_event;
-        okay_btn->frame.x = 73;
+        okay_btn->frame.x = 75;
         okay_btn->frame.y = 28;
-        okay_btn->frame.w = 21;
+        okay_btn->frame.w = 20;
         okay_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, okay_btn );
 
@@ -155,14 +179,16 @@ zdj_view_t * zdj_new_dialog_view(
         okay_btn->frame.w = 21;
         okay_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, okay_btn );
-    } else if( type == ZDJ_DIALOG_VIEW_TYPE_PROCESSING ) {
+    } else if( type == ZDJ_DIALOG_VIEW_TYPE_PROCESSING ||
+               type == ZDJ_DIALOG_VIEW_TYPE_LOADING )
+    {
         zdj_view_t * cancel_btn = zdj_new_menu_item( "Cancel", ZDJ_MENU_ITEM_LAYOUT_BASIC_R );
         zdj_menu_item_view_state_t * cancel_btn_state = (zdj_menu_item_view_state_t*)cancel_btn->state;
         cancel_btn_state->data.ptr = dialog_view;
         cancel_btn->handle_control_event = &_cancel_btn_handle_event;
-        cancel_btn->frame.x = 40;
-        cancel_btn->frame.y = 28;
-        cancel_btn->frame.w = 29;
+        cancel_btn->frame.x = 68;
+        cancel_btn->frame.y = 31;
+        cancel_btn->frame.w = 27;
         cancel_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, cancel_btn );
     } else if( type == ZDJ_DIALOG_VIEW_TYPE_CANCEL ) {
@@ -172,7 +198,7 @@ zdj_view_t * zdj_new_dialog_view(
         cancel_btn->handle_control_event = &_cancel_btn_handle_event;
         cancel_btn->frame.x = 40;
         cancel_btn->frame.y = 28;
-        cancel_btn->frame.w = 29;
+        cancel_btn->frame.w = 32;
         cancel_btn->frame.h = 10;
         zdj_menu_view_add_item( _menu, cancel_btn );
     } 
@@ -200,6 +226,12 @@ zdj_view_t * zdj_new_dialog_view(
 static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
     // boxColor( zdj_renderer( ), 0, 0, ZDJ_SCREEN_W, ZDJ_SCREEN_H, ZDJ_BLACK );
     // SDL_RenderCopy( zdj_renderer( ), zdj_asset_atlas( ), &zdj_ui_assets[ ZDJ_UI_ASSET_DOT_BG ], &(SDL_Rect){0,0,127,64} );
+
+    zdj_dialog_view_state_t * view_state = (zdj_dialog_view_state_t*)view->state;
+    if( view_state->type == ZDJ_DIALOG_VIEW_TYPE_LOADING && view_state->progress_bar ) {
+        zdj_progress_bar_view_state_t * progress_state = (zdj_progress_bar_view_state_t*)view_state->progress_bar->state;
+        progress_state->val = view_state->progress;
+    }
 }
 
 static void _handle_cancel( zdj_view_t * view ) {

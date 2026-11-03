@@ -17,10 +17,13 @@
 #include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/hash/zdj_hash.h>
 #include <zerodj/system/error/zdj_error.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/health/zdj_health_type.h>
 
 bool _zdj_fs_filename_match( char * filename, zdj_fs_scan_pattern_t * pattern );
 static int _zdj_maybe_mkdir(const char* path, mode_t mode);
+
+static void * _copy_thread_main( void * arg );
 
 // Get available bytes on the media volume
 float zdj_fs_get_free_media_space( void ) {
@@ -186,6 +189,140 @@ int zdj_fs_copy_file_with_hash( char * src, char * dst, bool overwrite ) {
     return ZDJ_HEALTH_STATUS_OKAY;
 }
 
+// Perform a file copy on a background thread
+zdj_fs_copy_context_t * zdj_fs_bg_copy_file( 
+    char * src, 
+    char * dst,
+    bool check_hash, 
+    bool overwrite 
+) {
+    printf( "zdj_fs_bg_copy_file: %s -> %s\n", src, dst );
+    char dst_dirname[ 512 ];
+    snprintf( dst_dirname, 512, "%s", dst );
+    if( (access( src, F_OK ) != 0) || (access( dirname( dst_dirname ), F_OK ) != 0) ) {
+        return NULL;
+    }
+    zdj_fs_copy_context_t * context = calloc( 1, sizeof( zdj_fs_copy_context_t ) );
+    snprintf( context->src_path, 512, "%s", src );
+    snprintf( context->dst_path, 512, "%s", dst );
+    context->check_hash = check_hash;
+    context->overwrite = overwrite;
+    context->progress = 0.0;
+
+    // Spawn copy thread
+    pthread_create( &context->thread, NULL, _copy_thread_main, context );
+
+    return context;
+}
+
+static void * _copy_thread_main( void * arg ) {
+    zdj_fs_copy_context_t * context = (zdj_fs_copy_context_t*)arg;
+
+    // TODO - Add free space check
+
+    printf( "copy: 0: %s->%s\n", context->src_path, context->dst_path );
+    // Confirm source file exists.
+    FILE * src_fd = fopen( context->src_path, "r" );
+    if( !src_fd ) { 
+        context->state = ZDJ_FS_COPY_STATE_ERROR;
+        // dump thread and return
+        pthread_detach( pthread_self( ) );
+        return NULL;
+    }
+    // Get source filesize
+    int filesize = zdj_fs_get_size( context->src_path );
+    if( filesize < 1 ) {
+        context->state = ZDJ_FS_COPY_STATE_ERROR;
+        // dump thread and return
+        pthread_detach( pthread_self( ) );
+        return NULL;
+    }
+
+    printf( "copy: 1\n" );
+    // hash the input file
+    char pre_sum[ ZDJ_HASH_LEN ];
+    zdj_put_file_hash( context->src_path, pre_sum );
+
+    if( context->overwrite && ( access(context->dst_path, F_OK) == 0 ) ) {
+        // TODO - backup before overwrite
+        // If overwrite, remove dest file if it exists and perms are okay.
+        remove( context->dst_path );
+    } else if( !context->overwrite && ( access(context->dst_path, F_OK) == 0 ) ) {
+        context->state = ZDJ_FS_COPY_STATE_ERROR;
+        // dump thread and return
+        pthread_detach( pthread_self( ) );
+        return NULL;
+    }
+    
+
+    // Ensure dest dir exists
+    // Make a copy of dst_path since dirname modifies in place
+    char dst_dirname[ 512 ];
+    snprintf( dst_dirname, 512, "%s", context->dst_path );
+    char * dir_name = dirname( dst_dirname );
+    zdj_fs_mkdir_p( dir_name );
+
+    printf( "copy: 3: %s / %s\n", dir_name, context->dst_path );
+
+    // Copy bytes from source to destination
+    FILE * dst_fd = fopen( context->dst_path, "w" );
+    // printf( "opend dst_fd: %s, %p\n", dst, dst_fd );
+    if( !dst_fd ) { 
+        printf( "couldn't open output file\n" );
+        context->state = ZDJ_FS_COPY_STATE_ERROR;
+        // dump thread and return
+        pthread_detach( pthread_self( ) );
+        return NULL;
+    }
+
+    printf( "begin copy\n" );
+    
+    // Copy bytes and track progress
+    int a;
+    int byte = 0;
+    while ( ( a = fgetc( src_fd ) ) != EOF ) {
+        fputc( a, dst_fd );
+        context->progress = (float)byte / (float)filesize;
+        byte++;
+    }
+
+    printf( "copy: 4\n" );
+    // Set permissions for new file
+    // printf( "chmod 0744 %s\n", dst );
+    if( chmod( context->dst_path, 0744 ) == -1 ) {
+        context->state = ZDJ_FS_COPY_STATE_ERROR;
+        // dump thread and return
+        pthread_detach( pthread_self( ) );
+        return NULL;
+    }
+
+    printf( "copy: 5\n" );
+    // hash the copied file
+    char post_sum[ ZDJ_HASH_LEN ];
+    zdj_put_file_hash( context->src_path, post_sum );
+
+    printf( "copy: 6\n" );
+    if( strcmp( pre_sum, post_sum ) ) {
+        printf( "copy w/hash failed! pre:%s post:%s", pre_sum, post_sum );
+        // TODO - copy backup if hash fails
+        // Return failure
+        context->state = ZDJ_FS_COPY_STATE_ERROR;
+        // dump thread and return
+        pthread_detach( pthread_self( ) );
+        return NULL;
+    }
+
+    printf( "copy: 7\n" );
+    fclose( dst_fd );
+    fclose( src_fd );
+
+    context->state = ZDJ_FS_COPY_STATE_SUCCESS;
+
+    // dump thread
+    pthread_detach( pthread_self( ) );
+    return NULL;
+}
+
 
 zdj_health_status_t zdj_fs_extract_file_from_binary( 
     char * bin, 
@@ -274,11 +411,17 @@ bool zdj_fs_path_is_audio_filename( char * path ) {
         return true;
     } else if( !strcmp( ext, "wav" ) || !strcmp( ext, "WAV" ) ) {
         return true;
+    } else if( !strcmp( ext, "aif" ) || !strcmp( ext, "AIF" ) ) {
+        return true;
+    } else if( !strcmp( ext, "aiff" ) || !strcmp( ext, "AIFF" ) ) {
+        return true;
     } else if( !strcmp( ext, "flac" ) || !strcmp( ext, "FLAC" ) ) {
         return true;
     } else if( !strcmp( ext, "aac" ) || !strcmp( ext, "AAC" ) ) {
         return true;
     } else if( !strcmp( ext, "m4a" ) || !strcmp( ext, "M4A" ) ) {
+        return true;
+    } else if( !strcmp( ext, "ogg" ) || !strcmp( ext, "OGG" ) ) {
         return true;
     }
     return false;
@@ -317,17 +460,8 @@ bool zdj_fs_path_is_audio_dir( char * path ) {
             // Disregard invisible files
             if( entry->d_name[ 0 ] == '.' ) continue;
 
-            // Get filename extension
-            char * ext = zdj_fs_get_file_extension( entry->d_name );
-            
-            // printf( "checking filename: %s / %s\n", ext, entry->d_name );
-
-            // Check for recognized extension
-            if( !strcmp( ext, "mp3" ) || !strcmp( ext, "MP3" ) ) {
-                return true;
-            } else if( !strcmp( ext, "wav" ) || !strcmp( ext, "WAV" ) ) {
-                return true;
-            }
+            // Say yes when first audio file is found
+            if( zdj_fs_path_is_audio_filename( entry->d_name ) ) { return true; }
         } else {
             // Skip this/parent refs
             if ( !strcmp( entry->d_name, "." ) || !strcmp( entry->d_name, ".." ) ) { continue; }
@@ -457,6 +591,8 @@ void zdj_fs_scan_dir(
     // Don't scan non-dir paths.
     if ( !( dir = opendir( path ) ) ) { return; }
 
+    char new_path[ 2048 ];
+    
     // Look at every entry in dir.
     while ( ( entry = readdir( dir ) ) != NULL ) {
         if ( entry->d_type == DT_DIR ) {
@@ -468,7 +604,6 @@ void zdj_fs_scan_dir(
             if ( !strcmp( entry->d_name, "." ) || !strcmp( entry->d_name, ".." ) ) { continue; }
             
             // Build a path string and recurse into dir.
-            char new_path[ 2048 ];
             snprintf( new_path, sizeof( new_path ), "%s/%s", path, entry->d_name );
             zdj_fs_scan_dir( new_path, recursive, pattern, result_cb, user_data );
         } else {
@@ -477,14 +612,15 @@ void zdj_fs_scan_dir(
 
             // Invoke CB for matches
             if( _zdj_fs_filename_match( entry->d_name, pattern ) ) {
-                char new_path[ 2048 ];
                 snprintf( new_path, sizeof( new_path ), "%s/%s", path, entry->d_name );
-                result_cb( new_path, user_data );
-            }            
+                // zdj_log( ZDJ_LOG_FS, ZDJ_LOG_DEBUG, "Match: %s", new_path );
+                if( result_cb ) { result_cb( new_path, user_data ); }
+                else { zdj_log( ZDJ_LOG_FS, ZDJ_LOG_DEBUG, "Missing result_cb" ); }
+            }       
         }
     }
 
-    closedir( dir );
+    if( dir ) { closedir( dir ); }
 }
 
 int zdj_fs_mkdir_p( char * path ) {

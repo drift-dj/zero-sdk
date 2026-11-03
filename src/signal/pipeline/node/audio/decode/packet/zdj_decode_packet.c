@@ -16,6 +16,7 @@
 #include <zerodj/signal/math/zdj_signal_math.h>
 #include <zerodj/signal/pipeline/zdj_pipeline.h>
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
+#include <zerodj/system/log/zdj_log.h>
 
 static bool _intersects_out_buf( zdj_decode_packet_t * packet, zdj_pipeline_node_t * node );
 
@@ -95,15 +96,18 @@ zdj_decode_packet_t * zdj_decode_packet(
         int decoded_frame_count = 0;
         res = 0;
         res = avcodec_receive_frame( codec_ctx, av_frame );
-
         if ( res == AVERROR( EAGAIN ) ) {
-            printf( "eagain\n" );
+            attempt = 0;
+            while( attempt++ < 5 && res == AVERROR( EAGAIN ) ) {
+                zdj_log( ZDJ_LOG_PLAYBACK, ZDJ_LOG_DEBUG, "eagain" );
+                res = avcodec_receive_frame( codec_ctx, av_frame );
+            }
         } else if ( res == AVERROR_EOF ) {
             // Handle decoding error
             packet_has_eof = true;
-            printf( "%p eof2! samps: %d\n", av_packet, av_frame->nb_samples );
+            // printf( "%p eof2! samps: %d\n", av_packet, av_frame->nb_samples );
         } else if ( res < 0 ) {
-            printf( "decode err\n" );
+            // printf( "decode err\n" );
         } else {
             decoded_frame_count = av_frame->nb_samples;
         }
