@@ -6,7 +6,7 @@
 #include <zerodj/controls/zdj_controls.h>
 #include <zerodj/controls/hmi/zdj_hmi_input.h>
 
-#define ZDJ_HMI_WINDOW_DEBOUNCE 3 // Wait time after button is released before returning to IDLE
+#define ZDJ_HMI_WINDOW_DEBOUNCE 30 // Wait time after button is released before returning to IDLE
 #define ZDJ_HMI_WINDOW_TURN_PRESS 0 // Wait time after a new turn starts before emitting ADJUSTs -- lets us disregard micro-turns when user really wanted a press
 #define ZDJ_HMI_WINDOW_TURN_HYST 40 // Remain in TURN without upvals for this long before returning to IDLE
 #define ZDJ_HMI_THRESH_TURN 2 // upvals less than this will not promote a push into a push-turn -- basically a sensitivity adjust to prevent post-push micro-turns from taking over

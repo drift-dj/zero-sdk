@@ -33,7 +33,7 @@
 #include <zerodj/signal/soundcard/dsp/zdj_soundcard_dsp.h>
 
 #define ZDJ_SOUNDCARD_BUF_LEN 512
-// #define ZDJ_SOUNDCARD_BUF_LEN 256
+// #define ZDJ_SOUNDCARD_BUF_LEN 128
 
 #define ZDJ_SOUNDCARD_DB_PATH "/media/internal/.system/soundcard.db"
 #define ZDJ_SOUNDCARD_LINKAGE_TABLE "Linkage"

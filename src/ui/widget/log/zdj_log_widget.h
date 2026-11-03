@@ -24,6 +24,7 @@
 #include <zerodj/ui/anim/zdj_anim.h>
 
 #define ZDJ_LOG_WIDGET_LINE_LEN 128
+#define ZDJ_LOG_WIDGET_LINE_COUNT 6
 
 typedef struct zdj_log_line_t {
     char buf[ ZDJ_LOG_WIDGET_LINE_LEN ];

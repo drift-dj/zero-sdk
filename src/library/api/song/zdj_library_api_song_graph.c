@@ -41,22 +41,22 @@ zdj_health_status_t zdj_library_store_song_graph(
 ) {
     // printf( "zdj_library_store_song_graph: %p/%s - %s %s %s %s\n", song, song->entity_id, song->audio->entity_id, song->catalog->entity_id, song->curation->entity_id, song->performance->entity_id );
     if( !song ) { return ZDJ_HEALTH_STATUS_MISSING_SONG; }
-    
-    // printf( "storing: %s bpm:%1.1f st:%d\n", song->catalog->title, song->performance->bpm, song->performance->beat_grid_start_sample );
+
+    zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Storing song graph[%s]: %s", song->entity_id, song->catalog->title );
     
     // Insert record into db.
     if( song->audio ) {
         zdj_health_status_t res = zdj_library_store_audio( song->audio, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to store audio: %s\n", song->audio->filepath );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to store audio[%s]", song->entity_id );
         }
     }
     if( song->catalog ) {
         zdj_health_status_t res = zdj_library_store_catalog( song->catalog, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to store catalog: %s\n", song->catalog->title );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to store catalog[%s]: %s", song->entity_id, song->catalog->title );
         }
     }
 
@@ -64,14 +64,14 @@ zdj_health_status_t zdj_library_store_song_graph(
         zdj_health_status_t res = zdj_library_store_curation( song->curation, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to store curation: %p\n", song->curation );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to store curation[%s]", song->entity_id );
         }
     }
     if( song->performance ) {
         zdj_health_status_t res = zdj_library_store_performance( song->performance, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to store performance: %p\n", song->performance );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to store performance[%s]", song->entity_id );
         }
     }
     zdj_library_store_song( song, db );
@@ -85,19 +85,23 @@ zdj_health_status_t zdj_library_delete_song_graph(
     sqlite3 * db 
 ) {
     if( !song ) { return ZDJ_HEALTH_STATUS_MISSING_SONG; }
+
+    // Remove song eid from all playlists
+    zdj_library_playlist_remove_song_from_all_playlists( song->entity_id );
+
     // Remove graph from db.
     if( song->audio ) {
         zdj_health_status_t res = zdj_library_delete_audio( song->audio, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to delete audio: %s\n", song->audio->filepath );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to delete audio[%s]", song->entity_id );
         }
     }
     if( song->catalog ) {
         zdj_health_status_t res = zdj_library_delete_catalog( song->catalog, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to delete catalog: %s\n", song->catalog->title );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to delete catalog[%s]: %s", song->entity_id, song->catalog->title );
         }
     }
 
@@ -105,23 +109,21 @@ zdj_health_status_t zdj_library_delete_song_graph(
         zdj_health_status_t res = zdj_library_delete_curation( song->curation, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to delete curation: %p\n", song->curation );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to delete curation[%s]", song->entity_id );
         }
     }
     if( song->performance ) {
         zdj_health_status_t res = zdj_library_delete_performance( song->performance, db );
         if( res != ZDJ_HEALTH_STATUS_OKAY ) {
             song->has_db_error = true;
-            printf( "Library failed to delete performance: %p\n", song->performance );
+            zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to delete performance[%s]", song->entity_id );
         }
     }
     if( song->has_db_error ) {
-        printf( "Library failed to delete song graph\n" );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to delete song graph[%s]", song->entity_id );
     } else {
         zdj_library_delete_song( song, db );
     }
-
-    // Remove song eid from all playlists
     
     return ZDJ_HEALTH_STATUS_OKAY;
 }
@@ -182,26 +184,26 @@ zdj_library_song_t * zdj_library_fetch_file_import_song_graph(
     // Fetch Audio DTO
     song->audio = zdj_library_fetch_current_audio_dto_for_song( song, db );
     if( !song->audio ) {
-        printf( "audio failed to load for %s\n", song->entity_id );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load audio[%s]", song->entity_id );
         song->has_db_error = true;
     }
     // Fetch Catalog DTO - it may not exist during first stages of import scan
     song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db );
     if( !song->catalog ) {
-        printf( "catalog failed to load for %s\n", song->entity_id );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load catalog[%s]", song->entity_id );
     }
     // Fetch Curation DTO - Force refresh, even if it exists already.
     // No point in fetching curation links during song import - won't be any 
     song->curation = zdj_library_fetch_current_curation_dto_for_song( song, db );
     if( !song->curation ) {
-        printf( "curation failed to load for %s\n", song->entity_id );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load curation[%s]", song->entity_id );
         song->has_db_error = true;
     }
 
     // Fetch Performance DTO - it may not exist during first stages of import scan
     song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db );
     if( !song->performance ) {
-        printf( "performance failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load performance[%s]", song->entity_id   );
     }
 
     zdj_error_state( )->marker = ZDJ_ERROR_MARKER_UNCLAIMED;
@@ -260,20 +262,20 @@ zdj_library_song_t * zdj_library_fetch_menu_song_graph(
     // Fetch Audio DTO
     song->audio = zdj_library_fetch_current_audio_dto_for_song( song, db );
     if( !song->audio ) {
-        printf( "audio failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load audio[%s]", song->entity_id );
         song->has_db_error = true;
     }
 
     // Fetch Catalog DTO - it may not exist during first stages of import scan
     song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db );
     if( !song->catalog ) {
-        printf( "catalog failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load catalog[%s]", song->entity_id );
     }
 
     // Fetch Performance DTO
     song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db );
     if( !song->performance ) {
-        printf( "performance failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load performance[%s]", song->entity_id );
     }
 
     // Standup Graph
@@ -287,28 +289,28 @@ zdj_library_song_t * zdj_library_fetch_playback_song_graph(
     // Fetch Audio DTO
     if( !song->audio ){ song->audio = zdj_library_fetch_current_audio_dto_for_song( song, db ); }
     if( !song->audio ) {
-        printf( "audio failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load audio[%s]", song->entity_id );
         song->has_db_error = true;
     }
     
     // Fetch Catalog DTO
     if( !song->catalog ){ song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db ); }
     if( !song->catalog ) {
-        printf( "catalog failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load catalog[%s]", song->entity_id );
     }
 
     // Fetch Curation DTO
     // Curation links aren't needed during playback
     if( !song->curation ){ song->curation = zdj_library_fetch_current_curation_dto_for_song( song, db ); }
     if( !song->curation ) {
-        printf( "curation failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load curation[%s]", song->entity_id );
     }
     
 
     // Fetch Performance DTO
     if( !song->performance ){ song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db ); }
     if( !song->performance ) {
-        printf( "performance failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load performance[%s]", song->entity_id );
     }
 
     // Fetch and populate cuepoints
@@ -340,20 +342,20 @@ zdj_library_song_t * zdj_library_fetch_edit_song_graph(
     // Fetch Audio DTO
     song->audio = zdj_library_fetch_current_audio_dto_for_song( song, db );
     if( !song->audio ) {
-        printf( "audio failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load audio[%s]", song->entity_id );
         song->has_db_error = true;
     }
     
     // Fetch Catalog DTO
     song->catalog = zdj_library_fetch_current_catalog_dto_for_song( song, db );
     if( !song->catalog ) {
-        printf( "catalog failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load catalog[%s]", song->entity_id );
     }
 
     // Fetch Curation DTO
     song->curation = zdj_library_fetch_current_curation_dto_for_song( song, db );
     if( !song->curation ) {
-        printf( "curation failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load curation[%s]", song->entity_id );
     } else {
         // Populate playlist/tag links tables
         // WARNING - this is VERY expensive - use sparingly.
@@ -363,7 +365,7 @@ zdj_library_song_t * zdj_library_fetch_edit_song_graph(
     // Fetch Performance DTO
     song->performance = zdj_library_fetch_current_performance_dto_for_song( song, db );
     if( !song->performance ) {
-        printf( "performance failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load performance[%s]", song->entity_id );
     }
 
     // Standup Graph
@@ -381,7 +383,7 @@ zdj_library_song_t * zdj_library_fetch_migration_song_graph(
     // Fetch Audio DTO
     song->audio = zdj_library_fetch_current_audio_dto_for_song( song, db );
     if( !song->audio ) {
-        printf( "audio failed to load for %p\n", song );
+        zdj_log( ZDJ_LOG_LIBRARY, ZDJ_LOG_DEBUG, "Failed to load audio[%s]", song->entity_id );
         song->has_db_error = true;
     }
 

@@ -33,10 +33,12 @@ typedef struct {
     zdj_library_song_t * song;
     int channel_count;
     float * out_buffer;
+    int out_buffer_len;
     float progress;
     bool done;
     int64_t available_samples;
     int64_t pcm_addr;
+    bool has_valid_decode;
     AVFormatContext * fmt_ctx;
     AVCodecContext * codec_ctx;
     AVCodecParserContext * parser_ctx;

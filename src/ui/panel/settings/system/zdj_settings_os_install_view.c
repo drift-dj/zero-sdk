@@ -14,6 +14,7 @@
 #include <zerodj/system/fs/zdj_fs.h>
 #include <zerodj/system/hash/zdj_hash.h>
 #include <zerodj/system/installer/zdj_installer.h>
+#include <zerodj/system/log/zdj_log.h>
 #include <zerodj/system/registry/zdj_registry.h>
 #include <zerodj/ui/zdj_ui.h>
 #include <zerodj/ui/asset/zdj_ui_asset.h>
@@ -209,7 +210,7 @@ static void * _install_thread_main( void * arg ) {
         // zdj_put_file_hash( path, hash );
         zdj_put_crc32_file_hash( path, hash );
         if( !zdj_hashes_match( hash, state->sysreg->bootloader_sum ) ) {
-            printf( "mismatching bootloader img hash: %s / %s\n", hash, state->sysreg->bootloader_sum );
+            zdj_log( ZDJ_LOG_FS, ZDJ_LOG_ERROR, "Bad bootloader img hash: %s / %s", hash, state->sysreg->bootloader_sum );
             state->phase = SETTINGS_OS_INSTALL_PHASE_ERROR;
             strcpy( state->err_str, "Bootloader Image Checksum Failed." );
             state->view_needs_refresh = true;
@@ -221,7 +222,7 @@ static void * _install_thread_main( void * arg ) {
         // zdj_put_file_hash( path, hash );
         zdj_put_crc32_file_hash( path, hash );
         if( !zdj_hashes_match( hash, state->sysreg->linux_sum ) ) {
-            printf( "mismatching reset linux img hash: %s / %s\n", hash, state->sysreg->linux_sum );
+            zdj_log( ZDJ_LOG_FS, ZDJ_LOG_ERROR, "Bad reset linux img hash: %s / %s", hash, state->sysreg->linux_sum );
             state->phase = SETTINGS_OS_INSTALL_PHASE_ERROR;
             strcpy( state->err_str, "Linux Image Checksum Failed." );
             state->view_needs_refresh = true;
@@ -233,7 +234,7 @@ static void * _install_thread_main( void * arg ) {
         // zdj_put_file_hash( path, hash );
         zdj_put_crc32_file_hash( path, hash );
         if( !zdj_hashes_match( hash, state->sysreg->rootfs_sum ) ) {
-            printf( "mismatching rootfs img hash: %s / %s\n", hash, state->sysreg->rootfs_sum );
+            zdj_log( ZDJ_LOG_FS, ZDJ_LOG_ERROR, "Bad rootfs img hash: %s / %s", hash, state->sysreg->rootfs_sum );
             state->phase = SETTINGS_OS_INSTALL_PHASE_ERROR;
             strcpy( state->err_str, "RootFS Image Checksum Failed." );
             state->view_needs_refresh = true;
@@ -241,7 +242,7 @@ static void * _install_thread_main( void * arg ) {
         }
     }
 
-    printf( "reset image hashes okay\n" );
+    zdj_log( ZDJ_LOG_FS, ZDJ_LOG_DEBUG, "Reset .img hashes OK" );
     
     // Safely backup current recovery images to internal drive
     if( state->sysreg->installer_props.has_bootloader &&

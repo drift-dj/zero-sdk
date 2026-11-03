@@ -28,12 +28,17 @@ typedef enum {
     ZDJ_DIALOG_VIEW_TYPE_OKAY,
     ZDJ_DIALOG_VIEW_TYPE_GULP,
     ZDJ_DIALOG_VIEW_TYPE_CANCEL,
-    ZDJ_DIALOG_VIEW_TYPE_PROCESSING
+    ZDJ_DIALOG_VIEW_TYPE_PROCESSING,
+    ZDJ_DIALOG_VIEW_TYPE_LOADING
 } zdj_dialog_view_type_t;
 
 typedef struct {
+    zdj_dialog_view_type_t type;
     void ( *handle_dialog_exit )( zdj_view_t *, void *, bool );
     void * selection_data;
+    zdj_view_t * progress_bar;
+    float progress;
+    bool needs_layout_update;
 } zdj_dialog_view_state_t;
 
 zdj_view_t * zdj_new_dialog_view( 

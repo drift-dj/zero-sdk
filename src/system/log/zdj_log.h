@@ -31,8 +31,6 @@
 #define ZDJ_DEBUG_LOG_DIR "/media/internal/logs/debug"
 #define ZDJ_DEBUG_LOG_COUNT "/media/internal/logs/debug/.count"
 
-
-
 typedef enum { 
     ZDJ_LOG_NONE,
     ZDJ_LOG_DEBUG,
@@ -53,6 +51,8 @@ typedef enum {
     ZDJ_LOG_FS,
     ZDJ_LOG_RECORDING,
     ZDJ_LOG_MIXER,
+    ZDJ_LOG_SYSTEM,
+    ZDJ_LOG_CRASH_REPORT,
     ZDJ_LOG_SUBJECT_COUNT
 } zdj_log_subject_t;
 
@@ -65,7 +65,9 @@ static int zdj_log_subject_mask[ ZDJ_LOG_SUBJECT_COUNT ] = {
     0x20, // ZDJ_LOG_INIT
     0x40, // ZDJ_LOG_FS
     0x80, // ZDJ_LOG_RECORDING
-    0x100 // ZDJ_LOG_MIXER
+    0x100, // ZDJ_LOG_MIXER
+    0x200, // ZDJ_LOG_SYSTEM
+    0x400 // ZDJ_LOG_CRASH_REPORT
 };
 
 static char * zdj_log_prefix[ ZDJ_LOG_SUBJECT_COUNT ] = {
@@ -77,7 +79,9 @@ static char * zdj_log_prefix[ ZDJ_LOG_SUBJECT_COUNT ] = {
     "[INI]", // ZDJ_LOG_INIT,
     "[FS]", // ZDJ_LOG_FS
     "[RCD]", // ZDJ_LOG_RECORDING
-    "[MIX]" // ZDJ_LOG_MIXER
+    "[MIX]", // ZDJ_LOG_MIXER
+    "[SYS]", // ZDJ_LOG_SYSTEM
+    "[CRSH]" // ZDJ_LOG_CRASH
 };
 
 typedef struct {
@@ -98,7 +102,7 @@ void zdj_log( zdj_log_subject_t subject, zdj_log_level_t level, const char* fmt,
 int zdj_new_log_num( zdj_log_subject_t subject );
 int zdj_cur_log_num( zdj_log_subject_t subject );
 void zdj_reset_logs( void );
-void zdj_put_cur_log( zdj_log_subject_t subject, char * str_1, char * str_2, char * str_3 );
-void zdj_process_latest_crash_log_file( void );
+void zdj_put_cur_log( zdj_log_subject_t subject, char * str_1, char * str_2, char * str_3, char * str_4 );
+void zdj_log_file_append_line( zdj_log_subject_t subject, char* line );
 
 #endif

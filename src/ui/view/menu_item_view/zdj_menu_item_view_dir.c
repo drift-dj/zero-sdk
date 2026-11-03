@@ -33,7 +33,7 @@ void zdj_menu_item_dir_init_layout( zdj_view_t * view ) {
     }
     
     // Setup normal view
-    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_ticker_norm = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_ticker_norm );
     title_ticker_norm->frame.x = ZDJ_MENU_ITEM_MARGIN_L;
     title_ticker_norm->frame.w = view->frame.w - ZDJ_MENU_ITEM_MARGIN_L - ZDJ_MENU_ITEM_MARGIN_R - 10;
@@ -54,7 +54,7 @@ void zdj_menu_item_dir_init_layout( zdj_view_t * view ) {
     hilite_bg_r->frame.y = 0;
     hilite_bg_r->frame.x = view->frame.w-1;
 
-    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_ticker_hilite = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
     zdj_ticker_state_t * ticker_state = (zdj_ticker_state_t*)title_ticker_hilite->state;
     zdj_add_subview( state->hilite_view, title_ticker_hilite );
     title_ticker_hilite->frame.x = ZDJ_MENU_ITEM_MARGIN_L;
@@ -92,7 +92,7 @@ void zdj_menu_item_dir_select_init_layout( zdj_view_t * view ) {
     }
 
     // Build the title label first so we have dimensions
-    zdj_view_t * title_label = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_label = zdj_new_label_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_BLACK );
     title_label->frame.x = 1;
     title_label->frame.y = -1;
     

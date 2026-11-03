@@ -86,15 +86,16 @@ char * zdj_sql_stresc( char * in_buf, char * out_buf ) {
             out_buf[ out_ind ] = '\'';
             out_ind++;
             out_buf[ out_ind ] = '\'';
-        } else if( in_buf[ i ] == '\"' ) {
-            out_buf[ out_ind ] = '\"';
-            out_ind++;
-            out_buf[ out_ind ] = '\"';
+        // } else if( in_buf[ i ] == '\"' ) {
+        //     out_buf[ out_ind ] = '\"';
+        //     out_ind++;
+        //     out_buf[ out_ind ] = '\"';
         } else {
             out_buf[ out_ind ] = in_buf[ i ];
         }
         out_ind++;
     }
+    out_buf[ out_ind ] = '\0';
     return out_buf;
 }
 

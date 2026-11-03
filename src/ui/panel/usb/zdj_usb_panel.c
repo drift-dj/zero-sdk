@@ -121,7 +121,7 @@ static void _draw( zdj_view_t * view, zdj_view_clip_t * clip ) {
         // if( zdj_usb_host_has_devices_update( ) ) { 
         if( zdj_usb_state->host_status.has_usb_panel_update ) { 
             zdj_usb_state->host_status.has_usb_panel_update = false;
-            printf( "found updated host devices\n" );
+            // printf( "found updated host devices\n" );
             state->needs_layout_update = true; 
         }
 
@@ -219,9 +219,9 @@ static void _subview_exit( void * data ) {
 static void _add_processing_state( zdj_view_t * menu ) {
     // zdj_usb_state->switch_data.has_update = false;
 
-    zdj_view_t * switching = zdj_new_label_view( "Switching", ZDJ_FONT_12_CAPS, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * switching = zdj_new_label_view( "SWITCHING", ZDJ_FONT_MONA_12_NAR, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     switching->frame.x = 8;
-    switching->frame.y = 4;
+    switching->frame.y = 7;
     zdj_menu_view_add_item( menu, switching );
     float bar_x = switching->frame.x + switching->frame.w + 5;
 
@@ -237,9 +237,9 @@ static void _add_processing_state( zdj_view_t * menu ) {
 
 
 static void _add_offline_switch_state( zdj_view_t * menu ) {
-    zdj_view_t * host_btn = zdj_new_menu_item( "Host", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
-    host_btn->frame.x = 6;
-    host_btn->frame.y = 5;
+    zdj_view_t * host_btn = zdj_new_menu_item( "HOST", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
+    host_btn->frame.x = 4;
+    host_btn->frame.y = 6;
     host_btn->handle_control_event = &_host_btn;
     zdj_menu_item_view_state_t * host_status = (zdj_menu_item_view_state_t*)host_btn->state;
     host_status->needs_layout_init = true;
@@ -251,9 +251,9 @@ static void _add_offline_switch_state( zdj_view_t * menu ) {
     mode_switch->frame.y = 5;
     zdj_menu_view_add_item( menu, mode_switch );
 
-    zdj_view_t * gadget_btn = zdj_new_menu_item( "Gadget", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
-    gadget_btn->frame.x = 75;
-    gadget_btn->frame.y = 5;
+    zdj_view_t * gadget_btn = zdj_new_menu_item( "GADGET", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
+    gadget_btn->frame.x = 74;
+    gadget_btn->frame.y = 6;
     gadget_btn->handle_control_event = &_gadget_btn;
     zdj_menu_item_view_state_t * gadget_status = (zdj_menu_item_view_state_t*)gadget_btn->state;
     gadget_status->needs_layout_init = true;
@@ -291,9 +291,9 @@ static void _add_error_body( zdj_view_t * menu ) {
 }
 
 static void _add_host_switch_state( zdj_view_t * menu ) {
-    zdj_view_t * host_btn = zdj_new_menu_item( "Host", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
-    host_btn->frame.x = 6;
-    host_btn->frame.y = 5;
+    zdj_view_t * host_btn = zdj_new_menu_item( "HOST", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
+    host_btn->frame.x = 4;
+    host_btn->frame.y = 6;
     zdj_menu_item_view_state_t * host_status = (zdj_menu_item_view_state_t*)host_btn->state;
     host_status->needs_layout_init = true;
     zdj_menu_view_add_item( menu, host_btn );
@@ -311,9 +311,9 @@ static void _add_host_switch_state( zdj_view_t * menu ) {
     mode_switch->frame.y = 5;
     zdj_menu_view_add_item( menu, mode_switch );
 
-    zdj_view_t * gadget_btn = zdj_new_menu_item( "Gadget", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
-    gadget_btn->frame.x = 75;
-    gadget_btn->frame.y = 5;
+    zdj_view_t * gadget_btn = zdj_new_menu_item( "GADGET", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
+    gadget_btn->frame.x = 74;
+    gadget_btn->frame.y = 6;
     gadget_btn->handle_control_event = &_gadget_btn;
     zdj_menu_item_view_state_t * gadget_status = (zdj_menu_item_view_state_t*)gadget_btn->state;
     gadget_status->needs_layout_init = true;
@@ -335,7 +335,7 @@ static void _add_host_body( zdj_view_t * menu ) {
 
     if ( attached && attached->count > 0 ) {
         // Scan for attached devices
-        printf( "adding devices\n" );
+        // printf( "adding devices\n" );
         zdj_usb_device_t * device = attached->devices;
         while( device ) {
             // printf( "adding device\n" );
@@ -356,9 +356,9 @@ static void _add_host_body( zdj_view_t * menu ) {
 }
 
 static void _add_gadget_switch_state( zdj_view_t * menu ) {
-    zdj_view_t * host_btn = zdj_new_menu_item( "Host", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
-    host_btn->frame.x = 6;
-    host_btn->frame.y = 5;
+    zdj_view_t * host_btn = zdj_new_menu_item( "HOST", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
+    host_btn->frame.x = 4;
+    host_btn->frame.y = 6;
     host_btn->handle_control_event = &_host_btn;
     zdj_menu_item_view_state_t * host_status = (zdj_menu_item_view_state_t*)host_btn->state;
     host_status->needs_layout_init = true;
@@ -370,9 +370,9 @@ static void _add_gadget_switch_state( zdj_view_t * menu ) {
     mode_switch->frame.y = 5;
     zdj_menu_view_add_item( menu, mode_switch );
 
-    zdj_view_t * gadget_btn = zdj_new_menu_item( "Gadget", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
-    gadget_btn->frame.x = 75;
-    gadget_btn->frame.y = 5;
+    zdj_view_t * gadget_btn = zdj_new_menu_item( "GADGET", ZDJ_MENU_ITEM_LAYOUT_BASIC_LG );
+    gadget_btn->frame.x = 74;
+    gadget_btn->frame.y = 6;
     zdj_menu_item_view_state_t * gadget_status = (zdj_menu_item_view_state_t*)gadget_btn->state;
     gadget_status->needs_layout_init = true;
     zdj_menu_view_add_item( menu, gadget_btn );

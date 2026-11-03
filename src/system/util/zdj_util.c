@@ -44,47 +44,61 @@ void zdj_util_put_urldecode( char * dest, int dest_len, char * src ) {
     memset( dest, '\0', dest_len );
     int out_ind = 0;
     for( int i=0; i<strlen( src ); i++ ) {
-        if( src[ i ] == '%' && src[ i+1 ] == '2' && src[ i+2 ] == '0' ) {
+        if( src[ i ] == '%' && strlen( src ) > i+2 && 
+            src[ i+1 ] == '2' && src[ i+2 ] == '0' 
+        ) {
             // dest[ out_ind ] = '\\';
             // out_ind++;
             dest[ out_ind ] = ' ';
             i+=2;
-        } else if( src[ i ] == '%' && src[ i+1 ] == '2' && src[ i+2 ] == '7' ) {
+        } else if( src[ i ] == '%' && strlen( src ) > i+2 && 
+                   src[ i+1 ] == '2' && src[ i+2 ] == '7' 
+        ) {
             dest[ out_ind ] = '\'';
             i+=2;
-        } else if( src[ i ] == '%' && src[ i+1 ] == '2' && src[ i+2 ] == '6' ) {
+        } else if( src[ i ] == '%' && strlen( src ) > i+2 && 
+                   src[ i+1 ] == '2' && src[ i+2 ] == '6' 
+        ) {
             dest[ out_ind ] = '&';
             i+=2;
-        } else if( src[ i ] == '%' && src[ i+1 ] == '5' && src[ i+2 ] == 'b' ) {
+        } else if( src[ i ] == '%' && strlen( src ) > i+2 && 
+                   src[ i+1 ] == '5' && src[ i+2 ] == 'b' 
+        ) {
             dest[ out_ind ] = '[';
             i+=2;
-        } else if( src[ i ] == '%' && src[ i+1 ] == '5' && src[ i+2 ] == 'd' ) {
+        } else if( src[ i ] == '%' && strlen( src ) > i+2 && 
+                   src[ i+1 ] == '5' && src[ i+2 ] == 'd' 
+        ) {
             dest[ out_ind ] = ']';
             i+=2;
+        } else if( src[ i ] == '&' && strlen( src ) > i+4 && 
+                   src[ i+1 ] == 'a' && src[ i+2 ] == 'm' && src[ i+3 ] == 'p' && src[ i+4 ] == ';' 
+        ) {
+            dest[ out_ind ] = '&';
+            i+=4;
+        } else if( src[ i ] == '&' && strlen( src ) > i+5 && 
+                   src[ i+1 ] == 'a' && src[ i+2 ] == 'p' && src[ i+3 ] == 'o' && src[ i+4 ] == 's' && src[ i+5 ] == ';'
+        ) {
+            dest[ out_ind ] = '\'';
+            i+=5;
+        } else if( src[ i ] == '&' && strlen( src ) > i+5 && 
+                   src[ i+1 ] == 'q' && src[ i+2 ] == 'u' && src[ i+3 ] == 'o' && src[ i+4 ] == 't' && src[ i+5 ] == ';'
+        ) {
+            dest[ out_ind ] = '\"';
+            i+=5;
+        } else if( src[ i ] == '&' && strlen( src ) > i+3 && 
+                   src[ i+1 ] == 'l' && src[ i+2 ] == 't' && src[ i+3 ] == ';'
+        ) {
+            dest[ out_ind ] = '<';
+            i+=3;
+        } else if( src[ i ] == '&' && strlen( src ) > i+3 && 
+                   src[ i+1 ] == 'g' && src[ i+2 ] == 't' && src[ i+3 ] == ';'
+        ) {
+            dest[ out_ind ] = '>';
+            i+=3;
         } else {
             dest[ out_ind ] = src[ i ];
         }
-
-        // %c3
-        // %c4
-        // %b3
-        // %96
-        // %e2
-        // %96
-        // %b3
-        // %e2
-        // %96
-        // %83
-        // %e2
-        // %96
-        // %b3
-        // %e2
-        // %96
-        // %93
-        // %c6
-        // %b0
-        // %a1
-        // %a9
         out_ind++;
     }
 }

@@ -291,10 +291,10 @@ static zdj_error_type_t _add_attached_device(
     bool has_hid,
     bool has_midi
 ) {
-    printf( "_add_attached_device: %s, %s, %s, %s, %s\n", usb_vendor, usb_product_id, manufacturer, product, serial_number );
-
     // Ignore the ECHI host controller
     if( !strcmp( serial_number, "ci_hdrc.0" ) ) { return ZDJ_ERROR_OKAY; }
+
+    // zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "a:%d|dr:%d|h:%d|md:%d %s, %s, %s, %s, %s", has_audio, has_msd, has_hid, has_midi, usb_vendor, usb_product_id, manufacturer, product, serial_number );
 
     // Make a CRC from SerialNumber, Vender + ProdID
     char * device_crc;
@@ -340,6 +340,11 @@ static zdj_error_type_t _add_attached_device(
         } else {
             return ZDJ_ERROR_USB_DEVICE_DB_ERROR;
         }
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "New: %s", name_user );
+    
+    } else {
+
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_MSG, "Known: %s", name_user );
     }
 
     // Set gadget capabilitites
@@ -355,41 +360,31 @@ static zdj_error_type_t _add_attached_device(
         _msd_device_put_mount_path( device );
     }
     
+    zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "a:%d|dr:%d|h:%d|md:%d", has_audio, has_msd, has_hid, has_midi );
+
     // Set device attached state and add to attached devs
     device->attached = true;
+
+    // Update global props of usb host mode
+    // TODO: update this to be a sum, not a reset every time
+    zdj_usb_state->host_status.attached.has_msd = has_msd;
+    zdj_usb_state->host_status.attached.has_uac2 = has_audio;
+    zdj_usb_state->host_status.attached.has_hid = has_hid;
+    zdj_usb_state->host_status.attached.has_midi = has_midi;
 
     // Insert new device at head of linked list
     device->next = zdj_usb_state->host_status.attached.devices;
     zdj_usb_state->host_status.attached.devices = device;
     zdj_usb_state->host_status.attached.count++;
 
-    // if( !_zdj_usb_attached_devices ) {
-    //     _zdj_usb_attached_devices = calloc( 1, sizeof( zdj_usb_attached_devices_t ) );
-    //     _zdj_usb_attached_devices->count = 0;
-    //     _zdj_usb_attached_devices->devices = NULL;
-    // }
-
-    // Insert new device at head of linked list
-    // if( _zdj_usb_attached_devices->devices ) {
-    //     device->next = _zdj_usb_attached_devices->devices;
-    // }
-    // _zdj_usb_attached_devices->devices = device;
-
-    // Increment device count
-    // _zdj_usb_attached_devices->count++;
-
-    
-
     return ZDJ_ERROR_OKAY;
 }
 
 static zdj_error_type_t _clear_attached_devices( void ) {
-    // zdj_usb_device_t * device = zdj_usb_state->host_status.attached.devices;
-    // while( device ) {
-    //     zdj_usb_device_t * next_device = device->next;
-    //     // free( device );
-    //     device = next_device;
-    // } 
+    zdj_usb_state->host_status.attached.has_msd = false;
+    zdj_usb_state->host_status.attached.has_uac2 = false;
+    zdj_usb_state->host_status.attached.has_hid = false;
+    zdj_usb_state->host_status.attached.has_midi = false;
     zdj_usb_state->host_status.attached.devices = NULL;
     zdj_usb_state->host_status.attached.count = 0;
 
@@ -410,7 +405,6 @@ zdj_error_type_t zdj_usb_device_cleanup_str( char * buf, size_t buf_len ) {
 }
 
 static void _msd_device_put_mount_path( zdj_usb_device_t * device ) {
-    printf( "_msd_device_put_mount_path\n" );
     // Open findmnt for line scanning
     // EX:
     // /dev/mmcblk2p3 /media/internal
@@ -420,84 +414,80 @@ static void _msd_device_put_mount_path( zdj_usb_device_t * device ) {
     device->mount_path_valid = false;
     FILE * findmnt_fp = popen( "findmnt -rn --output=SOURCE,TARGET", "r" );
     if ( findmnt_fp == NULL ) {
-        printf( "couldn't list mounted drives\n" );
+        zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "Bad findmnt command" );
         return;
     } else {
-        // usbmount adds msd devices at /dev/sda entries
+        // usbmount adds msd devices at /dev/sdxx entries
         char findmnt_line[ 256 ];
-        char sda_prefix[] = "/dev/sda";
+        char sd_prefix[] = "/dev/sd";
+        // zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "findmnt:" );
         while( fgets( findmnt_line, sizeof( findmnt_line ), findmnt_fp ) ) {
-            // printf( "findmnt line: %p/%s\n", findmnt_line, findmnt_line );
-            if( !strncmp( findmnt_line, sda_prefix, strlen( sda_prefix ) ) ) {
+            zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "%s", findmnt_line );
+            // if( !strncmp( findmnt_line, sd_prefix, strlen( sd_prefix ) ) ) {
+            if( strstr( findmnt_line, sd_prefix ) ) {
                 // We will split the findmnt output on space char
                 char * space_ptr = strchr( findmnt_line, ' ' );
                 int space_index = 0;
-                if( space_ptr ) {
-                    space_index = space_ptr - findmnt_line;
-                }
+                if( space_ptr ) { space_index = space_ptr - findmnt_line; }
 
                 // Grab the dev path
                 char dev_path[ 64 ];
                 strncpy( dev_path, findmnt_line, space_index );
                 zdj_usb_device_cleanup_str( dev_path, sizeof( dev_path ) );
-                printf( "dev_path: %s\n", dev_path );
-                
+                zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "MSD Dev: %s", dev_path );
                 // Look at udevadm for a matching serial number
                 // EX:
                 // E: ID_REVISION=1.00
                 // E: ID_SERIAL=USB_SanDisk_3.2Gen1_03038827102724045428-0:0
                 // E: ID_SERIAL_SHORT=03038827102724045428
-                char udev_cmd[ 128 ];
+                // char udev_cmd[ 128 ];
                 // snprintf( udev_cmd, sizeof( udev_cmd ), "udevadm info -n %s", dev_path );
-                snprintf( udev_cmd, sizeof( udev_cmd ), "udevadm info -n %s", "/dev/sda" );
-                // printf( "udev_cmd: %s\n", udev_cmd );
-                char udev_line[ 256 ];
-                FILE * udev_fp = popen( strdup(udev_cmd), "r" );
-                // printf( "udev: %p\n", udev_fp );
-                if ( udev_fp == NULL ) {
-                    printf( "couldn't list mounted drives\n" );
-                    return;
-                } else {
-                    // printf( "udev lines:\n" );
-                    while( fgets( udev_line, sizeof( udev_line ), udev_fp ) ) {
-                        // printf( "udev_line: %s\n", udev_line );
+                // bool has_serial_match = false;
+                // char udev_line[ 256 ];
+                // FILE * udev_fp = popen( strdup(udev_cmd), "r" );
+                // if ( udev_fp == NULL ) {
+                //     zdj_log( ZDJ_LOG_USB, ZDJ_LOG_ERROR, "Bad udev command" );
+                //     return;
+                // } else {
+                //     // zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "udev:" );
+                //     while( fgets( udev_line, sizeof( udev_line ), udev_fp ) ) {
+                //         // zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "%s", udev_line );
+                //         char udev_prefix[] = "E: ID_SERIAL_SHORT";
+                //         // if( !strncmp( udev_line, udev_prefix, strlen( udev_prefix ) ) ) {
+                //         if( strstr( udev_line, udev_prefix ) ) {
+                //             has_serial_match = true;
+                //             // Get the serial number from the line
+                //             char serial[ 128 ];
+                //             strcpy( serial, udev_line+19 );
+                //             zdj_usb_device_cleanup_str( serial, sizeof( serial ) );
 
-                        char udev_prefix[] = "E: ID_SERIAL_SHORT";
-                        if( !strncmp( udev_line, udev_prefix, strlen( udev_prefix ) ) ) {
-                            // Get the serial number from the line
-                            char serial[ 128 ];
-                            strcpy( serial, udev_line+19 );
-                            zdj_usb_device_cleanup_str( serial, sizeof( serial ) );
-                            // printf( "looking for serial %s/%s\n", serial, device->serial );
+                //             zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "Match: %s %s", serial, device->serial );
 
-                            // Check serial against the device DTO
-                            if( !strcmp( serial, device->serial ) ) {
-                                // If there's a serial number match, read the second field 
-                                // of the findmnt output to get the mount path.
-                                char mount_path[ 128 ];
-                                strcpy( device->mount_path, space_ptr+1 );
-                                zdj_usb_device_cleanup_str( device->mount_path, sizeof( device->mount_path ) );
-                                device->mount_path_valid = true;
-                                printf( "mount_path: %s\n", device->mount_path );
-                            }
-                        }
-                    }
-                    printf( "udev lines done\n" );
-                }
+                //             // Check serial against the device DTO
+                //             // if( !strcmp( serial, device->serial ) ) {
+                //                 // If there's a serial number match, read the second field 
+                //                 // of the findmnt output to get the mount path.
+                //                 // char mount_path[ 128 ];
+                //                 // strcpy( device->mount_path, space_ptr+1 );
+                //                 // zdj_usb_device_cleanup_str( device->mount_path, sizeof( device->mount_path ) );
+                //                 // device->mount_path_valid = true;
+                //             // }
+                //         }
+                //     }
+                // }
+                // pclose( udev_fp );
 
+                char mount_path[ 128 ];
+                strcpy( device->mount_path, space_ptr+1 );
+                zdj_usb_device_cleanup_str( device->mount_path, sizeof( device->mount_path ) );
+                device->mount_path_valid = true;
             }
         }
     }
     pclose( findmnt_fp );
     
-    // Look at the udevadm info for this path and match the serial number
-    // against the device DTO
-
-    // exit early w/success if we find a match
+    zdj_log( ZDJ_LOG_USB, ZDJ_LOG_DEBUG, "MSD Mount: %s", device->mount_path );
 }
-
-
-
 
 
 // DB get/create/reset API

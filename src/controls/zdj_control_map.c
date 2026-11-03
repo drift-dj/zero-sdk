@@ -15,6 +15,10 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
     switch ( map_id ) {
         case ZDJ_CONTROL_MAP_MENU_BASE:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_2 );
@@ -31,6 +35,10 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             break;
         case ZDJ_CONTROL_MAP_MENU_DJ_ROOT:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_1 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_2 );
@@ -60,6 +68,10 @@ void zdj_activate_control_map( zdj_control_map_id_t map_id ) {
             break;
         case ZDJ_CONTROL_MAP_TEXT_INPUT:
             zdj_activate_control( ZDJ_DECK_CONTROL_LR_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_CUE_VOL );
+            zdj_activate_control( ZDJ_DECK_CONTROL_XFADE );
+            zdj_activate_control( ZDJ_DECK_1_CONTROL_FADE );
+            zdj_activate_control( ZDJ_DECK_2_CONTROL_FADE );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_ADJUST_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_JOG_RELEASE_0 );
             zdj_activate_control( ZDJ_UI_CONTROL_NAV_RELEASE_0 );

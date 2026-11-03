@@ -18,7 +18,7 @@ void zdj_menu_item_inert_init_layout( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( view );
 
     // Setup normal view
-    zdj_view_t * title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_ticker = zdj_new_ticker_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_RIGHT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, title_ticker );
     title_ticker->frame.w = view->frame.w;
     title_ticker->frame.h = view->frame.h;
@@ -33,36 +33,6 @@ void zdj_menu_item_inert_data_init_layout( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( view );
 
     view->frame.h = 7;
-    
-    // // Pin title label to the left edge + margin
-    // zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    // zdj_add_subview( view, title_label_norm );
-    // title_label_norm->frame.x = 6;
-    // title_label_norm->frame.y = -1;
-
-    // zdj_view_t * data_label_norm = zdj_new_label_view( " ", ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    // zdj_add_subview( view, data_label_norm );
-    // data_label_norm->frame.x = view->frame.w - data_label_norm->frame.w;
-    // data_label_norm->frame.y = -1;
-    
-    // // Add dots
-    // zdj_view_t * divider = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_MID_H_DIV ], NULL );
-    // zdj_add_subview( view, divider );
-    // divider->frame.h = 1;
-    // divider->frame.y = 3;
-    // divider->frame.w = view->frame.w - title_label_norm->frame.w - data_label_norm->frame.w - 12;
-    // divider->frame.x = title_label_norm->frame.x + title_label_norm->frame.w + 2;
-
-    // // // Setup normal view
-    // // state->title_view = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
-    // // zdj_add_subview( view, state->title_view );
-
-    // // // Add divider
-    // // state->div_view = zdj_new_asset_view( &zdj_ui_assets[ ZDJ_UI_ASSET_WIDE_H_DIV ], NULL );
-    // // zdj_add_subview( view, state->div_view );
-    // // state->div_view->frame.y = 4;
-    // // state->div_view->frame.x = state->title_view->frame.w + 3;
-    // // state->div_view->frame.w = view->frame.w - state->title_view->frame.w;
 
     // Build data string
     char data_str[ 256 ];
@@ -112,13 +82,13 @@ void zdj_menu_item_inert_data_init_layout( zdj_view_t * view ) {
     }
     
     // Pin title label to the left edge + margin
-    zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, title_label_norm );
     title_label_norm->frame.x = 1;
     title_label_norm->frame.y = -1;
 
     // printf( "data_str: %s\n", data_str );
-    zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, data_label_norm );
     data_label_norm->frame.x = view->frame.w - data_label_norm->frame.w;
     data_label_norm->frame.y = -1;
@@ -189,13 +159,13 @@ void zdj_menu_item_inert_data_update_layout( zdj_view_t * view ) {
     }
     
     // Pin title label to the left edge + margin
-    zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, title_label_norm );
     title_label_norm->frame.x = 1;
     title_label_norm->frame.y = -1;
 
     // printf( "data_str: %s\n", data_str );
-    zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, data_label_norm );
     data_label_norm->frame.x = view->frame.w - data_label_norm->frame.w;
     data_label_norm->frame.y = -1;
@@ -218,7 +188,7 @@ void zdj_menu_item_inert_status_init_layout( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( view );
 
     // Setup normal view
-    state->title_view = zdj_new_label_view( state->data.c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    state->title_view = zdj_new_label_view( state->data.c_val, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, state->title_view );
 
     state->needs_layout_init = false;
@@ -231,7 +201,7 @@ void zdj_menu_item_inert_status_update_layout( zdj_view_t * view ) {
     zdj_remove_all_subviews_of( view );
 
     // Setup normal view
-    state->title_view = zdj_new_label_view( state->data.c_val, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    state->title_view = zdj_new_label_view( state->data.c_val, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( view, state->title_view );
 
     state->needs_layout_update = false;

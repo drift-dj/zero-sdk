@@ -234,7 +234,8 @@ static void _update_state ( zdj_deck_t * deck ) {
                 // printf( "3\n" );
                 // Prep loop/skip state
                 if( deck_state->song->performance &&
-                    deck_state->song->performance->has_beat_grid
+                    deck_state->song->performance->has_beat_grid &&
+                    deck_state->song->performance->bpm > 0.0
                 ) {
                     deck->controls.discon_quantize = true;
                     deck->controls.loop_state.beatgrid_len = 1.0f;

@@ -121,7 +121,6 @@ zdj_view_t * zdj_new_browser_device_menu_item(
 }
 
 zdj_view_t * zdj_new_song_menu_item( 
-    // zdj_library_song_t * song,
     zdj_library_menu_row_t * menu_row,
     bool show_title_and_artist,
     bool show_key,
@@ -131,14 +130,15 @@ zdj_view_t * zdj_new_song_menu_item(
  ) {
     if( !menu_row ) { return NULL; }
     char label[ 256 ];
-    if( show_title_and_artist ) {
-        snprintf( label, sizeof( label ), "%s - %s", menu_row->artist, menu_row->title );
+    if( show_title_and_artist && strlen( menu_row->artist ) > 0 ) {
+        snprintf( label, 256, "%s - %s", menu_row->artist, menu_row->title );
     } else {
-        strcpy( label, menu_row->title );
+        // strcpy( label, menu_row->title );
+        snprintf( label, 256, "%s", menu_row->title );
     }
     zdj_view_t * menu_item = zdj_new_menu_item( label, layout );
     zdj_menu_item_view_state_t * item_state = (zdj_menu_item_view_state_t*)menu_item->state;
-    
+
     item_state->owned_ptr = menu_row;
     // Use i_val as bitfield
     // Pack show/hide bpm/key/cam states, BPM val, and key val into i_val bitfield
@@ -191,11 +191,14 @@ void zdj_menu_item_scroll_options( zdj_view_t * item, int dir ) {
     if( item_state->edit_option_index < 0.0 ) { item_state->edit_option_index = 0.0; }
     double edit_option_count;
     switch (item_state->edit_options_type ) {
-        case ZDJ_MENU_ITEM_OPTIONS_LIB_PLAYLIST:
-            edit_option_count = 10;
+        case ZDJ_MENU_ITEM_OPTIONS_DJ_SONG:
+            edit_option_count = 13;
             break;
         case ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST:
-            edit_option_count = 11;
+            edit_option_count = 13;
+            break;
+        case ZDJ_MENU_ITEM_OPTIONS_SONG_ERROR:
+            edit_option_count = 7;
             break;
         case ZDJ_MENU_ITEM_OPTIONS_FILE:
             edit_option_count = 11;
@@ -384,6 +387,11 @@ void zdj_menu_item_set_layout( zdj_view_t * menu_item, zdj_menu_item_view_layout
             item_state->init_layout = zdj_menu_item_song_import_init_layout;
             item_state->update_layout = zdj_menu_item_song_import_update_layout;
             item_state->handles_hmi = false;
+            break;
+        case ZDJ_MENU_ITEM_LAYOUT_SONG_ERROR:
+            item_state->init_layout = zdj_menu_item_song_init_layout;
+            item_state->update_layout = zdj_menu_item_song_error_update_layout;
+            item_state->handles_hmi = true;
             break;
         case ZDJ_MENU_ITEM_LAYOUT_TOGGLE:
             item_state->init_layout = zdj_menu_item_toggle_init_layout;

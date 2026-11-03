@@ -85,12 +85,12 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     }
     
     // Pin title label to the left edge + margin
-    zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * title_label_norm = zdj_new_label_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, title_label_norm );
     title_label_norm->frame.x = 1;
     title_label_norm->frame.y = -1;
 
-    zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
+    zdj_view_t * data_label_norm = zdj_new_label_view( data_str, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_WHITE );
     zdj_add_subview( state->normal_view, data_label_norm );
     // zdj_menu_item_view_state_t * data_label_state = (zdj_menu_item_view_state_t*)data_label_norm->state;
     // float data_label_w = data_label_state->title_view
@@ -116,13 +116,13 @@ void zdj_menu_item_data_r_init_layout( zdj_view_t * view ) {
     hilite_bg_r->frame.x = view->frame.w-1;
 
     // Pin title label to the left edge + margin
-    zdj_view_t * title_label_hi = zdj_new_label_view( state->title, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * title_label_hi = zdj_new_label_view( state->title, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, title_label_hi );
     title_label_hi->frame.x = 1;
     title_label_hi->frame.y = -1;
 
     // Get value from data instance
-    zdj_view_t * data_label_hi = zdj_new_label_view( data_str, ZDJ_FONT_6, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
+    zdj_view_t * data_label_hi = zdj_new_label_view( data_str, ZDJ_FONT_TINY5, ZDJ_JUSTIFY_LEFT, ZDJ_SDL_BLACK );
     zdj_add_subview( state->hilite_view, data_label_hi );
     data_label_hi->frame.x = view->frame.w - data_label_hi->frame.w;
     data_label_hi->frame.y = -1;

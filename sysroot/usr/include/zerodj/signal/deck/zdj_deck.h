@@ -87,18 +87,6 @@ typedef struct {
     int fade_len;
 } zdj_deck_control_loop_state_t;
 
-// typedef enum {
-//     ZDJ_DECK_HOTCUE_PHASE_INACTIVE, // Idle - do nothing
-//     ZDJ_DECK_HOTCUE_PHASE_ACTIVATE, // Request received from control thread
-//     ZDJ_DECK_HOTCUE_PHASE_STAGED, // Address has been determined, skip has not been requested
-//     ZDJ_DECK_HOTCUE_PHASE_RUN // Skip has been requested
-// } zdj_deck_control_hotcue_phase_t;
-
-// typedef struct {
-//     zdj_deck_control_hotcue_phase_t phase;
-//     double current_target_d;
-// } zdj_deck_control_hotcue_state_t;
-
 typedef struct {
     double current_offset;
     double skip_req_len;
@@ -242,11 +230,9 @@ typedef struct zdj_deck_control_state_t {
     zdj_deck_control_cue_state_t cue_state;
     zdj_deck_control_skip_state_t skip_state;
     zdj_deck_control_loop_state_t loop_state;
-    // zdj_deck_control_needledrop_state_t needledrop_state;
     zdj_deck_control_knob_state_t knob_state;
     bool discon_quantize;
     double discon_quantize_val;
-    // int c_count_q_val;
 } zdj_deck_control_state_t;
 
 typedef enum {

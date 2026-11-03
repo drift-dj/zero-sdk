@@ -121,7 +121,6 @@ static void _subview_exit( void * data ) {
 }
 
 static void _ui_btn( zdj_view_t * view, zdj_control_event_t * event ) {
-    printf( "ui_btn\n" );
     zdj_menu_item_view_state_t * btn_state = (zdj_menu_item_view_state_t*)view->state;
     zdj_view_t * settings_panel = (zdj_view_t *)btn_state->data.ptr;
     zdj_settings_panel_state_t * settings_panel_state = (zdj_settings_panel_state_t*)settings_panel->state;

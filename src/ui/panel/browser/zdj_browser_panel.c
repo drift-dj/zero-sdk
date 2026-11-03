@@ -163,7 +163,7 @@ void zdj_browser_panel_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t
                             browser_state->is_device_menu = true;
                         }
                     } else {
-                        printf( "browser dir_back: %s\n", item_state->link );
+                        // printf( "browser dir_back: %s\n", item_state->link );
                         // Make a new file menu
                         zdj_view_t * new_menu = zdj_new_browser_panel_file_menu_for_path( 
                             browser, 

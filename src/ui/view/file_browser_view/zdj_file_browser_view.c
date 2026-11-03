@@ -33,7 +33,10 @@ zdj_view_t * zdj_new_file_browser_view(
 ) {
     // printf( "zdj_new_file_browser_view\n" );
     // Check path and fail before we do anything
-    if( access( path, F_OK ) != 0 ) { return NULL; }
+    // Only check access if path != "devices"
+    if( strncmp( "devices", path, 7 ) ) {
+        if( access( path, F_OK ) != 0 ) { return NULL; }
+    }
 
     zdj_view_t * browser_view = zdj_new_view( frame );
     browser_view->type = ZDJ_VIEW_BROWSER;
@@ -78,12 +81,20 @@ zdj_view_t * zdj_new_file_browser_view(
     zdj_add_subview( browser_view, menu_container );
 
     // Add first menu to stack
-    zdj_view_t * menu = zdj_new_file_browser_menu_for_path( 
-        browser_view,
-        &(zdj_rect_t){frame->x, frame->y, ZDJ_MODAL_WIDTH, frame->h-9}, 
-        state->path, 
-        state->select_dir_title
-    );
+    zdj_view_t * menu = NULL;
+    printf( "launch w/path: %s\n", path );
+    // Show Devices menu if path == "devices", else use path
+    if( !strncmp( "devices", path, 7 ) ) {
+        printf( "launch w/devices menu\n" );
+        menu = zdj_new_device_browser_menu( browser_view, &(zdj_rect_t){0, 10, frame->w, frame->h-10} );
+    } else {
+        menu = zdj_new_file_browser_menu_for_path( 
+            browser_view,
+            &(zdj_rect_t){frame->x, frame->y, ZDJ_MODAL_WIDTH, frame->h-9}, 
+            state->path, 
+            state->select_dir_title
+        );
+    }
     if( menu ) { zdj_push_subview( menu_container, menu, false ); }
 
     // printf( "zdj_new_file_browser_view done\n" );
@@ -220,7 +231,7 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
                         // Set device menu to true so we track device attach/detach
                         browser_state->is_device_menu = true;
                     } else {
-                        printf( "browser dir_back: %s\n", item_state->link );
+                        // printf( "browser dir_back: %s\n", item_state->link );
                         // Make a new file menu
                         zdj_view_t * new_menu = zdj_new_file_browser_menu_for_path( 
                             browser, 
@@ -238,7 +249,7 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
             }
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_ENTER: // push menu w/path
-            printf( "browser dir_enter: %s\n", item_state->link );
+            // printf( "browser dir_enter: %s\n", item_state->link );
             browser = item_state->data.ptr;
             browser_state = (zdj_file_browser_view_state_t*)browser->state;
             browser_state->is_device_menu = false;
@@ -251,7 +262,7 @@ void zdj_file_browser_item_hmi_delegate( zdj_view_t * view, zdj_control_event_t 
             zdj_push_subview( browser_state->menu_container, new_menu, true );
             break;
         case ZDJ_MENU_ITEM_ACTION_DIR_SELECT: // exit browser w/dir path
-        printf( "browser dir_select: %s\n", item_state->link );
+        // printf( "browser dir_select: %s\n", item_state->link );
             browser = (zdj_view_t*)item_state->data.ptr;
             if( !browser ){ break; }
             browser_state = (zdj_file_browser_view_state_t*)browser->state;

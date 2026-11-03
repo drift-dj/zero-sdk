@@ -10,9 +10,7 @@
 #include <zerodj/library/zdj_library.h>
 #include <zerodj/system/sql/zdj_sql.h>
 
-static char _sql[ 1024 ];
-
-static void _renumber_playlist_rows( zdj_library_playlist_t * playlist );
+static char _sql[ 2048 ];
 
 zdj_library_playlist_t * zdj_library_create_playlist_dto( void ) {
     zdj_library_playlist_t * playlist = calloc( 1, sizeof( zdj_library_playlist_t ) );
@@ -30,7 +28,7 @@ zdj_library_playlist_t * zdj_library_create_playlist_dto( void ) {
 }
 
 zdj_library_playlist_t * zdj_library_make_playlist_dto_for_table_name( char * library_entity_id, char * playlist_table_name, sqlite3 * db ) {
-    printf( "zdj_library_make_playlist_dto_for_table_name: %s\n", playlist_table_name );
+    // printf( "zdj_library_make_playlist_dto_for_table_name: %s\n", playlist_table_name );
     zdj_library_playlist_t * playlist = calloc( 1, sizeof( zdj_library_playlist_t ) );
     playlist->row_head = NULL;
     playlist->row_tail = NULL;
@@ -143,7 +141,7 @@ zdj_error_type_t zdj_library_store_playlist(
     zdj_library_playlist_t * playlist, 
     sqlite3 * db 
 ) {
-    // printf( "zdj_library_store_playlist\n" );
+    // printf( "zdj_library_store_playlist: %s\n", playlist->table_name );
     int res;
     char sql[ 4096 ];
 
@@ -194,6 +192,12 @@ zdj_error_type_t zdj_library_store_playlist(
     );
     zdj_sql_exec( (char*)&sql, db );
 
+    // Drop records from table if it has any
+    snprintf( sql, sizeof( sql ), "DELETE FROM '%s'",
+        playlist->table_name 
+    );
+    zdj_sql_exec( (char*)&sql, db );
+
     // Insert song eids into new playlist table.
     zdj_library_menu_row_t * row = (zdj_library_menu_row_t*)playlist->row_head;
 
@@ -230,6 +234,7 @@ zdj_error_type_t zdj_library_store_playlist(
     if( res != SQLITE_OK ) { return ZDJ_ERROR_LIBRARY_DB_ERROR; }
     
     // printf( "zdj_library_store_playlist done\n" );
+    zdj_sql_db_flush( db );
 
     return ZDJ_ERROR_OKAY;
 }
@@ -289,9 +294,9 @@ bool zdj_library_playlist_title_exists_in_db( char * title, char * table_name, s
     return found;
 }
 
-void zdj_library_merge_playlist( zdj_library_playlist_t * playlist, char * merge_source, sqlite3 * db ) {
+void zdj_library_merge_playlist( zdj_library_playlist_t * playlist, char * lib_match_eid, sqlite3 * db ) {
     // Currently hard-coded to replace until merge logic is determined
-    zdj_library_replace_playlist( playlist, merge_source, db );
+    zdj_library_replace_playlist( playlist, lib_match_eid, db );
 }
 
 void zdj_library_replace_playlist( zdj_library_playlist_t * playlist, char * target_table_name, sqlite3 * db ) {
@@ -329,10 +334,6 @@ void zdj_library_playlist_remove_row(
     zdj_library_playlist_t * playlist, 
     zdj_library_menu_row_t * row
 ) {
-    // TEMPORARY - Crash to indicate dev isn't finished
-    // Need to update tail logic
-    exit( 1 );
-
     zdj_library_menu_row_t * _row_head = (zdj_library_menu_row_t*)playlist->row_head;
     if( _row_head == NULL ) {
         // error - trying to remove a row from an empty list
@@ -348,6 +349,7 @@ void zdj_library_playlist_remove_row(
             local_row = _row_head;
             break; 
         }
+        _row_head = _row_head->next;
     }
 
     // No matching row - bug out...
@@ -368,7 +370,7 @@ void zdj_library_playlist_remove_row(
         } else {
             _row_head->next->prev = NULL;
             playlist->row_head = _row_head->next;
-            _renumber_playlist_rows( playlist );
+            zdj_library_playlist_renumber_rows( playlist );
             return;
         }
 
@@ -378,7 +380,7 @@ void zdj_library_playlist_remove_row(
             if( strcmp( _row_head->song_entity_id, local_row->song_entity_id ) == 0 ) {
                 if( _row_head->prev ) { _row_head->prev->next = _row_head->next; }
                 if( _row_head->next ) { _row_head->next->prev = _row_head->prev; }
-                _renumber_playlist_rows( playlist );
+                zdj_library_playlist_renumber_rows( playlist );
                 return;
             }
             _row_head = _row_head->next;
@@ -392,10 +394,6 @@ void zdj_library_playlist_move_row(
     zdj_library_menu_row_t * row, 
     int index
 ) {
-    // TEMPORARY - Crash to indicate dev isn't finished
-    // Need to update tail logic
-    exit( 1 );
-
     // If index > row count, just append the row
     if( index >= playlist->row_count ) { zdj_library_playlist_append_row( playlist, row ); return; }
 
@@ -425,7 +423,7 @@ void zdj_library_playlist_move_row(
 }
 
 // Traverse linked list of rows and renumber them in order
-static void _renumber_playlist_rows( zdj_library_playlist_t * playlist ) {
+void zdj_library_playlist_renumber_rows( zdj_library_playlist_t * playlist ) {
     zdj_library_menu_row_t * _row_head = (zdj_library_menu_row_t*)playlist->row_head;
     int counter = 0;
 
@@ -436,4 +434,64 @@ static void _renumber_playlist_rows( zdj_library_playlist_t * playlist ) {
     }
 
     playlist->row_count = counter;
+}
+
+
+int zdj_library_count_playlists_in_db( zdj_library_t * lib, sqlite3 * db ) {
+    if( db && lib ) {
+        return zdj_sql_rows_in_table( lib->playlist_links_table, NULL, db );
+    } else {
+        return 0;
+    }
+}
+
+zdj_error_type_t zdj_library_fetch_playlist_table_names( char (*arr)[ZDJ_LIBRARY_TABLE_LINK_LEN], int count, sqlite3 * db ) {
+    zdj_library_t * lib = zdj_library_get_current( );
+    if( !lib ) { return ZDJ_ERROR_LIBRARY_DB_ERROR; }
+
+    // Fill playlist eids/titles from table
+    int res;
+    int t = 0;
+    snprintf( _sql, sizeof( _sql ), "select * from %s", lib->playlist_links_table );
+
+    sqlite3_stmt * stmt = zdj_sql_prep_row_stepper( (char*)&_sql, db );
+    if( stmt ) {
+        while ( ( res = sqlite3_step( stmt ) ) == SQLITE_ROW ) { 
+            if( t < count ) {
+                char * table_name = (char*)sqlite3_column_text ( stmt, 0 );
+                if( table_name ) {
+                    snprintf( arr[ t ], ZDJ_LIBRARY_TABLE_LINK_LEN, "%s", table_name );
+                }
+            }
+            t++;
+        }
+        sqlite3_finalize( stmt );
+    }
+    return ZDJ_ERROR_OKAY;
+}
+
+
+void zdj_library_playlist_remove_song_from_all_playlists( char * song_eid ) {
+    // Query all Playlist_links
+    zdj_library_t * lib = zdj_library_get_current( );
+    int playlist_count = zdj_library_count_playlists_in_db( lib, zdj_library_db );
+    
+    char (*playlist_table_names)[ZDJ_LIBRARY_TABLE_LINK_LEN] = calloc( playlist_count, ZDJ_LIBRARY_TABLE_LINK_LEN );
+    
+    zdj_error_type_t err = zdj_library_fetch_playlist_table_names( playlist_table_names, playlist_count, zdj_library_db );
+
+    if( err != ZDJ_ERROR_OKAY ) { return; }
+
+    // NOTE: We're bypassing the store_playlist flow here because
+    // it's assumed we're doing this from a song menu - there won't be
+    // a playlist instance to operate against.
+    // For each Playlist Link, remove rows 
+    for( int i=0; i<playlist_count; i++ ) {
+        snprintf( _sql, sizeof( _sql ), "DELETE FROM \'%s\' WHERE entity_id=\'%s\'", 
+            playlist_table_names[ i ],
+            song_eid
+        );
+        zdj_sql_exec( (char*)&_sql, zdj_library_db );
+    }
+    zdj_sql_db_flush( zdj_library_db );
 }

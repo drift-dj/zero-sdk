@@ -255,6 +255,8 @@ void zdj_menu_view_move_item( zdj_view_t * menu_view, zdj_view_t * item, int dir
         target_item->frame.y = item_y;
         
         zdj_menu_view_set_scroll_index( menu_view, item_state->scroll_index );
+        
+        if( menu_state->move_cb ){ menu_state->move_cb( menu_view, item, target_scroll_index, dir ); }
     }
 }
 
@@ -496,9 +498,9 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
             zdj_menu_item_scroll_options( item, e->i_val );
 
             if( item_state->scroll_to_exit_edit_mode ) {
-                if( item_state->edit_options_type == ZDJ_MENU_ITEM_OPTIONS_LIB_PLAYLIST ) {
+                if( item_state->edit_options_type == ZDJ_MENU_ITEM_OPTIONS_DJ_SONG ) {
                     if( round(item_state->edit_option_index) == 0 ||
-                        round(item_state->edit_option_index) == 10
+                        round(item_state->edit_option_index) == 13
                     ) {
                         // printf( "exit edit on scroll\n" );  
                         menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
@@ -508,7 +510,17 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
                     }
                 } else if( item_state->edit_options_type == ZDJ_MENU_ITEM_OPTIONS_DJ_PLAYLIST ) {
                     if( round(item_state->edit_option_index) == 0 ||
-                        round(item_state->edit_option_index) == 11
+                        round(item_state->edit_option_index) == 13
+                    ) {
+                        // printf( "exit edit on scroll\n" );  
+                        menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
+                        if( item_state->exit_edit_mode ) {
+                            item_state->exit_edit_mode( item );
+                        }
+                    }
+                } else if( item_state->edit_options_type == ZDJ_MENU_ITEM_OPTIONS_SONG_ERROR ) {
+                    if( round(item_state->edit_option_index) == 0 ||
+                        round(item_state->edit_option_index) == 7
                     ) {
                         // printf( "exit edit on scroll\n" );  
                         menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
@@ -598,7 +610,6 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
                     // Enter edit mode if not currently editing
                     menu_state->input_mode = ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS;
                     menu_state->edit_item = menu_item;
-                    // zdj_menu_item_enter_edit_mode( menu_item );
                     if( menu_item_state->enter_edit_mode ) {
                         menu_item_state->enter_edit_mode( menu_item );
                     }
@@ -623,9 +634,12 @@ void zdj_menu_handle_control( zdj_view_t * view, zdj_control_event_t * _event ) 
                         }
                     }
                 } else if ( menu_state->input_mode == ZDJ_MENU_INPUT_MODE_EDIT_ITEM_POSITION ) {
-                    // If move is selected, put menu into move item mode
-                    // zdj_menu_item_exit_move_mode( menu_item );
-                    // menu_state->input_mode = ZDJ_MENU_INPUT_MODE_EDIT_ITEM_OPTIONS;
+                    menu_item_state->edit_action = ZDJ_MENU_ITEM_ACTION_END_MOVE;
+                    // Call into handle_control_event set by front-end so it can
+                    // respond to end of item move
+                    if( menu_item->handle_control_event ) {
+                        menu_item->handle_control_event( menu_item, e );
+                    }
                     menu_state->input_mode = ZDJ_MENU_INPUT_MODE_NORMAL;
                     // zdj_menu_item_exit_edit_mode( menu_item );
                     if( menu_item_state->exit_edit_mode ) {
