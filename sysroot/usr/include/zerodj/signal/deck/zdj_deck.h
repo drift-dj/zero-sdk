@@ -30,15 +30,14 @@
 #include <zerodj/signal/pipeline/node/audio/decode/zdj_decode_node.h>
 
 typedef enum {
-    ZDJ_DECK_TYPE_DJ,
-    ZDJ_DECK_TYPE_LIB,
-    ZDJ_DECK_TYPE_EXTERNAL,
+    ZDJ_DECK_TYPE_ADMIN,
     ZDJ_DECK_TYPE_CLOCK,
     ZDJ_DECK_TYPE_CV,
+    ZDJ_DECK_TYPE_DJ,
+    ZDJ_DECK_TYPE_EXTERNAL,
     ZDJ_DECK_TYPE_LOOP,
-    ZDJ_DECK_TYPE_ADMIN,
-    ZDJ_DECK_TYPE_RECORDING,
     ZDJ_DECK_TYPE_PLUGIN,
+    ZDJ_DECK_TYPE_RECORDING,
     ZDJ_DECK_TYPE_TEST
 } zdj_deck_type_t;
 
@@ -47,6 +46,7 @@ typedef enum {
     ZDJ_DECK_STATION_1,
     ZDJ_DECK_STATION_2,
     ZDJ_DECK_STATION_X,
+    // These two may not be needed
     ZDJ_DECK_STATION_CLOCK,
     ZDJ_DECK_STATION_RECORDING
 } zdj_deck_station_t;
@@ -313,21 +313,6 @@ typedef struct zdj_deck_t {
     void ( *get_edge_data )( void *, zdj_pipeline_node_t *, bool );
     void ( *push_edge_data )( void *, zdj_pipeline_node_t *, bool );
 
-    // Transport Control API
-    zdj_deck_control_state_t controls;
-    void ( *handle_control_event )( struct zdj_deck_t *, zdj_control_event_t * ); // Control thread @800Hz
-
-    // Platter API
-    zdj_deck_control_platter_request_t platter_reqs[ 8 ]; // Handle up to 8 reqs in a cycle
-    int platter_req_write_index;
-    void ( *update_platter_req )( struct zdj_deck_t * ); // Control thread @800Hz
-    void ( *update_platter_model )( struct zdj_deck_t * ); // Soundcard thread @buffer rate   
-
-    // Command API
-    zdj_deck_control_command_request_t command_req;
-    void ( *update_command_req )( struct zdj_deck_t * ); // Control thread @800Hz
-    bool ( *update_command_models )( struct zdj_deck_t * ); // Soundcard thread @buffer rate
-
     // Sync API
     bool can_sync;
     double sync_factor;
@@ -336,9 +321,26 @@ typedef struct zdj_deck_t {
     void ( *offset_pitch_setting )( struct zdj_deck_t *, double );
     void ( *request_sync_mult )( struct zdj_deck_t *, float );
 
+
+    // DJ Deck Specific APIs - can we move these into the internal State struct?
+    // Command API
+    zdj_deck_control_command_request_t command_req;
+    void ( *update_command_req )( struct zdj_deck_t * ); // Control thread @800Hz
+    bool ( *update_command_models )( struct zdj_deck_t * ); // Soundcard thread @buffer rate
+
+    // Transport Control API
+    zdj_deck_control_state_t controls;
+    void ( *handle_control_event )( struct zdj_deck_t *, zdj_control_event_t * ); // Control thread @800Hz
+
+    // Platter API
+    zdj_deck_control_platter_request_t platter_reqs[ 8 ]; // Handle up to 8 reqs in a cycle
+    int platter_req_write_index;
+    void ( *update_platter_req )( struct zdj_deck_t * ); // Control thread @800Hz
+    void ( *update_platter_model )( struct zdj_deck_t * ); // Soundcard thread @buffer rate 
+    // DJ Deck Specific APIs  
+
     // internal state
     void * state;
-
     int predelay_counter;
 
     // linkage for the controls thread
@@ -361,7 +363,7 @@ typedef struct zdj_deck_t {
 //     sem_t start_cycle;
 //     bool thread_ready;
 //     bool exit_thread;
-// } zdj_ext_deck_state_t;
+// } zdj_io_deck_state_t;
 
 typedef struct {
     int id;

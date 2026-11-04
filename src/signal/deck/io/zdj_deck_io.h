@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef ZDJ_DECK_EXTERN_H
-#define ZDJ_DECK_EXTERN_H
+#ifndef ZDJ_DECK_IO_H
+#define ZDJ_DECK_IO_H
 
 #include <stdbool.h>
 #include <pthread.h>
@@ -33,8 +33,8 @@ typedef struct {
     sem_t start_cycle;
     bool thread_ready;
     bool exit_thread;
-} zdj_ext_deck_state_t;
+} zdj_io_deck_state_t;
 
-zdj_error_type_t zdj_new_extern_deck( zdj_deck_t * deck );
+zdj_error_type_t zdj_new_io_deck( zdj_deck_t * deck );
 
 #endif

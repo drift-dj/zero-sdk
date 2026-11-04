@@ -361,10 +361,8 @@ void zdj_deck_manager_clear_control_flags( zdj_deck_t * deck ) {
 // Used to control transport state, XXXX run physics sim XXXX
 // for jog wheel, etc.
 void zdj_deck_manager_control_update_cycle( void ) {
-    // printf( "zdj_deck_manager_control_update_cycle\n" );
     zdj_deck_t * deck = zdj_deck_manager( )->decks;
     while( deck ) {
-        // if( deck->update_transport_inputs ){ deck->update_transport_inputs( deck ); }
         if( deck->update_platter_req ){ deck->update_platter_req( deck ); }
         if( deck->update_command_req ){ deck->update_command_req( deck ); }
         deck = deck->next;

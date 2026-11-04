@@ -31,6 +31,9 @@ add_library(zerodj
     src/library/api/song/zdj_library_api_song.c
     src/signal/deck/zdj_deck.c
     src/signal/deck/zdj_deck_manager.c
+    src/signal/deck/clock/zdj_deck_clock.c
+    src/signal/deck/clock/zdj_deck_clock_sync.c
+    src/signal/deck/clock/zdj_deck_clock_transport.c
     src/signal/deck/dj/zdj_deck_dj.c
     src/signal/deck/dj/zdj_deck_dj_command.c
     src/signal/deck/dj/zdj_deck_dj_command_cuepoint.c
@@ -41,10 +44,7 @@ add_library(zerodj
     src/signal/deck/dj/zdj_deck_dj_soundcard.c
     src/signal/deck/dj/zdj_deck_dj_sync.c
     src/signal/deck/dj/zdj_deck_dj_platter.c
-    src/signal/deck/extern/zdj_deck_extern.c
-    src/signal/deck/clock/zdj_deck_clock.c
-    src/signal/deck/clock/zdj_deck_clock_sync.c
-    src/signal/deck/clock/zdj_deck_clock_transport.c
+    src/signal/deck/io/zdj_deck_io.c
     src/signal/math/zdj_signal_math.c
     src/signal/pipeline/zdj_pipeline.c
     src/signal/pipeline/node/analysis/bpm_detect/zdj_bpm_detect_node.c
