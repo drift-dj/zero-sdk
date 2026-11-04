@@ -27,12 +27,18 @@ static void _get_edge_data( void * _deck, zdj_pipeline_node_t * data_pipe, bool 
 // Pipeline update thread
 static void * _pipeline_thread_main( void * arg );
 
-zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource, int win_buf_count ) {
+// zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource, int win_buf_count ) {
+zdj_deck_t * zdj_new_dj_deck( zdj_deck_station_t station, void * song, int win_buf_count ) {
     // printf( "zdj_new_dj_deck\n" );
     
+    zdj_deck_t * deck = calloc( 1, sizeof( zdj_deck_t ) );
+    deck->type = ZDJ_DECK_TYPE_DJ;
+    deck->station = station;
+    deck->status = ZDJ_DECK_STATUS_NEW;
+
     zdj_dj_deck_state_t * state = calloc( 1, sizeof( zdj_dj_deck_state_t ) );
     deck->state = state;
-    state->song = (zdj_library_song_t *)resource;
+    state->song = (zdj_library_song_t *)song;
     state->decode_win_buf_count = win_buf_count;
     state->tsm_source = ZDJ_DECK_TSM_SOURCE_PITCH;
     
@@ -44,14 +50,43 @@ zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource, int win_bu
     deck->update_state = &_update_state;
     deck->begin_teardown = &_begin_teardown;
     deck->deinit = &_deinit;
-    
+    deck->handle_control_event = NULL;
+
+    // Init Deck Controls
+    memset( &deck->controls, 0, sizeof( zdj_deck_control_state_t ) );
+
+    deck->controls.platter.motor.enabled = false;
+    deck->controls.platter.motor.pitch_setting = 1.0f;
+    deck->controls.platter.motor.spin_up_cycle_count = 0;
+    deck->controls.platter.motor.spin_down_cycle_count = 60;
+
+    deck->controls.platter.slip.slip_dwell = 20;
+    deck->controls.platter.slip.set_val = 0.0f;
+    deck->controls.platter.slip.instant_val = 0.0f;
+
+    // Sim constants - adjust to taste
+    deck->controls.platter.slip.sim_duration = (double)deck->controls.platter.slip.slip_dwell / 4.0;
+    deck->controls.platter.slip.mass = 8.0;
+    deck->controls.platter.slip.spring_k = 40.0;
+    deck->controls.platter.slip.damp_c = 15.0;
+
+    // Scratch/Nudge constants
+    deck->controls.platter.nudge_coeff = 4.0;
+    deck->controls.platter.scratch_coeff = 800.0;
+    deck->controls.platter.hyperscrub_coeff = 100000.0;
+
+    // Scratch while playing
+    deck->controls.platter.scratch_override = false;
+    zdj_setting_t * setting = zdj_setting_get( ZDJ_SETTING_DECK_SCRATCH_OVERRIDE );
+    if( setting ) { deck->controls.platter.scratch_override = setting->b_val; }
+
     zdj_deck_dj_init_soundcard( deck );
     zdj_deck_dj_init_platter( deck );
     zdj_deck_dj_init_command( deck );
 
     sem_init( &state->start_cycle, 0, 0 );
 
-    return ZDJ_ERROR_OKAY;
+    return deck;
 }
 
 static void _deinit( zdj_deck_t * deck ) {

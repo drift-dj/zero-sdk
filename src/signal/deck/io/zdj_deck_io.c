@@ -9,7 +9,6 @@
 #include <zerodj/signal/deck/zdj_deck.h>
 #include <zerodj/signal/deck/io/zdj_deck_io.h>
 #include <zerodj/signal/deck/zdj_deck_manager.h>
-// #include <zerodj/signal/pipeline/node/audio/deck_dsp/zdj_deck_dsp_node.h>
 #include <zerodj/signal/soundcard/zdj_soundcard.h>
 
 static void _update_state ( zdj_deck_t * deck );
@@ -21,7 +20,12 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event );
 // Pipeline update thread
 static void * _pipeline_thread_main( void * arg );
 
-zdj_error_type_t zdj_new_io_deck( zdj_deck_t * deck ) {
+zdj_deck_t * zdj_new_io_deck( zdj_deck_station_t station ) {
+    zdj_deck_t * deck = calloc( 1, sizeof( zdj_deck_t ) );
+    deck->type = ZDJ_DECK_TYPE_IO;
+    deck->station = station;
+    deck->status = ZDJ_DECK_STATUS_NEW;
+
     deck->update_state = &_update_state;
     deck->deinit = &_deinit;
     deck->push_edge_data = &_push_edge_data;
@@ -34,12 +38,11 @@ zdj_error_type_t zdj_new_io_deck( zdj_deck_t * deck ) {
 
     sem_init( &state->start_cycle, 0, 0 );
 
-    return ZDJ_ERROR_OKAY;
+    return deck;
 }
 
 static void _deinit( zdj_deck_t * deck ) {
     zdj_io_deck_state_t * deck_state = (zdj_io_deck_state_t*)deck->state;
-    // deck_state->dsp_node->deinit( deck_state->dsp_node );
 }
 
 // Called from the slow deck update thread (~.25Hz).

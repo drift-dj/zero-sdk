@@ -71,10 +71,8 @@ zdj_deck_manager_t * zdj_deck_manager( void );
 
 // Entry-point for creating decks/loading files from UI front-end
 zdj_deck_t * zdj_deck_manager_add_deck( 
-    zdj_deck_type_t type,
     zdj_deck_station_t station,
-    void * resource,
-    int win_buf_count
+    zdj_deck_t * deck
 );
 zdj_error_type_t zdj_deck_manager_remove_deck( zdj_deck_t * deck );
 zdj_deck_t * zdj_deck_manager_get_deck_for_station( zdj_deck_station_t station );

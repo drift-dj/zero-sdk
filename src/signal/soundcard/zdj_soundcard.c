@@ -70,11 +70,13 @@ zdj_error_type_t zdj_soundcard_init( char * entity_id ) {
     io_usb_node_state->soundcard_in_buffer = zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_0 )->data_pipe;
     zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_USB_IN_1 )->data_pipe = io_usb_node_state->soundcard_in_buffer;
 
-    // Bring up/link an audio recording pipeline node.
+    // Bring up/link an audio recording pipeline node/deck.
     soundcard->recording_node = zdj_new_audio_record_node( zdj_soundcard_get_node_for_name( soundcard, ZDJ_SOUNDCARD_NODE_NAME_RECORD_BUS ) );
+    // soundcard->recoding_deck = zdj_new_recording_deck( );
 
     // Bring up a clock deck and obey any linkage in current soundcard
-    soundcard->clock_deck = zdj_deck_manager_add_deck( ZDJ_DECK_TYPE_CLOCK, ZDJ_DECK_STATION_CLOCK, NULL, 0 );
+    soundcard->clock_deck = zdj_new_clock_deck( );
+    // soundcard->clock_deck = zdj_deck_manager_add_deck( ZDJ_DECK_TYPE_CLOCK, ZDJ_DECK_STATION_CLOCK, NULL, 0 );
     zdj_soundcard_init_clock_deck( soundcard );
 
     // Bring up USB admin thread

@@ -47,27 +47,22 @@ zdj_error_type_t zdj_deck_manager_init( void ) {
     zdj_thread_launch_deck_manager_cycle( &_zdj_deck_manager_thread_main, _zdj_deck_manager );
 }
 
+
+// Refactor this to take a deck as input.
+// Remove the resource/win_buf_count stuff from here
+// and just use them in the dj_deck new function
 zdj_deck_t * zdj_deck_manager_add_deck( 
-    zdj_deck_type_t type,
     zdj_deck_station_t station,
-    void * resource,
-    int win_buf_count
+    zdj_deck_t * deck
 ) {
-    // printf( "deck_manager loading deck station %d type: %d %p\n", station, type, zdj_deck_manager( )->decks );
     // If there's a deck in this station, start its remove process.
-    // TODO
     zdj_deck_t * cur_deck = zdj_deck_manager_get_deck_for_station( station );
     if( cur_deck ) {
         zdj_deck_manager_remove_deck( cur_deck );
     }
 
-    // Stand up the deck.
-    zdj_deck_t * deck = zdj_new_deck( type, station, resource, win_buf_count );
-
     // Link the deck into the manager.
-    if( zdj_deck_manager( )->decks ) { 
-        zdj_deck_manager( )->decks->prev = deck; 
-    }
+    if( zdj_deck_manager( )->decks ) { zdj_deck_manager( )->decks->prev = deck; }
     deck->next = zdj_deck_manager( )->decks;
     zdj_deck_manager( )->decks = deck;
 

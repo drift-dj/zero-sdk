@@ -29,7 +29,7 @@ add_library(zerodj
     src/library/api/song/zdj_library_api_catalog.c
     src/library/api/song/zdj_library_api_song_graph.c
     src/library/api/song/zdj_library_api_song.c
-    src/signal/deck/zdj_deck.c
+    # src/signal/deck/zdj_deck.c
     src/signal/deck/zdj_deck_manager.c
     src/signal/deck/clock/zdj_deck_clock.c
     src/signal/deck/clock/zdj_deck_clock_sync.c

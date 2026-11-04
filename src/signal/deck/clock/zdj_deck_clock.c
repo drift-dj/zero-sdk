@@ -21,7 +21,13 @@ static void _handle_control( zdj_deck_t * deck, zdj_control_event_t * event );
 // Pipeline update thread
 static void * _pipeline_thread_main( void * arg );
 
-zdj_error_type_t zdj_new_clock_deck( zdj_deck_t * deck ) {
+// zdj_error_type_t zdj_new_clock_deck( zdj_deck_t * deck ) {
+zdj_deck_t * zdj_new_clock_deck( void ) {
+    zdj_deck_t * deck = calloc( 1, sizeof( zdj_deck_t ) );
+    deck->type = ZDJ_DECK_TYPE_CLOCK;
+    deck->station = ZDJ_DECK_STATION_CLOCK;
+    deck->status = ZDJ_DECK_STATUS_NEW;
+
     deck->update_state = &_update_state;
     deck->deinit = &_deinit;
     deck->push_edge_data = &_push_edge_data;
@@ -41,7 +47,34 @@ zdj_error_type_t zdj_new_clock_deck( zdj_deck_t * deck ) {
 
     sem_init( &state->start_cycle, 0, 0 );
 
-    return ZDJ_ERROR_OKAY;
+    deck->handle_control_event = NULL;
+
+    memset( &deck->controls, 0, sizeof( zdj_deck_control_state_t ) );
+
+    deck->controls.platter.motor.enabled = false;
+    deck->controls.platter.motor.pitch_setting = 1.0f;
+    deck->controls.platter.motor.spin_up_cycle_count = 0;
+    deck->controls.platter.motor.spin_down_cycle_count = 60;
+
+    deck->controls.platter.slip.slip_dwell = 20;
+    deck->controls.platter.slip.set_val = 0.0f;
+    deck->controls.platter.slip.instant_val = 0.0f;
+
+    // Sim constants - adjust to taste
+    deck->controls.platter.slip.sim_duration = (double)deck->controls.platter.slip.slip_dwell / 4.0;
+    deck->controls.platter.slip.mass = 8.0;
+    deck->controls.platter.slip.spring_k = 40.0;
+    deck->controls.platter.slip.damp_c = 15.0;
+
+    // Scratch/Nudge constants
+    deck->controls.platter.nudge_coeff = 4.0;
+    deck->controls.platter.scratch_coeff = 800.0;
+    deck->controls.platter.hyperscrub_coeff = 100000.0;
+
+    // Scratch while playing
+    deck->controls.platter.scratch_override = false;
+
+    return deck;
 }
 
 static void _deinit( zdj_deck_t * deck ) {

@@ -64,7 +64,6 @@ typedef struct {
     int sync_mult_ui_counter;
 } zdj_dj_deck_state_t;
 
-zdj_error_type_t zdj_new_dj_deck( zdj_deck_t * deck, void * resource, int win_buf_count );
 void zdj_deck_dj_init_soundcard( zdj_deck_t * deck );
 void zdj_deck_dj_init_controls( zdj_deck_t * deck );
 void zdj_deck_dj_init_platter( zdj_deck_t * deck );

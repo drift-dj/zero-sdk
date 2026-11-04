@@ -34,10 +34,12 @@ typedef enum {
     ZDJ_DECK_TYPE_CLOCK,
     ZDJ_DECK_TYPE_CV,
     ZDJ_DECK_TYPE_DJ,
-    ZDJ_DECK_TYPE_EXTERNAL,
+    ZDJ_DECK_TYPE_IO,
     ZDJ_DECK_TYPE_LOOP,
     ZDJ_DECK_TYPE_PLUGIN,
+    ZDJ_DECK_TYPE_PREVIEW,
     ZDJ_DECK_TYPE_RECORDING,
+    ZDJ_DECK_TYPE_SPEECH,
     ZDJ_DECK_TYPE_TEST
 } zdj_deck_type_t;
 
@@ -292,6 +294,12 @@ typedef struct {
     int req_sens_count[ ZDJ_DECK_COMMAND_REQUEST_COUNT ]; // sensitivity tracking for req inputs
 } zdj_deck_control_command_request_t;
 
+typedef struct {
+    float h_closed;
+    float h_open;
+    bool h_flex;
+} zdj_deck_ui_props_t;
+
 typedef struct zdj_deck_t {
     zdj_deck_type_t type;
     zdj_deck_station_t station;
@@ -307,6 +315,7 @@ typedef struct zdj_deck_t {
     bool needs_ui_reset;
     void ( *ui_load_cb )( struct zdj_deck_t * );
     void ( *ui_unload_cb )( struct zdj_deck_t * );
+    zdj_deck_ui_props_t ui_props;
 
     // Soundcard API
     // get/push_edge_data are called from the soundcard's fast cycle thread.
@@ -348,43 +357,12 @@ typedef struct zdj_deck_t {
     struct zdj_deck_t * prev;
 } zdj_deck_t;
 
-// typedef struct {
-//     zdj_library_song_t * song;
-//     // Internal audio pipeline
-//     zdj_pipeline_node_t * dsp_node;
-//     zdj_pipeline_node_t * tsm_node;
-//     zdj_pipeline_node_t * decode_node;
-// } zdj_cv_deck_state_t;
-
-// typedef struct {
-//     zdj_pipeline_node_t * dsp_node;
-
-//     // Thread management
-//     sem_t start_cycle;
-//     bool thread_ready;
-//     bool exit_thread;
-// } zdj_io_deck_state_t;
-
-typedef struct {
-    int id;
-} zdj_loop_deck_state_t;
-
-// typedef struct {
-//     float s1_p;
-//     float s1_f;
-//     float s2_p;
-//     float s2_f;
-//     float s3_p;
-//     float s3_f;
-//     float s4_p;
-//     float s4_f;
-// } zdj_test_deck_state_t;
-
-zdj_deck_t * zdj_new_deck( 
-    zdj_deck_type_t type, 
-    zdj_deck_station_t station, 
-    void * resource, 
-    int win_buf_count 
-);
+zdj_deck_t * zdj_new_clock_deck( void );
+zdj_deck_t * zdj_new_dj_deck( zdj_deck_station_t station, void * song, int win_buf_count );
+zdj_deck_t * zdj_new_io_deck( zdj_deck_station_t station );
+zdj_deck_t * zdj_new_recording_deck( void );
+zdj_deck_t * zdj_new_admin_deck( zdj_deck_station_t station );
+zdj_deck_t * zdj_new_preview_deck( void );
+zdj_deck_t * zdj_new_speech_deck( void );
 
 #endif

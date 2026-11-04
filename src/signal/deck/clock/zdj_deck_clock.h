@@ -56,7 +56,7 @@ typedef struct {
     int sync_mult_ui_counter;
 } zdj_clock_deck_state_t;
 
-zdj_error_type_t zdj_new_clock_deck( zdj_deck_t * deck );
+// zdj_error_type_t zdj_new_clock_deck( zdj_deck_t * deck );
 void zdj_deck_clock_init_transport( zdj_deck_t * deck );
 void zdj_deck_clock_init_sync( zdj_deck_t * deck );
 

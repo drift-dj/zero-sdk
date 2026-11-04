@@ -35,6 +35,4 @@ typedef struct {
     bool exit_thread;
 } zdj_io_deck_state_t;
 
-zdj_error_type_t zdj_new_io_deck( zdj_deck_t * deck );
-
 #endif
